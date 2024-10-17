@@ -919,11 +919,11 @@ contains ! Routines of this module
    end function IsMPMWithMixedIntegration
 
    logical function IsMPMWith_Tri_Tetra_Mixed_Integration()
-   ! Logical function that returns trrue if the MPM-Mixed scheme for triangle and tetrahedral elements is in use
-   ! This is the original MPM-Mixed scheme
+      ! Logical function that returns trrue if the MPM-Mixed scheme for triangle and tetrahedral elements is in use
+      ! This is the original MPM-Mixed scheme
       IsMPMWith_Tri_Tetra_Mixed_Integration = CalParams%ComputationMethod==MPM_MIXED_INTEGRATION
    end function IsMPMWith_Tri_Tetra_Mixed_Integration
-   
+
    logical function IsMPMWith_Quad_MixedIntegration()
       ! Logical function that returns if true if the MPM-Mixed scheme for quadrilateral elements is in use
       IsMPMWith_Quad_MixedIntegration = (CalParams%ComputationMethod==MPM_MIXED_KEEPSTATEV_INTEGRATION) .or. &
@@ -1953,6 +1953,8 @@ contains ! Routines of this module
       !
       !**********************************************************************
       implicit none
+
+      ! Local variables
       integer(INTEGER_TYPE) :: prev_unit, PreviousComputationalMethod
       character(len = 255) :: FileName, TName, BName, InputString
 
@@ -1962,1463 +1964,1466 @@ contains ! Routines of this module
          .and. (CalParams%ComputationMethod /= MPM_MIXED_KEEPSTATEV_INTEGRATION) &
          .and. (CalParams%ComputationMethod /= MPM_MIXED_MG22_INTEGRATION)) then
 
-      ! If the current computation method isn't FEM there isn't a need to check the rest of the function and the function can be returned
-      ! without making any changes (This isn't necessary because the select case that happens laters)
-      return
-   end if
-
-   !   The previous CPS file is scanned for the previous computational method
-   FileName = trim(CalParams%FileNames%ProjectName)//CPS_FILE_EXTENSION//CalParams%FileNames%PreviousStepExt
-
-   if (.not.FExist(trim(FileName))) then
-      call GiveError('Previous CPS file does not exist!' //NEW_LINE('A')// &
-         'File name: ' // trim(FileName))
-   end if
-
-   prev_unit = 88
-   call FileOpen(prev_unit, trim(FileName))
-
-   PreviousComputationalMethod = CalParams%ComputationMethod
-   do
-      read(prev_unit, '(A)') TName
-      BName = Upcase(TName)
-
-      if ((trim(BName)==('$$COMP_METHOD')).or.(trim(BName)==('$$COMPUTATION_METHOD'))) then
-         read(prev_unit, *) InputString
-         select case( trim( Upcase(InputString) ) )
-          case(MPM_MIXED_INTEGRATION_SPECIFIER)
-            PreviousComputationalMethod = MPM_MIXED_INTEGRATION
-          case(MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER)
-            PreviousComputationalMethod = MPM_MIXED_KEEPSTATEV_INTEGRATION
-          case(MPM_MIXED_MG22_INTEGRATION_SPECIFIER)
-            PreviousComputationalMethod = MPM_MIXED_MG22_INTEGRATION
-          case(MPM_MP_INTEGRATION_SPECIFIER)
-            PreviousComputationalMethod = MPM_MP_INTEGRATION
-          case(FEM_SPECIFIER)
-            PreviousComputationalMethod = FEM
-          case(UL_FEM_SPECIFIER)
-            PreviousComputationalMethod = UL_FEM
-          case default
-            call GiveError('$$COMP_METHOD not properly specified in previous CPS file.')
-         end select
-      else if (trim(BName)=='$$END') then
-         call GiveError('$$COMP_METHOD not specified in previous CPS file.')
-         EXIT
+         ! If the current computation method is FEM there isn't a need to check the rest of the function and the function can be returned
+         ! without making any changes (This isn't necessary because the select case that happens laters)
+         return
       end if
-   end do
 
-   close(prev_unit)
+      !   The previous CPS file is scanned for the previous computational method
+      FileName = trim(CalParams%FileNames%ProjectName)//CPS_FILE_EXTENSION//CalParams%FileNames%PreviousStepExt
 
-   !   The previous computational method is checked to be (UL)FEM
-   if((PreviousComputationalMethod == FEM) .or. (CalParams%ComputationMethod == UL_FEM)) then
-      CalParams%ApplyFEMtoMPM = .true.
-   end if
+      if (.not.FExist(trim(FileName))) then
+         call GiveError('Previous CPS file does not exist!' //NEW_LINE('A')// &
+            'File name: ' // trim(FileName))
+      end if
 
-end subroutine CheckChangeFEMtoMPM
+      prev_unit = 88
+      call FileOpen(prev_unit, trim(FileName))
 
+      PreviousComputationalMethod = CalParams%ComputationMethod
+      do
+         read(prev_unit, '(A)') TName
+         BName = Upcase(TName)
 
+         if ((trim(BName)==('$$COMP_METHOD')).or.(trim(BName)==('$$COMPUTATION_METHOD'))) then
+            read(prev_unit, *) InputString
 
-logical function isThreePhaseCalculation() result(res)
-   !**********************************************************************
-   !
-   !    Function: Checks whether the calculation is three phase or not.
-   !
-   ! Implemented in the frame of the MPM project.
-   !
-   !**********************************************************************
-   implicit none
+            if ( trim( Upcase(InputString) ) == MPM_MIXED_INTEGRATION_SPECIFIER) then
+               PreviousComputationalMethod = MPM_MIXED_INTEGRATION
+            else if (trim( Upcase(InputString) ) == MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) then
+               PreviousComputationalMethod = MPM_MIXED_KEEPSTATEV_INTEGRATION
+            else if (trim( Upcase(InputString) ) == MPM_MIXED_MG22_INTEGRATION_SPECIFIER) then
+               PreviousComputationalMethod = MPM_MIXED_MG22_INTEGRATION
+            else if (trim( Upcase(InputString) ) == MPM_MP_INTEGRATION_SPECIFIER) then
+               PreviousComputationalMethod = MPM_MP_INTEGRATION
+            else if (trim( Upcase(InputString) ) == FEM_SPECIFIER) then
+               PreviousComputationalMethod = FEM
+            else if (trim( Upcase(InputString) ) == UL_FEM_SPECIFIER) then
+               PreviousComputationalMethod = UL_FEM
+            else
+               call GiveError('$$COMP_METHOD or COMPUTATION_METHOD does not match possible inputs in previous CPS file.')
+            end if
+            
+            ! Break out do loop
+            exit
+         else if (trim(BName)=='$$END') then
+            call GiveError('Reached end of file and $$COMP_METHOD or $$Computational_METHOD not specified in previous CPS file.')
+            EXIT
+         end if
+      end do
 
-   res = CalParams%NumberOfPhases == 3
+      close(prev_unit)
 
-end function isThreePhaseCalculation
+      !   The previous computational method is checked to be (UL)FEM
+      if((PreviousComputationalMethod == FEM) .or. (CalParams%ComputationMethod == UL_FEM)) then
+         CalParams%ApplyFEMtoMPM = .true.
+      end if
 
-
-
-logical function isTwoPhaseCalculation() result(res)
-   !**********************************************************************
-   !
-   !    Function: Checks whether the calculation is two phase or not.
-   !
-   ! Implemented in the frame of the MPM project.
-   !
-   !**********************************************************************
-   implicit none
-
-   res = CalParams%NumberOfPhases == 2
-
-end function isTwoPhaseCalculation
-
-
-
-logical function isContactActive() result(res)
-   !**********************************************************************
-   !
-   !    Function: Checks whether the contact algorithm is applied or not.
-   !
-   ! Implemented in the frame of the MPM project.
-   !
-   !**********************************************************************
-   implicit none
-
-   res = CalParams%ApplyContactAlgorithm
-
-end function isContactActive
+   end subroutine CheckChangeFEMtoMPM
 
 
 
-subroutine InitialiseDependentFlags(IsAssemblageSoilLoadVectorSpecified,  &
-   IsAssemblageWaterLoadVectorSpecified, &
-   IsAssemblageGasLoadVectorSpecified)
-   !**********************************************************************
-   !
-   !     Function:  Sets default values for assemblage of load vectors
-   !                if assemblage of load vectors is not specified
-   !
-   !**********************************************************************
+   logical function isThreePhaseCalculation() result(res)
+      !**********************************************************************
+      !
+      !    Function: Checks whether the calculation is three phase or not.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+      implicit none
 
-   implicit none
+      res = CalParams%NumberOfPhases == 3
 
-   ! Arguments
-   logical, intent(in) :: IsAssemblageSoilLoadVectorSpecified, &
+   end function isThreePhaseCalculation
+
+
+
+   logical function isTwoPhaseCalculation() result(res)
+      !**********************************************************************
+      !
+      !    Function: Checks whether the calculation is two phase or not.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+      implicit none
+
+      res = CalParams%NumberOfPhases == 2
+
+   end function isTwoPhaseCalculation
+
+
+
+   logical function isContactActive() result(res)
+      !**********************************************************************
+      !
+      !    Function: Checks whether the contact algorithm is applied or not.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+      implicit none
+
+      res = CalParams%ApplyContactAlgorithm
+
+   end function isContactActive
+
+
+
+   subroutine InitialiseDependentFlags(IsAssemblageSoilLoadVectorSpecified,  &
       IsAssemblageWaterLoadVectorSpecified, &
-      IsAssemblageGasLoadVectorSpecified
+      IsAssemblageGasLoadVectorSpecified)
+      !**********************************************************************
+      !
+      !     Function:  Sets default values for assemblage of load vectors
+      !                if assemblage of load vectors is not specified
+      !
+      !**********************************************************************
 
-   ! For FEM computations and MPM with moving mesh, load vectors are by default not assembled from MP forces
+      implicit none
 
-   if (.not.IsAssemblageSoilLoadVectorSpecified) then ! Consider default settings
-      CalParams%AssembleSoilLoadVectorFromMP = IsMPMComputation().and.(.not.CalParams%ApplyMeshSmoothing)
-   end if
+      ! Arguments
+      logical, intent(in) :: IsAssemblageSoilLoadVectorSpecified, &
+         IsAssemblageWaterLoadVectorSpecified, &
+         IsAssemblageGasLoadVectorSpecified
 
-   if (.not.IsAssemblageWaterLoadVectorSpecified) then ! Consider default settings
-      CalParams%AssembleWaterLoadVectorFromMP = IsMPMComputation().and.(.not.CalParams%ApplyMeshSmoothing)
-   end if
+      ! For FEM computations and MPM with moving mesh, load vectors are by default not assembled from MP forces
 
-   if (.not.IsAssemblageGasLoadVectorSpecified) then ! Consider default settings
-      CalParams%AssembleGasLoadVectorFromMP = IsMPMComputation().and.(.not.CalParams%ApplyMeshSmoothing)
-   end if
+      if (.not.IsAssemblageSoilLoadVectorSpecified) then ! Consider default settings
+         CalParams%AssembleSoilLoadVectorFromMP = IsMPMComputation().and.(.not.CalParams%ApplyMeshSmoothing)
+      end if
 
-   if (CalParams%AutomaticSkipConvection) then
-      CalParams%SkipConvection = .true.
-      if (CalParams%NumberSkipConvection <= 0) then
-         CalParams%NumberSkipConvection =  huge(CalParams%NumberSkipConvection)
-      else
-         if (CalParams%NumberSkipConvection == 1) then
-            call GiveWarning('Number of skip convection cannot be equal to 1 when automatic skip convection is used')
-            call GiveWarning('The number of skip convection is ignored!')
+      if (.not.IsAssemblageWaterLoadVectorSpecified) then ! Consider default settings
+         CalParams%AssembleWaterLoadVectorFromMP = IsMPMComputation().and.(.not.CalParams%ApplyMeshSmoothing)
+      end if
+
+      if (.not.IsAssemblageGasLoadVectorSpecified) then ! Consider default settings
+         CalParams%AssembleGasLoadVectorFromMP = IsMPMComputation().and.(.not.CalParams%ApplyMeshSmoothing)
+      end if
+
+      if (CalParams%AutomaticSkipConvection) then
+         CalParams%SkipConvection = .true.
+         if (CalParams%NumberSkipConvection <= 0) then
             CalParams%NumberSkipConvection =  huge(CalParams%NumberSkipConvection)
+         else
+            if (CalParams%NumberSkipConvection == 1) then
+               call GiveWarning('Number of skip convection cannot be equal to 1 when automatic skip convection is used')
+               call GiveWarning('The number of skip convection is ignored!')
+               CalParams%NumberSkipConvection =  huge(CalParams%NumberSkipConvection)
+            endif
          endif
       endif
-   endif
 
-end subroutine InitialiseDependentFlags
-
-
-subroutine CreateResultFileHeader(LoadStep)
-   !**********************************************************************
-   !
-   !    Function:  Determines the header of the BRF files.
-   !
-   ! Implemented in the frame of the MPM project.
-   !
-   !**********************************************************************
-
-   implicit none
-
-   ! Arguments
-   character(len = *), intent(in) :: LoadStep
-
-   ! Local variables
-   character(len = 80) :: Header
-
-   Header = 'Anura3D'
-   Header = trim(Header) // ' ' // trim('Version 1.0')
-   Header = trim(Header) // ' ' // trim('Loadstep ' // LoadStep)
-
-   CalParams%FileNames%ResultFileHeader = Header
-
-end subroutine CreateResultFileHeader
+   end subroutine InitialiseDependentFlags
 
 
-subroutine GetStepExt(StepNumber, XXX)
-   !**********************************************************************
-   !
-   !     Function:  Translates integer StepNumber into string XXX.
-   !
-   ! I   StepNumber : Integer
-   ! O   XXX : File extension string
-   !
-   !**********************************************************************
+   subroutine CreateResultFileHeader(LoadStep)
+      !**********************************************************************
+      !
+      !    Function:  Determines the header of the BRF files.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
 
-   implicit none
+      implicit none
 
-   ! Arguments
-   integer(INTEGER_TYPE), intent(in) :: StepNumber
-   character(len = *), intent(inout) :: XXX
+      ! Arguments
+      character(len = *), intent(in) :: LoadStep
 
-   if (StepNumber<=999) then
-      write(XXX, '(I3.3)') StepNumber
-   else if (StepNumber<=9999) Then
-      write(XXX, '(I4.4)') StepNumber
-   else if (StepNumber<=99999) Then
-      write(XXX, '(I5.5)') StepNumber
-   else if (StepNumber<=999999) then
-      write(XXX, '(I6.6)') StepNumber
-   else if (StepNumber<=9999999) then
-      write(XXX, '(I7.7)') StepNumber
-   end if
+      ! Local variables
+      character(len = 80) :: Header
 
-end subroutine GetStepExt
+      Header = 'Anura3D'
+      Header = trim(Header) // ' ' // trim('Version 1.0')
+      Header = trim(Header) // ' ' // trim('Loadstep ' // LoadStep)
+
+      CalParams%FileNames%ResultFileHeader = Header
+
+   end subroutine CreateResultFileHeader
 
 
-subroutine GetTimeStep(StepNumber, XXX)
-   !**********************************************************************
-   !
-   !  Function : Translates integer TimeStepNumber into string XXX
-   !
-   !  I   StepNumber : Integer
-   !  O   XXX : File extension string
-   !
-   !**********************************************************************
+   subroutine GetStepExt(StepNumber, XXX)
+      !**********************************************************************
+      !
+      !     Function:  Translates integer StepNumber into string XXX.
+      !
+      ! I   StepNumber : Integer
+      ! O   XXX : File extension string
+      !
+      !**********************************************************************
 
-   implicit none
+      implicit none
 
-   ! Arguments
-   integer(INTEGER_TYPE), intent(in) :: StepNumber
-   character(len=*), intent(inout) :: XXX
+      ! Arguments
+      integer(INTEGER_TYPE), intent(in) :: StepNumber
+      character(len = *), intent(inout) :: XXX
 
-   if (StepNumber<=999999) then
-      write(XXX,'(I6.6)')StepNumber
-   else
-      call GiveWarning('Time step larger than allowed for output purposes.')
-   end if
-
-end subroutine GetTimeStep
-
-
-logical function NotFinishedComputation()
-   !**********************************************************************
-   !
-   !    Function: Checks whether the multipliers for external loads, water pressures,
-   !              gas pressures, gravity loading have reached the final value.
-   !
-   ! Implemented in the frame of the MPM project.
-   !
-   !**********************************************************************
-
-   implicit none
-
-   if (CalParams%ApplyImplicitQuasiStatic) then
-      NotFinishedComputation =  &
-         (CalParams%Multipliers%SolidACurrent(1)<CalParams%Multipliers%SolidAFinal(1)).or. &
-         (CalParams%Multipliers%WaterACurrent(1)<CalParams%Multipliers%WaterAFinal(1)).or. &
-         (CalParams%Multipliers%GravityCurrent<CalParams%Multipliers%GravityFinal)
-   else
-      NotFinishedComputation = CalParams%IStep<=CalParams%NLoadSteps
-   end if
-
-end function NotFinishedComputation
-
-
-subroutine UpdateMultipliersForLoadStep()
-   !**********************************************************************
-   !
-   !    Function: Updates the multipliers for external loads, water pressures,
-   !              gas pressures, gravity loading from the current value of CalParams%IStep.
-   !
-   !              The computation of the multiplier increments could be done
-   !              outside the load step loop. In anticipation of possibly
-   !              variable increments and for easing readability of the code
-   !              it is kept in this routine. (No high computation effort.)
-   !
-   ! Implemented in the frame of the MPM project.
-   !
-   !**********************************************************************
-
-   implicit none
-
-   ! Local variables
-   real(REAL_TYPE) :: Multiplier, MultiplierPrevious
-   real(REAL_TYPE) :: PreviousMultiplierSolidAIncrement
-   real(REAL_TYPE) :: PreviousMultiplierWaterAIncrement
-   real(REAL_TYPE) :: PreviousMultiplierWaterBIncrement
-   real(REAL_TYPE) :: PreviousMultiplierGasAIncrement
-   real(REAL_TYPE) :: PreviousMultiplierGravityIncrement
-   real(REAL_TYPE) :: PreviousMultiplierSoilVelocityIncrement
-   integer(INTEGER_TYPE) :: ILoadSystem
-
-   Multiplier =  &
-      dble(CalParams%IStep - CalParams%PreviouslyRealisedLoadStep) /  &
-      dble(CalParams%NLoadSteps - CalParams%PreviouslyRealisedLoadStep)
-   MultiplierPrevious =  &
-      dble(CalParams%IStep - 1 - CalParams%PreviouslyRealisedLoadStep) /  &
-      dble(CalParams%NLoadSteps - CalParams%PreviouslyRealisedLoadStep)
-
-   !Loop over load systems
-   do ILoadSystem = 1,Counters%NSoilLoadSystems
-      !Calculate multipliers solid
-      if (CalParams%Multipliers%SolidALoadType(ILoadSystem)==LOAD_TYPE_OFF) then
-         CalParams%Multipliers%SolidACurrent(ILoadSystem) = 0.0
-         CalParams%Multipliers%SolidARealised(ILoadSystem) = 0.0
-      else
-         CalParams%Multipliers%SolidAIncrement(ILoadSystem) = &
-            Multiplier * (CalParams%Multipliers%SolidAFinal(ILoadSystem) - CalParams%Multipliers%SolidARealised(ILoadSystem))
-         CalParams%Multipliers%SolidACurrent(ILoadSystem) = CalParams%Multipliers%SolidARealised(ILoadSystem) + CalParams%Multipliers%SolidAIncrement(ILoadSystem)
-         PreviousMultiplierSolidAIncrement = MultiplierPrevious*(CalParams%Multipliers%SolidAFinal(ILoadSystem) - CalParams%Multipliers%SolidARealised(ILoadSystem))
-         CalParams%Multipliers%SolidAPrevious(ILoadSystem) = CalParams%Multipliers%SolidARealised(ILoadSystem) + PreviousMultiplierSolidAIncrement
-         CalParams%Multipliers%SolidALoadStepIncrement(ILoadSystem) = CalParams%Multipliers%SolidACurrent(ILoadSystem) - CalParams%Multipliers%SolidAPrevious(ILoadSystem)
+      if (StepNumber<=999) then
+         write(XXX, '(I3.3)') StepNumber
+      else if (StepNumber<=9999) Then
+         write(XXX, '(I4.4)') StepNumber
+      else if (StepNumber<=99999) Then
+         write(XXX, '(I5.5)') StepNumber
+      else if (StepNumber<=999999) then
+         write(XXX, '(I6.6)') StepNumber
+      else if (StepNumber<=9999999) then
+         write(XXX, '(I7.7)') StepNumber
       end if
-   end do
 
-   !Loop over load systems
-   do ILoadSystem = 1,Counters%NWaterLoadSystems
-      !calculate multipliers liquid
-      if (CalParams%Multipliers%WaterALoadType(ILoadSystem)==LOAD_TYPE_OFF) then
-         CalParams%Multipliers%WaterACurrent(ILoadSystem) = 0.0
-         CalParams%Multipliers%WaterARealised(ILoadSystem) = 0.0
+   end subroutine GetStepExt
+
+
+   subroutine GetTimeStep(StepNumber, XXX)
+      !**********************************************************************
+      !
+      !  Function : Translates integer TimeStepNumber into string XXX
+      !
+      !  I   StepNumber : Integer
+      !  O   XXX : File extension string
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! Arguments
+      integer(INTEGER_TYPE), intent(in) :: StepNumber
+      character(len=*), intent(inout) :: XXX
+
+      if (StepNumber<=999999) then
+         write(XXX,'(I6.6)')StepNumber
       else
-
-         CalParams%Multipliers%WaterAIncrement(ILoadSystem) =  &
-            Multiplier * (CalParams%Multipliers%WaterAFinal(ILoadSystem) - CalParams%Multipliers%WaterARealised(ILoadSystem))
-
-         CalParams%Multipliers%WaterACurrent(ILoadSystem) = CalParams%Multipliers%WaterARealised(ILoadSystem) + CalParams%Multipliers%WaterAIncrement(ILoadSystem)
-         PreviousMultiplierWaterAIncrement = MultiplierPrevious*(CalParams%Multipliers%WaterAFinal(ILoadSystem) - CalParams%Multipliers%WaterARealised(ILoadSystem))
-
-         CalParams%Multipliers%WaterAPrevious(ILoadSystem) = CalParams%Multipliers%WaterARealised(ILoadSystem) + PreviousMultiplierWaterAIncrement
-         CalParams%Multipliers%WaterALoadStepIncrement(ILoadSystem) = CalParams%Multipliers%WaterACurrent(ILoadSystem) - CalParams%Multipliers%WaterAPrevious(ILoadSystem)
-
+         call GiveWarning('Time step larger than allowed for output purposes.')
       end if
-   end do
 
-   do ILoadSystem = 1,Counters%NGasLoadSystems
-      if (CalParams%Multipliers%GasALoadType(ILoadSystem)==LOAD_TYPE_OFF) then
-         CalParams%Multipliers%GasACurrent(ILoadSystem) = 0.0
-         CalParams%Multipliers%GasARealised(ILoadSystem) = 0.0
+   end subroutine GetTimeStep
+
+
+   logical function NotFinishedComputation()
+      !**********************************************************************
+      !
+      !    Function: Checks whether the multipliers for external loads, water pressures,
+      !              gas pressures, gravity loading have reached the final value.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      if (CalParams%ApplyImplicitQuasiStatic) then
+         NotFinishedComputation =  &
+            (CalParams%Multipliers%SolidACurrent(1)<CalParams%Multipliers%SolidAFinal(1)).or. &
+            (CalParams%Multipliers%WaterACurrent(1)<CalParams%Multipliers%WaterAFinal(1)).or. &
+            (CalParams%Multipliers%GravityCurrent<CalParams%Multipliers%GravityFinal)
       else
-         CalParams%Multipliers%GasAIncrement(ILoadSystem) =  &
-            Multiplier * (CalParams%Multipliers%GasAFinal(ILoadSystem) - CalParams%Multipliers%GasARealised(ILoadSystem))
-
-         CalParams%Multipliers%GasACurrent(ILoadSystem) = CalParams%Multipliers%GasARealised(ILoadSystem) + CalParams%Multipliers%GasAIncrement(ILoadSystem)
-
-         PreviousMultiplierGasAIncrement = MultiplierPrevious*(CalParams%Multipliers%GasAFinal(ILoadSystem) - CalParams%Multipliers%GasARealised(ILoadSystem))
-         CalParams%Multipliers%GasAPrevious(ILoadSystem) = CalParams%Multipliers%GasARealised(ILoadSystem) + PreviousMultiplierGasAIncrement
-         CalParams%Multipliers%GasALoadStepIncrement(ILoadSystem) = CalParams%Multipliers%GasACurrent(ILoadSystem) - CalParams%Multipliers%GasAPrevious(ILoadSystem)
+         NotFinishedComputation = CalParams%IStep<=CalParams%NLoadSteps
       end if
-   end do !loop over load systems
 
-   if (CalParams%Multipliers%GravityLoadType==LOAD_TYPE_OFF) then
-      CalParams%Multipliers%GravityCurrent = 0.0
-      CalParams%Multipliers%GravityRealised = 0.0
-   else
-      CalParams%Multipliers%GravityIncrement =  &
-         Multiplier * (CalParams%Multipliers%GravityFinal - CalParams%Multipliers%GravityRealised)
-
-      CalParams%Multipliers%GravityCurrent = CalParams%Multipliers%GravityRealised + CalParams%Multipliers%GravityIncrement
-
-      PreviousMultiplierGravityIncrement = MultiplierPrevious*(CalParams%Multipliers%GravityFinal - CalParams%Multipliers%GravityRealised)
-      CalParams%Multipliers%GravityPrevious = CalParams%Multipliers%GravityRealised + PreviousMultiplierGravityIncrement
-      CalParams%Multipliers%GravityLoadStepIncrement = CalParams%Multipliers%GravityCurrent - CalParams%Multipliers%GravityPrevious
-   end if
-
-   if (CalParams%Multipliers%VelocitySolidLoadType==LOAD_TYPE_OFF) then
-      CalParams%Multipliers%VelocitySolidCurrent = 0.0
-      CalParams%Multipliers%VelocitySolidRealised = 0.0
-   else if (CalParams%Multipliers%VelocitySolidLoadType /= LOAD_TYPE_FILE) then
-      ! Prescribing velocity from file is time dependent only and is not dependent on load step
-      CalParams%Multipliers%VelocitySolidIncrement =  &
-         Multiplier * (CalParams%Multipliers%VelocitySolidFinal - CalParams%Multipliers%VelocitySolidRealised)
-
-      CalParams%Multipliers%VelocitySolidCurrent = CalParams%Multipliers%VelocitySolidRealised + CalParams%Multipliers%VelocitySolidIncrement
-      PreviousMultiplierSoilVelocityIncrement = MultiplierPrevious*(CalParams%Multipliers%VelocitySolidFinal - CalParams%Multipliers%VelocitySolidRealised)
-
-      CalParams%Multipliers%VelocitySolidPrevious = CalParams%Multipliers%VelocitySolidRealised + PreviousMultiplierSoilVelocityIncrement
-      CalParams%Multipliers%VelocitySolidLoadStepIncrement = CalParams%Multipliers%VelocitySolidCurrent - CalParams%Multipliers%VelocitySolidPrevious
-   end if
-
-   if (CalParams%RigidBody%IsRigidBody) then
-      CalParams%RigidBody%CurrentTraction = CalParams%RigidBody%TractionForce * CalParams%Multipliers%SolidACurrent
-      CalParams%RigidBody%CurrentGravity = CalParams%RigidBody%GravityForce * CalParams%Multipliers%GravityCurrent
-   end if
-
-end subroutine UpdateMultipliersForLoadStep
+   end function NotFinishedComputation
 
 
-subroutine UpdateMultipliersForTimeDepencency()
-   !**********************************************************************
-   !
-   !    Function: Updates the external load for time-dependency.
-   !
-   !              The increment CalParams%Multipliers%XXXXIncrement traces the
-   !              change of amplitude, not the change of the multiplier with time!
-   !
-   !**********************************************************************
+   subroutine UpdateMultipliersForLoadStep()
+      !**********************************************************************
+      !
+      !    Function: Updates the multipliers for external loads, water pressures,
+      !              gas pressures, gravity loading from the current value of CalParams%IStep.
+      !
+      !              The computation of the multiplier increments could be done
+      !              outside the load step loop. In anticipation of possibly
+      !              variable increments and for easing readability of the code
+      !              it is kept in this routine. (No high computation effort.)
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
 
-   implicit none
+      implicit none
 
-   real(REAL_TYPE) :: Increment
-   integer(INTEGER_TYPE) :: ILoadSystem
+      ! Local variables
+      real(REAL_TYPE) :: Multiplier, MultiplierPrevious
+      real(REAL_TYPE) :: PreviousMultiplierSolidAIncrement
+      real(REAL_TYPE) :: PreviousMultiplierWaterAIncrement
+      real(REAL_TYPE) :: PreviousMultiplierWaterBIncrement
+      real(REAL_TYPE) :: PreviousMultiplierGasAIncrement
+      real(REAL_TYPE) :: PreviousMultiplierGravityIncrement
+      real(REAL_TYPE) :: PreviousMultiplierSoilVelocityIncrement
+      integer(INTEGER_TYPE) :: ILoadSystem
 
-   !Loop over load systems
-   do ILoadSystem = 1,Counters%NSoilloadSystems
-      if (CalParams%Multipliers%SolidALoadType(ILoadSystem) == LOAD_TYPE_LINEAR) then !Solid
-         Increment = (CalParams%Multipliers%SolidALoadStepIncrement(ILoadSystem)) * &
+      Multiplier =  &
+         dble(CalParams%IStep - CalParams%PreviouslyRealisedLoadStep) /  &
+         dble(CalParams%NLoadSteps - CalParams%PreviouslyRealisedLoadStep)
+      MultiplierPrevious =  &
+         dble(CalParams%IStep - 1 - CalParams%PreviouslyRealisedLoadStep) /  &
+         dble(CalParams%NLoadSteps - CalParams%PreviouslyRealisedLoadStep)
+
+      !Loop over load systems
+      do ILoadSystem = 1,Counters%NSoilLoadSystems
+         !Calculate multipliers solid
+         if (CalParams%Multipliers%SolidALoadType(ILoadSystem)==LOAD_TYPE_OFF) then
+            CalParams%Multipliers%SolidACurrent(ILoadSystem) = 0.0
+            CalParams%Multipliers%SolidARealised(ILoadSystem) = 0.0
+         else
+            CalParams%Multipliers%SolidAIncrement(ILoadSystem) = &
+               Multiplier * (CalParams%Multipliers%SolidAFinal(ILoadSystem) - CalParams%Multipliers%SolidARealised(ILoadSystem))
+            CalParams%Multipliers%SolidACurrent(ILoadSystem) = CalParams%Multipliers%SolidARealised(ILoadSystem) + CalParams%Multipliers%SolidAIncrement(ILoadSystem)
+            PreviousMultiplierSolidAIncrement = MultiplierPrevious*(CalParams%Multipliers%SolidAFinal(ILoadSystem) - CalParams%Multipliers%SolidARealised(ILoadSystem))
+            CalParams%Multipliers%SolidAPrevious(ILoadSystem) = CalParams%Multipliers%SolidARealised(ILoadSystem) + PreviousMultiplierSolidAIncrement
+            CalParams%Multipliers%SolidALoadStepIncrement(ILoadSystem) = CalParams%Multipliers%SolidACurrent(ILoadSystem) - CalParams%Multipliers%SolidAPrevious(ILoadSystem)
+         end if
+      end do
+
+      !Loop over load systems
+      do ILoadSystem = 1,Counters%NWaterLoadSystems
+         !calculate multipliers liquid
+         if (CalParams%Multipliers%WaterALoadType(ILoadSystem)==LOAD_TYPE_OFF) then
+            CalParams%Multipliers%WaterACurrent(ILoadSystem) = 0.0
+            CalParams%Multipliers%WaterARealised(ILoadSystem) = 0.0
+         else
+
+            CalParams%Multipliers%WaterAIncrement(ILoadSystem) =  &
+               Multiplier * (CalParams%Multipliers%WaterAFinal(ILoadSystem) - CalParams%Multipliers%WaterARealised(ILoadSystem))
+
+            CalParams%Multipliers%WaterACurrent(ILoadSystem) = CalParams%Multipliers%WaterARealised(ILoadSystem) + CalParams%Multipliers%WaterAIncrement(ILoadSystem)
+            PreviousMultiplierWaterAIncrement = MultiplierPrevious*(CalParams%Multipliers%WaterAFinal(ILoadSystem) - CalParams%Multipliers%WaterARealised(ILoadSystem))
+
+            CalParams%Multipliers%WaterAPrevious(ILoadSystem) = CalParams%Multipliers%WaterARealised(ILoadSystem) + PreviousMultiplierWaterAIncrement
+            CalParams%Multipliers%WaterALoadStepIncrement(ILoadSystem) = CalParams%Multipliers%WaterACurrent(ILoadSystem) - CalParams%Multipliers%WaterAPrevious(ILoadSystem)
+
+         end if
+      end do
+
+      do ILoadSystem = 1,Counters%NGasLoadSystems
+         if (CalParams%Multipliers%GasALoadType(ILoadSystem)==LOAD_TYPE_OFF) then
+            CalParams%Multipliers%GasACurrent(ILoadSystem) = 0.0
+            CalParams%Multipliers%GasARealised(ILoadSystem) = 0.0
+         else
+            CalParams%Multipliers%GasAIncrement(ILoadSystem) =  &
+               Multiplier * (CalParams%Multipliers%GasAFinal(ILoadSystem) - CalParams%Multipliers%GasARealised(ILoadSystem))
+
+            CalParams%Multipliers%GasACurrent(ILoadSystem) = CalParams%Multipliers%GasARealised(ILoadSystem) + CalParams%Multipliers%GasAIncrement(ILoadSystem)
+
+            PreviousMultiplierGasAIncrement = MultiplierPrevious*(CalParams%Multipliers%GasAFinal(ILoadSystem) - CalParams%Multipliers%GasARealised(ILoadSystem))
+            CalParams%Multipliers%GasAPrevious(ILoadSystem) = CalParams%Multipliers%GasARealised(ILoadSystem) + PreviousMultiplierGasAIncrement
+            CalParams%Multipliers%GasALoadStepIncrement(ILoadSystem) = CalParams%Multipliers%GasACurrent(ILoadSystem) - CalParams%Multipliers%GasAPrevious(ILoadSystem)
+         end if
+      end do !loop over load systems
+
+      if (CalParams%Multipliers%GravityLoadType==LOAD_TYPE_OFF) then
+         CalParams%Multipliers%GravityCurrent = 0.0
+         CalParams%Multipliers%GravityRealised = 0.0
+      else
+         CalParams%Multipliers%GravityIncrement =  &
+            Multiplier * (CalParams%Multipliers%GravityFinal - CalParams%Multipliers%GravityRealised)
+
+         CalParams%Multipliers%GravityCurrent = CalParams%Multipliers%GravityRealised + CalParams%Multipliers%GravityIncrement
+
+         PreviousMultiplierGravityIncrement = MultiplierPrevious*(CalParams%Multipliers%GravityFinal - CalParams%Multipliers%GravityRealised)
+         CalParams%Multipliers%GravityPrevious = CalParams%Multipliers%GravityRealised + PreviousMultiplierGravityIncrement
+         CalParams%Multipliers%GravityLoadStepIncrement = CalParams%Multipliers%GravityCurrent - CalParams%Multipliers%GravityPrevious
+      end if
+
+      if (CalParams%Multipliers%VelocitySolidLoadType==LOAD_TYPE_OFF) then
+         CalParams%Multipliers%VelocitySolidCurrent = 0.0
+         CalParams%Multipliers%VelocitySolidRealised = 0.0
+      else if (CalParams%Multipliers%VelocitySolidLoadType /= LOAD_TYPE_FILE) then
+         ! Prescribing velocity from file is time dependent only and is not dependent on load step
+         CalParams%Multipliers%VelocitySolidIncrement =  &
+            Multiplier * (CalParams%Multipliers%VelocitySolidFinal - CalParams%Multipliers%VelocitySolidRealised)
+
+         CalParams%Multipliers%VelocitySolidCurrent = CalParams%Multipliers%VelocitySolidRealised + CalParams%Multipliers%VelocitySolidIncrement
+         PreviousMultiplierSoilVelocityIncrement = MultiplierPrevious*(CalParams%Multipliers%VelocitySolidFinal - CalParams%Multipliers%VelocitySolidRealised)
+
+         CalParams%Multipliers%VelocitySolidPrevious = CalParams%Multipliers%VelocitySolidRealised + PreviousMultiplierSoilVelocityIncrement
+         CalParams%Multipliers%VelocitySolidLoadStepIncrement = CalParams%Multipliers%VelocitySolidCurrent - CalParams%Multipliers%VelocitySolidPrevious
+      end if
+
+      if (CalParams%RigidBody%IsRigidBody) then
+         CalParams%RigidBody%CurrentTraction = CalParams%RigidBody%TractionForce * CalParams%Multipliers%SolidACurrent
+         CalParams%RigidBody%CurrentGravity = CalParams%RigidBody%GravityForce * CalParams%Multipliers%GravityCurrent
+      end if
+
+   end subroutine UpdateMultipliersForLoadStep
+
+
+   subroutine UpdateMultipliersForTimeDepencency()
+      !**********************************************************************
+      !
+      !    Function: Updates the external load for time-dependency.
+      !
+      !              The increment CalParams%Multipliers%XXXXIncrement traces the
+      !              change of amplitude, not the change of the multiplier with time!
+      !
+      !**********************************************************************
+
+      implicit none
+
+      real(REAL_TYPE) :: Increment
+      integer(INTEGER_TYPE) :: ILoadSystem
+
+      !Loop over load systems
+      do ILoadSystem = 1,Counters%NSoilloadSystems
+         if (CalParams%Multipliers%SolidALoadType(ILoadSystem) == LOAD_TYPE_LINEAR) then !Solid
+            Increment = (CalParams%Multipliers%SolidALoadStepIncrement(ILoadSystem)) * &
+               CalParams%TotalRealTime / CalParams%TotalTime
+
+            CalParams%Multipliers%SolidACurrent(ILoadSystem) = CalParams%Multipliers%SolidAPrevious(ILoadSystem) + Increment
+         end if
+      end do
+
+      do ILoadSystem = 1,Counters%NWaterLoadSystems
+         if (CalParams%Multipliers%WaterALoadType(ILoadSystem) == LOAD_TYPE_LINEAR) then !Water (NODES)
+            Increment = (CalParams%Multipliers%WaterALoadStepIncrement(ILoadSystem)) * &
+               CalParams%TotalRealTime / CalParams%TotalTime
+
+            CalParams%Multipliers%WaterACurrent(ILoadSystem) = CalParams%Multipliers%WaterAPrevious(ILoadSystem) + Increment
+         end if
+      end do
+
+      do ILoadSystem = 1,Counters%NGasLoadSystems
+         if (CalParams%Multipliers%GasALoadType(ILoadSystem) == LOAD_TYPE_LINEAR) then !Gas
+            Increment = (CalParams%Multipliers%GasALoadStepIncrement(ILoadSystem)) * &
+               CalParams%TotalRealTime / CalParams%TotalTime
+
+            CalParams%Multipliers%GasACurrent(ILoadSystem) = CalParams%Multipliers%GasAPrevious(ILoadSystem) + Increment
+         end if
+      end do
+
+
+      if (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE) then !Water
+         !reading the hydraulic heads file
+         call ReadHydraulicHeadFromFile
+         !finding the multiplier specific using the overall real time
+         call GetHydraulicHeadForTimeStep
+      end if
+
+
+      if (CalParams%Multipliers%GravityLoadType == LOAD_TYPE_LINEAR) then !Gravity
+         Increment = (CalParams%Multipliers%GravityLoadStepIncrement) * &
             CalParams%TotalRealTime / CalParams%TotalTime
 
-         CalParams%Multipliers%SolidACurrent(ILoadSystem) = CalParams%Multipliers%SolidAPrevious(ILoadSystem) + Increment
+         CalParams%Multipliers%GravityCurrent = CalParams%Multipliers%GravityPrevious + Increment
       end if
-   end do
-
-   do ILoadSystem = 1,Counters%NWaterLoadSystems
-      if (CalParams%Multipliers%WaterALoadType(ILoadSystem) == LOAD_TYPE_LINEAR) then !Water (NODES)
-         Increment = (CalParams%Multipliers%WaterALoadStepIncrement(ILoadSystem)) * &
+      if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_LINEAR) then !Velocity
+         Increment = (CalParams%Multipliers%VelocitySolidLoadStepIncrement) * &
             CalParams%TotalRealTime / CalParams%TotalTime
 
-         CalParams%Multipliers%WaterACurrent(ILoadSystem) = CalParams%Multipliers%WaterAPrevious(ILoadSystem) + Increment
+         CalParams%Multipliers%VelocitySolidCurrent = CalParams%Multipliers%VelocitySolidPrevious + Increment
+         CalParams%Multipliers%AccelerationSolid = CalParams%Multipliers%VelocitySolidLoadStepIncrement/CalParams%TotalTime
       end if
-   end do
-
-   do ILoadSystem = 1,Counters%NGasLoadSystems
-      if (CalParams%Multipliers%GasALoadType(ILoadSystem) == LOAD_TYPE_LINEAR) then !Gas
-         Increment = (CalParams%Multipliers%GasALoadStepIncrement(ILoadSystem)) * &
-            CalParams%TotalRealTime / CalParams%TotalTime
-
-         CalParams%Multipliers%GasACurrent(ILoadSystem) = CalParams%Multipliers%GasAPrevious(ILoadSystem) + Increment
+      if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_STEP) then !velocity
+         if(CalParams%TimeStep==1) then !Velocity
+            CalParams%Multipliers%AccelerationSolid = &
+               CalParams%Multipliers%VelocitySolidLoadStepIncrement/CalParams%TimeIncrement
+         else
+            CalParams%Multipliers%AccelerationSolid = 0.0
+         end if
       end if
-   end do
+      if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then !Velocity
+         !reading the prescribed velocity file
+         call ReadPrescribedAccelerationOrVelocityFromFile
+         !finding the multiplier specific using the overall real time
+         call GetPrescribedVelocityOrAccelerationForTimeStep
+      end if
 
 
-   if (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE) then !Water
-      !reading the hydraulic heads file
-      call ReadHydraulicHeadFromFile
-      !finding the multiplier specific using the overall real time
-      call GetHydraulicHeadForTimeStep
-   end if
+
+      if (CalParams%RigidBody%IsRigidBody) then
+         CalParams%RigidBody%CurrentTraction = CalParams%RigidBody%TractionForce * CalParams%Multipliers%SolidACurrent(1)
+      end if
+
+   end subroutine UpdateMultipliersForTimeDepencency
 
 
-   if (CalParams%Multipliers%GravityLoadType == LOAD_TYPE_LINEAR) then !Gravity
-      Increment = (CalParams%Multipliers%GravityLoadStepIncrement) * &
-         CalParams%TotalRealTime / CalParams%TotalTime
 
-      CalParams%Multipliers%GravityCurrent = CalParams%Multipliers%GravityPrevious + Increment
-   end if
-   if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_LINEAR) then !Velocity
-      Increment = (CalParams%Multipliers%VelocitySolidLoadStepIncrement) * &
-         CalParams%TotalRealTime / CalParams%TotalTime
 
-      CalParams%Multipliers%VelocitySolidCurrent = CalParams%Multipliers%VelocitySolidPrevious + Increment
-      CalParams%Multipliers%AccelerationSolid = CalParams%Multipliers%VelocitySolidLoadStepIncrement/CalParams%TotalTime
-   end if
-   if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_STEP) then !velocity
-      if(CalParams%TimeStep==1) then !Velocity
-         CalParams%Multipliers%AccelerationSolid = &
-            CalParams%Multipliers%VelocitySolidLoadStepIncrement/CalParams%TimeIncrement
+   subroutine ReadPrescribedAccelerationOrVelocityFromFile()
+      !**********************************************************************
+      !
+      ! Function:  Read the time history to provide a matrix of the multipliers.
+      !            This function is to be used to read both acceleration and/or velocity time history.
+      !            Function currently written for 1D prescribed velocity or acceleration from file.
+      !
+      !
+      ! File extension: PVF for prescribed velocity from file
+      !                 PAF for prescribed acceleration from file
+      !
+      ! File organisation:
+      !            Column 1 - time (seconds)
+      !            Column 2 - prescribed velocity or acceleration (dimensionless)
+      !
+      !**********************************************************************
+      implicit none
+
+      ! local variables
+      integer(INTEGER_TYPE) :: ios, ii!, PVFunit
+      character(len=255) :: PVFileName
+      real(REAL_TYPE), dimension(1,2) :: Temp ! temporary variable for reading number of lines
+
+      !PVFunit = 70
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      ! Open Prescribed Velocity File
+      if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
+         .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then
+
+         ! Prepare file name for opening
+         PVFileName = trim(CalParams%PrescribedVelo%FileNamePrescribedVelocity)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+
+
+
+         if ((.not. allocated(PrescribedVelocityFileMatrix))) then
+            ! Check if PVF file exists in project folder, otherwise give error and stop execution
+            if ( FExist(trim(PVFileName)) ) then
+               call GiveMessage('Reading prescribed velocity file: ' // trim(PVFileName) )
+               call FileOpen(PVFunit,trim(PVFileName))
+            else
+               ! Give warning if file is not available
+               call GiveError('Prescribed velocity file does not exist!' // NEW_LINE('A') // 'required PVF file: ' // trim(PVFileName) )
+            end if
+
+            ! Read Prescribed Velocity File in the matrix line by line
+            do
+               read(PVFunit,*,iostat=ios) Temp ! Reading each row
+               if (ios/=0) then
+                  exit ! ios becomes non-zero when end of file was reached
+               end if
+               CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines = &
+                  CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines + 1 ! Counting the number of lines
+            end do
+
+            ! Rewind file for reading in allocated matrix
+            rewind(PVFunit)
+
+            ! Allocate and read the matrix of velocity time history
+            allocate (PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,2)) ! Allocate the size of the matrix (specifying 2 columns)
+
+            do ii = 1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
+               read(PVFunit,*,iostat=ios) (PrescribedVelocityFileMatrix(ii,1),PrescribedVelocityFileMatrix(ii,2))
+            end do
+            close(PVFunit)
+         end if
+      end if
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+   end subroutine ReadPrescribedAccelerationOrVelocityFromFile
+
+
+   subroutine GetPrescribedVelocityOrAccelerationForTimeStep()
+      !**********************************************************************
+      !
+      ! Function:  obtains the prescribed veloctiy/acceleration from file for the current time step (at real time)
+      !            using linear interpolation.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      !local variables
+      integer(INTEGER_TYPE) :: ii
+      real(REAL_TYPE) :: Increment ! 1D which would become a matrix if extended to 2D or 3D file prescribed acceleration or velocity
+      real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation ! Hardcoded (needs to be generalized for different dimensions e.g. 3D shaking)
+
+
+      !!!!!!!! START: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!
+
+      ! Prescribed velocity for the particular timestep
+      if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
+         .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then
+
+         ! Record the start time of the application of the transient boundary condition
+         if( .not. allocated(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime)) then
+            allocate(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1)) ! Allocate the size of the matrix (specifying 2 columns)
+            CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime = CalParams%OverallRealTime
+
+            do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
+               !Correcting the starting time of the data read from file (hardcoded to 1D prescribed boundary condition)
+               PrescribedVelocityFileMatrix(ii,1) = &
+                  PrescribedVelocityFileMatrix(ii,1) + CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1) - CalParams%TimeIncrement
+            end do
+
+         end if
+
+         ! Looks into the matrix first column (time) and finds the first point higher than the total real time
+         do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines !loop accross the rows from the presctibed velocity file
+
+            if (CalParams%OverallRealTime > &
+               PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,1)) then
+               CalParams%Multipliers%VelocitySolidCurrent = 0 ! Stop prescribed velocity
+               CalParams%Multipliers%AccelerationSolid = 0
+
+            else if (PrescribedVelocityFileMatrix(ii,1)>CalParams%OverallRealTime) then
+               CoordinatesForInterpolation(1,:) = PrescribedVelocityFileMatrix(ii-1,:) ! Store from file: time (1st column) and velocity multiplier (2nd column) in previous line
+               CoordinatesForInterpolation(2,:) = PrescribedVelocityFileMatrix(ii,:) ! Store from file: time(1st column) and velocity multiplier (2nd column) in current line
+
+               ! Linear interpolation
+               Increment = (((CoordinatesForInterpolation(2,2)-CoordinatesForInterpolation(1,2))&
+                  /(CoordinatesForInterpolation(2,1)-CoordinatesForInterpolation(1,1))) * &
+                  (CalParams%OverallRealTime - CoordinatesForInterpolation(1,1)))
+
+               ! For the first timestep VelocitySolidPrevious does not exist.
+               ! Hence, special consideration is made for the first step by using the reading before the timestep occurs
+               if ((CalParams%TimeStep == 1) .and. (CalParams%IStep == 1)) then ! If it is the first timestep in the first load step (i.e. no CalParams%Multipliers%VelocitySolidPrevious)
+                  CalParams%Multipliers%VelocitySolidPrevious = CoordinatesForInterpolation(1,2)
+               else ! If it is after the first step
+                  CalParams%Multipliers%VelocitySolidPrevious = CalParams%Multipliers%VelocitySolidCurrent
+               end if
+
+               CalParams%Multipliers%VelocitySolidCurrent = CoordinatesForInterpolation(1,2) + Increment
+               CalParams%Multipliers%AccelerationSolid = (CalParams%Multipliers%VelocitySolidCurrent- &
+                  CalParams%Multipliers%VelocitySolidPrevious)&
+                  /CalParams%TimeIncrement
+
+               exit
+            end if
+         end do
+
+
+
       else
-         CalParams%Multipliers%AccelerationSolid = 0.0
+         CalParams%Multipliers%VelocitySolidCurrent = 0
+         !CalParams%Multipliers%AccelerationSolid = 0
       end if
-   end if
-   if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then !Velocity
-      !reading the prescribed velocity file
-      call ReadPrescribedAccelerationOrVelocityFromFile
-      !finding the multiplier specific using the overall real time
-      call GetPrescribedVelocityOrAccelerationForTimeStep
-   end if
+
+      !!!!!!!! END: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!
+   end subroutine GetPrescribedVelocityOrAccelerationForTimeStep
+
+
+   subroutine ReadHydraulicHeadFromFile()
+      !**********************************************************************
+      !
+      ! Function:  Read the time history to provide a matrix of the multipliers.
+      !            This function is to be used to read hydraulic head time history.
+      !
+      !
+      ! File extension: HHBF for Hydraulic Head from file
+      !
+      !
+      ! File organisation:
+      !            Column 1 - time (seconds)
+      !            Column 2 - hydraulic head values (m) !!!!Later necessary check that reference for hydraulic heads is equal to the one for boundary node location
+      !
+      !**********************************************************************
+      implicit none
+
+
+      ! local variables
+      integer(INTEGER_TYPE) :: ios, ii, IError
+      character(len=MAX_FILENAME_LENGTH) :: FileName
+      real(REAL_TYPE), dimension(1,2) :: Temp ! temporary variable for reading number of lines
+      integer(INTEGER_TYPE) :: NumberOfLines
 
 
 
-   if (CalParams%RigidBody%IsRigidBody) then
-      CalParams%RigidBody%CurrentTraction = CalParams%RigidBody%TractionForce * CalParams%Multipliers%SolidACurrent(1)
-   end if
-
-end subroutine UpdateMultipliersForTimeDepencency
-
-
-
-
-subroutine ReadPrescribedAccelerationOrVelocityFromFile()
-   !**********************************************************************
-   !
-   ! Function:  Read the time history to provide a matrix of the multipliers.
-   !            This function is to be used to read both acceleration and/or velocity time history.
-   !            Function currently written for 1D prescribed velocity or acceleration from file.
-   !
-   !
-   ! File extension: PVF for prescribed velocity from file
-   !                 PAF for prescribed acceleration from file
-   !
-   ! File organisation:
-   !            Column 1 - time (seconds)
-   !            Column 2 - prescribed velocity or acceleration (dimensionless)
-   !
-   !**********************************************************************
-   implicit none
-
-   ! local variables
-   integer(INTEGER_TYPE) :: ios, ii!, PVFunit
-   character(len=255) :: PVFileName
-   real(REAL_TYPE), dimension(1,2) :: Temp ! temporary variable for reading number of lines
-
-   !PVFunit = 70
-
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-   ! Open Prescribed Velocity File
-   if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
-      .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then
+      if ((CalParams%PrescribedHead%HydraulicHead == .false.) .and. (.not.(CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE))) RETURN
 
       ! Prepare file name for opening
-      PVFileName = trim(CalParams%PrescribedVelo%FileNamePrescribedVelocity)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+      FileName = trim(CalParams%FileNames%ProjectName)//HYDRAULICHEAD_FILE_EXTENSION !
+      if (FExist(FileName)) call FileOpen(HHBFUnit,trim(FileName))
 
+      if (.not. allocated(HydraulicHeadFileMatrix)) then
 
-
-      if ((.not. allocated(PrescribedVelocityFileMatrix))) then
-         ! Check if PVF file exists in project folder, otherwise give error and stop execution
-         if ( FExist(trim(PVFileName)) ) then
-            call GiveMessage('Reading prescribed velocity file: ' // trim(PVFileName) )
-            call FileOpen(PVFunit,trim(PVFileName))
-         else
-            ! Give warning if file is not available
-            call GiveError('Prescribed velocity file does not exist!' // NEW_LINE('A') // 'required PVF file: ' // trim(PVFileName) )
-         end if
-
-         ! Read Prescribed Velocity File in the matrix line by line
+         ! Read hydraulic head File in the matrix line by line
+         NumberOfLines = 0
          do
-            read(PVFunit,*,iostat=ios) Temp ! Reading each row
-            if (ios/=0) then
-               exit ! ios becomes non-zero when end of file was reached
-            end if
-            CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines = &
-               CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines + 1 ! Counting the number of lines
+            read (HHBFUnit, *, iostat=ios) Temp! Reading each row
+            if (ios/=0) exit ! ios becomes non-zero when end of file was reached
+            NumberOfLines = NumberOfLines + 1 ! Counting the number of lines
+
          end do
+         CalParams%PrescribedHead%HydraulicHeadFileNumberOfLines = NumberOfLines
 
          ! Rewind file for reading in allocated matrix
-         rewind(PVFunit)
+         rewind(HHBFUnit)
 
-         ! Allocate and read the matrix of velocity time history
-         allocate (PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,2)) ! Allocate the size of the matrix (specifying 2 columns)
-
-         do ii = 1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
-            read(PVFunit,*,iostat=ios) (PrescribedVelocityFileMatrix(ii,1),PrescribedVelocityFileMatrix(ii,2))
+         ! Allocate and read the matrix
+         allocate (HydraulicHeadFileMatrix(NumberOfLines,2), stat = IError) !allocate the size of the matrix (specifying 2 columns for 1D shaking)
+         HydraulicHeadFileMatrix = 0.0
+         do ii = 1, NumberOfLines
+            read(HHBFUnit, *, iostat=ios) (HydraulicHeadFileMatrix(ii,1), HydraulicHeadFileMatrix(ii,2))
          end do
-         close(PVFunit)
-      end if
-   end if
-
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-end subroutine ReadPrescribedAccelerationOrVelocityFromFile
-
-
-subroutine GetPrescribedVelocityOrAccelerationForTimeStep()
-   !**********************************************************************
-   !
-   ! Function:  obtains the prescribed veloctiy/acceleration from file for the current time step (at real time)
-   !            using linear interpolation.
-   !
-   !**********************************************************************
-
-   implicit none
-
-   !local variables
-   integer(INTEGER_TYPE) :: ii
-   real(REAL_TYPE) :: Increment ! 1D which would become a matrix if extended to 2D or 3D file prescribed acceleration or velocity
-   real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation ! Hardcoded (needs to be generalized for different dimensions e.g. 3D shaking)
-
-
-   !!!!!!!! START: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!
-
-   ! Prescribed velocity for the particular timestep
-   if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
-      .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then
-
-      ! Record the start time of the application of the transient boundary condition
-      if( .not. allocated(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime)) then
-         allocate(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1)) ! Allocate the size of the matrix (specifying 2 columns)
-         CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime = CalParams%OverallRealTime
-
-         do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
-            !Correcting the starting time of the data read from file (hardcoded to 1D prescribed boundary condition)
-            PrescribedVelocityFileMatrix(ii,1) = &
-               PrescribedVelocityFileMatrix(ii,1) + CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1) - CalParams%TimeIncrement
-         end do
-
+         close(HHBFUnit)
       end if
 
-      ! Looks into the matrix first column (time) and finds the first point higher than the total real time
-      do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines !loop accross the rows from the presctibed velocity file
 
-         if (CalParams%OverallRealTime > &
-            PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,1)) then
-            CalParams%Multipliers%VelocitySolidCurrent = 0 ! Stop prescribed velocity
-            CalParams%Multipliers%AccelerationSolid = 0
+   end subroutine ReadHydraulicHeadFromFile
 
-         else if (PrescribedVelocityFileMatrix(ii,1)>CalParams%OverallRealTime) then
-            CoordinatesForInterpolation(1,:) = PrescribedVelocityFileMatrix(ii-1,:) ! Store from file: time (1st column) and velocity multiplier (2nd column) in previous line
-            CoordinatesForInterpolation(2,:) = PrescribedVelocityFileMatrix(ii,:) ! Store from file: time(1st column) and velocity multiplier (2nd column) in current line
 
-            ! Linear interpolation
-            Increment = (((CoordinatesForInterpolation(2,2)-CoordinatesForInterpolation(1,2))&
-               /(CoordinatesForInterpolation(2,1)-CoordinatesForInterpolation(1,1))) * &
-               (CalParams%OverallRealTime - CoordinatesForInterpolation(1,1)))
 
-            ! For the first timestep VelocitySolidPrevious does not exist.
-            ! Hence, special consideration is made for the first step by using the reading before the timestep occurs
-            if ((CalParams%TimeStep == 1) .and. (CalParams%IStep == 1)) then ! If it is the first timestep in the first load step (i.e. no CalParams%Multipliers%VelocitySolidPrevious)
-               CalParams%Multipliers%VelocitySolidPrevious = CoordinatesForInterpolation(1,2)
-            else ! If it is after the first step
-               CalParams%Multipliers%VelocitySolidPrevious = CalParams%Multipliers%VelocitySolidCurrent
+   subroutine GetHydraulicHeadForTimeStep()
+      !**********************************************************************
+      !
+      ! Function:  obtains the HYDRAULIC HEAD  from file for the current time step (at real time)
+      !            using linear interpolation.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      !local variables
+      integer(INTEGER_TYPE) :: ii
+      real(REAL_TYPE) :: Increment ! 1D which would become a matrix if extended to 2D or 3D file prescribed acceleration or velocity
+      real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation ! Hardcoded (needs to be generalized for different dimensions e.g. 3D shaking)
+      real(REAL_TYPE) :: LastRow
+
+
+      LastRow = 0.0
+      !!!!!!!! START: GET HYDRAULIC HEAD FROM FILE FOR OVERALL REAL TIME !!!!!!!!
+
+      ! Hydaulic head for the particular timestep
+      if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
+
+
+         LastRow = CalParams%PrescribedHead%HydraulicHeadFileNumberOfLines
+
+         ! Looks into the matrix first column (time) and finds the first point higher than the total real time
+         do ii=1,CalParams%PrescribedHead%HydraulicHeadFileNumberOfLines  ! Loop accross the rows from the hydraulic head file
+
+            if (CalParams%OverallRealTime>HydraulicHeadFileMatrix(CalParams%PrescribedHead%HydraulicHeadFileNumberOfLines,1)) then
+               CalParams%Multipliers%HydraulicHeadCurrent = HydraulicHeadFileMatrix(LastRow,2)
+
+            else if (HydraulicHeadFileMatrix(ii,1)>CalParams%OverallRealTime) then
+               CoordinatesForInterpolation(1,:) = HydraulicHeadFileMatrix(ii-1,:) ! Store from file: time (1st column) and HYDR HEAD (2nd column) in previous line
+               CoordinatesForInterpolation(2,:) = HydraulicHeadFileMatrix(ii,:) ! Store from file: time (1st column) and HYDR HEAD (2nd column) in current line
+
+
+               ! Linear interpolation
+               Increment = (((CoordinatesForInterpolation(2,2)-CoordinatesForInterpolation(1,2))/(CoordinatesForInterpolation(2,1)-CoordinatesForInterpolation(1,1))) * &
+                  (CalParams%OverallRealTime - CoordinatesForInterpolation(1,1)))
+
+               CalParams%Multipliers%HydraulicHeadCurrent = CoordinatesForInterpolation(1,2) + Increment
+               exit
             end if
-
-            CalParams%Multipliers%VelocitySolidCurrent = CoordinatesForInterpolation(1,2) + Increment
-            CalParams%Multipliers%AccelerationSolid = (CalParams%Multipliers%VelocitySolidCurrent- &
-               CalParams%Multipliers%VelocitySolidPrevious)&
-               /CalParams%TimeIncrement
-
-            exit
-         end if
-      end do
-
-
-
-   else
-      CalParams%Multipliers%VelocitySolidCurrent = 0
-      !CalParams%Multipliers%AccelerationSolid = 0
-   end if
-
-   !!!!!!!! END: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!
-end subroutine GetPrescribedVelocityOrAccelerationForTimeStep
-
-
-subroutine ReadHydraulicHeadFromFile()
-   !**********************************************************************
-   !
-   ! Function:  Read the time history to provide a matrix of the multipliers.
-   !            This function is to be used to read hydraulic head time history.
-   !
-   !
-   ! File extension: HHBF for Hydraulic Head from file
-   !
-   !
-   ! File organisation:
-   !            Column 1 - time (seconds)
-   !            Column 2 - hydraulic head values (m) !!!!Later necessary check that reference for hydraulic heads is equal to the one for boundary node location
-   !
-   !**********************************************************************
-   implicit none
-
-
-   ! local variables
-   integer(INTEGER_TYPE) :: ios, ii, IError
-   character(len=MAX_FILENAME_LENGTH) :: FileName
-   real(REAL_TYPE), dimension(1,2) :: Temp ! temporary variable for reading number of lines
-   integer(INTEGER_TYPE) :: NumberOfLines
-
-
-
-   if ((CalParams%PrescribedHead%HydraulicHead == .false.) .and. (.not.(CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE))) RETURN
-
-   ! Prepare file name for opening
-   FileName = trim(CalParams%FileNames%ProjectName)//HYDRAULICHEAD_FILE_EXTENSION !
-   if (FExist(FileName)) call FileOpen(HHBFUnit,trim(FileName))
-
-   if (.not. allocated(HydraulicHeadFileMatrix)) then
-
-      ! Read hydraulic head File in the matrix line by line
-      NumberOfLines = 0
-      do
-         read (HHBFUnit, *, iostat=ios) Temp! Reading each row
-         if (ios/=0) exit ! ios becomes non-zero when end of file was reached
-         NumberOfLines = NumberOfLines + 1 ! Counting the number of lines
-
-      end do
-      CalParams%PrescribedHead%HydraulicHeadFileNumberOfLines = NumberOfLines
-
-      ! Rewind file for reading in allocated matrix
-      rewind(HHBFUnit)
-
-      ! Allocate and read the matrix
-      allocate (HydraulicHeadFileMatrix(NumberOfLines,2), stat = IError) !allocate the size of the matrix (specifying 2 columns for 1D shaking)
-      HydraulicHeadFileMatrix = 0.0
-      do ii = 1, NumberOfLines
-         read(HHBFUnit, *, iostat=ios) (HydraulicHeadFileMatrix(ii,1), HydraulicHeadFileMatrix(ii,2))
-      end do
-      close(HHBFUnit)
-   end if
-
-
-end subroutine ReadHydraulicHeadFromFile
-
-
-
-subroutine GetHydraulicHeadForTimeStep()
-   !**********************************************************************
-   !
-   ! Function:  obtains the HYDRAULIC HEAD  from file for the current time step (at real time)
-   !            using linear interpolation.
-   !
-   !**********************************************************************
-
-   implicit none
-
-   !local variables
-   integer(INTEGER_TYPE) :: ii
-   real(REAL_TYPE) :: Increment ! 1D which would become a matrix if extended to 2D or 3D file prescribed acceleration or velocity
-   real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation ! Hardcoded (needs to be generalized for different dimensions e.g. 3D shaking)
-   real(REAL_TYPE) :: LastRow
-
-
-   LastRow = 0.0
-   !!!!!!!! START: GET HYDRAULIC HEAD FROM FILE FOR OVERALL REAL TIME !!!!!!!!
-
-   ! Hydaulic head for the particular timestep
-   if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
-
-
-      LastRow = CalParams%PrescribedHead%HydraulicHeadFileNumberOfLines
-
-      ! Looks into the matrix first column (time) and finds the first point higher than the total real time
-      do ii=1,CalParams%PrescribedHead%HydraulicHeadFileNumberOfLines  ! Loop accross the rows from the hydraulic head file
-
-         if (CalParams%OverallRealTime>HydraulicHeadFileMatrix(CalParams%PrescribedHead%HydraulicHeadFileNumberOfLines,1)) then
-            CalParams%Multipliers%HydraulicHeadCurrent = HydraulicHeadFileMatrix(LastRow,2)
-
-         else if (HydraulicHeadFileMatrix(ii,1)>CalParams%OverallRealTime) then
-            CoordinatesForInterpolation(1,:) = HydraulicHeadFileMatrix(ii-1,:) ! Store from file: time (1st column) and HYDR HEAD (2nd column) in previous line
-            CoordinatesForInterpolation(2,:) = HydraulicHeadFileMatrix(ii,:) ! Store from file: time (1st column) and HYDR HEAD (2nd column) in current line
-
-
-            ! Linear interpolation
-            Increment = (((CoordinatesForInterpolation(2,2)-CoordinatesForInterpolation(1,2))/(CoordinatesForInterpolation(2,1)-CoordinatesForInterpolation(1,1))) * &
-               (CalParams%OverallRealTime - CoordinatesForInterpolation(1,1)))
-
-            CalParams%Multipliers%HydraulicHeadCurrent = CoordinatesForInterpolation(1,2) + Increment
-            exit
-         end if
-      end do
-   end if
-end subroutine GetHydraulicHeadForTimeStep
-
-
-subroutine WriteCalculationParameters()
-   !**********************************************************************
-   !
-   ! Function:  Write the CPS file at the end of each load phase for the next step
-   !
-   !**********************************************************************
-
-   implicit none
-
-   ! local variables
-   character(len=MAX_FILENAME_LENGTH) :: FileName, FileVersion
-   integer(INTEGER_TYPE) :: FileUnit
-
-   FileName = trim( CalParams%FileNames%ProjectName) // CPS_FILE_EXTENSION // trim(CalParams%FileNames%LoadStepExt )
-   FileUnit = CPSUnit
-   FileVersion = CalParams%CPSversion
-
-   call FileOpen(FileUnit, FileName) ! open the CPS file for the next load step
-
-   ! write CPS data depending on file version
-   select case (FileVersion)
-
-    case(Anura3D_v2023)
-      call WriteCPS(FileUnit,FileVersion)
-    case(Anura3D_v2022)
-      call WriteCPS(FileUnit,FileVersion)
-    case(Anura3D_v2021)
-      call WriteCPS(FileUnit,FileVersion)
-    case(Anura3D_v2019_2)
-      call WriteCPS(FileUnit,FileVersion)
-    case default
-      call GiveError('Writing CPS file: Version not properly defined.' // NEW_LINE('A') // 'CPS version: ' // trim(FileVersion) )
-   end select
-
-   close(FileUnit) ! close the CPS file for the next load step
-
-end subroutine WriteCalculationParameters
-
-
-subroutine WriteCPS(FileUnit,FileVersion)
-   !**********************************************************************
-   !
-   ! Function:  Write the CPS file at the end of each load phase for the next step
-   !
-   !            CPS version 2022, 2021, 2019.2
-   !
-   !**********************************************************************
-
-   implicit none
-
-   character(len=MAX_FILENAME_LENGTH), intent(in) :: FileVersion
-   integer(INTEGER_TYPE), intent(in) :: FileUnit
-   character(len = 20), parameter :: computation_method =  '$$COMPUTATION_METHOD'
-   ! Local variables
-   integer(INTEGER_TYPE) :: I
-
-   select case (FileVersion)
-    case(Anura3D_v2023)
-      write(FileUnit, '(A)') Anura3D_v2023
-    case(Anura3D_v2022)
-      write(FileUnit, '(A)') Anura3D_v2022
-    case(Anura3D_v2021)
-      write(FileUnit, '(A)') Anura3D_v2021
-    case(Anura3D_v2019_2)
-      write(FileUnit, '(A)') Anura3D_v2021
-   end select
-
-   ! TIME AND LOAD STEP DATA
-   call WriteInteger(FileUnit, '$$NUMBER_OF_LOADSTEPS', [CalParams%NLoadSteps], 1, .true.)
-   call WriteReal(FileUnit, '$$TIME_PER_LOADSTEP', [CalParams%TotalTime], 1, .true.)
-   call WriteReal(FileUnit, '$$TOTAL_TIME', [CalParams%OverallRealTime], 1, .true.)
-   call WriteReal(FileUnit, '$$COURANT_NUMBER', [CalParams%CourantNumber], 1, .true.)
-
-   ! CALCULATION DATA
-   select case(CalParams%ComputationMethod)
-    case(MPM_MIXED_INTEGRATION)                ! Case for triangular/tetrahedral
-      call WriteString(FileUnit, computation_method, MPM_MIXED_INTEGRATION_SPECIFIER, 1, .true.)
-    case(MPM_MIXED_KEEPSTATEV_INTEGRATION)     ! Case for quad elements where the stresses are interpolated but NOT the state
-      call WriteString(FileUnit, computation_method, MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER, 1, .true.)
-    case(MPM_MIXED_MG22_INTEGRATION)           ! Case for quad elements where stresses and state variables are interpolated
-      call WriteString(FileUnit, computation_method, MPM_MIXED_MG22_INTEGRATION_SPECIFIER, 1, .true.)
-    case(MPM_MP_INTEGRATION)                   ! Case for standard MPM-MP integration
-      call WriteString(FileUnit, computation_method, MPM_MP_INTEGRATION_SPECIFIER, 1, .true.)
-    case(FEM)                                  ! Case for FEM
-      call WriteString(FileUnit, computation_method, FEM_SPECIFIER, 1, .true.)
-    case(UL_FEM)
-      call WriteString(FileUnit, computation_method, UL_FEM_SPECIFIER, 1, .true.)
-    case default
-      print *, "The computation method from the previous step isn't one of the allowable. Error from ReadCalculationData"
-      error stop
-   end select
-
-   ! GRAVITY DATA
-   call WriteReal(FileUnit, '$$GRAVITY_ACCELERATION', [CalParams%GravityData%GAccel], 1, .true.)
-   call WriteReal(FileUnit, '$$GRAVITY_VECTOR', [CalParams%GravityData%GravityVector(1:NDIM)], NDIM, .true.)
-
-   ! LOAD/VELOCITY MULTIPLIERS AND TPYE
-   call WriteStringReal(FileUnit, '$$GRAVITY_LOAD', CalParams%Multipliers%GravityLoadType, [CalParams%Multipliers%GravityCurrent, CalParams%Multipliers%GravityFinal], .true.)
-
-   call WriteStringReal(FileUnit, '$$SOLID_TRACTION', CalParams%Multipliers%SolidALoadType(1), [CalParams%Multipliers%SolidACurrent(1), CalParams%Multipliers%SolidAFinal(1)], .true.)
-   call WriteStringReal(FileUnit, '$$SOLID_TRACTION_B', CalParams%Multipliers%SolidALoadType(2), [CalParams%Multipliers%SolidACurrent(2), CalParams%Multipliers%SolidAFinal(2)], .true.)
-   call WriteStringReal(FileUnit, '$$LIQUID_PRESSURE', CalParams%Multipliers%WaterALoadType(1), [CalParams%Multipliers%WaterACurrent(1), CalParams%Multipliers%WaterAFinal(1)], .true.)
-   call WriteStringReal(FileUnit, '$$LIQUID_PRESSURE_B', CalParams%Multipliers%WaterALoadType(2), [CalParams%Multipliers%WaterACurrent(2), CalParams%Multipliers%WaterAFinal(2)], .true.)
-   call WriteStringReal(FileUnit, '$$GAS_PRESSURE', CalParams%Multipliers%GasALoadType(1), [CalParams%Multipliers%GasACurrent(1), CalParams%Multipliers%GasAFinal(1)], .false.)
-   call WriteStringReal(FileUnit, '$$GAS_PRESSURE_B', CalParams%Multipliers%GasALoadType(2), [CalParams%Multipliers%GasACurrent(2), CalParams%Multipliers%GasAFinal(2)], .false.)
-   call WriteStringReal(FileUnit, '$$HYDRAULIC_HEAD', CalParams%Multipliers%HydraulicHeadType, [CalParams%Multipliers%HydraulicHeadCurrent], .true.)
-   call WriteLogic(FileUnit, '$$APPLY_SEEPAGE_FACE', [CalParams%BoundaryConditions%UseSeepageFace], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_INFILTRATION', [CalParams%BoundaryConditions%UseInfiltration], 1, .true.)
-   call WriteStringReal(FileUnit, '$$PRESCRIBED_VELOCITY', CalParams%Multipliers%VelocitySolidLoadType, [CalParams%Multipliers%VelocitySolidCurrent, CalParams%Multipliers%VelocitySolidFinal], .true.)
-
-   ! QUASI-STATIC CALCULATION
-   call WriteLogic(FileUnit, '$$QUASISTATIC_CONVERGENCE', [CalParams%ApplyQuasiStatic], 1, .true.)
-   call WriteReal(FileUnit, '$$TOLERATED_ERROR_SOLID', [CalParams%ToleratedErrorEnergy, CalParams%ToleratedErrorForce], 2, .true.)
-   call WriteReal(FileUnit, '$$TOLERATED_ERROR_LIQUID', [CalParams%ToleratedErrorEnergyWater, CalParams%ToleratedErrorForceWater], 2, .true.)
-   call WriteInteger(FileUnit, '$$MAXIMUM_TIME_STEPS', [CalParams%MaxTimeSteps], 1, .true.)
-
-   ! IMPLICIT INTEGRATION QUASI-STATIC
-   call WriteLogic(FileUnit, '$$APPLY_IMPLICIT_QUASISTATIC', [CalParams%ApplyImplicitQuasiStatic], 1, .true.)
-   call WriteInteger(FileUnit, '$$QS_MIN_ITER', [CalParams%ImplicitIntegration%MinDesiredIterations], 1, .true.)
-   call WriteInteger(FileUnit, '$$QS_MAX_ITER', [CalParams%ImplicitIntegration%MaxDesiredIterations], 1, .true.)
-   call WriteReal(FileUnit, '$$QS_UPSCALE_FACTOR', [CalParams%ImplicitIntegration%UpScaleFactor], 1, .true.)
-   call WriteReal(FileUnit, '$$QS_DOWNSCALE_FACTOR', [CalParams%ImplicitIntegration%DownScaleFactor], 1, .true.)
-   call WriteInteger(FileUnit, '$$QS_MAX_ITERATIONS', [CalParams%ImplicitIntegration%MaxIterations], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_ZLS', [CalParams%ImplicitIntegration%DoUseZLS], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_ARC_LENGTH_CONTROL', [CalParams%ImplicitIntegration%DoUseArcLengthControl], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_ENHANCED_STIFFNESS', [CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix], 1, .true.)
-   call WriteReal(FileUnit, '$$QS_STIFFNESS_INCREASE_FACTOR', [CalParams%ImplicitIntegration%StiffnessIncreaseFactor], 1, .true.)
-   call WriteReal(FileUnit, '$$QS_DANGLING_ELEMENT_FACTOR', [CalParams%ImplicitIntegration%DanglingElementFactor], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_STEP_EXTRAPOLATION', [CalParams%ImplicitIntegration%DoUseStepExtrapolation], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_JACOBIAN_CHECK', [CalParams%ImplicitIntegration%DoCheckChangeJacobian], 1, .true.)
-   call WriteReal(FileUnit, '$$LIMIT_JACOBIAN_CHANGE', [CalParams%ImplicitIntegration%LimitJacobianChange], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_AUTOMATIC_LOADSTEPPING', [CalParams%ImplicitIntegration%DoUseAutomaticLoadStepping], 1, .true.)
-   call WriteReal(FileUnit, '$$INCR_MULTIPLIER_SOILA', [CalParams%Multipliers%SolidAIncrement], 1, .true.)
-   call WriteReal(FileUnit, '$$INCR_MULTIPLIER_GRAVITY', [CalParams%Multipliers%GravityIncrement], 1, .true.)
-   call WriteReal(FileUnit, '$$INCR_MULTIPLIER_WATERA', [CalParams%Multipliers%WaterAIncrement], 1, .true.)
-   call WriteReal(FileUnit, '$$INCR_MULTIPLIER_GASA', [CalParams%Multipliers%GasAIncrement], 1, .true.)
-
-
-   ! MASS SCALING
-   call WriteLogicReal(FileUnit, '$$MASS_SCALING', [CalParams%ApplyMassScaling], [CalParams%ScalingMassFactor], 1,.true.)
-
-   ! DAMPING
-   call WriteLogicReal(FileUnit, '$$HOMOGENEOUS_LOCAL_DAMPING', [CalParams%ApplyCPSDamping], [CalParams%DampingFactor], 1, .true.)
-
-   ! BULK VISCOSITY DAMPING
-   call WriteLogicReal(FileUnit, '$$BULK_VISCOSITY_DAMPING', [CalParams%ApplyBulkViscosityDamping], [CalParams%BulkViscosityDamping1, CalParams%BulkViscosityDamping2], 2, .true.)
-
-   ! DIVERGENCE CHECK
-   call WriteLogic(FileUnit, '$$APPLY_DIVERGENCE_CHECK', [CalParams%ConvergenceCheck%ApplyDivergenceCheck], 1, .true.)
-
-   ! OPTIMIZATION: Speeding up
-   call WriteReal(FileUnit, '$$MINIMUM_DETERMINANT_RATIO', [CalParams%MinimumDeterminantRatio], 1, .true.)
-
-   ! PARALLELIZATION
-   call WriteInteger(FileUnit, '$$NUMBER_OF_THREADS', [CalParams%NThreads], 1, .true.)
-
-   ! ABSORBING BOUNDARIES
-
-   call WriteLogic(FileUnit, '$$APPLY_NODE_DATA_AB', [CalParams%AbsorbingBoundaries%ApplyNodeData], 1, .true.)
-
-   ! CONTACT ALGORITHM
-   call WriteLogic(FileUnit, '$$CONTACT_FORMULATION', [CalParams%ApplyContactAlgorithm], 1, .true.)
-
-   call WriteLogic(FileUnit, '$$APPLY_CONTACT_MESH_BOUNDARY', [CalParams%ApplyContactMeshBoundary], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_TRACTION_CONTACT', [CalParams%ApplyTractionContact], 1, .true.)
-   call WriteLogic(FileUnit, '$$MONOPILE_SLICE_CONTACT', [CalParams%MonoPileSliceContact], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_CONTACT_VELOCITY_SCALING', [CalParams%ApplyContactVelocityScaling], 1, .true.)
-   call WriteReal(FileUnit, '$$VELOCITY_SCALING_FACTOR', [CalParams%ContactScalingFactor], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_CONTACT_NORMAL_CORRECTION', [CalParams%ApplyContactNormalCorrection], 1, .true.)
-   call WriteInteger(FileUnit, '$$NUMBER_OF_CORRECTED_NORMALS', [CalParams%NCorrectedNormals], 1, .true.)
-   if ((CalParams%NCorrectedNormals>0)) then
-      write(FileUnit, '(A)') '$$NODE_NORMAL_DATA'
-      do I = 1, CalParams%NumberSoilLayers
-         write(FileUnit, *) CalParams%ManuallyDefinedVectors(I,1:(1+NVECTOR))
-      end do
-   end if
-   ! APPLY EXCAVATION
-   call WriteInteger(FileUnit, '$$EXCAVATION', [CalParams%NumberExcavatedVolumes], 1, .true.)
-   do I = 1, CalParams%NumberExcavatedVolumes
-      call WriteInteger(FileUnit, '', [CalParams%ExcavatedVolumeID(I),CalParams%ExcavationStages(I,1:2)], 3, .true.)
-   end do
-
-   ! FIXED SOLID SKELETON
-   call WriteLogic(FileUnit, '$$FIX_SOLID_SKELETON', [CalParams%ApplyFixedSolidSkeleton], 1, .true.)
-
-   ! STRAIN SMOOTHING
-   call WriteLogic(FileUnit, '$$STRAIN_SMOOTHING', [CalParams%ApplyStrainSmoothing], 1, .true.)
-
-   ! Apply B_bar flag
-   call WriteLogic(FileUnit, '$$B_Bar_Smoothing', [CalParams%ApplyB_Bar], 1, .true.)
-
-   ! DOUBLE POINT :: STRAIN SMOOTHING LIQUID
-   call WriteLogic(FileUnit, '$$APPLY_STRAIN_SMOOTHING_LIQUID_TWOLAYERFORM', [CalParams%ApplyStrainSmoothingLiquidTwoLayer], 1, .true.)
-
-   ! DOUBLE POINT :: LIQUID PRESSURE CAVITATION THRESHOLD
-   call WriteReal(FileUnit, '$$LIQUID_CAVITATION', [CalParams%LiquidPressureCavitationThreshold], 1, .true.)
-
-   ! DOUBLE POINT :: APPLY_ERGUN_LAW
-   call WriteLogic(FileUnit, '$$UPDATE_PERMEABILITY_DARCY_ERGUN', [CalParams%TwoLayerApplyUpdatePermeability, CalParams%TwoLayerApplyErgunLaw], 2, .true.)
-   call WriteReal(FileUnit, '$$GRAIN_SIZE_DIAMETER', [CalParams%TwoLayerErgunLawDiameterPartic, CalParams%TwoLayerErgunLawDiameterPartic2], 2, .true.)
-   call WriteReal(FileUnit, '$$ERGUN_CONSTANTS', [CalParams%ERGUNCONSTANTA, CalParams%ERGUNCONSTANTB], 2, .true.)
-
-   ! DOUBLE POINT :: NO TENSILE STRESS IN LIQUID MATERIAL POINT WITH LIQUID STATUS
-   call WriteLogic(FileUnit, '$$NO_TENSILE_STRESS_LIQUID_MP_WITH_LIQUID_STATUS', [CalParams%TwoLayerApplyNoTensStressLiqMPwLiqStatus], 1, .true.)
-
-   ! DOUBLE POINT :: MAXIMUM POROSITY
-   call WriteReal(FileUnit, '$$MAXIMUM_POROSITY', [CalParams%LimitPorosity], 1, .true.)
-
-   ! DOUBLE POINT :: DETECT FREE SURFACE
-   call WriteLogicReal(FileUnit, '$$DETECT_FREE_SURFACE', [CalParams%ApplyDetectLiquidFreeSurface], [CalParams%FreeSurfaceFactor], 1, .true.)
-
-   call WriteLogic(FileUnit, '$$RESET_DISPLACEMENTS', [.false.], 1, .true.)
-
-   call WriteLogic(FileUnit, '$$REMOVE_FIXITIES', [CalParams%ApplyRemoveSolidFixities, CalParams%ApplyRemoveLiquidFixities, CalParams%ApplyRemoveGasFixities], 3, .true.)
-
-   ! K0-PROCEDURE
-   call WriteLogic(FileUnit, '$$K0_PROCEDURE', [CalParams%ApplyK0Procedure], 1, .true.)
-   call WriteReal(FileUnit, '$$K0_MAX_SUCTION', [CalParams%K0MaxSurfaceSuction], 1, .true.)
-   call WriteReal(FileUnit, '$$SURFACE_ELEVATION', [CalParams%SoilSurfacePoint(1:2)], 2, .true.)
-
-   call WriteInteger(FileUnit, '$$NUMBER_SOIL_LAYERS', [CalParams%NumberSoilLayers], 1, .true.)
-   if (CalParams%NumberSoilLayers>0) then
-      write(FileUnit, '(A)') '$$THICKNESS_SOIL_LAYERS'
-      do I = 1, CalParams%NumberSoilLayers
-         write(FileUnit, *) CalParams%ThicknessSoilLayer(I)
-      end do
-   end if
-
-   call WriteReal(FileUnit, '$$LIQUID_SURFACE', [CalParams%LiquidSurfacePoint(1:2)], 2, .true.)
-   call WriteReal(FileUnit, '$$CONSIDERED_LOAD_K0', [CalParams%InitialVerticalLoadK0], 1, .true.)
-   call WriteReal(FileUnit, '$$INITIAL_WATER_PRESSURE', [CalParams%InitialWaterPressure], 1, .true.)
-
-   ! MATERIAL DATA
-   call WriteLogic(FileUnit, '$$APPLY_MATERIAL_UPDATE', [.false.], 1, .true.)
-   call WriteLogic(FileUnit, '$$APPLY_POROSITY_UPDATE', [CalParams%ApplyPorosityUpdate], 1, .true.)
-
-   call WriteLogicInteger(FileUnit, '$$SUBMERGED_CALCULATION', [CalParams%ApplySubmergedCalculation], [CalParams%NumberSubmergedCalculation], 1, .true.)
-
-   ! INITIAL VELOCITY ON MATERIAL POINTS
-   call WriteLogic(FileUnit, '$$INITIAL_VELOCITY', [.false.], 1, .true.)
-
-   call WriteLogic(FileUnit, '$$APPLY_OBJECTIVE_STRESS', [CalParams%ApplyObjectiveStress], 1, .true.)
-
-   call WriteReal(FileUnit, '$$DEGREE_OF_FILLING', [CalParams%RequiredDegreeOfFilling], 1, .true.)
-
-   call WriteInteger(FileUnit, '$$NUMBER_OF_ACTIVE_ELEMENTS', [Counters%NAEl], 1, .true.)
-
-   ! EMPTY ELEMENTS
-   call WriteLogic(FileUnit, '$$APPLY_EMPTY_ELEMENTS', [CalParams%ApplyEmptyElements], 1, .true.)
-   call WriteReal(FileUnit, '$$MASS_FACTOR_VIRTUAL_PARTICLES', [CalParams%VirtualParticleMassFactor], 1, .true.)
-   call WriteInteger(FileUnit, '$$GROUP_THRESHOLD', [CalParams%GroupThreshold], 1, .true.)
-
-   ! VISUALIZATION
-   call WriteString(FileUnit, '$$VISUALIZATION_OPTION', CalParams%Visualization, 1, .true.)
-
-   ! OUTPUT
-   call WriteInteger(FileUnit, '$$OUTPUT_NUMBER_OF_MATERIAL_POINTS', [CalParams%OutputNumberParticles], 1, .true.)
-   if (CalParams%OutputNumberParticles > 0) then
-      call WriteInteger(FileUnit, '$$OUTPUT_MATERIAL_POINTS', [CalParams%OutputParticles(1)], 1, .true.)
-      do I = 2, CalParams%OutputNumberParticles
-         call WriteInteger(FileUnit, '', [CalParams%OutputParticles(I)], 1, .true.)
-      end do
-   else
-      call WriteInteger(FileUnit, '$$OUTPUT_MATERIAL_POINTS', [-1], 1, .true.)
-   end if
-
-   call WriteLogic(FileUnit, '$$OUTPUT_BASIC_DATA', [CalParams%OutputBasicData], 1, .true.)
-   call WriteInteger(FileUnit, '$$OUTPUT_CURVES_INTERVAL', [CalParams%OutputCurvesIntervals], 1, .true.)
-
-   call WriteInteger(FileUnit, '$$OUTPUT_NUMBER_OF_NODES', [CalParams%OutputNumberNodes], 1, .true.)
-   call WriteInteger(FileUnit, '$$OUTPUT_NODES', [CalParams%OutputNodes(1:10)], 10, .true.)
-
-   call WriteLogic(FileUnit, '$$OUTPUT_DEBUG_DATA', [CalParams%OutputDebugData], 1, .true.)
-   call WriteLogic(FileUnit, '$$OUTPUT_EACH_LOAD_STEP', [CalParams%OutputEachLoadStep], 1, .true.)
-   call WriteLogic(FileUnit, '$$QUICK_CHECK_OUTPUT', [CalParams%ApplyQuickCheckOutput], 1, .true.)
-
-   call WriteInteger(FileUnit, '$$FILE_COUNTER', [CalParams%FileCounter], 1, .true.)
-
-   call WriteInteger(FileUnit, '$$PARTICLE_FILE_COUNTER', [CalParams%ParticleFileCounter], 1, .true.)
-
-   ! Feedback
-   call WriteInteger(FileUnit, '$$FEEDBACK_LEVEL', [CalParams%FeedbackLevel], 1, .true.)
-
-   call WriteLogic(FileUnit, '$$APPLY_SMOOTHENING_LIQUID_PRESSURE_INCREMENT', [CalParams%ApplySmootheningLiquidPressureIncrement], 1, .true.) ! omit for external version
-
-   ! END OF CPS FILE
-   write(FileUnit, '(A)') '$$END'
-
-end subroutine WriteCPS
-
-
-subroutine DetermineLoadStep()
-   !**********************************************************************
-   !
-   !    Function:  Retrieves the last computed step from the GIP file
-   !               by searching in the project directory for the GIP
-   !               file with the highest step number, GIP_099 ....
-   !               For a new computation the GIP file is generated for
-   !               post-processing purposes.
-   !
-   !**********************************************************************
-
-   implicit none
-
-   ! Local variables
-   character(len = MAX_FILENAME_LENGTH) :: FileName
-   character(len = MAX_EXTENSION_LENGTH) :: StepString
-   integer(INTEGER_TYPE) :: CheckedStep
-
-   CheckedStep = 1
-   CalParams%PreviouslyRealisedLoadStep = 0
-   do
-      call GetStepExt(CheckedStep, StepString)
-      FileName = trim(CalParams%FileNames%ProjectName)//GIP_STEP_FILE_EXTENSION//trim(StepString)
-      if (FExist(trim(FileName))) then
-         CalParams%PreviouslyRealisedLoadStep = CheckedStep
-         CheckedStep = CheckedStep + 1
-      else
-         EXIT
+         end do
       end if
-   end do
-
-   call GetStepExt(CalParams%PreviouslyRealisedLoadStep, StepString)
-   CalParams%FileNames%PreviousStepExt = trim(StepString)
-   CalParams%IStep = CalParams%PreviouslyRealisedLoadStep + 1 ! IStep will be 1 for new computation
-   call GetStepExt(CalParams%IStep, StepString)
-   CalParams%FileNames%LoadStepExt = trim(StepString)
-
-   if (.not.IsFollowUpPhase()) then
-      call WriteGIPFile(DO_NOT_USE_STEP_EXTENSION)
-   end if
-
-end subroutine DetermineLoadStep
-
-
-subroutine WriteGIPFile(DoUseStepExtension)
-   !**********************************************************************
-   !
-   !    Function:  Writes the GIP file using the provided extension.
-   !               If DoUseStepExtension is true, the GIP_XXX extension
-   !               is used, otherwise the GIP extension.
-   !
-   !**********************************************************************
-
-   implicit none
-
-   ! Arguments
-   logical, intent(in) :: DoUseStepExtension
-
-   ! Local variables
-   character(len = MAX_EXTENSION_LENGTH) :: FileExtension
-   integer(INTEGER_TYPE) :: StartStep, EndStep
-
-   if (DoUseStepExtension) then
-      FileExtension = GIP_STEP_FILE_EXTENSION//CalParams%FileNames%LoadStepExt
-   else
-      FileExtension = GIP_FILE_EXTENSION
-   end if
-
-   call FileOpen(TMP_UNIT, trim(CalParams%FileNames%ProjectName)//trim(FileExtension))
-
-   if (DoUseStepExtension) then
-      StartStep = CalParams%PreviouslyRealisedLoadStep + 1
-      EndStep = CalParams%IStep
-   else
-      StartStep = INITIAL_STEP
-      EndStep = MAXIMUM_STEP
-   end if
-
-   write(TMP_UNIT, 101) '[Phase0]' ! Presently not used
-   write(TMP_UNIT, 102) START_STEP_SPECIFIER, StartStep
-   write(TMP_UNIT, 102) END_STEP_SPECIFIER, EndStep
-
-   close(TMP_UNIT)
-
-101 format(A)
-102 format(A, I)
-
-end subroutine WriteGIPFile
-
-
-
-logical function IsLastTimeStepOfExplicitCalculation() result(res)
-   !**********************************************************************
-   !
-   !    Function: Checks whether is the last time step of the explicit calculation or not.
-   !
-   ! Implemented in the frame of the MPM project.
-   !
-   !**********************************************************************
-   implicit none
-
-   res = ((CalParams%TotalTime - CalParams%TotalRealTime) < SMALL) .and. (.not.CalParams%ApplyQuasiStatic)
-
-end function IsLastTimeStepOfExplicitCalculation
-
-
-
-logical function IsMPMSkipConvection() result(res)
-   !**********************************************************************
-   !
-   !    Function: Checks whether is the MPM convection phase can be skipped or not.
-   !
-   ! Implemented in the frame of the MPM project.
-   !
-   !**********************************************************************
-   implicit none
-
-   if (CalParams%SkipConvection) then
-      res = .not.IsDistorted .and. .not.(     mod(CalParams%TimeStep, CalParams%NumberSkipConvection) == 0 &
-         .or. CalParams%TimeStep==1 &
-         .or. IsLastTimeStepOfExplicitCalculation())
-   else
-      res = .false.
-   endif
-
-end function IsMPMSkipConvection
-
-
-
-
-subroutine WriteLogic(unit, name, value, ndim, IsWritten)
-   !**********************************************************************
-   !
-   ! Function:  Write a logical (array) value into the CPS file
-   !
-   !**********************************************************************
-
-   implicit none
-
-   integer(INTEGER_TYPE), intent(in) :: unit
-   character(*), intent(in) :: name
-   integer(INTEGER_TYPE), intent(in) :: ndim
-   logical, dimension(:), intent(in) :: value
-   logical, intent(in) :: IsWritten
-
-   ! local variables
-   integer(INTEGER_TYPE) :: ios
-
-   if (.not.IsWritten) RETURN
-
-   if ( trim(name) /= '' ) then
-      write(unit, '(A)', iostat=ios) trim(name)
-      call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
-   else
-      ! ...do nothing
-   end if
-
-   select case (ndim)
-    case(1)
-      if (value(1)) write(unit, '(A2)', iostat=ios) ' 1'
-      if (.not.value(1)) write(unit, '(A2)', iostat=ios) ' 0'
-    case(2)
-      if (value(1).AND.value(2)) write(unit, '(A4)', iostat=ios) ' 1 1'
-      if (value(1).AND..not.value(2)) write(unit, '(A4)', iostat=ios) ' 1 0'
-      if (.not.value(1).AND.value(2)) write(unit, '(A4)', iostat=ios) ' 0 1'
-      if (.not.value(1).AND..not.value(2)) write(unit, '(A4)', iostat=ios) ' 0 0'
-    case(3)
-      if (value(1).AND.value(2).AND.value(3)) write(unit, '(A6)', iostat=ios) ' 1 1 1'
-      if (value(1).AND.value(2).AND..not.value(3)) write(unit, '(A6)', iostat=ios) ' 1 1 0'
-      if (value(1).AND..not.value(2).AND.value(3)) write(unit, '(A6)', iostat=ios) ' 1 0 1'
-      if (value(1).AND..not.value(2).AND..not.value(3)) write(unit, '(A6)', iostat=ios) ' 1 0 0'
-      if (.not.value(1).AND.value(2).AND.value(3)) write(unit, '(A6)', iostat=ios) ' 0 1 1'
-      if (.not.value(1).AND.value(2).AND..not.value(3)) write(unit, '(A6)', iostat=ios) ' 0 1 0'
-      if (.not.value(1).AND..not.value(2).AND.value(3)) write(unit, '(A6)', iostat=ios) ' 0 0 1'
-      if (.not.value(1).AND..not.value(2).AND..not.value(3)) write(unit, '(A6)', iostat=ios) ' 0 0 0'
-    case default
-      call GiveError('CPS file: Writing logic value not possible. Wrong dimension.')
-   end select
-
-   call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
-
-end subroutine WriteLogic
-
-
-subroutine WriteInteger(unit, name, value, ndim, IsWritten)
-   !**********************************************************************
-   !
-   ! Function:  Write an integer (array) value to the CPS file
-   !
-   !**********************************************************************
-
-   implicit none
-
-   integer(INTEGER_TYPE), intent(in) :: unit
-   character(*), intent(in) :: name
-   integer(INTEGER_TYPE), intent(in) :: ndim
-   integer(INTEGER_TYPE), dimension(:), intent(in) :: value
-   logical, intent(in) :: IsWritten
-
-   ! local variables
-   integer(INTEGER_TYPE) :: ios
-
-   if (.not.IsWritten) RETURN
-
-   if ( trim(name) /= '' ) then
-      write(unit, '(A)', iostat=ios) trim(name)
-      call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
-   else
-      ! ...do nothing
-   end if
-
-   select case (ndim)
-    case(1)
-      write(unit, *, iostat=ios) value(1)
-    case(2)
-      write(unit, *, iostat=ios) value(1:2)
-    case(3)
-      write(unit, *, iostat=ios) value(1:3)
-    case(10)
-      write(unit, *, iostat=ios) value(1:10)
-    case default
-      call GiveError('CPS file: Writing integer value not possible. Wrong dimension.')
-   end select
-
-   call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
-
-end subroutine WriteInteger
-
-
-subroutine WriteReal(unit, name, value, ndim, IsWritten)
-   !**********************************************************************
-   !
-   ! Function:  Write a real (array) value to the CPS file
-   !
-   !**********************************************************************
-
-   implicit none
-
-   integer(INTEGER_TYPE), intent(in) :: unit
-   character(*), intent(in) :: name
-   integer(INTEGER_TYPE), intent(in) :: ndim
-   real(REAL_TYPE), dimension(:), intent(in) :: value
-   logical, intent(in) :: IsWritten
-
-   ! local variables
-   integer(INTEGER_TYPE) :: ios
-
-   if (.not.IsWritten) RETURN
-
-   if ( trim(name) /= '' ) then
-      write(unit, '(A)', iostat=ios) trim(name)
-      call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
-   else
-      ! ...do nothing
-   end if
-
-   write(unit, *, iostat=ios) value(1:ndim)
-
-   call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
-
-end subroutine WriteReal
-
-
-subroutine WriteString(unit, name, value, ndim, IsWritten)
-   !**********************************************************************
-   !
-   ! Function:  Write a real (array) value to the CPS file
-   !
-   !**********************************************************************
-
-   implicit none
-
-   integer(INTEGER_TYPE), intent(in) :: unit
-   character(*), intent(in) :: name
-   integer(INTEGER_TYPE), intent(in) :: ndim
-   character(*), intent(in) :: value
-   logical, intent(in) :: IsWritten
-
-   ! local variables
-   integer(INTEGER_TYPE) :: ios
-
-   if (.not.IsWritten) RETURN
-
-   if ( trim(name) /= '' ) then
-      write(unit, '(A)', iostat=ios) trim(name)
-      call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
-   else
-      ! ...do nothing
-   end if
-
-   select case (ndim)
-    case(1)
-      write(unit, *, iostat=ios) value
-    case default
-      call GiveError('CPS file: Writing string value not possible. Wrong dimension.')
-   end select
-
-   call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
-
-end subroutine WriteString
-
-
-subroutine WriteStringReal(unit, name, valueS, valueR, IsWritten)
-   !**********************************************************************
-   !
-   ! Function:  Write a combination of string(scalar) and real(array) value into the CPS file
-   !
-   !**********************************************************************
-
-   implicit none
-
-   integer(INTEGER_TYPE), intent(in) :: unit
-   character(*), intent(in) :: name
-   character(*), intent(in) :: valueS
-   real(REAL_TYPE), dimension(:), intent(in) :: valueR
-   logical, intent(in) :: IsWritten
-
-   ! local variables
-   integer(INTEGER_TYPE) :: ios
-
-   if (.not.IsWritten) RETURN
-
-   if ( trim(name) /= '' ) then
-      write(unit, '(A)', iostat=ios) trim(name)
-      call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
-   else
-      ! ...do nothing
-   end if
-
-   write(unit, *, iostat=ios) valueS, valueR
-   call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
-
-end subroutine WriteStringReal
-
-
-subroutine WriteLogicReal(unit, name, valueL, valueR, ndim, IsWritten)
-   !**********************************************************************
-   !
-   ! Function:  Write a combination of logical and real value into the CPS file
-   !
-   !**********************************************************************
-
-   implicit none
-
-   integer(INTEGER_TYPE), intent(in) :: unit
-   character(*), intent(in) :: name
-   integer(INTEGER_TYPE), intent(in) :: ndim
-   logical, dimension(:), intent(in) :: valueL
-   real(REAL_TYPE), dimension(:), intent(in) :: valueR
-   logical, intent(in) :: IsWritten
-
-   ! local variables
-   integer(INTEGER_TYPE) :: ios
-
-   if (.not.IsWritten) RETURN
-
-   if ( trim(name) /= '' ) then
-      write(unit, '(A)', iostat=ios) trim(name)
-      call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
-   else
-      ! ...do nothing
-   end if
-
-   select case (ndim)
-    case(1)
-      if (valueL(1)) write(unit, '(A2, F)', iostat=ios) ' 1', valueR(1)
-      if (.not.valueL(1)) write(unit, '(A2, F)', iostat=ios) ' 0', valueR(1)
-    case(2)
-      if (valueL(1)) write(unit, '(A2, 2F)', iostat=ios) ' 1', valueR(1), valueR(2)
-      if (.not.valueL(1)) write(unit, '(A2, 2F)', iostat=ios) ' 0', valueR(1), valueR(2)
-    case(3)
-      if (valueL(1)) write(unit, '(A2, 3F)', iostat=ios) ' 1', valueR(1), valueR(2), valueR(3)
-      if (.not.valueL(1)) write(unit, '(A2, 3F)', iostat=ios) ' 0', valueR(1), valueR(2), valueR(3)
-    case(4)
-      if (valueL(1)) write(unit, '(A2, 4F)', iostat=ios) ' 1', valueR(1), valueR(2), valueR(3), valueR(4)
-      if (.not.valueL(1)) write(unit, '(A2, 4F)', iostat=ios) ' 0', valueR(1), valueR(2), valueR(3), valueR(4)
-    case default
-      call GiveError('CPS file: Writing logic and real value not possible. Wrong dimension.')
-   end select
-
-   call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
-
-end subroutine WriteLogicReal
-
-
-subroutine WriteLogicInteger(unit, name, valueL, valueI, ndim, IsWritten)
-   !**********************************************************************
-   !
-   ! Function:  Write a combination of logical and integer value into the CPS file
-   !
-   !**********************************************************************
-
-   implicit none
-
-   integer(INTEGER_TYPE), intent(in) :: unit
-   character(*), intent(in) :: name
-   integer(INTEGER_TYPE), intent(in) :: ndim
-   logical, dimension(:), intent(in) :: valueL
-   integer(INTEGER_TYPE), dimension(:), intent(in) :: valueI
-   logical, intent(in) :: IsWritten
-
-   ! local variables
-   integer(INTEGER_TYPE) :: ios
-
-   if (.not.IsWritten) RETURN
-
-   if ( trim(name) /= '' ) then
-      write(unit, '(A)', iostat=ios) trim(name)
-      call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
-   else
-      ! ...do nothing
-   end if
-
-   select case (ndim)
-    case(1)
-      if (valueL(1)) write(unit, '(A2, I)', iostat=ios) ' 1', valueI(1)
-      if (.not.valueL(1)) write(unit, '(A2, I)', iostat=ios) ' 0', valueI(1)
-    case(2)
-      if (valueL(1)) write(unit, '(A2, 2I)', iostat=ios) ' 1', valueI(1), valueI(2)
-      if (.not.valueL(1)) write(unit, '(A2, 2I)', iostat=ios) ' 0', valueI(1), valueI(2)
-    case(3)
-      if (valueL(1)) write(unit, '(A2, 3I)', iostat=ios) ' 1', valueI(1), valueI(2), valueI(3)
-      if (.not.valueL(1)) write(unit, '(A2, 3I)', iostat=ios) ' 0', valueI(1), valueI(2), valueI(3)
-    case default
-      call GiveError('CPS file: Writing logic and integer value not possible. Wrong dimension.')
-   end select
-
-   call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
-
-end subroutine WriteLogicInteger
+   end subroutine GetHydraulicHeadForTimeStep
+
+
+   subroutine WriteCalculationParameters()
+      !**********************************************************************
+      !
+      ! Function:  Write the CPS file at the end of each load phase for the next step
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! local variables
+      character(len=MAX_FILENAME_LENGTH) :: FileName, FileVersion
+      integer(INTEGER_TYPE) :: FileUnit
+
+      FileName = trim( CalParams%FileNames%ProjectName) // CPS_FILE_EXTENSION // trim(CalParams%FileNames%LoadStepExt )
+      FileUnit = CPSUnit
+      FileVersion = CalParams%CPSversion
+
+      call FileOpen(FileUnit, FileName) ! open the CPS file for the next load step
+
+      ! write CPS data depending on file version
+      select case (FileVersion)
+
+       case(Anura3D_v2023)
+         call WriteCPS(FileUnit,FileVersion)
+       case(Anura3D_v2022)
+         call WriteCPS(FileUnit,FileVersion)
+       case(Anura3D_v2021)
+         call WriteCPS(FileUnit,FileVersion)
+       case(Anura3D_v2019_2)
+         call WriteCPS(FileUnit,FileVersion)
+       case default
+         call GiveError('Writing CPS file: Version not properly defined.' // NEW_LINE('A') // 'CPS version: ' // trim(FileVersion) )
+      end select
+
+      close(FileUnit) ! close the CPS file for the next load step
+
+   end subroutine WriteCalculationParameters
+
+
+   subroutine WriteCPS(FileUnit,FileVersion)
+      !**********************************************************************
+      !
+      ! Function:  Write the CPS file at the end of each load phase for the next step
+      !
+      !            CPS version 2022, 2021, 2019.2
+      !
+      !**********************************************************************
+
+      implicit none
+
+      character(len=MAX_FILENAME_LENGTH), intent(in) :: FileVersion
+      integer(INTEGER_TYPE), intent(in) :: FileUnit
+      ! Local variables
+      integer(INTEGER_TYPE) :: I
+      character(len = 20), parameter :: computation_method =  '$$COMPUTATION_METHOD'
+
+      select case (FileVersion)
+       case(Anura3D_v2023)
+         write(FileUnit, '(A)') Anura3D_v2023
+       case(Anura3D_v2022)
+         write(FileUnit, '(A)') Anura3D_v2022
+       case(Anura3D_v2021)
+         write(FileUnit, '(A)') Anura3D_v2021
+       case(Anura3D_v2019_2)
+         write(FileUnit, '(A)') Anura3D_v2021
+      end select
+
+      ! TIME AND LOAD STEP DATA
+      call WriteInteger(FileUnit, '$$NUMBER_OF_LOADSTEPS', [CalParams%NLoadSteps], 1, .true.)
+      call WriteReal(FileUnit, '$$TIME_PER_LOADSTEP', [CalParams%TotalTime], 1, .true.)
+      call WriteReal(FileUnit, '$$TOTAL_TIME', [CalParams%OverallRealTime], 1, .true.)
+      call WriteReal(FileUnit, '$$COURANT_NUMBER', [CalParams%CourantNumber], 1, .true.)
+
+      ! CALCULATION DATA
+      select case(CalParams%ComputationMethod)
+       case(MPM_MIXED_INTEGRATION)                ! Case for triangular/tetrahedral
+         call WriteString(FileUnit, computation_method, MPM_MIXED_INTEGRATION_SPECIFIER, 1, .true.)
+       case(MPM_MIXED_KEEPSTATEV_INTEGRATION)     ! Case for quad elements where the stresses are interpolated but NOT the state
+         call WriteString(FileUnit, computation_method, MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER, 1, .true.)
+       case(MPM_MIXED_MG22_INTEGRATION)           ! Case for quad elements where stresses and state variables are interpolated
+         call WriteString(FileUnit, computation_method, MPM_MIXED_MG22_INTEGRATION_SPECIFIER, 1, .true.)
+       case(MPM_MP_INTEGRATION)                   ! Case for standard MPM-MP integration
+         call WriteString(FileUnit, computation_method, MPM_MP_INTEGRATION_SPECIFIER, 1, .true.)
+       case(FEM)                                  ! Case for FEM
+         call WriteString(FileUnit, computation_method, FEM_SPECIFIER, 1, .true.)
+       case(UL_FEM)
+         call WriteString(FileUnit, computation_method, UL_FEM_SPECIFIER, 1, .true.)
+       case default
+         print *, "The computation method from the previous step isn't one of the allowable. Error from ReadCalculationData"
+         error stop
+      end select
+
+      ! GRAVITY DATA
+      call WriteReal(FileUnit, '$$GRAVITY_ACCELERATION', [CalParams%GravityData%GAccel], 1, .true.)
+      call WriteReal(FileUnit, '$$GRAVITY_VECTOR', [CalParams%GravityData%GravityVector(1:NDIM)], NDIM, .true.)
+
+      ! LOAD/VELOCITY MULTIPLIERS AND TPYE
+      call WriteStringReal(FileUnit, '$$GRAVITY_LOAD', CalParams%Multipliers%GravityLoadType, [CalParams%Multipliers%GravityCurrent, CalParams%Multipliers%GravityFinal], .true.)
+
+      call WriteStringReal(FileUnit, '$$SOLID_TRACTION', CalParams%Multipliers%SolidALoadType(1), [CalParams%Multipliers%SolidACurrent(1), CalParams%Multipliers%SolidAFinal(1)], .true.)
+      call WriteStringReal(FileUnit, '$$SOLID_TRACTION_B', CalParams%Multipliers%SolidALoadType(2), [CalParams%Multipliers%SolidACurrent(2), CalParams%Multipliers%SolidAFinal(2)], .true.)
+      call WriteStringReal(FileUnit, '$$LIQUID_PRESSURE', CalParams%Multipliers%WaterALoadType(1), [CalParams%Multipliers%WaterACurrent(1), CalParams%Multipliers%WaterAFinal(1)], .true.)
+      call WriteStringReal(FileUnit, '$$LIQUID_PRESSURE_B', CalParams%Multipliers%WaterALoadType(2), [CalParams%Multipliers%WaterACurrent(2), CalParams%Multipliers%WaterAFinal(2)], .true.)
+      call WriteStringReal(FileUnit, '$$GAS_PRESSURE', CalParams%Multipliers%GasALoadType(1), [CalParams%Multipliers%GasACurrent(1), CalParams%Multipliers%GasAFinal(1)], .false.)
+      call WriteStringReal(FileUnit, '$$GAS_PRESSURE_B', CalParams%Multipliers%GasALoadType(2), [CalParams%Multipliers%GasACurrent(2), CalParams%Multipliers%GasAFinal(2)], .false.)
+      call WriteStringReal(FileUnit, '$$HYDRAULIC_HEAD', CalParams%Multipliers%HydraulicHeadType, [CalParams%Multipliers%HydraulicHeadCurrent], .true.)
+      call WriteLogic(FileUnit, '$$APPLY_SEEPAGE_FACE', [CalParams%BoundaryConditions%UseSeepageFace], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_INFILTRATION', [CalParams%BoundaryConditions%UseInfiltration], 1, .true.)
+      call WriteStringReal(FileUnit, '$$PRESCRIBED_VELOCITY', CalParams%Multipliers%VelocitySolidLoadType, [CalParams%Multipliers%VelocitySolidCurrent, CalParams%Multipliers%VelocitySolidFinal], .true.)
+
+      ! QUASI-STATIC CALCULATION
+      call WriteLogic(FileUnit, '$$QUASISTATIC_CONVERGENCE', [CalParams%ApplyQuasiStatic], 1, .true.)
+      call WriteReal(FileUnit, '$$TOLERATED_ERROR_SOLID', [CalParams%ToleratedErrorEnergy, CalParams%ToleratedErrorForce], 2, .true.)
+      call WriteReal(FileUnit, '$$TOLERATED_ERROR_LIQUID', [CalParams%ToleratedErrorEnergyWater, CalParams%ToleratedErrorForceWater], 2, .true.)
+      call WriteInteger(FileUnit, '$$MAXIMUM_TIME_STEPS', [CalParams%MaxTimeSteps], 1, .true.)
+
+      ! IMPLICIT INTEGRATION QUASI-STATIC
+      call WriteLogic(FileUnit, '$$APPLY_IMPLICIT_QUASISTATIC', [CalParams%ApplyImplicitQuasiStatic], 1, .true.)
+      call WriteInteger(FileUnit, '$$QS_MIN_ITER', [CalParams%ImplicitIntegration%MinDesiredIterations], 1, .true.)
+      call WriteInteger(FileUnit, '$$QS_MAX_ITER', [CalParams%ImplicitIntegration%MaxDesiredIterations], 1, .true.)
+      call WriteReal(FileUnit, '$$QS_UPSCALE_FACTOR', [CalParams%ImplicitIntegration%UpScaleFactor], 1, .true.)
+      call WriteReal(FileUnit, '$$QS_DOWNSCALE_FACTOR', [CalParams%ImplicitIntegration%DownScaleFactor], 1, .true.)
+      call WriteInteger(FileUnit, '$$QS_MAX_ITERATIONS', [CalParams%ImplicitIntegration%MaxIterations], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_ZLS', [CalParams%ImplicitIntegration%DoUseZLS], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_ARC_LENGTH_CONTROL', [CalParams%ImplicitIntegration%DoUseArcLengthControl], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_ENHANCED_STIFFNESS', [CalParams%ImplicitIntegration%DoUseEnhancedStiffnessMatrix], 1, .true.)
+      call WriteReal(FileUnit, '$$QS_STIFFNESS_INCREASE_FACTOR', [CalParams%ImplicitIntegration%StiffnessIncreaseFactor], 1, .true.)
+      call WriteReal(FileUnit, '$$QS_DANGLING_ELEMENT_FACTOR', [CalParams%ImplicitIntegration%DanglingElementFactor], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_STEP_EXTRAPOLATION', [CalParams%ImplicitIntegration%DoUseStepExtrapolation], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_JACOBIAN_CHECK', [CalParams%ImplicitIntegration%DoCheckChangeJacobian], 1, .true.)
+      call WriteReal(FileUnit, '$$LIMIT_JACOBIAN_CHANGE', [CalParams%ImplicitIntegration%LimitJacobianChange], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_AUTOMATIC_LOADSTEPPING', [CalParams%ImplicitIntegration%DoUseAutomaticLoadStepping], 1, .true.)
+      call WriteReal(FileUnit, '$$INCR_MULTIPLIER_SOILA', [CalParams%Multipliers%SolidAIncrement], 1, .true.)
+      call WriteReal(FileUnit, '$$INCR_MULTIPLIER_GRAVITY', [CalParams%Multipliers%GravityIncrement], 1, .true.)
+      call WriteReal(FileUnit, '$$INCR_MULTIPLIER_WATERA', [CalParams%Multipliers%WaterAIncrement], 1, .true.)
+      call WriteReal(FileUnit, '$$INCR_MULTIPLIER_GASA', [CalParams%Multipliers%GasAIncrement], 1, .true.)
+
+
+      ! MASS SCALING
+      call WriteLogicReal(FileUnit, '$$MASS_SCALING', [CalParams%ApplyMassScaling], [CalParams%ScalingMassFactor], 1,.true.)
+
+      ! DAMPING
+      call WriteLogicReal(FileUnit, '$$HOMOGENEOUS_LOCAL_DAMPING', [CalParams%ApplyCPSDamping], [CalParams%DampingFactor], 1, .true.)
+
+      ! BULK VISCOSITY DAMPING
+      call WriteLogicReal(FileUnit, '$$BULK_VISCOSITY_DAMPING', [CalParams%ApplyBulkViscosityDamping], [CalParams%BulkViscosityDamping1, CalParams%BulkViscosityDamping2], 2, .true.)
+
+      ! DIVERGENCE CHECK
+      call WriteLogic(FileUnit, '$$APPLY_DIVERGENCE_CHECK', [CalParams%ConvergenceCheck%ApplyDivergenceCheck], 1, .true.)
+
+      ! OPTIMIZATION: Speeding up
+      call WriteReal(FileUnit, '$$MINIMUM_DETERMINANT_RATIO', [CalParams%MinimumDeterminantRatio], 1, .true.)
+
+      ! PARALLELIZATION
+      call WriteInteger(FileUnit, '$$NUMBER_OF_THREADS', [CalParams%NThreads], 1, .true.)
+
+      ! ABSORBING BOUNDARIES
+
+      call WriteLogic(FileUnit, '$$APPLY_NODE_DATA_AB', [CalParams%AbsorbingBoundaries%ApplyNodeData], 1, .true.)
+
+      ! CONTACT ALGORITHM
+      call WriteLogic(FileUnit, '$$CONTACT_FORMULATION', [CalParams%ApplyContactAlgorithm], 1, .true.)
+
+      call WriteLogic(FileUnit, '$$APPLY_CONTACT_MESH_BOUNDARY', [CalParams%ApplyContactMeshBoundary], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_TRACTION_CONTACT', [CalParams%ApplyTractionContact], 1, .true.)
+      call WriteLogic(FileUnit, '$$MONOPILE_SLICE_CONTACT', [CalParams%MonoPileSliceContact], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_CONTACT_VELOCITY_SCALING', [CalParams%ApplyContactVelocityScaling], 1, .true.)
+      call WriteReal(FileUnit, '$$VELOCITY_SCALING_FACTOR', [CalParams%ContactScalingFactor], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_CONTACT_NORMAL_CORRECTION', [CalParams%ApplyContactNormalCorrection], 1, .true.)
+      call WriteInteger(FileUnit, '$$NUMBER_OF_CORRECTED_NORMALS', [CalParams%NCorrectedNormals], 1, .true.)
+      if ((CalParams%NCorrectedNormals>0)) then
+         write(FileUnit, '(A)') '$$NODE_NORMAL_DATA'
+         do I = 1, CalParams%NumberSoilLayers
+            write(FileUnit, *) CalParams%ManuallyDefinedVectors(I,1:(1+NVECTOR))
+         end do
+      end if
+      ! APPLY EXCAVATION
+      call WriteInteger(FileUnit, '$$EXCAVATION', [CalParams%NumberExcavatedVolumes], 1, .true.)
+      do I = 1, CalParams%NumberExcavatedVolumes
+         call WriteInteger(FileUnit, '', [CalParams%ExcavatedVolumeID(I),CalParams%ExcavationStages(I,1:2)], 3, .true.)
+      end do
+
+      ! FIXED SOLID SKELETON
+      call WriteLogic(FileUnit, '$$FIX_SOLID_SKELETON', [CalParams%ApplyFixedSolidSkeleton], 1, .true.)
+
+      ! STRAIN SMOOTHING
+      call WriteLogic(FileUnit, '$$STRAIN_SMOOTHING', [CalParams%ApplyStrainSmoothing], 1, .true.)
+
+      ! Apply B_bar flag
+      call WriteLogic(FileUnit, '$$B_Bar_Smoothing', [CalParams%ApplyB_Bar], 1, .true.)
+
+      ! DOUBLE POINT :: STRAIN SMOOTHING LIQUID
+      call WriteLogic(FileUnit, '$$APPLY_STRAIN_SMOOTHING_LIQUID_TWOLAYERFORM', [CalParams%ApplyStrainSmoothingLiquidTwoLayer], 1, .true.)
+
+      ! DOUBLE POINT :: LIQUID PRESSURE CAVITATION THRESHOLD
+      call WriteReal(FileUnit, '$$LIQUID_CAVITATION', [CalParams%LiquidPressureCavitationThreshold], 1, .true.)
+
+      ! DOUBLE POINT :: APPLY_ERGUN_LAW
+      call WriteLogic(FileUnit, '$$UPDATE_PERMEABILITY_DARCY_ERGUN', [CalParams%TwoLayerApplyUpdatePermeability, CalParams%TwoLayerApplyErgunLaw], 2, .true.)
+      call WriteReal(FileUnit, '$$GRAIN_SIZE_DIAMETER', [CalParams%TwoLayerErgunLawDiameterPartic, CalParams%TwoLayerErgunLawDiameterPartic2], 2, .true.)
+      call WriteReal(FileUnit, '$$ERGUN_CONSTANTS', [CalParams%ERGUNCONSTANTA, CalParams%ERGUNCONSTANTB], 2, .true.)
+
+      ! DOUBLE POINT :: NO TENSILE STRESS IN LIQUID MATERIAL POINT WITH LIQUID STATUS
+      call WriteLogic(FileUnit, '$$NO_TENSILE_STRESS_LIQUID_MP_WITH_LIQUID_STATUS', [CalParams%TwoLayerApplyNoTensStressLiqMPwLiqStatus], 1, .true.)
+
+      ! DOUBLE POINT :: MAXIMUM POROSITY
+      call WriteReal(FileUnit, '$$MAXIMUM_POROSITY', [CalParams%LimitPorosity], 1, .true.)
+
+      ! DOUBLE POINT :: DETECT FREE SURFACE
+      call WriteLogicReal(FileUnit, '$$DETECT_FREE_SURFACE', [CalParams%ApplyDetectLiquidFreeSurface], [CalParams%FreeSurfaceFactor], 1, .true.)
+
+      call WriteLogic(FileUnit, '$$RESET_DISPLACEMENTS', [.false.], 1, .true.)
+
+      call WriteLogic(FileUnit, '$$REMOVE_FIXITIES', [CalParams%ApplyRemoveSolidFixities, CalParams%ApplyRemoveLiquidFixities, CalParams%ApplyRemoveGasFixities], 3, .true.)
+
+      ! K0-PROCEDURE
+      call WriteLogic(FileUnit, '$$K0_PROCEDURE', [CalParams%ApplyK0Procedure], 1, .true.)
+      call WriteReal(FileUnit, '$$K0_MAX_SUCTION', [CalParams%K0MaxSurfaceSuction], 1, .true.)
+      call WriteReal(FileUnit, '$$SURFACE_ELEVATION', [CalParams%SoilSurfacePoint(1:2)], 2, .true.)
+
+      call WriteInteger(FileUnit, '$$NUMBER_SOIL_LAYERS', [CalParams%NumberSoilLayers], 1, .true.)
+      if (CalParams%NumberSoilLayers>0) then
+         write(FileUnit, '(A)') '$$THICKNESS_SOIL_LAYERS'
+         do I = 1, CalParams%NumberSoilLayers
+            write(FileUnit, *) CalParams%ThicknessSoilLayer(I)
+         end do
+      end if
+
+      call WriteReal(FileUnit, '$$LIQUID_SURFACE', [CalParams%LiquidSurfacePoint(1:2)], 2, .true.)
+      call WriteReal(FileUnit, '$$CONSIDERED_LOAD_K0', [CalParams%InitialVerticalLoadK0], 1, .true.)
+      call WriteReal(FileUnit, '$$INITIAL_WATER_PRESSURE', [CalParams%InitialWaterPressure], 1, .true.)
+
+      ! MATERIAL DATA
+      call WriteLogic(FileUnit, '$$APPLY_MATERIAL_UPDATE', [.false.], 1, .true.)
+      call WriteLogic(FileUnit, '$$APPLY_POROSITY_UPDATE', [CalParams%ApplyPorosityUpdate], 1, .true.)
+
+      call WriteLogicInteger(FileUnit, '$$SUBMERGED_CALCULATION', [CalParams%ApplySubmergedCalculation], [CalParams%NumberSubmergedCalculation], 1, .true.)
+
+      ! INITIAL VELOCITY ON MATERIAL POINTS
+      call WriteLogic(FileUnit, '$$INITIAL_VELOCITY', [.false.], 1, .true.)
+
+      call WriteLogic(FileUnit, '$$APPLY_OBJECTIVE_STRESS', [CalParams%ApplyObjectiveStress], 1, .true.)
+
+      call WriteReal(FileUnit, '$$DEGREE_OF_FILLING', [CalParams%RequiredDegreeOfFilling], 1, .true.)
+
+      call WriteInteger(FileUnit, '$$NUMBER_OF_ACTIVE_ELEMENTS', [Counters%NAEl], 1, .true.)
+
+      ! EMPTY ELEMENTS
+      call WriteLogic(FileUnit, '$$APPLY_EMPTY_ELEMENTS', [CalParams%ApplyEmptyElements], 1, .true.)
+      call WriteReal(FileUnit, '$$MASS_FACTOR_VIRTUAL_PARTICLES', [CalParams%VirtualParticleMassFactor], 1, .true.)
+      call WriteInteger(FileUnit, '$$GROUP_THRESHOLD', [CalParams%GroupThreshold], 1, .true.)
+
+      ! VISUALIZATION
+      call WriteString(FileUnit, '$$VISUALIZATION_OPTION', CalParams%Visualization, 1, .true.)
+
+      ! OUTPUT
+      call WriteInteger(FileUnit, '$$OUTPUT_NUMBER_OF_MATERIAL_POINTS', [CalParams%OutputNumberParticles], 1, .true.)
+      if (CalParams%OutputNumberParticles > 0) then
+         call WriteInteger(FileUnit, '$$OUTPUT_MATERIAL_POINTS', [CalParams%OutputParticles(1)], 1, .true.)
+         do I = 2, CalParams%OutputNumberParticles
+            call WriteInteger(FileUnit, '', [CalParams%OutputParticles(I)], 1, .true.)
+         end do
+      else
+         call WriteInteger(FileUnit, '$$OUTPUT_MATERIAL_POINTS', [-1], 1, .true.)
+      end if
+
+      call WriteLogic(FileUnit, '$$OUTPUT_BASIC_DATA', [CalParams%OutputBasicData], 1, .true.)
+      call WriteInteger(FileUnit, '$$OUTPUT_CURVES_INTERVAL', [CalParams%OutputCurvesIntervals], 1, .true.)
+
+      call WriteInteger(FileUnit, '$$OUTPUT_NUMBER_OF_NODES', [CalParams%OutputNumberNodes], 1, .true.)
+      call WriteInteger(FileUnit, '$$OUTPUT_NODES', [CalParams%OutputNodes(1:10)], 10, .true.)
+
+      call WriteLogic(FileUnit, '$$OUTPUT_DEBUG_DATA', [CalParams%OutputDebugData], 1, .true.)
+      call WriteLogic(FileUnit, '$$OUTPUT_EACH_LOAD_STEP', [CalParams%OutputEachLoadStep], 1, .true.)
+      call WriteLogic(FileUnit, '$$QUICK_CHECK_OUTPUT', [CalParams%ApplyQuickCheckOutput], 1, .true.)
+
+      call WriteInteger(FileUnit, '$$FILE_COUNTER', [CalParams%FileCounter], 1, .true.)
+
+      call WriteInteger(FileUnit, '$$PARTICLE_FILE_COUNTER', [CalParams%ParticleFileCounter], 1, .true.)
+
+      ! Feedback
+      call WriteInteger(FileUnit, '$$FEEDBACK_LEVEL', [CalParams%FeedbackLevel], 1, .true.)
+
+      call WriteLogic(FileUnit, '$$APPLY_SMOOTHENING_LIQUID_PRESSURE_INCREMENT', [CalParams%ApplySmootheningLiquidPressureIncrement], 1, .true.) ! omit for external version
+
+      ! END OF CPS FILE
+      write(FileUnit, '(A)') '$$END'
+
+   end subroutine WriteCPS
+
+
+   subroutine DetermineLoadStep()
+      !**********************************************************************
+      !
+      !    Function:  Retrieves the last computed step from the GIP file
+      !               by searching in the project directory for the GIP
+      !               file with the highest step number, GIP_099 ....
+      !               For a new computation the GIP file is generated for
+      !               post-processing purposes.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! Local variables
+      character(len = MAX_FILENAME_LENGTH) :: FileName
+      character(len = MAX_EXTENSION_LENGTH) :: StepString
+      integer(INTEGER_TYPE) :: CheckedStep
+
+      CheckedStep = 1
+      CalParams%PreviouslyRealisedLoadStep = 0
+      do
+         call GetStepExt(CheckedStep, StepString)
+         FileName = trim(CalParams%FileNames%ProjectName)//GIP_STEP_FILE_EXTENSION//trim(StepString)
+         if (FExist(trim(FileName))) then
+            CalParams%PreviouslyRealisedLoadStep = CheckedStep
+            CheckedStep = CheckedStep + 1
+         else
+            EXIT
+         end if
+      end do
+
+      call GetStepExt(CalParams%PreviouslyRealisedLoadStep, StepString)
+      CalParams%FileNames%PreviousStepExt = trim(StepString)
+      CalParams%IStep = CalParams%PreviouslyRealisedLoadStep + 1 ! IStep will be 1 for new computation
+      call GetStepExt(CalParams%IStep, StepString)
+      CalParams%FileNames%LoadStepExt = trim(StepString)
+
+      if (.not.IsFollowUpPhase()) then
+         call WriteGIPFile(DO_NOT_USE_STEP_EXTENSION)
+      end if
+
+   end subroutine DetermineLoadStep
+
+
+   subroutine WriteGIPFile(DoUseStepExtension)
+      !**********************************************************************
+      !
+      !    Function:  Writes the GIP file using the provided extension.
+      !               If DoUseStepExtension is true, the GIP_XXX extension
+      !               is used, otherwise the GIP extension.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! Arguments
+      logical, intent(in) :: DoUseStepExtension
+
+      ! Local variables
+      character(len = MAX_EXTENSION_LENGTH) :: FileExtension
+      integer(INTEGER_TYPE) :: StartStep, EndStep
+
+      if (DoUseStepExtension) then
+         FileExtension = GIP_STEP_FILE_EXTENSION//CalParams%FileNames%LoadStepExt
+      else
+         FileExtension = GIP_FILE_EXTENSION
+      end if
+
+      call FileOpen(TMP_UNIT, trim(CalParams%FileNames%ProjectName)//trim(FileExtension))
+
+      if (DoUseStepExtension) then
+         StartStep = CalParams%PreviouslyRealisedLoadStep + 1
+         EndStep = CalParams%IStep
+      else
+         StartStep = INITIAL_STEP
+         EndStep = MAXIMUM_STEP
+      end if
+
+      write(TMP_UNIT, 101) '[Phase0]' ! Presently not used
+      write(TMP_UNIT, 102) START_STEP_SPECIFIER, StartStep
+      write(TMP_UNIT, 102) END_STEP_SPECIFIER, EndStep
+
+      close(TMP_UNIT)
+
+101   format(A)
+102   format(A, I)
+
+   end subroutine WriteGIPFile
+
+
+
+   logical function IsLastTimeStepOfExplicitCalculation() result(res)
+      !**********************************************************************
+      !
+      !    Function: Checks whether is the last time step of the explicit calculation or not.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+      implicit none
+
+      res = ((CalParams%TotalTime - CalParams%TotalRealTime) < SMALL) .and. (.not.CalParams%ApplyQuasiStatic)
+
+   end function IsLastTimeStepOfExplicitCalculation
+
+
+
+   logical function IsMPMSkipConvection() result(res)
+      !**********************************************************************
+      !
+      !    Function: Checks whether is the MPM convection phase can be skipped or not.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+      implicit none
+
+      if (CalParams%SkipConvection) then
+         res = .not.IsDistorted .and. .not.(     mod(CalParams%TimeStep, CalParams%NumberSkipConvection) == 0 &
+            .or. CalParams%TimeStep==1 &
+            .or. IsLastTimeStepOfExplicitCalculation())
+      else
+         res = .false.
+      endif
+
+   end function IsMPMSkipConvection
+
+
+
+
+   subroutine WriteLogic(unit, name, value, ndim, IsWritten)
+      !**********************************************************************
+      !
+      ! Function:  Write a logical (array) value into the CPS file
+      !
+      !**********************************************************************
+
+      implicit none
+
+      integer(INTEGER_TYPE), intent(in) :: unit
+      character(*), intent(in) :: name
+      integer(INTEGER_TYPE), intent(in) :: ndim
+      logical, dimension(:), intent(in) :: value
+      logical, intent(in) :: IsWritten
+
+      ! local variables
+      integer(INTEGER_TYPE) :: ios
+
+      if (.not.IsWritten) RETURN
+
+      if ( trim(name) /= '' ) then
+         write(unit, '(A)', iostat=ios) trim(name)
+         call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
+      else
+         ! ...do nothing
+      end if
+
+      select case (ndim)
+       case(1)
+         if (value(1)) write(unit, '(A2)', iostat=ios) ' 1'
+         if (.not.value(1)) write(unit, '(A2)', iostat=ios) ' 0'
+       case(2)
+         if (value(1).AND.value(2)) write(unit, '(A4)', iostat=ios) ' 1 1'
+         if (value(1).AND..not.value(2)) write(unit, '(A4)', iostat=ios) ' 1 0'
+         if (.not.value(1).AND.value(2)) write(unit, '(A4)', iostat=ios) ' 0 1'
+         if (.not.value(1).AND..not.value(2)) write(unit, '(A4)', iostat=ios) ' 0 0'
+       case(3)
+         if (value(1).AND.value(2).AND.value(3)) write(unit, '(A6)', iostat=ios) ' 1 1 1'
+         if (value(1).AND.value(2).AND..not.value(3)) write(unit, '(A6)', iostat=ios) ' 1 1 0'
+         if (value(1).AND..not.value(2).AND.value(3)) write(unit, '(A6)', iostat=ios) ' 1 0 1'
+         if (value(1).AND..not.value(2).AND..not.value(3)) write(unit, '(A6)', iostat=ios) ' 1 0 0'
+         if (.not.value(1).AND.value(2).AND.value(3)) write(unit, '(A6)', iostat=ios) ' 0 1 1'
+         if (.not.value(1).AND.value(2).AND..not.value(3)) write(unit, '(A6)', iostat=ios) ' 0 1 0'
+         if (.not.value(1).AND..not.value(2).AND.value(3)) write(unit, '(A6)', iostat=ios) ' 0 0 1'
+         if (.not.value(1).AND..not.value(2).AND..not.value(3)) write(unit, '(A6)', iostat=ios) ' 0 0 0'
+       case default
+         call GiveError('CPS file: Writing logic value not possible. Wrong dimension.')
+      end select
+
+      call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
+
+   end subroutine WriteLogic
+
+
+   subroutine WriteInteger(unit, name, value, ndim, IsWritten)
+      !**********************************************************************
+      !
+      ! Function:  Write an integer (array) value to the CPS file
+      !
+      !**********************************************************************
+
+      implicit none
+
+      integer(INTEGER_TYPE), intent(in) :: unit
+      character(*), intent(in) :: name
+      integer(INTEGER_TYPE), intent(in) :: ndim
+      integer(INTEGER_TYPE), dimension(:), intent(in) :: value
+      logical, intent(in) :: IsWritten
+
+      ! local variables
+      integer(INTEGER_TYPE) :: ios
+
+      if (.not.IsWritten) RETURN
+
+      if ( trim(name) /= '' ) then
+         write(unit, '(A)', iostat=ios) trim(name)
+         call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
+      else
+         ! ...do nothing
+      end if
+
+      select case (ndim)
+       case(1)
+         write(unit, *, iostat=ios) value(1)
+       case(2)
+         write(unit, *, iostat=ios) value(1:2)
+       case(3)
+         write(unit, *, iostat=ios) value(1:3)
+       case(10)
+         write(unit, *, iostat=ios) value(1:10)
+       case default
+         call GiveError('CPS file: Writing integer value not possible. Wrong dimension.')
+      end select
+
+      call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
+
+   end subroutine WriteInteger
+
+
+   subroutine WriteReal(unit, name, value, ndim, IsWritten)
+      !**********************************************************************
+      !
+      ! Function:  Write a real (array) value to the CPS file
+      !
+      !**********************************************************************
+
+      implicit none
+
+      integer(INTEGER_TYPE), intent(in) :: unit
+      character(*), intent(in) :: name
+      integer(INTEGER_TYPE), intent(in) :: ndim
+      real(REAL_TYPE), dimension(:), intent(in) :: value
+      logical, intent(in) :: IsWritten
+
+      ! local variables
+      integer(INTEGER_TYPE) :: ios
+
+      if (.not.IsWritten) RETURN
+
+      if ( trim(name) /= '' ) then
+         write(unit, '(A)', iostat=ios) trim(name)
+         call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
+      else
+         ! ...do nothing
+      end if
+
+      write(unit, *, iostat=ios) value(1:ndim)
+
+      call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
+
+   end subroutine WriteReal
+
+
+   subroutine WriteString(unit, name, value, ndim, IsWritten)
+      !**********************************************************************
+      !
+      ! Function:  Write a real (array) value to the CPS file
+      !
+      !**********************************************************************
+
+      implicit none
+
+      integer(INTEGER_TYPE), intent(in) :: unit
+      character(*), intent(in) :: name
+      integer(INTEGER_TYPE), intent(in) :: ndim
+      character(*), intent(in) :: value
+      logical, intent(in) :: IsWritten
+
+      ! local variables
+      integer(INTEGER_TYPE) :: ios
+
+      if (.not.IsWritten) RETURN
+
+      if ( trim(name) /= '' ) then
+         write(unit, '(A)', iostat=ios) trim(name)
+         call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
+      else
+         ! ...do nothing
+      end if
+
+      select case (ndim)
+       case(1)
+         write(unit, *, iostat=ios) value
+       case default
+         call GiveError('CPS file: Writing string value not possible. Wrong dimension.')
+      end select
+
+      call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
+
+   end subroutine WriteString
+
+
+   subroutine WriteStringReal(unit, name, valueS, valueR, IsWritten)
+      !**********************************************************************
+      !
+      ! Function:  Write a combination of string(scalar) and real(array) value into the CPS file
+      !
+      !**********************************************************************
+
+      implicit none
+
+      integer(INTEGER_TYPE), intent(in) :: unit
+      character(*), intent(in) :: name
+      character(*), intent(in) :: valueS
+      real(REAL_TYPE), dimension(:), intent(in) :: valueR
+      logical, intent(in) :: IsWritten
+
+      ! local variables
+      integer(INTEGER_TYPE) :: ios
+
+      if (.not.IsWritten) RETURN
+
+      if ( trim(name) /= '' ) then
+         write(unit, '(A)', iostat=ios) trim(name)
+         call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
+      else
+         ! ...do nothing
+      end if
+
+      write(unit, *, iostat=ios) valueS, valueR
+      call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
+
+   end subroutine WriteStringReal
+
+
+   subroutine WriteLogicReal(unit, name, valueL, valueR, ndim, IsWritten)
+      !**********************************************************************
+      !
+      ! Function:  Write a combination of logical and real value into the CPS file
+      !
+      !**********************************************************************
+
+      implicit none
+
+      integer(INTEGER_TYPE), intent(in) :: unit
+      character(*), intent(in) :: name
+      integer(INTEGER_TYPE), intent(in) :: ndim
+      logical, dimension(:), intent(in) :: valueL
+      real(REAL_TYPE), dimension(:), intent(in) :: valueR
+      logical, intent(in) :: IsWritten
+
+      ! local variables
+      integer(INTEGER_TYPE) :: ios
+
+      if (.not.IsWritten) RETURN
+
+      if ( trim(name) /= '' ) then
+         write(unit, '(A)', iostat=ios) trim(name)
+         call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
+      else
+         ! ...do nothing
+      end if
+
+      select case (ndim)
+       case(1)
+         if (valueL(1)) write(unit, '(A2, F)', iostat=ios) ' 1', valueR(1)
+         if (.not.valueL(1)) write(unit, '(A2, F)', iostat=ios) ' 0', valueR(1)
+       case(2)
+         if (valueL(1)) write(unit, '(A2, 2F)', iostat=ios) ' 1', valueR(1), valueR(2)
+         if (.not.valueL(1)) write(unit, '(A2, 2F)', iostat=ios) ' 0', valueR(1), valueR(2)
+       case(3)
+         if (valueL(1)) write(unit, '(A2, 3F)', iostat=ios) ' 1', valueR(1), valueR(2), valueR(3)
+         if (.not.valueL(1)) write(unit, '(A2, 3F)', iostat=ios) ' 0', valueR(1), valueR(2), valueR(3)
+       case(4)
+         if (valueL(1)) write(unit, '(A2, 4F)', iostat=ios) ' 1', valueR(1), valueR(2), valueR(3), valueR(4)
+         if (.not.valueL(1)) write(unit, '(A2, 4F)', iostat=ios) ' 0', valueR(1), valueR(2), valueR(3), valueR(4)
+       case default
+         call GiveError('CPS file: Writing logic and real value not possible. Wrong dimension.')
+      end select
+
+      call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
+
+   end subroutine WriteLogicReal
+
+
+   subroutine WriteLogicInteger(unit, name, valueL, valueI, ndim, IsWritten)
+      !**********************************************************************
+      !
+      ! Function:  Write a combination of logical and integer value into the CPS file
+      !
+      !**********************************************************************
+
+      implicit none
+
+      integer(INTEGER_TYPE), intent(in) :: unit
+      character(*), intent(in) :: name
+      integer(INTEGER_TYPE), intent(in) :: ndim
+      logical, dimension(:), intent(in) :: valueL
+      integer(INTEGER_TYPE), dimension(:), intent(in) :: valueI
+      logical, intent(in) :: IsWritten
+
+      ! local variables
+      integer(INTEGER_TYPE) :: ios
+
+      if (.not.IsWritten) RETURN
+
+      if ( trim(name) /= '' ) then
+         write(unit, '(A)', iostat=ios) trim(name)
+         call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
+      else
+         ! ...do nothing
+      end if
+
+      select case (ndim)
+       case(1)
+         if (valueL(1)) write(unit, '(A2, I)', iostat=ios) ' 1', valueI(1)
+         if (.not.valueL(1)) write(unit, '(A2, I)', iostat=ios) ' 0', valueI(1)
+       case(2)
+         if (valueL(1)) write(unit, '(A2, 2I)', iostat=ios) ' 1', valueI(1), valueI(2)
+         if (.not.valueL(1)) write(unit, '(A2, 2I)', iostat=ios) ' 0', valueI(1), valueI(2)
+       case(3)
+         if (valueL(1)) write(unit, '(A2, 3I)', iostat=ios) ' 1', valueI(1), valueI(2), valueI(3)
+         if (.not.valueL(1)) write(unit, '(A2, 3I)', iostat=ios) ' 0', valueI(1), valueI(2), valueI(3)
+       case default
+         call GiveError('CPS file: Writing logic and integer value not possible. Wrong dimension.')
+      end select
+
+      call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
+
+   end subroutine WriteLogicInteger
 
 
 end module ModReadCalculationData
