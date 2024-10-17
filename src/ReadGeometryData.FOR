@@ -266,7 +266,10 @@
           integer(INTEGER_TYPE) :: ii
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1 !we need to generalize the inout structure within subroutines
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: ILoadSystem
+          character(len=255) :: TractionDimension = ''
           
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
           
           
           ! I moved this from InitialiseMeshData() to InitialiseDimension() (i.e., here) 
@@ -330,14 +333,7 @@
               !if () then 
                   
 
-            else if (trim(BName) == '$$FORMULATION') then
-              read(GOMunit, *, iostat=ios) DumS
-              call Assert( ios == 0, messageIOS//trim(BName) )
-              call Assert( DumS == SINGLE_POINT .or. DumS == DOUBLE_POINT, 'GOM file: ' //trim(BName)// ' must be equal to ' & 
-                           // SINGLE_POINT // ' or ' // DOUBLE_POINT //'.' )
-              Formulation = DumS
-              
-              call SetFormulation(Formulation)
+            
               
              ! ! Physical definition of the domain (lowest point) 
              ! else if (trim(BName) == '$$LOWEST_POINT_ON_A_SURFACE_DEFINING_PHYSICAL_DOMAIN') then 
@@ -471,11 +467,20 @@
                 
                 
                 !Number of load systems for each patch 
-                allocate( NLoadSystems(Counters%NPatches), stat = IError)
-                NLoadSystems = 0
+                allocate( NLoadSystems_Traction(Counters%NPatches), stat = IError)
+                NLoadSystems_Traction = 0
                 
                 
                 
+            
+                
+                
+                
+                
+                
+                
+                
+                !--------------------------------------------------------------------------
             else if (trim(BName) == '$$PATCH_ID') then 
                 ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
                 IPatch = -1
@@ -488,6 +493,96 @@
                 
                 
                 
+            else if (trim(BName) == '$$NUMBER_OF_LOAD_SYSTEMS') then 
+                ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                !ILoadSystem = -1
+                ! read patch ID from the GOM file
+                read(GOMunit, *) NLoadSystems_Traction(IPatch)
+                
+                
+                
+           
+            
+                
+                
+                
+                !------------------------------------------------------------------------
+                
+                
+                
+                
+  
+            else if (trim(BName) == '$$FORMULATION') then
+              read(GOMunit, *, iostat=ios) DumS
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumS == SINGLE_POINT .or. DumS == DOUBLE_POINT, 'GOM file: ' //trim(BName)// ' must be equal to ' & 
+                           // SINGLE_POINT // ' or ' // DOUBLE_POINT //'.' )
+              Formulation = DumS
+              
+              call SetFormulation(Formulation)
+            
+              
+              ! we need to know the maximum number of load systems 
+              Maximum_NLoadSystems_Traction = maxval(NLoadSystems_Traction)
+              
+
+              allocate( NControlPoints_Traction(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              NControlPoints_Traction = 0
+              
+              allocate( NURBS_Traction_Dimension(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              NURBS_Traction_Dimension = 0
+              
+              allocate( nel_NURBS_Traction(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              nel_NURBS_Traction = 0
+              
+              allocate( nnp_NURBS_Traction(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              nnp_NURBS_Traction = 0
+              
+              allocate( nen_NURBS_Traction(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              nen_NURBS_Traction = 0  
+              
+
+              !------------------------------------------------------------------------
+              
+              allocate( NLoadSystems_Traction_NumberOfElements(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              NLoadSystems_Traction_NumberOfElements = 0
+              
+                !------------------------------------------------------------------------
+                
+              allocate( Counters%NLoadedElementSidesSolidNodes(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              Counters%NLoadedElementSidesSolidNodes = 0 
+              
+              allocate( Counters%NLoadedElementSidesWaterNodes(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              Counters%NLoadedElementSidesWaterNodes = 0
+              
+              allocate( Counters%NLoadedElementSidesSolidMatPoints(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              Counters%NLoadedElementSidesSolidMatPoints = 0
+              
+              allocate( Counters%NLoadedElementSidesWaterMatPoints(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              Counters%NLoadedElementSidesWaterMatPoints = 0
+                
+                
+              
+              
+              allocate( Counters%NLoadedElementSidesSolid(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              Counters%NLoadedElementSidesSolid = 0
+              
+              allocate( Counters%NLoadedElementSidesWater(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              Counters%NLoadedElementSidesWater = 0
+              
+              
+                
+                !------------------------------------------------------------------------
+                
+            else if (trim(BName) == '$$PATCH_ID') then
+                ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                IPatch = -1
+                ! read patch ID from the GOM file
+                read(GOMunit, *) IPatch ! --> now we knot patch index so we can read in the following: 
+                                        ! 1) Number of control points for each patch
+                                        ! 1) Number of knot entries (xi, eta, zeta) 
+                                        ! 2) Order of knot (xi, eta, zeta)
+                                        ! 3) 
                 
                 
                 
@@ -579,30 +674,30 @@
                 
                       
                 ! Xi vector 
-            else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER_TRACTION') then 
-                read(GOMunit, *) NXiKnotEntries_Traction, NXiKnotOrder_Traction  ! reading 1) number of knot entries, 2) knot order 
-                !                   (IPatch)               (IPatch)
-                ! allocating allocatable arrays
-                !allocate(XiKnotEntries(NXiKnotEntries(IPatch_Temporary)), stat = IError)
-                !
-                !! find unique knots items in the knot vector 
-                !call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
-                
-                ! number of univariate basis functions for the Xi direction 
-                nn_NURBS_NumberOfUnivariateXiKnots_Traction = NXiKnotEntries_Traction - NXiKnotOrder_Traction - 1
-                !           (IPatch)                                        (IPatch)                (IPatch)
+            !else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER_TRACTION') then 
+            !    read(GOMunit, *) NXiKnotEntries_Traction, NXiKnotOrder_Traction  ! reading 1) number of knot entries, 2) knot order 
+            !    !                   (IPatch)               (IPatch)
+            !    ! allocating allocatable arrays
+            !    !allocate(XiKnotEntries(NXiKnotEntries(IPatch_Temporary)), stat = IError)
+            !    !
+            !    !! find unique knots items in the knot vector 
+            !    !call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
+            !    
+            !    ! number of univariate basis functions for the Xi direction 
+            !    nn_NURBS_NumberOfUnivariateXiKnots_Traction = NXiKnotEntries_Traction - NXiKnotOrder_Traction - 1
+            !    !           (IPatch)                                        (IPatch)                (IPatch)
                     
                 ! Eta vector
-            else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER_TRACTION') then 
-                read(GOMunit, *) NEtaKnotEntries_Traction, NEtaKnotOrder_Traction  ! reading 1) number of knot entries, 2) knot order 
-                                   !     (IPatch)   (IPatch)
-                ! allocating allocatable arrays
-                !allocate(EtaKnotEntries(NEtaKnotEntries(IPatch_Temporary)), stat = IError)
-                ! number of univariate basis functions for the Eta direction 
-                mm_NURBS_NumberOfUnivariateEtaKnots_Traction = NEtaKnotEntries_Traction - NEtaKnotOrder_Traction - 1
-                !           (IPatch)                        (IPatch)        (IPatch)    
-                
-                
+            !else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER_TRACTION') then 
+            !    read(GOMunit, *) NEtaKnotEntries_Traction, NEtaKnotOrder_Traction  ! reading 1) number of knot entries, 2) knot order 
+            !                       !     (IPatch)   (IPatch)
+            !    ! allocating allocatable arrays
+            !    !allocate(EtaKnotEntries(NEtaKnotEntries(IPatch_Temporary)), stat = IError)
+            !    ! number of univariate basis functions for the Eta direction 
+            !    mm_NURBS_NumberOfUnivariateEtaKnots_Traction = NEtaKnotEntries_Traction - NEtaKnotOrder_Traction - 1
+            !    !           (IPatch)                        (IPatch)        (IPatch)    
+            !    
+            !    
                 
                 
                 
@@ -692,13 +787,146 @@
                 
                 
                 
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                ! NURBS traction flags
+
+                else if (trim(BName) == '$$TRACTION_LOAD_SYSTEM') then
+                ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                ILoadSystem = -1
+                ! read patch ID from the GOM file
+                read(GOMunit, *) ILoadSystem ! --> now we knot patch index so we can read in the following: 
+                                        ! 1) Number of control points for each patch
+                                        ! 1) Number of knot entries (xi, eta, zeta) 
+                                        ! 2) Order of knot (xi, eta, zeta)
+                                        ! 3) 
                 
                 
                 
+                else if (trim(BName) == '$$NUMBER_OF_TRACTION_ELEMENTS') then 
+                ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                !ILoadSystem = -1
+                ! read patch ID from the GOM file
+                read(GOMunit, *) NLoadSystems_Traction_NumberOfElements(ILoadSystem, IPatch)
                 
                 
                 
+                else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_TRACTION') then
+                read(GOMunit, *) NControlPoints_Traction(ILoadSystem, IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+                                !(IPatch)
+                read(GOMunit, *) TractionDimension
                 
+                if (NControlPoints_Traction(ILoadSystem, IPatch)==0) cycle
+                
+                if (NDIM == 2) then !--> 1D
+                    ! if NDIM = 2 then we are looking at a line which is 1D
+                    
+                    
+                    if (TractionDimension == 'XI') then 
+                        
+                        
+                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 1
+                    
+                    
+                    nel_NURBS_Traction(ILoadSystem,IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) !_Traction _Traction
+                    !   (IPatch)               (IPatch)                           (IPatch)
+              
+                    
+                    nnp_NURBS_Traction(ILoadSystem,IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) !_Traction
+                    !(IPatch)                   (IPatch)
+                    !number of global basis functions (global here refers to its global domain within the 'super' element)
+                    
+                
+                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NXiKnotOrder(IPatch)+1)  
+                    !(IPatch)               (IPatch)
+                    !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                    
+                    
+                    elseif (TractionDimension == 'ETA') then
+                        
+                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 2
+                    
+                        
+                    nel_NURBS_Traction(ILoadSystem,IPatch) = (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NXiKnotOrder(IPatch)) !_Traction _Traction
+                    !   (IPatch)               (IPatch)                           (IPatch)
+              
+                    
+                    nnp_NURBS_Traction(ILoadSystem,IPatch) = mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !nn_NURBS_NumberOfUnivariateXiKnots_Traction
+                    !(IPatch)                   (IPatch)
+                    !number of global basis functions (global here refers to its global domain within the 'super' element)
+                    
+                
+                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NXiKnotOrder(IPatch)+1)   !_Traction
+                    !(IPatch)               (IPatch)
+                    !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                    
+                    
+                    end if 
+                    
+                    
+                else if (NDIM == 3) then 
+                
+                    
+                    
+                    if (TractionDimension == 'XI_ETA') then
+                        
+                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 1
+                        
+                    nel_NURBS_Traction(ILoadSystem,IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
+                                    (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) 
+        
+                
+                    nnp_NURBS_Traction(ILoadSystem,IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    * mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !_Traction  
+                    !number of global basis functions (global here refers to its global domain within the 'super' element)
+
+                
+                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) 
+                    !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                    
+                    
+                    
+                    else if (TractionDimension == 'XI_ZETA') then
+                        
+                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 2
+                    
+                        
+                    nel_NURBS_Traction(ILoadSystem,IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
+                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)) 
+        
+                
+                    nnp_NURBS_Traction(ILoadSystem,IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    * oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)  
+                    !number of global basis functions (global here refers to its global domain within the 'super' element)
+
+                
+                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NXiKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) 
+                    !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                        
+                        
+                        
+                    else if (TractionDimension == 'ETA_ZETA') then
+                        
+                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 3
+                    
+                        
+                    nel_NURBS_Traction(ILoadSystem,IPatch) = (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &
+                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)) 
+        
+                
+                    nnp_NURBS_Traction(ILoadSystem,IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    * oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)  
+                    !number of global basis functions (global here refers to its global domain within the 'super' element)
+
+                
+                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) 
+                    !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                        
+                            
+                        
+                    end if 
+                    
+                    
+                end if 
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 ! NURBS traction flags
@@ -732,50 +960,27 @@
                 
                 
 
-            else if (trim(BName) == '$$NUMBER_OF_LOAD_SYSTEMS') then
-                read(GOMunit, *) NLoadSystems(IPatch)
+                ! Number of load systems in each patch
+            !else if (trim(BName) == '$$NUMBER_OF_LOAD_SYSTEMS') then
+            !    read(GOMunit, *) NLoadSystems_Traction(IPatch)
+                
+                
+            
+                
+            
+            
+            
+            !else if (trim(BName) == '$$LOAD_SYSTEM') then
+            !    read(GOMunit, *) ILoadSystems, TractionDimension
+            
+                
+                !TractionDimension(ILoadSystem, IPatch) = 
                 
                 
                 
                 
 
-            else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_TRACTION') then
-                read(GOMunit, *) NControlPoints_Traction  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
-                                !(IPatch)
-                if (NControlPoints_Traction==0) cycle
-                
-                if (NDIM == 2) then !--> 1D
-                    ! if NDIM = 2 then we are looking at a line which is 1D
-                    
-                    nel_NURBS_Traction = (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction) 
-                    !   (IPatch)               (IPatch)                           (IPatch)
-              
-                    
-                    nnp_NURBS_Traction = nn_NURBS_NumberOfUnivariateXiKnots_Traction
-                    !(IPatch)                   (IPatch)
-                    !number of global basis functions (global here refers to its global domain within the 'super' element)
-                    
-                
-                    nen_NURBS_Traction = (NXiKnotOrder_Traction+1)  
-                    !(IPatch)               (IPatch)
-                    !number of local basis functions (local here refers to a knot span i.e. accross one single element)
-                    
-                else if (NDIM == 3) then 
-                
-                    
-                    nel_NURBS_Traction = (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction) * &
-                                    (mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction) 
-        
-                
-                    nnp_NURBS_Traction = nn_NURBS_NumberOfUnivariateXiKnots_Traction &
-                                    * mm_NURBS_NumberOfUnivariateEtaKnots_Traction  
-                    !number of global basis functions (global here refers to its global domain within the 'super' element)
-
-                
-                    nen_NURBS_Traction = (NXiKnotOrder_Traction+1) * (NEtaKnotOrder_Traction+1) 
-                    !number of local basis functions (local here refers to a knot span i.e. accross one single element)
-                    
-                end if 
+            
                 
                 
                 
@@ -834,8 +1039,6 @@
             else if (trim(BName) == '$$XI_NUMBER_OF_GAUSS_POINTS') then 
                 read(GOMunit, *) NXiGaussPoints
             
-                
-                
                 
                 
                 
@@ -946,6 +1149,8 @@
           ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign
           ! the size of XiKnotEntries, EtaKnotEntries, ZetaKnotEntries
           Maximum_NControlPoints = maxval(NControlPoints) ! <- finding maximum value
+          Maximum_NControlPoints_Traction = maxval(NControlPoints_Traction) ! <- finding maximum value
+          
           
           Maximum_NXiKnotEntries = maxval(NXiKnotEntries) ! <- finding maximum value in this NPATCHES vector
           Maximum_NEtaKnotEntries = maxval(NEtaKnotEntries) ! <- finding maximum value in this NPATCHES vector
@@ -957,8 +1162,8 @@
           allocate(ZetaKnotEntries(Maximum_NZetaKnotEntries,Counters%NPatches), stat = IError)
           
           !------traction
-          allocate(XiKnotEntries_Traction(NXiKnotEntries_Traction), stat = IError)
-          allocate(EtaKnotEntries_Traction(NEtaKnotEntries_Traction), stat = IError)
+          !allocate(XiKnotEntries_Traction(NXiKnotEntries_Traction), stat = IError)
+          !allocate(EtaKnotEntries_Traction(NEtaKnotEntries_Traction), stat = IError)
           !allocate(ZetaKnotEntries(NZetaKnotEntries_Traction), stat = IError)
           
           
@@ -968,14 +1173,7 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Traction
           
-          ! It is a surface in a 3D simulation so we use NVECTOR-1
-          allocate(INN_Traction(nnp_NURBS_Traction, NVECTOR-1), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-                                    !(IPatch)              , Counters%NPatches 
-          allocate(IEN_Traction(nen_NURBS_Traction, nel_NURBS_Traction), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
-                                    !(IPatch)       (IPatch)          , Counters%NPatches  
           
-          INN_Traction = 0 !NURBS coordinate array (also called INC)
-          IEN_Traction = 0 !connectivity array
 
           
           if (NDIM == 2) then 
@@ -1022,6 +1220,7 @@
           end if 
           
           
+          ! --> This is repeated twice
           ! MULTIPATCH generlization aspect
                 ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign
                 ! the size of XiKnotEntries, EtaKnotEntries, ZetaKnotEntries
@@ -1030,6 +1229,12 @@
                 Maximum_nel_NURBS = maxval(nel_NURBS)
                 Maximum_nnp_NURBS = maxval(nnp_NURBS)
                 Maximum_nen_NURBS = maxval(nen_NURBS)
+                
+                
+                Maximum_nel_NURBS_Traction = maxval(nel_NURBS_Traction)
+                Maximum_nnp_NURBS_Traction = maxval(nnp_NURBS_Traction)
+                Maximum_nen_NURBS_Traction = maxval(nen_NURBS_Traction)
+                
                 
                 !Maximum_NFixities = maxval(NFixities)
                 Maximum_NElemMPPrescribedVelocity = maxval(NElemMPPrescribedVelocity) ! --> we need to use this to allocate the prescribed velocity array
@@ -1043,6 +1248,30 @@
           INN = 0 !NURBS coordinate array (also called INC)
           IEN = 0 !connectivity array
 
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          
+          
+          ! It is a surface in a 3D simulation so we use NVECTOR-1
+          allocate(INN_Traction(Maximum_nnp_NURBS_Traction, & !(ILoadSystem, IPatch_Temporary) _Temporary
+              NVECTOR-1, &
+              Maximum_NLoadSystems_Traction, &
+              Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+                                    !(IPatch)              , Counters%NPatches 
+          INN_Traction = 0 !NURBS coordinate array (also called INC)
+          
+          allocate(IEN_Traction(Maximum_nen_NURBS_Traction, & !(ILoadSystem_Temporary, IPatch_Temporary)
+              Maximum_nel_NURBS_Traction, & !(ILoadSystem_Temporary, IPatch_Temporary)
+              Maximum_NLoadSystems_Traction, &
+              Counters%NPatches ), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+                                    !(IPatch)       (IPatch)          , Counters%NPatches  
+          IEN_Traction = 0 !connectivity array
+          
+          
+          
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           ! these should probably be maximum_nnp_NURBS 
@@ -1056,10 +1285,29 @@
 
           
           do IPatch = 1, Counters%NPatches ! loop over patches
+              
+                  
                 if (NDIM ==2) then 
                     
+                    do ILoadSystem = 1, NLoadSystems_Traction(IPatch) ! loop over load systems in each patch
+                    
+                        ! NEED SOME IF STATEMENTS HERE
+                        
+                        
                     !1D --> For LINE traction implementation
-                    call Build_INC_IEN_Array_1D_Traction()
+                    
+                        if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                        
+                        call Build_INC_IEN_Array_1D_Traction_XI(ILoadSystem, IPatch)
+                    
+                        else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                            
+                        call Build_INC_IEN_Array_1D_Traction_ETA(ILoadSystem, IPatch)
+                        
+                        end if 
+                        
+                    
+                    end do 
                     
                     !2D --> For SURFACE implementation
                     call Build_INC_IEN_Array(IPatch) ! IEN and INN arrays for NUBS implementation
@@ -1069,8 +1317,30 @@
                     
                 else if (NDIM ==3) then 
                     
+                    do ILoadSystem = 1, NLoadSystems_Traction(IPatch) ! loop over load systems in each patch
+                    
+                        ! NEED SOME IF STATEMENTS HERE
+                        
+                        !2D --> For SURFACE traction implementation 
+                        
+                        if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                        
+                    call Build_INC_IEN_Array_2D_Traction_XI_ETA(ILoadSystem, IPatch)
                     !2D --> For SURFACE traction implementation 
-                    call Build_INC_IEN_Array_2D_Traction()
+                    
+                    else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                    
+                    call Build_INC_IEN_Array_2D_Traction_XI_ZETA(ILoadSystem, IPatch)
+                    
+                    
+                    else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then 
+                    
+                    !2D --> For SURFACE traction implementation 
+                    call Build_INC_IEN_Array_2D_Traction_ETA_ZETA(ILoadSystem, IPatch)
+                    
+                    end if 
+                    
+                    end do 
                     
                     !3D --> For SOLID implemetation
                     call Build_INC_IEN_Array_3D(IPatch)
@@ -1079,6 +1349,8 @@
                     call Build_INC_IEN_Array_3D_VolLockSmooth(IPatch)
                     
                 end if 
+          
+                !end do ! loop over load systems
           end do ! loop over patches
           
                 
@@ -1113,8 +1385,10 @@
               ControlPoint_Weights_VolLockSmooth = 0.0
               
               ! NURBS Traction 
-              allocate(NodalCoordinates_Traction(NControlPoints_Traction, NVECTOR), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(ControlPoint_Weights_Traction(NControlPoints_Traction), stat = IError) ! size equal to no of nodes
+              !allocate(NodalCoordinates_Traction(NControlPoints_Traction(ILoadSystem_Temporary, IPatch_Temporary), NVECTOR, ILoadSystem_Temporary, IPatch_Temporary), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinates_Traction(Maximum_NControlPoints_Traction, NVECTOR, Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError ) !size equal to no of nodes, no of dimensions  ! (ILoadSystem_Temporary, IPatch_Temporary)
+              !allocate(ControlPoint_Weights_Traction(NControlPoints_Traction(ILoadSystem_Temporary, IPatch_Temporary), ILoadSystem_Temporary, IPatch_Temporary), stat = IError) ! size equal to no of nodes
+              allocate(ControlPoint_Weights_Traction(Maximum_NControlPoints_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError ) ! size equal to no of nodes
               !, Counters%NPatches , Counters%NPatches
               NodalCoordinates_Traction = 0.0
               ControlPoint_Weights_Traction = 0.0

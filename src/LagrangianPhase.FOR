@@ -1265,6 +1265,9 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
           
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           IDim = NVECTOR
           
            ! Internal and External forces are calculated inside "BtSig"
@@ -1272,12 +1275,24 @@
            call MPMDYNBTSig(ExtLoad, IntLoad, GravityLoad, FReaction, FReactionWater, BulkViscLoad, DShapeValuesArray) ! DShapeValuesArray input into this subroutine 
            
            
-           if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
+           ILoadSystem_Temporary = 1
+           IPatch_Temporary = 1
+           
+           if ((Counters%NLoadedElementSidesSolidNodes(ILoadSystem_Temporary, IPatch_Temporary)+Counters%NLoadedElementSidesSolidNodesB) > 0) then
             do ILoadSystem = 1, Counters%NSoilLoadSystems    
               ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
             end do
-
            end if
+           
+           
+           
+           !do IPatch = 1, Counters%NPatches ! loop over patches
+           !do ILoadSystem = 1, NLoadSystems_Traction(IPatch) !Counters%NSoilLoadSystems   
+           !if ((Counters%NLoadedElementSidesSolidNodes(ILoadSystem_Temporary, IPatch_Temporary)+Counters%NLoadedElementSidesSolidNodesB) > 0) then ! load system B needs to be generalized
+           !   ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem_Temporary) * CalParams%Multipliers%SolidACurrent(ILoadSystem_Temporary)
+           !end if
+           !end do ! loop over load systems
+           !end do ! loop over patches 
            
             if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
            ExtLoad = ExtLoad + SpaceTimeExTLoadWater
@@ -1330,12 +1345,17 @@
 
           integer(INTEGER_TYPE) :: IEntity
           integer(INTEGER_TYPE) :: IDim, ILoadSystem
+          
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary, IPatch_Temporary
 
+          ILoadSystem_Temporary = 1
+          IPatch_Temporary = 1
+          
           IDim = NVECTOR
            
           call MPMDYNLoad(ExtLoad, GravityLoad)
 
-           if ((Counters%NLoadedElementSidesSolidNodes+Counters%NLoadedElementSidesSolidNodesB) > 0) then
+           if ((Counters%NLoadedElementSidesSolidNodes(ILoadSystem_Temporary, IPatch_Temporary)+Counters%NLoadedElementSidesSolidNodesB) > 0) then
              do ILoadSystem =1, Counters%NSoilLoadSystems
                  ExtLoad = ExtLoad + ExtLoadTotal(:,:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
              end do
@@ -2875,7 +2895,9 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: ConnectivitiesSide
           real(REAL_TYPE), dimension(:, :), allocatable :: LoadValuesSide
           
-  
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
           
           LoadedParticle = .false. 
           ExtLoad = 0.0
@@ -2885,11 +2907,11 @@
           
           if (CalParams%ApplyContactAlgorithm) then !if contact is used then there are 2 entities!
             !SOLID TRACTION
-            if ( Counters%NLoadedElementSidesSolid > 0 ) then ! solid   
+            if ( Counters%NLoadedElementSidesSolid(ILoadSystem_Temporary,IPatch_Temporary)  > 0 ) then ! solid    !(ILoadSystem_Temporary, IPatch_Temporary)
              !Load system A   
               allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesSolid,1) ) )
               allocate( LoadValuesSide( size(LoadValuesOnNodesSolid,1), size(LoadValuesOnNodesSolid,2) ) )  
-              do I = 1, Counters%NLoadedElementSidesSolidNodes 
+              do I = 1, Counters%NLoadedElementSidesSolidNodes(ILoadSystem_Temporary, IPatch_Temporary) 
                 ConnectivitiesSide = LoadOnNodesConnectivitiesSolid(:, I) ! extract values for each loaded element side I
                 LoadValuesSide = LoadValuesOnNodesSolid(:, :, I)
                 call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)
@@ -2935,11 +2957,11 @@
             end if !solid traction
             
             !LIQUID TRACTION
-            if ( Counters%NLoadedElementSidesWater > 0 ) then ! liquid
+            if ( Counters%NLoadedElementSidesWater(ILoadSystem_Temporary,IPatch_Temporary) > 0 ) then ! liquid
             !Load system water A    
                allocate( ConnectivitiesSide( size(LoadOnNodesConnectivitiesWater,1) ) )
                allocate( LoadValuesSide( size(LoadValuesOnNodesWater,1), size(LoadValuesOnNodesWater,2) ) )  
-              do I = 1, Counters%NLoadedElementSidesWaterNodes                
+              do I = 1, Counters%NLoadedElementSidesWaterNodes(ILoadSystem_Temporary, IPatch_Temporary)                
                 ConnectivitiesSide = LoadOnNodesConnectivitiesWater(:, I) ! extract values for each loaded element side I
                 LoadValuesSide = LoadValuesOnNodesWater(:, :, I)
                 call DetermineParticlesInLoadedElement(ConnectivitiesSide, LoadValuesSide, LoadedParticle)

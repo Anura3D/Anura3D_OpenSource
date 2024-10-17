@@ -1293,8 +1293,12 @@
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
           ! Multipatch variables
-            integer(INTEGER_TYPE) :: IPatch_Temporary
+            !integer(INTEGER_TYPE) :: IPatch_Temporary
             integer(INTEGER_TYPE) :: IPatch
+            
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: IPatch_Temporary
+            integer(INTEGER_TYPE) :: ILoadSystem_Temporary
           
           
           maxParticle = 1
@@ -1316,7 +1320,7 @@
           IntLoadGasPorosityLoc = 0.0
           GravityLoadGasPorosityLoc = 0.0
           IsLoadOnMPGas =(Counters%NLoadedElementSidesGasMatPoints+Counters%NLoadedElementSidesGasMatPointsB)>0
-          IsLoadOnMPWater =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
+          IsLoadOnMPWater =(Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem_Temporary, IPatch_Temporary) +Counters%NLoadedElementSidesWaterMatPointsB)>0
 
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, Counters%NPatches ! Loop over patches

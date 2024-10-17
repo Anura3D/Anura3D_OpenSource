@@ -1664,13 +1664,15 @@
           
           integer(INTEGER_TYPE) :: ii
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary! = 1
+          
           ! if CornerControlPoints is 1 then it is a corner node 
           !integer(INTEGER_TYPE), dimension(4) :: CornerControlPoints ! this should be cubic order + 1 = 3 + 1 = 4
-          integer(INTEGER_TYPE), dimension(NXiKnotOrder_Traction+1) :: CornerControlPoints ! this should be cubic order + 1 = 3 + 1 = 4
+          integer(INTEGER_TYPE), dimension(NXiKnotOrder(1)+1) :: CornerControlPoints ! this should be cubic order + 1 = 3 + 1 = 4 ! Hardcoded for now
 
           
-          ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           
           !CornerControlPoints = 0
           !CornerControlPoints(1) = 1 ! 1 is a corner node 
@@ -2700,7 +2702,7 @@
         
         
         
-    subroutine Load2D_NURBS(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied)
+    subroutine Load2D_NURBS(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch, NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific)
       !LoadType,
       ! LoadValue, 
       !call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, NNodes, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid_NURBS(:, I), LoadType)
@@ -2748,6 +2750,7 @@
       
          ! Multipatch variables 
          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+         integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
          
          ! MP Traction 
          integer(INTEGER_TYPE) :: NParticles
@@ -2765,6 +2768,18 @@
          !integer(INTEGER_TYPE) :: INode
          integer(INTEGER_TYPE) :: LoadedParticleCounter
          integer(INTEGER_TYPE) :: IDim
+         
+         
+         
+         ! Multipatch generalization 
+         integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+         integer(INTEGER_TYPE), intent(in) :: IPatch
+         
+         
+         integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific 
+         real(REAL_TYPE), intent(in), dimension(NXiKnotEntries_SideSpecific) :: XiKnotEntries_SideSpecific
+         
+         
          
          RLoad_DEBUG = 0.0
          !LoadOnNodesConnectivitiesSolid
@@ -2845,8 +2860,8 @@
       
         do I = 1, ELEMENTBOUNDARYGAUSSPOINTS
             
-            call NormalOnLINE_NURBS(NodalCoordinates_Traction, GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:), &
-                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
+            call NormalOnLINE_NURBS(NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:, ILoadSystem, IPatch), &
+                NormalVector, VectorLength, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch, NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific)
             
             ! hardcoded 
             NormalVector(1) = 0.0
@@ -2940,7 +2955,7 @@
                 ! HARDCODED
                 !if ( (J==1) .or. (J==2)) then 
                 
-                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K) * VectorLength * NormalVector(J)
+                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I, ILoadSystem, IPatch) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K, ILoadSystem, IPatch) * VectorLength * NormalVector(J)
                 SE(K,J) = SE(K,J) + ( Temp )!* TractionGaussPoint(K, J) )
                 
                 
@@ -2968,7 +2983,7 @@
         ! THIS IS NEEDED FOR NODAL FORCES TRACTION 
         ! add to global load vector
         do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
-          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
+          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch), ILoadSystem, IPatch))!NDof(ILoadConLocal(I))
           do J = 1, NVECTOR
             RLoad(ND + J) = RLoad(ND + J) + (SE(I,J) * -1.0) ! HARDCODED NEGATIVE 1 
             RLoad_DEBUG = RLoad_DEBUG + SE(I,J)!RLoad(ND + J)
@@ -3081,7 +3096,8 @@
     
     
     
-    subroutine Load2D_NURBS_OnMPs(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied)
+    subroutine Load2D_NURBS_OnMPs(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch, &
+                                                                                                NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific)
       !LoadType,
       ! LoadValue, 
       !call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, NNodes, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid_NURBS(:, I), LoadType)
@@ -3129,6 +3145,12 @@
       
          ! Multipatch variables 
          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+         integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+         integer(INTEGER_TYPE), intent(in) :: IPatch
+         integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+         
+         integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific
+         real(REAL_TYPE), dimension(NXiKnotEntries_SideSpecific), intent(in) :: XiKnotEntries_SideSpecific
          
          ! MP Traction 
          integer(INTEGER_TYPE) :: NParticles
@@ -3227,8 +3249,9 @@
       
         do I = 1, ELEMENTBOUNDARYGAUSSPOINTS
             
-            call NormalOnLINE_NURBS(NodalCoordinates_Traction, GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:), &
-                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
+            call NormalOnLINE_NURBS(NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:,ILoadSystem, IPatch), &
+                NormalVector, VectorLength, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch, &
+                NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific)
             
             !call Normal_T3( I, Coord, ILoadConLocal, NNodLOE, &  
             !                GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
@@ -3319,7 +3342,7 @@
                 ! HARDCODED
                 !if ( (J==1) .or. (J==2)) then 
                 
-                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K) * VectorLength * NormalVector(J)
+                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I, ILoadSystem, IPatch) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K, ILoadSystem, IPatch) * VectorLength * NormalVector(J)
                 SE(K,J) = SE(K,J) + ( Temp )!* TractionGaussPoint(K, J) )
                 
                 
@@ -3347,7 +3370,7 @@
         ! THIS IS NEEDED FOR NODAL FORCES TRACTION 
         ! add to global load vector
         do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
-          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
+          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch), ILoadSystem, IPatch))!NDof(ILoadConLocal(I))
           do J = 1, NVECTOR
             !RLoad(ND + J) = RLoad(ND + J) + (SE(I,J)   * -1) ! HARDCODED NEGATIVE 1 
             RLoad_DEBUG = RLoad_DEBUG + (SE(I,J)   * -1) !RLoad(ND + J)
@@ -3393,9 +3416,9 @@
                   ParticleID = 0
               LoadedParticleCounter = 0
                   
-                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(ElementUponWhichLoadIsApplied)
+                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(ElementUponWhichLoadIsApplied, ILoadSystem, IPatch)
                   
-              NParticles =  NPartEle(GlobalElementForTraction, IPatch_Temporary) ! HARDCODED
+              NParticles =  NPartEle(GlobalElementForTraction, IPatch) ! HARDCODED
               
               allocate(ParticleStatus(NParticles), stat = IError)
               
@@ -3411,8 +3434,8 @@
               NLoadedParticles = DetermineNAdjacentParticles(ParticleStatus, NParticles)
               
               !call MarkBoundaryParticles(GlobalElementForTraction, ParticleStatus, NParticles, IPatch_Temporary)
-              do IParticle = 1, NPartEle(GlobalElementForTraction, IPatch_Temporary) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
-                  ParticleIndex = GetParticleIndex(IParticle, GlobalElementForTraction, IPatch_Temporary)
+              do IParticle = 1, NPartEle(GlobalElementForTraction, IPatch) ! loop all MPs of the element (solid and liquid MPs in case of double-point formulation)
+                  ParticleIndex = GetParticleIndex(IParticle, GlobalElementForTraction, IPatch)
               
                   !if ( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then
                       ! all MPs in 1-point formulation or only solid MPs in 2-point formulation
@@ -3783,7 +3806,10 @@
     !------------------------------------------------------------------------------------------------
     ! TRACTION ON THE MPs 
     
-    subroutine Load3D_NURBS_OnMPs(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied)
+    subroutine Load3D_NURBS_OnMPs(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied, &
+        ILoadSystem, IPatch, &
+        NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific, &
+        NEtaKnotEntries_SideSpecific, EtaKnotEntries_SideSpecific)
       !LoadType,
       ! LoadValue, 
       !call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, NNodes, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid_NURBS(:, I), LoadType)
@@ -3831,6 +3857,15 @@
       
          ! Multipatch variables 
          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+         integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+         integer(INTEGER_TYPE), intent(in) :: IPatch
+         integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+
+         integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific
+         real(REAL_TYPE), dimension(NXiKnotEntries_SideSpecific), intent(in) :: XiKnotEntries_SideSpecific
+         
+         integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries_SideSpecific
+         real(REAL_TYPE), dimension(NEtaKnotEntries_SideSpecific), intent(in) :: EtaKnotEntries_SideSpecific
          
          
          
@@ -3926,8 +3961,11 @@
       
         do I = 1, ELEMENTBOUNDARYGAUSSPOINTS
             
-            call NormalOnQUAD_NURBS(NodalCoordinates_Traction, GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:), &
-                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
+            call NormalOnQUAD_NURBS(NodalCoordinates_Traction(:,:, ILoadSystem_Temporary, IPatch_Temporary), GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:, ILoadSystem_Temporary, IPatch_Temporary), &
+                NormalVector, VectorLength, ElementUponWhichLoadIsApplied, &
+                ILoadSystem, IPatch, &
+                NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific, &
+                NEtaKnotEntries_SideSpecific, EtaKnotEntries_SideSpecific)
             
             ! Hardcoded
             NormalVector(3) = 0.0
@@ -4021,7 +4059,7 @@
                 ! HARDCODED
                 !if ( (J==1) .or. (J==2)) then 
                 
-                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K) * VectorLength * NormalVector(J) * -1 ! hardcoded negative sign to make traction go inwards
+                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I, ILoadSystem_Temporary, IPatch_Temporary) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K, ILoadSystem_Temporary, IPatch_Temporary) * VectorLength * NormalVector(J) * -1 ! hardcoded negative sign to make traction go inwards
                 SE(K,J) = SE(K,J) + ( Temp )!* TractionGaussPoint(K, J) )
           
                 
@@ -4050,7 +4088,7 @@
 
         ! add to global load vector
         do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
-          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
+          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem_Temporary, IPatch_Temporary), ILoadSystem_Temporary, IPatch_Temporary))!NDof(ILoadConLocal(I))
           do J = 1, NVECTOR
             !RLoad(ND + J) = RLoad(ND + J) + SE(I,J)    
             RLoad_DEBUG = RLoad_DEBUG + SE(I,J) !+ RLoad(ND + J)
@@ -4171,7 +4209,7 @@
                   ParticleID = 0
               LoadedParticleCounter = 0
                   
-                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(ElementUponWhichLoadIsApplied)
+                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(ElementUponWhichLoadIsApplied, ILoadSystem_Temporary, IPatch_Temporary)
                   
               NParticles =  NPartEle(GlobalElementForTraction, IPatch_Temporary) ! HARDCODED
               
@@ -4211,7 +4249,7 @@
                               !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) )!* -1  )!* Factor  ) !(2/3)
                               !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * 1 / real(ELEMENTBOUNDARYGAUSSPOINTS) ) !( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
                               !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim)
-                               LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( ( GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) )*Factor)!/ real(ELEMENTBOUNDARYGAUSSPOINTS) )! )
+                               LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( ( GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode, ILoadSystem_Temporary, IPatch_Temporary) * SE(INode, IDim) )*Factor)!/ real(ELEMENTBOUNDARYGAUSSPOINTS) )! )
                               ! HARDCODED HALF * 0.5
                               ! HARDCODED MINUS ONE FOR DOWNWARDS
                               

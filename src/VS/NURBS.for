@@ -1169,7 +1169,7 @@
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     
-    subroutine Build_INC_IEN_Array_2D_TRACTION()!(IPatch)
+    subroutine Build_INC_IEN_Array_2D_TRACTION_XI_ETA(ILoadSystem, IPatch)!(IPatch)
     
     !pp, qq, nn, mm, & ! input
     !                         INN, IEN, nel, nnp, nen & !output 
@@ -1206,6 +1206,9 @@
     
     ! Multipatch variable
     integer(INTEGER_TYPE) :: IPatch_Temporary
+    integer(INTEGER_TYPE), intent(in) :: IPatch
+    integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+    
     !integer(INTEGER_TYPE), intent(in) :: IPatch ! inputing the patch number within the subroutine
     
     !input
@@ -1266,30 +1269,30 @@
     ! kloc = 0
     
     !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
-        do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_Traction!(IPatch) ! loop over the eta univariate basis function
-            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots_Traction!(IPatch) ! loop over the xi univariate basis function
+        do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !_Traction!(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch) !_Traction!(IPatch) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
                 !assign NURBS coordinate 
-                INN_Traction(AA, 1) = ii !, IPatch)
-                INN_Traction(AA, 2) = jj !, IPatch)
+                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
+                INN_Traction(AA, 2, ILoadSystem, IPatch) = jj !, IPatch)
                 !INN_Traction(AA, 3, IPatch) = kk
             
-                if ( (ii>=NXiKnotOrder_Traction+1) .and. (jj>=NEtaKnotOrder_Traction+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                if ( (ii>=NXiKnotOrder(IPatch)+1) .and. (jj>=NEtaKnotOrder(IPatch)+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
                             !(IPatch)                   (IPatch)                    (IPatch)
                     ee=ee+1 !increment element number 
                         
                     !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
-                        do jloc = 0,NEtaKnotOrder_Traction!(IPatch)
-                            do iloc = 0,NXiKnotOrder_Traction!(IPatch)
+                        do jloc = 0,NEtaKnotOrder(IPatch) !_Traction!(IPatch)
+                            do iloc = 0,NXiKnotOrder(IPatch) !_Traction!(IPatch)
                                 BB = AA &
-                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots_Traction & !(IPatch)
+                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch) & !(IPatch) !_Traction
                                 - iloc !global function number 
                                 !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
-                                CC = (jloc*(NXiKnotOrder_Traction+1)) + iloc + 1 !(IPatch)
+                                CC = (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1 !(IPatch) !_Traction
                                 !IEN(nen_NURBS+1-CC,ee) = BB
-                                IEN_Traction(CC,ee) = BB !,IPatch
+                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
 
                             end do 
                         end do
@@ -1308,13 +1311,28 @@
     
         
    
-    end subroutine Build_INC_IEN_Array_2D_TRACTION
+    end subroutine Build_INC_IEN_Array_2D_TRACTION_XI_ETA
     
     
     
     
     
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -1322,7 +1340,7 @@
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     
-    subroutine Build_INC_IEN_Array_1D_TRACTION()!(IPatch)
+    subroutine Build_INC_IEN_Array_2D_TRACTION_XI_ZETA(ILoadSystem, IPatch)!(IPatch)
     
     !pp, qq, nn, mm, & ! input
     !                         INN, IEN, nel, nnp, nen & !output 
@@ -1359,6 +1377,351 @@
     
     ! Multipatch variable
     integer(INTEGER_TYPE) :: IPatch_Temporary
+    
+    integer(INTEGER_TYPE), intent(in) :: IPatch
+    integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+    
+    !integer(INTEGER_TYPE), intent(in) :: IPatch ! inputing the patch number within the subroutine
+    
+    !input
+    !integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
+    
+    !output
+    !integer(INTEGER_TYPE), intent(out) :: nnp, nen, nel
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: IEN !connectivity array 
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: INN !NURBS coordinate array (also called INC)
+        
+    !NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
+    
+    ! - global variable definitions and initializations: 
+    !nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
+    !                                (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &                
+    !                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+    !    
+    !number of elements -> note 2D implementation = 2 elements in the example 
+    
+    
+    ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+    !nel_NURBS
+    
+    ! nel = (4-2)*(3-2) = 2 elements
+    !     element 1   element 2
+    !     __________ __________
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |__________|__________|
+    !nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+    !                                *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
+    !                                *oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+    ! nnp = 4*3 = 12 ... This is also equal to the number of control points  
+    !nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+    ! nen = (2+1)*(2+1) = 9 local basis functions 
+    
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    
+    
+    !INN = 0 !NURBS coordinate array (also called INC)
+    !IEN = 0 !connectivity array
+    
+    !local variable initialization 
+    ee = 0 
+    AA = 0
+    BB = 0 
+    CC = 0
+    ii = 0
+    jj = 0 
+    ! kk = 0
+    iloc = 0 
+    jloc = 0
+    ! kloc = 0
+    
+    !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
+        do jj = 1,oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)!(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch)!(IPatch) ! loop over the xi univariate basis function
+            
+                AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
+            
+                !assign NURBS coordinate 
+                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
+                INN_Traction(AA, 2, ILoadSystem, IPatch) = jj !, IPatch)
+                !INN_Traction(AA, 3, IPatch) = kk
+            
+                if ( (ii>=NXiKnotOrder(IPatch)+1) .and. (jj>=NZetaKnotOrder(IPatch)+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                            !(IPatch)                   (IPatch)                    (IPatch)
+                    ee=ee+1 !increment element number 
+                        
+                    !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
+                        do jloc = 0,NEtaKnotOrder(IPatch)!(IPatch)
+                            do iloc = 0,NXiKnotOrder(IPatch)!(IPatch)
+                                BB = AA &
+                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch) & !(IPatch)
+                                - iloc !global function number 
+                                !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
+                                CC = (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1 !(IPatch)
+                                !IEN(nen_NURBS+1-CC,ee) = BB
+                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
+
+                            end do 
+                        end do
+                    !end do 
+                end if 
+            end do 
+        end do 
+    !end do 
+    
+    
+    
+    
+    !call BuildKnotBezierMesh()
+    
+    !ElementConnectivities = IEN
+    
+        
+   
+    end subroutine Build_INC_IEN_Array_2D_TRACTION_XI_ZETA
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    subroutine Build_INC_IEN_Array_2D_TRACTION_ETA_ZETA(ILoadSystem, IPatch)!(IPatch)
+    
+    !pp, qq, nn, mm, & ! input
+    !                         INN, IEN, nel, nnp, nen & !output 
+    !    )
+    !pp -> NXiKnotOrder 
+    !qq -> NEtaKnotOrder 
+    !nn -> NumberOfUnivariateXiKnots
+    !mm -> NumberOfUnivariateEtaKnots 
+    
+    implicit none 
+    ! Description here about inputs/outputs/what does this subroutine does 
+    !% pp = 2;
+    !% qq = 2;
+    !% nn = 4; 
+    !% mm = 3; 
+    !%note that this is implemented in 2D here 
+
+    !%inputs 
+    !% 1- polynomial orders (p,q,r)
+    !% 2- number of univariate basis functions (n, m, l)
+
+    !%outputs 
+    !% 1- total number of elements, nel
+    !% 2- total number of global basis functions, nnp 
+    !% 3- number of local basis functions, nen
+    !% 4- INC: consumes a global basis function number and a parametric
+    !%         direction number and returns the corresponding NURBS coordinate 
+    !%         
+    !% 5- IEN: 
+    
+    !Initialise variables 
+    !integer(INTEGER_TYPE) :: NDIM 
+    integer(INTEGER_TYPE) :: ee, AA, BB, CC, ii, jj, kk, iloc, jloc, kloc, stat, IError
+    
+    ! Multipatch variable
+    integer(INTEGER_TYPE) :: IPatch_Temporary
+    integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+    integer(INTEGER_TYPE), intent(in) :: IPatch
+    
+    
+    !integer(INTEGER_TYPE), intent(in) :: IPatch ! inputing the patch number within the subroutine
+    
+    !input
+    !integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
+    
+    !output
+    !integer(INTEGER_TYPE), intent(out) :: nnp, nen, nel
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: IEN !connectivity array 
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: INN !NURBS coordinate array (also called INC)
+        
+    !NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
+    
+    ! - global variable definitions and initializations: 
+    !nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
+    !                                (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &                
+    !                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+    !    
+    !number of elements -> note 2D implementation = 2 elements in the example 
+    
+    
+    ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+    !nel_NURBS
+    
+    ! nel = (4-2)*(3-2) = 2 elements
+    !     element 1   element 2
+    !     __________ __________
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |__________|__________|
+    !nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+    !                                *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
+    !                                *oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+    ! nnp = 4*3 = 12 ... This is also equal to the number of control points  
+    !nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+    ! nen = (2+1)*(2+1) = 9 local basis functions 
+    
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    
+    
+    !INN = 0 !NURBS coordinate array (also called INC)
+    !IEN = 0 !connectivity array
+    
+    !local variable initialization 
+    ee = 0 
+    AA = 0
+    BB = 0 
+    CC = 0
+    ii = 0
+    jj = 0 
+    ! kk = 0
+    iloc = 0 
+    jloc = 0
+    ! kloc = 0
+    
+    !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
+        do jj = 1,oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)!(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !_Traction!(IPatch) ! loop over the xi univariate basis function
+            
+                AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
+            
+                !assign NURBS coordinate 
+                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
+                INN_Traction(AA, 2, ILoadSystem, IPatch) = jj !, IPatch)
+                !INN_Traction(AA, 3, IPatch) = kk
+            
+                if ( (ii>=NXiKnotOrder(IPatch)+1) .and. (jj>=NZetaKnotOrder(IPatch)+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                            !(IPatch)                   (IPatch)                    (IPatch)
+                    ee=ee+1 !increment element number 
+                        
+                    !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
+                        do jloc = 0,NZetaKnotOrder(IPatch) !_Traction!(IPatch)
+                            do iloc = 0,NEtaKnotOrder(IPatch) !(IPatch)
+                                BB = AA &
+                                - jloc*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) & !(IPatch) !_Traction
+                                - iloc !global function number 
+                                !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
+                                CC = (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1 !(IPatch)
+                                !IEN(nen_NURBS+1-CC,ee) = BB
+                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
+
+                            end do 
+                        end do
+                    !end do 
+                end if 
+            end do 
+        end do 
+    !end do 
+    
+    
+    
+    
+    !call BuildKnotBezierMesh()
+    
+    !ElementConnectivities = IEN
+    
+        
+   
+    end subroutine Build_INC_IEN_Array_2D_TRACTION_ETA_ZETA
+    
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    subroutine Build_INC_IEN_Array_1D_TRACTION_XI(ILoadSystem, IPatch)!(IPatch)
+    
+    !pp, qq, nn, mm, & ! input
+    !                         INN, IEN, nel, nnp, nen & !output 
+    !    )
+    !pp -> NXiKnotOrder 
+    !qq -> NEtaKnotOrder 
+    !nn -> NumberOfUnivariateXiKnots
+    !mm -> NumberOfUnivariateEtaKnots 
+    
+    implicit none 
+    ! Description here about inputs/outputs/what does this subroutine does 
+    !% pp = 2;
+    !% qq = 2;
+    !% nn = 4; 
+    !% mm = 3; 
+    !%note that this is implemented in 2D here 
+
+    !%inputs 
+    !% 1- polynomial orders (p,q,r)
+    !% 2- number of univariate basis functions (n, m, l)
+
+    !%outputs 
+    !% 1- total number of elements, nel
+    !% 2- total number of global basis functions, nnp 
+    !% 3- number of local basis functions, nen
+    !% 4- INC: consumes a global basis function number and a parametric
+    !%         direction number and returns the corresponding NURBS coordinate 
+    !%         
+    !% 5- IEN: 
+    
+    !Initialise variables 
+    !integer(INTEGER_TYPE) :: NDIM 
+    integer(INTEGER_TYPE) :: ee, AA, BB, CC, ii, jj, kk, iloc, jloc, kloc, stat, IError
+    
+    ! Multipatch variable
+    integer(INTEGER_TYPE) :: IPatch_Temporary
+    integer(INTEGER_TYPE), intent(in) :: IPatch
+    integer(INTEGER_TYPE), intent(in) :: ILoadSystem
     !integer(INTEGER_TYPE), intent(in) :: IPatch ! inputing the patch number within the subroutine
     
     !input
@@ -1420,22 +1783,22 @@
     
     !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
         !do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_Traction!(IPatch) ! loop over the eta univariate basis function
-            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots_Traction!(IPatch) ! loop over the xi univariate basis function
+            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch) !(IPatch) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
                 !assign NURBS coordinate 
-                INN_Traction(AA, 1) = ii !, IPatch)
+                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
                 !INN_Traction(AA, 2) = jj !, IPatch)
                 !INN_Traction(AA, 3, IPatch) = kk
             
-                if ( (ii>=NXiKnotOrder_Traction+1) ) then !.and. (jj>=NEtaKnotOrder_Traction+1) !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                if ( (ii>=NXiKnotOrder(IPatch)+1) ) then !.and. (jj>=NEtaKnotOrder_Traction+1) !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
                             !(IPatch)                   (IPatch)                    (IPatch)
                     ee=ee+1 !increment element number 
                         
                     !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
                         !do jloc = 0,NEtaKnotOrder_Traction!(IPatch)
-                            do iloc = 0, NXiKnotOrder_Traction!(IPatch)
+                            do iloc = 0, NXiKnotOrder(IPatch)!(IPatch)
                                 BB = AA &
                                     - iloc !global function number 
                                 !- jloc*nn_NURBS_NumberOfUnivariateXiKnots_Traction & !(IPatch)
@@ -1443,7 +1806,7 @@
                                 !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
                                 CC = + iloc + 1 !(IPatch) !(jloc*(NXiKnotOrder_Traction+1))
                                 !IEN(nen_NURBS+1-CC,ee) = BB
-                                IEN_Traction(CC,ee) = BB !,IPatch
+                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
                             end do 
                         !end do
                     !end do 
@@ -1461,7 +1824,164 @@
     
         
    
-    end subroutine Build_INC_IEN_Array_1D_TRACTION
+    end subroutine Build_INC_IEN_Array_1D_TRACTION_XI
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    subroutine Build_INC_IEN_Array_1D_TRACTION_ETA(ILoadSystem, IPatch)!(IPatch)
+    
+    !pp, qq, nn, mm, & ! input
+    !                         INN, IEN, nel, nnp, nen & !output 
+    !    )
+    !pp -> NXiKnotOrder 
+    !qq -> NEtaKnotOrder 
+    !nn -> NumberOfUnivariateXiKnots
+    !mm -> NumberOfUnivariateEtaKnots 
+    
+    implicit none 
+    ! Description here about inputs/outputs/what does this subroutine does 
+    !% pp = 2;
+    !% qq = 2;
+    !% nn = 4; 
+    !% mm = 3; 
+    !%note that this is implemented in 2D here 
+
+    !%inputs 
+    !% 1- polynomial orders (p,q,r)
+    !% 2- number of univariate basis functions (n, m, l)
+
+    !%outputs 
+    !% 1- total number of elements, nel
+    !% 2- total number of global basis functions, nnp 
+    !% 3- number of local basis functions, nen
+    !% 4- INC: consumes a global basis function number and a parametric
+    !%         direction number and returns the corresponding NURBS coordinate 
+    !%         
+    !% 5- IEN: 
+    
+    !Initialise variables 
+    !integer(INTEGER_TYPE) :: NDIM 
+    integer(INTEGER_TYPE) :: ee, AA, BB, CC, ii, jj, kk, iloc, jloc, kloc, stat, IError
+    
+    ! Multipatch variable
+    integer(INTEGER_TYPE) :: IPatch_Temporary
+    integer(INTEGER_TYPE), intent(in) :: IPatch
+    integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+    !integer(INTEGER_TYPE), intent(in) :: IPatch ! inputing the patch number within the subroutine
+    
+    !input
+    !integer(INTEGER_TYPE), intent(in) :: pp, qq, nn, mm 
+    
+    !output
+    !integer(INTEGER_TYPE), intent(out) :: nnp, nen, nel
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: IEN !connectivity array 
+    !integer(INTEGER_TYPE), intent(out), allocatable, dimension(:,:) :: INN !NURBS coordinate array (also called INC)
+        
+    !NDIM = 2 !2D implementation  ! hardcoded 2 dimensional
+    
+    ! - global variable definitions and initializations: 
+    !nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
+    !                                (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &                
+    !                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+    !    
+    !number of elements -> note 2D implementation = 2 elements in the example 
+    
+    
+    ! overwrite the number of elements by nel_NURBS --> this should be calculated by the code and not given as an input
+    !nel_NURBS
+    
+    ! nel = (4-2)*(3-2) = 2 elements
+    !     element 1   element 2
+    !     __________ __________
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |          |          |
+    !    |__________|__________|
+    !nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+    !                                *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
+    !                                *oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+    ! nnp = 4*3 = 12 ... This is also equal to the number of control points  
+    !nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+    ! nen = (2+1)*(2+1) = 9 local basis functions 
+    
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    !allocate(INN(nnp_NURBS(IPatch), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+    !allocate(IEN(nen_NURBS(IPatch), nel_NURBS(IPatch), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM 
+    
+    
+    !INN = 0 !NURBS coordinate array (also called INC)
+    !IEN = 0 !connectivity array
+    
+    !local variable initialization 
+    ee = 0 
+    AA = 0
+    BB = 0 
+    CC = 0
+    ii = 0
+    jj = 0 
+    ! kk = 0
+    iloc = 0 
+    jloc = 0
+    ! kloc = 0
+    
+    !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
+        !do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_Traction!(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !(IPatch) ! loop over the xi univariate basis function
+            
+                AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
+            
+                !assign NURBS coordinate 
+                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
+                !INN_Traction(AA, 2) = jj !, IPatch)
+                !INN_Traction(AA, 3, IPatch) = kk
+            
+                if ( (ii>=NEtaKnotOrder(IPatch)+1) ) then !.and. (jj>=NEtaKnotOrder_Traction+1) !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                            !(IPatch)                   (IPatch)                    (IPatch)
+                    ee=ee+1 !increment element number 
+                        
+                    !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
+                        !do jloc = 0,NEtaKnotOrder_Traction!(IPatch)
+                            do iloc = 0, NEtaKnotOrder(IPatch)!(IPatch)
+                                BB = AA &
+                                    - iloc !global function number 
+                                !- jloc*nn_NURBS_NumberOfUnivariateXiKnots_Traction & !(IPatch)
+                                
+                                !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
+                                CC = + iloc + 1 !(IPatch) !(jloc*(NXiKnotOrder_Traction+1))
+                                !IEN(nen_NURBS+1-CC,ee) = BB
+                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
+                            end do 
+                        !end do
+                    !end do 
+                end if 
+            end do 
+        !end do 
+    !end do 
+    
+    
+    
+    
+    !call BuildKnotBezierMesh()
+    
+    !ElementConnectivities = IEN
+    
+        
+   
+    end subroutine Build_INC_IEN_Array_1D_TRACTION_ETA
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -3252,6 +3772,9 @@
           integer(INTEGER_TYPE) :: IError, stat    
           
         
+          ! Multiple load systems 
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+          integer(INTEGER_TYPE) :: IPatch_Temporary
           
           
           
@@ -3384,8 +3907,8 @@
                               loc_num = loc_num + 1
                               
                               ! find the corresponding control point to find the weight 
-                              NodeForFinidingControlPointWeight = IEN_Traction(loc_num, IElement)!, IPatch)
-                              WeightForControlPoint = ControlPoint_Weights_Traction(NodeForFinidingControlPointWeight)!, IPatch)
+                              NodeForFinidingControlPointWeight = IEN_Traction(loc_num, IElement, ILoadSystem_Temporary, IPatch_Temporary)!, IPatch)
+                              WeightForControlPoint = ControlPoint_Weights_Traction(NodeForFinidingControlPointWeight, ILoadSystem_Temporary, IPatch_Temporary)!, IPatch)
                               
                               
                               ! calculate shape function based on the cross product 
@@ -3482,7 +4005,7 @@
                       counter = 0 !--> counter is equal to 1 always because we do this for one material point.              
                       counter = counter + 1
               
-              do loc_num = 1, nen_NURBS_Traction!(IPatch) 
+              do loc_num = 1, nen_NURBS_Traction!(ILoadSystem_Temporary, IPatch_Temporary) !(IPatch) 
                   
                   RR(loc_num) = RR(loc_num)/sum_tot!(counter) !--> normalizing the shape functions to have a sum of 1
 
@@ -3539,11 +4062,14 @@
                                                     
                                                    
          subroutine ShapeLocPosPointer_IGA_2D_Traction(LocPos, RR, dR_dxi, & !classic inout parameters
-                                                    XiKnotEntries, NXiKnotEntries, NXiKnotOrder, & !NURBS related inputs in the xi direction 
-                                                    EtaKnotEntries, NEtaKnotEntries, NEtaKnotOrder, &
+                                                    XiKnotEntries_SideSpecific, NXiKnotEntries_SideSpecific, NXiKnotOrder_SideSpecific, & !NURBS related inputs in the xi direction 
+                                                    EtaKnotEntries_SideSpecific, NEtaKnotEntries_SideSpecific, NEtaKnotOrder_SideSpecific, &
                                                     nen_NURBS_Traction, & ! needs multipatch generalization    
                                                     IElement, &
-                                                    IPatch) !NURBS related inputs in the eta direction 
+                                                    ILoadSystem, &
+                                                    IPatch, &
+                                                    ELEMENTBOUNDARYNODES_XI_SideSpecific, &
+                                                    ELEMENTBOUNDARYNODES_ETA_SideSpecific) !NURBS related inputs in the eta direction 
         !**********************************************************************
         !
         !    SUBROUTINE: InitialiseShapeFunctionsQUAD4_NURBS
@@ -3598,28 +4124,37 @@
            real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES), intent(inout) :: RR !these should not be allocatables at this point 
            real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES, NDIM), intent(inout) :: dR_dxi !these should not be allocatables at this point 
            !real(REAL_TYPE), intent(inout) :: Wt !these should not be allocatables at this point  
+          
+
+           integer(INTEGER_TYPE), intent(in) :: ELEMENTBOUNDARYNODES_XI_SideSpecific
+           integer(INTEGER_TYPE), intent(in) :: ELEMENTBOUNDARYNODES_ETA_SideSpecific
            
-           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI) :: HS_Xi !these should not be allocatables at this point  !, intent(inout)
-           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI) :: dHS_Xi !these should not be allocatables at this point  !, intent(inout)
+           
+           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI_SideSpecific) :: HS_Xi !these should not be allocatables at this point  !, intent(inout)
+           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI_SideSpecific) :: dHS_Xi !these should not be allocatables at this point  !, intent(inout)
            !real(REAL_TYPE), dimension(:), intent(inout) :: Wt_Xi !these should not be allocatables at this point  
            
-           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_ETA) :: HS_Eta !these should not be allocatables at this point  !, intent(inout)
-           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_ETA) :: dHS_Eta !these should not be allocatables at this point  !, intent(inout)
+           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_ETA_SideSpecific) :: HS_Eta !these should not be allocatables at this point  !, intent(inout)
+           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_ETA_SideSpecific) :: dHS_Eta !these should not be allocatables at this point  !, intent(inout)
            !real(REAL_TYPE), dimension(:), intent(inout) :: Wt_Eta !these should not be allocatables at this point  
            
            integer(INTEGER_TYPE) :: ni, nj !, intent(inout)
           
           !NURBS related inputs in the xi direction 
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
-          real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder_SideSpecific
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific
+          real(REAL_TYPE), dimension(NXiKnotEntries_SideSpecific), intent(in) :: XiKnotEntries_SideSpecific
+          
+          
+          
+          
           
           real(REAL_TYPE) :: Xi_ParametricDomain !, dimension(NXiGaussPoints)  , intent(in)
           
           !NURBS related inputs in the eta direction 
-          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries
-          real(REAL_TYPE), dimension(NEtaKnotEntries), intent(in) :: EtaKnotEntries
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder_SideSpecific
+          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries_SideSpecific
+          real(REAL_TYPE), dimension(NEtaKnotEntries_SideSpecific), intent(in) :: EtaKnotEntries_SideSpecific
           
           real(REAL_TYPE) :: Eta_ParametricDomain !, dimension(NXiGaussPoints) !, intent(in)
           
@@ -3628,17 +4163,22 @@
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: dN_dxi_IncludesZeroValues
           !real(REAL_TYPE), allocatable, dimension(:) :: RR
           !real(REAL_TYPE), allocatable, dimension(:,:) :: dR_dxi
-          real(REAL_TYPE), dimension(NXiKnotOrder+1) :: NN_WithoutZeroValues
-          real(REAL_TYPE), dimension(NXiKnotOrder+1) :: dN_dxi_WithoutZeroValues
+          real(REAL_TYPE), dimension(NXiKnotOrder_SideSpecific+1) :: NN_WithoutZeroValues
+          real(REAL_TYPE), dimension(NXiKnotOrder_SideSpecific+1) :: dN_dxi_WithoutZeroValues
           
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: MM_IncludesZeroValues
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: dM_deta_IncludesZeroValues         
-          real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: MM_WithoutZeroValues
-          real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: dM_deta_WithoutZeroValues
+          real(REAL_TYPE), dimension(NEtaKnotOrder_SideSpecific+1) :: MM_WithoutZeroValues
+          real(REAL_TYPE), dimension(NEtaKnotOrder_SideSpecific+1) :: dM_deta_WithoutZeroValues
           
           ! Multipatch variables 
           integer(INTEGER_TYPE), intent(in) :: IPatch
           integer(INTEGER_TYPE), intent(in) :: nen_NURBS_Traction
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+          integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+          !_SideSpecific
           
           ! local variables 
           integer(INTEGER_TYPE) :: counter, ww, kk
@@ -3655,39 +4195,39 @@
           integer(INTEGER_TYPE) :: IError, stat    
           
           ! get ni, and nj 
-          ni = INN_Traction(IEN_Traction(1,IElement),1)!,IPatch)    
-          nj = INN_Traction(IEN_Traction(1,IElement),2)!,IPatch)
+          ni = INN_Traction(IEN_Traction(1,IElement, ILoadSystem, IPatch),1, ILoadSystem, IPatch)!,IPatch)    
+          nj = INN_Traction(IEN_Traction(1,IElement, ILoadSystem, IPatch),2, ILoadSystem, IPatch)!,IPatch)
          
           ! calculate parametric domain values 
-          Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
-                                    + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5 ! this should be a scalar always
+          Xi_ParametricDomain =  ( (XiKnotEntries_SideSpecific(ni+1) - XiKnotEntries_SideSpecific(ni) ) * LocPos(1) &
+                                    + (XiKnotEntries_SideSpecific(ni+1) + XiKnotEntries_SideSpecific(ni)) ) * 0.5 ! this should be a scalar always
          
-          Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
-                                    + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5 ! this should be a scalar always
+          Eta_ParametricDomain =  ( (EtaKnotEntries_SideSpecific(nj+1) - EtaKnotEntries_SideSpecific(nj) ) * LocPos(2) &
+                                    + (EtaKnotEntries_SideSpecific(nj+1) + EtaKnotEntries_SideSpecific(nj)) ) * 0.5 ! this should be a scalar always
        
               ! - evaluate each basis function value at the gauss point 
-              call Bspline_basis_and_deriv(NXiKnotOrder, NXiKnotEntries, Xi_ParametricDomain, XiKnotEntries, & !input !NXiGaussPoints
+              call Bspline_basis_and_deriv(NXiKnotOrder_SideSpecific, NXiKnotEntries_SideSpecific, Xi_ParametricDomain, XiKnotEntries_SideSpecific, & !input !NXiGaussPoints
                                     NN_IncludesZeroValues_Print, dN_dxi_IncludesZeroValues_Print) !output 
                                     
-              call Bspline_basis_and_deriv(NEtaKnotOrder, NEtaKnotEntries, Eta_ParametricDomain, EtaKnotEntries, & !input  !NEtaGaussPoints
+              call Bspline_basis_and_deriv(NEtaKnotOrder_SideSpecific, NEtaKnotEntries_SideSpecific, Eta_ParametricDomain, EtaKnotEntries_SideSpecific, & !input  !NEtaGaussPoints
                                     MM_IncludesZeroValues_Print, dM_deta_IncludesZeroValues_Print) !output 
               
               counter = 0
               ! Xi is analogous to the x-coordinate in the parametric domain 
-                  do ii = ni, ni+NXiKnotOrder
+                  do ii = ni, ni+NXiKnotOrder_SideSpecific
                  counter = counter + 1
-                 HS_Xi(counter) = NN_IncludesZeroValues_Print(ii,NXiKnotOrder+1) 
-                 dHS_Xi(counter) = dN_dxi_IncludesZeroValues_Print(ii,NXiKnotOrder+1) !jj, ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian 
+                 HS_Xi(counter) = NN_IncludesZeroValues_Print(ii,NXiKnotOrder_SideSpecific+1) 
+                 dHS_Xi(counter) = dN_dxi_IncludesZeroValues_Print(ii,NXiKnotOrder_SideSpecific+1) !jj, ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian 
                   end do 
                   counter = 0
               
               
               counter = 0
               ! Eta is analogous to the y-coordinate in the parametric domain 
-                  do ii = nj, nj+NEtaKnotOrder
+                  do ii = nj, nj+NEtaKnotOrder_SideSpecific
                  counter = counter + 1
-                 HS_Eta(counter) = MM_IncludesZeroValues_Print(ii,NEtaKnotOrder+1)  !jj,
-                 dHS_Eta(counter) = dM_deta_IncludesZeroValues_Print(ii,NEtaKnotOrder+1) !jj, ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian  
+                 HS_Eta(counter) = MM_IncludesZeroValues_Print(ii,NEtaKnotOrder_SideSpecific+1)  !jj,
+                 dHS_Eta(counter) = dM_deta_IncludesZeroValues_Print(ii,NEtaKnotOrder_SideSpecific+1) !jj, ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian  
                   end do
                   counter = 0
               
@@ -3714,8 +4254,8 @@
                       loc_num=0
                       counter = counter + 1
                       
-                      do jj = 0, NEtaKnotOrder!1, NEtaKnotOrder+1 !0, NEtaKnotOrder
-                          do ii = 0, NXiKnotOrder !0, NXiKnotOrder !1, NXiKnotOrder+1
+                      do jj = 0, NEtaKnotOrder_SideSpecific!1, NEtaKnotOrder+1 !0, NEtaKnotOrder
+                          do ii = 0, NXiKnotOrder_SideSpecific !0, NXiKnotOrder !1, NXiKnotOrder+1
                       
                       
                       ! shape functions
@@ -3724,20 +4264,20 @@
                               loc_num = loc_num + 1
                               
                               ! find the corresponding control point to find the weight 
-                              NodeForFinidingControlPointWeight = IEN_Traction(loc_num, IElement)!, IPatch)
-                              WeightForControlPoint = ControlPoint_Weights_Traction(NodeForFinidingControlPointWeight)!, IPatch)
+                              NodeForFinidingControlPointWeight = IEN_Traction(loc_num, IElement, ILoadSystem, IPatch)!, IPatch)
+                              WeightForControlPoint = ControlPoint_Weights_Traction(NodeForFinidingControlPointWeight, ILoadSystem, IPatch)!, IPatch)
                               
                               
                               ! calculate shape function based on the cross product 
-                              RR(loc_num) = HS_Xi(NXiKnotOrder+1-ii) * HS_Eta(NEtaKnotOrder+1-jj) * WeightForControlPoint
+                              RR(loc_num) = HS_Xi(NXiKnotOrder_SideSpecific+1-ii) * HS_Eta(NEtaKnotOrder_SideSpecific+1-jj) * WeightForControlPoint
                       
                       
                       ! shape function derivatives 
                       !dR_dxi(NXiGaussPoints,loc_num,1) = dHS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj),1) * HS_Eta(NEtaGaussPoints,Indices_NURBS(ii,jj))
                       !dR_dxi(NXiGaussPoints,loc_num,2) = HS_Xi(NXiGaussPoints,Indices_NURBS(ii,jj)) * dHS_Eta(NEtaGaussPoints,Indices_NURBS(ii,jj),1)
                       
-                      dR_dxi(loc_num,1) = dHS_Xi(NXiKnotOrder+1-ii) * HS_Eta(NEtaKnotOrder+1-jj) * WeightForControlPoint
-                      dR_dxi(loc_num,2) = HS_Xi(NXiKnotOrder+1-ii) * dHS_Eta(NEtaKnotOrder+1-jj) * WeightForControlPoint
+                      dR_dxi(loc_num,1) = dHS_Xi(NXiKnotOrder_SideSpecific+1-ii) * HS_Eta(NEtaKnotOrder_SideSpecific+1-jj) * WeightForControlPoint
+                      dR_dxi(loc_num,2) = HS_Xi(NXiKnotOrder_SideSpecific+1-ii) * dHS_Eta(NEtaKnotOrder_SideSpecific+1-jj) * WeightForControlPoint
                       
                       ! these are required when we are using weights 
                       sum_tot = (sum_tot + RR(loc_num) )!/(NXiGaussPoints*NEtaGaussPoints)
@@ -3752,7 +4292,7 @@
                       counter = 0 !--> counter is equal to 1 always because we do this for one material point.              
                       counter = counter + 1
               
-              do loc_num = 1, nen_NURBS_Traction!(IPatch) 
+              do loc_num = 1, nen_NURBS_Traction!(ILoadSystem_Temporary, IPatch_Temporary) !(IPatch) 
                   
                   RR(loc_num) = RR(loc_num)/sum_tot!(counter) !--> normalizing the shape functions to have a sum of 1
 
@@ -4211,9 +4751,11 @@
                                                     
                                                     
             subroutine ShapeLocPosPointer_IGA_1D_Traction(LocPos, RR, dR_dxi, &!Wt, & !classic inout parameters
-                                                    XiKnotEntries, NXiKnotEntries, NXiKnotOrder, & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
+                                                    XiKnotEntries_SideSpecific, NXiKnotEntries_SideSpecific, NXiKnotOrder_SideSpecific, & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
                                                     IElement, &
-                                                    IPatch) !NURBS related inputs in the eta direction 
+                                                    ILoadSystem, &
+                                                    IPatch, &
+                                                    ELEMENTBOUNDARYNODES_XI_SideSpecific) !NURBS related inputs in the eta direction 
                                                     !HS_Eta, dHS_Eta, & !Wt_Eta, &
                                                     !EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
         !**********************************************************************
@@ -4271,11 +4813,11 @@
            real(REAL_TYPE), dimension(ELEMENTNODES), intent(out) :: RR !these should not be allocatables at this point 
            real(REAL_TYPE), dimension(ELEMENTNODES, NDIM-1), intent(out) :: dR_dxi !these should not be allocatables at this point 
            
-           
+           integer(INTEGER_TYPE), intent(in) :: ELEMENTBOUNDARYNODES_XI_SideSpecific
            !real(REAL_TYPE), intent(inout) :: Wt !these should not be allocatables at this point  
            
-           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI) :: HS_Xi !, intent(inout)!these should not be allocatables at this point 
-           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI) :: dHS_Xi !, intent(inout)!these should not be allocatables at this point 
+           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI_SideSpecific) :: HS_Xi !, intent(inout)!these should not be allocatables at this point 
+           real(REAL_TYPE), dimension(ELEMENTBOUNDARYNODES_XI_SideSpecific) :: dHS_Xi !, intent(inout)!these should not be allocatables at this point 
            !real(REAL_TYPE), dimension(:), intent(inout) :: Wt_Xi !these should not be allocatables at this point  
            
            !real(REAL_TYPE), dimension(:), intent(inout) :: HS_Eta !these should not be allocatables at this point 
@@ -4285,9 +4827,9 @@
            integer(INTEGER_TYPE) :: ni !, intent(inout)!, nj
           
           !NURBS related inputs in the xi direction 
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries
-          real(REAL_TYPE), dimension(NXiKnotEntries), intent(in) :: XiKnotEntries
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder_SideSpecific
+          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific
+          real(REAL_TYPE), dimension(Maximum_NXiKnotEntries), intent(in) :: XiKnotEntries_SideSpecific
           
           real(REAL_TYPE) :: Xi_ParametricDomain !, dimension(NXiGaussPoints)  !, intent(in)
           
@@ -4304,8 +4846,8 @@
           real(REAL_TYPE), allocatable, dimension(:,:,:) :: dN_dxi_IncludesZeroValues
           !real(REAL_TYPE), dimension(ELEMENTNODES) :: RR !allocatable, 
           !real(REAL_TYPE), dimension(ELEMENTNODES,NDIM) :: dR_dxi ! allocatable,
-          real(REAL_TYPE), dimension(NXiKnotOrder+1) :: NN_WithoutZeroValues
-          real(REAL_TYPE), dimension(NXiKnotOrder+1) :: dN_dxi_WithoutZeroValues
+          real(REAL_TYPE), dimension(NXiKnotOrder_SideSpecific+1) :: NN_WithoutZeroValues
+          real(REAL_TYPE), dimension(NXiKnotOrder_SideSpecific+1) :: dN_dxi_WithoutZeroValues
           
           
           !real(REAL_TYPE), allocatable, dimension(:,:,:) :: MM_IncludesZeroValues
@@ -4314,7 +4856,9 @@
           !real(REAL_TYPE), dimension(NEtaKnotOrder+1) :: dM_deta_WithoutZeroValues
           
           ! Multipatch variables 
+          integer(INTEGER_TYPE), intent(in) :: ILoadSystem
           integer(INTEGER_TYPE), intent(in) :: IPatch
+          
 
           
           ! local variables 
@@ -4347,26 +4891,32 @@
           
           integer(INTEGER_TYPE) :: IError, stat    
           
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+          
+          ! Load system generalization 
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
         
           
-          ni = INN_Traction(IEN_Traction(1,IElement),1)    
+          ni = INN_Traction(IEN_Traction(1,IElement, ILoadSystem, IPatch),1, ILoadSystem, IPatch)    
 
           
-          Xi_ParametricDomain =  ( (XiKnotEntries_Traction(ni+1) - XiKnotEntries_Traction(ni) ) * LocPos(1) &!xi_tilde & ! ,IPatch
-                                    + (XiKnotEntries_Traction(ni+1) + XiKnotEntries_Traction(ni)) ) * 0.5 !,IPatch !,IPatch
+          Xi_ParametricDomain =  ( (XiKnotEntries_SideSpecific(ni+1) - XiKnotEntries_SideSpecific(ni) ) * LocPos(1) &!xi_tilde & ! ,IPatch
+                                    + (XiKnotEntries_SideSpecific(ni+1) + XiKnotEntries_SideSpecific(ni)) ) * 0.5 !,IPatch !,IPatch
             
           
           
               ! - evaluate each basis function value at the gauss point 
-              call Bspline_basis_and_deriv(NXiKnotOrder, NXiKnotEntries, Xi_ParametricDomain, XiKnotEntries, & !input !NXiGaussPoints
+              call Bspline_basis_and_deriv(NXiKnotOrder_SideSpecific, NXiKnotEntries_SideSpecific, Xi_ParametricDomain, XiKnotEntries_SideSpecific, & !input !NXiGaussPoints
                                     NN_IncludesZeroValues_Print, dN_dxi_IncludesZeroValues_Print) !output 
                      
               counter = 0
 
-                  do ii = ni, ni+NXiKnotOrder
+                  do ii = ni, ni+NXiKnotOrder_SideSpecific
                  counter = counter + 1
-                 HS_Xi(counter) = NN_IncludesZeroValues_Print(ii,NXiKnotOrder+1) !jj,
-                 dHS_Xi(counter) = dN_dxi_IncludesZeroValues_Print(ii,NXiKnotOrder+1) !jj, ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian 
+                 HS_Xi(counter) = NN_IncludesZeroValues_Print(ii,NXiKnotOrder_SideSpecific+1) !jj,
+                 dHS_Xi(counter) = dN_dxi_IncludesZeroValues_Print(ii,NXiKnotOrder_SideSpecific+1) !jj, ! note that this is the derivative in the parameter space... might need to normalize this somehow and add that term to the jacobian 
                   end do 
                   counter = 0
               
@@ -4383,20 +4933,20 @@
               loc_num = 0
                       counter = counter + 1
                       
-                          do ii = 0, NXiKnotOrder !0, NXiKnotOrder !1, NXiKnotOrder+1
+                          do ii = 0, NXiKnotOrder_SideSpecific !0, NXiKnotOrder !1, NXiKnotOrder+1
                       
                               loc_num = loc_num + 1
                               
                               ! find the corresponding control point to find the weight 
-                              NodeForFinidingControlPointWeight = IEN_Traction(loc_num, IElement)!, IPatch)
-                              WeightForControlPoint = ControlPoint_Weights_Traction(NodeForFinidingControlPointWeight)!, IPatch)
+                              NodeForFinidingControlPointWeight = IEN_Traction(loc_num, IElement, ILoadSystem, IPatch)!, IPatch)
+                              WeightForControlPoint = ControlPoint_Weights_Traction(NodeForFinidingControlPointWeight, ILoadSystem, IPatch)!, IPatch)
                               
                               
                               ! calculate shape function based on the cross product 
-                              RR(loc_num) = HS_Xi(NXiKnotOrder+1-ii) * WeightForControlPoint !* HS_Eta(NEtaKnotOrder+1-jj) 
+                              RR(loc_num) = HS_Xi(NXiKnotOrder_SideSpecific+1-ii) * WeightForControlPoint !* HS_Eta(NEtaKnotOrder+1-jj) 
                       
                       
-                      dR_dxi(loc_num,1) = dHS_Xi(NXiKnotOrder+1-ii)  * WeightForControlPoint !* HS_Eta(NEtaKnotOrder+1-jj)
+                      dR_dxi(loc_num,1) = dHS_Xi(NXiKnotOrder_SideSpecific+1-ii)  * WeightForControlPoint !* HS_Eta(NEtaKnotOrder+1-jj)
                   
                       ! these are required when we are using weights 
                       sum_tot = (sum_tot + RR(loc_num) )
@@ -4411,7 +4961,7 @@
                       counter = 0 !--> counter is equal to 1 always because we do this for one material point.              
                       counter = counter + 1
               
-              do loc_num = 1, nen_NURBS_Traction!(IPatch) 
+              do loc_num = 1, nen_NURBS_Traction(ILoadSystem, IPatch)!(ILoadSystem_Temporary, IPatch_Temporary) !(IPatch) 
                   
                   RR(loc_num) = RR(loc_num)/sum_tot!(counter) !--> normalizing the shape functions to have a sum of 1
 

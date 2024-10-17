@@ -342,12 +342,19 @@
           
           integer(INTEGER_TYPE) :: I, J, L, IDElement, IDConnectivity, IFxN, &
                      NElements, NNodes, NFixNod, FixNodID, NRemFixNod, FixRemNodID, &
-                     NLoadedElementSidesSolidNodes, NLoadedElementSidesWaterNodes, NLoadedElementSidesGasNodes, &
-                     NLoadedElementSidesSolidMatPoints, NLoadedElementSidesWaterMatPoints, NLoadedElementSidesGasmatPoints, &
+                     NLoadedElementSidesGasNodes, & !NLoadedElementSidesSolidNodes, NLoadedElementSidesWaterNodes, 
+                     NLoadedElementSidesGasmatPoints, & !NLoadedElementSidesSolidMatPoints, NLoadedElementSidesWaterMatPoints, 
                      SoilSurfaceNumberofSides, PhreaticSurfaceNumberofSides, &
                      NLoadedElementSidesSolidNodesB, NLoadedElementSidesWaterNodesB, NLoadedElementSidesGasNodesB, &
                      NLoadedElementSidesSolidMatPointsB, NLoadedElementSidesWaterMatPointsB, NLoadedElementSidesGasmatPointsB 
           
+          integer(INTEGER_TYPE), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesSolidNodes
+          
+          integer(INTEGER_TYPE), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterNodes
+          
+          integer(INTEGER_TYPE), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesSolidMatPoints
+          
+          integer(INTEGER_TYPE), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterMatPoints
           
           integer(INTEGER_TYPE) :: IDNControlGrid
           
@@ -358,7 +365,7 @@
           
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: IPatch_Other ! comparative integer index
           real(REAL_TYPE), dimension(NVECTOR) :: NodeCoordinatesSelected
@@ -426,6 +433,12 @@
           integer(INTEGER_TYPE) :: OrderDifference
           integer(INTEGER_TYPE) :: I_LowerOrder
               
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+
+          ! Load system generalization 
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+          integer(INTEGER_TYPE) :: ILoadSystem
               
               
 
@@ -433,6 +446,12 @@
               
           IPatch_Temporary = 1
 
+          !allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidNodes), stat = IError)      
+          allocate( ElementUponWhichLoadIsApplied_NURBS(Maximum_nel_NURBS_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError)      
+          ElementUponWhichLoadIsApplied_NURBS = 0.0
+          
+          
+          
           
           NumberOfRepetitions = 0
           repetition_test = .false.
@@ -546,7 +565,14 @@
                 
                 
                 
-                
+            else if (trim(BName) == '$$TRACTION_LOAD_SYSTEM') then 
+                ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
+                ILoadSystem = -1
+                ! read patch ID from the GOM file
+                read(GOMunit, *) ILoadSystem ! --> now we knot patch index so we can read in the following: 
+                                             ! 1) Number of control points for each patch
+                                             ! 1) Number of knot entries (xi, eta, zeta) 
+                                             ! 2) Order of knot (xi, eta, zeta)
                 
                 
                 
@@ -556,15 +582,15 @@
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS_TRACTION') then
                 
                 !element_success = .false.
-                if (NControlPoints_Traction==0) cycle
+                if (NControlPoints_Traction(ILoadSystem, IPatch)==0) cycle
                 
-              do I = 1, NControlPoints_Traction!(IPatch)!NNodes ! loop over all nodes
+              do I = 1, NControlPoints_Traction(ILoadSystem, IPatch) !(IPatch)!NNodes ! loop over all nodes
                   
                   !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                   
-                read (GOMunit, *) (NodalCoordinates_Traction(I, J), J = 1, NVECTOR) ! nodal coordinates !, IPatch
-                if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates_Traction(I, 1) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  !, IPatch
-				if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates_Traction(I, 1) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' ) !, IPatch
+                read (GOMunit, *) (NodalCoordinates_Traction(I, J, ILoadSystem, IPatch), J = 1, NVECTOR) ! nodal coordinates !, IPatch
+                if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates_Traction(I, 1, ILoadSystem, IPatch) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  !, IPatch
+				if ( IS3DCYLINDRIC ) call Assert(NodalCoordinates_Traction(I, 1, ILoadSystem, IPatch) >= 0.0, 'GOM file: For 3D Cylindrical analysis the x-coordinate (radial direction) has to be zero or positive.' ) !, IPatch
               
                 !element_success = .true.
               end do ! loop over all nodes
@@ -575,38 +601,50 @@
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
               ! this basically gives us the global number given that we input the number of the local control point for that surface
-              allocate( Traction_Connecting_Local_To_Global_ControlPoints(NControlPoints_Traction),  stat = IError)
+              !allocate( Traction_Connecting_Local_To_Global_ControlPoints(NControlPoints_Traction(ILoadSystem_Temporary, IPatch_Temporary)),  stat = IError)
+              !Traction_Connecting_Local_To_Global_ControlPoints = 0
+              allocate( Traction_Connecting_Local_To_Global_ControlPoints(Maximum_NControlPoints_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches),  stat = IError)
               Traction_Connecting_Local_To_Global_ControlPoints = 0
               
-              
-              allocate( Traction_Connecting_Local_To_Global_Elements(nel_NURBS_Traction),  stat = IError)
+              !allocate( Traction_Connecting_Local_To_Global_Elements(nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary)),  stat = IError)
+              !Traction_Connecting_Local_To_Global_Elements = 0
+              allocate( Traction_Connecting_Local_To_Global_Elements(Maximum_nel_NURBS_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches),  stat = IError)
               Traction_Connecting_Local_To_Global_Elements = 0
               
-              allocate( Traction_Connecting_Local_To_Global_Sides(nel_NURBS_Traction),  stat = IError)
+              !allocate( Traction_Connecting_Local_To_Global_Sides(nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary)),  stat = IError)
+              !Traction_Connecting_Local_To_Global_Sides = 0
+              allocate( Traction_Connecting_Local_To_Global_Sides(Maximum_nel_NURBS_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches),  stat = IError)
               Traction_Connecting_Local_To_Global_Sides = 0
-              
               
               !if (element_success) then 
               !    element_success = .false.  
-              ! THIS IS FOR APPLYING TRACTION ON THE NODES 
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              call MatchControlPointsNodes() ! traction on the control points 
-              
-              !! THIS IS FOR APPLYING TRACTION ON THE MATERIAL POINTS 
+              !! THIS IS FOR APPLYING TRACTION ON THE NODES 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              call MatchControlPointsElements() ! traction on the elements
-              call MatchTractionElementToActualMaterialSide() ! compare traction side to all sides of actual material. 
-                                                              ! We need to know side our traction is on. 
-              !end if
+              !do IPatch = 1, Counters%NPatches
+              !    do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+              !
+              !      
+              !        call MatchControlPointsNodes(ILoadSystem, IPatch) ! traction on the control points 
+              !
+              !
+              !        !! THIS IS FOR APPLYING TRACTION ON THE MATERIAL POINTS 
+              !        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              !        call MatchControlPointsElements(ILoadSystem, IPatch) ! traction on the elements
+              !        call MatchTractionElementToActualMaterialSide(ILoadSystem, IPatch) ! compare traction side to all sides of actual material. 
+              !                                                ! We need to know side our traction is on. 
+              !!end if
+              !
+              !    end do 
+              !end do 
               
               
-            else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_TRACTION') then
-                do I = 1, NControlPoints_Traction!(IPatch)!NNodes ! loop over all nodes
-                    
-                    !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
-                    
-                    read (GOMunit, *) ControlPoint_Weights_Traction(I) ! for every control point there must be a weight
-                end do 
+            !else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_TRACTION') then
+            !    do I = 1, NControlPoints_Traction(ILoadSystem, IPatch) !(IPatch)!NNodes ! loop over all nodes
+            !        
+            !        !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+            !        
+            !        read (GOMunit, *) ControlPoint_Weights_Traction(I, ILoadSystem, IPatch) ! for every control point there must be a weight
+            !    end do 
                 
                 
                 
@@ -614,19 +652,21 @@
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                 
+                
+                
+                
                 ! APPLY TRACTION ON THE NODES
             elseif (trim(BName) == '$$TRACTION_APPLY_LOCAL_ELEMENTS') then 
                 
-                read(GOMunit,*) NLoadedElementSidesSolidNodes ! Loaded faces
+                !read(GOMunit,*) NLoadedElementSidesSolidNodes(ILoadSystem, IPatch) ! Loaded faces
                 
-                allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidNodes), stat = IError)
-                ElementUponWhichLoadIsApplied_NURBS = 0.0
+                NLoadedElementSidesSolidNodes = NLoadSystems_Traction_NumberOfElements
                 
-                if (NLoadedElementSidesSolidNodes > 0) then 
+                if (NLoadedElementSidesSolidNodes(ILoadSystem, IPatch) > 0) then 
                     
-                    do L = 1, NLoadedElementSidesSolidNodes
+                    do L = 1, NLoadedElementSidesSolidNodes(ILoadSystem, IPatch)
                         
-                        read(GOMunit,*) ElementUponWhichLoadIsApplied_NURBS(L)
+                        read(GOMunit,*) ElementUponWhichLoadIsApplied_NURBS(L, ILoadSystem, IPatch)
                         
                     end do 
                     
@@ -634,18 +674,20 @@
                 
                 
                 
-                elseif (trim(BName) == '$$TRACTION_APPLY_LOCAL_ELEMENTS_WATER') then 
+            elseif (trim(BName) == '$$TRACTION_APPLY_LOCAL_ELEMENTS_WATER') then 
                 
-                read(GOMunit,*) NLoadedElementSidesWaterNodes ! Loaded faces
+                !read(GOMunit,*) NLoadedElementSidesWaterNodes ! Loaded faces
                 
-                allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesWaterNodes), stat = IError)
-                ElementUponWhichLoadIsApplied_NURBS = 0.0
+                NLoadedElementSidesWaterNodes = NLoadSystems_Traction_NumberOfElements
                 
-                if (NLoadedElementSidesWaterNodes > 0) then 
+                !allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesWaterNodes), stat = IError)
+                !ElementUponWhichLoadIsApplied_NURBS = 0.0
+                
+                if (NLoadedElementSidesWaterNodes(ILoadSystem, IPatch) > 0) then 
                     
-                    do L = 1, NLoadedElementSidesWaterNodes
+                    do L = 1, NLoadedElementSidesWaterNodes(ILoadSystem, IPatch)
                         
-                        read(GOMunit,*) ElementUponWhichLoadIsApplied_NURBS(L)
+                        read(GOMunit,*) ElementUponWhichLoadIsApplied_NURBS(L, ILoadSystem, IPatch)
                         
                     end do 
                     
@@ -656,16 +698,18 @@
                 ! APPLY TRACTION ON THE MATERIAL POINTS 
             elseif (trim(BName) == '$$TRACTION_APPLY_LOCAL_ELEMENTS_ON_MPs') then 
                 
-                read(GOMunit,*) NLoadedElementSidesSolidMatPoints ! Loaded faces
+                !read(GOMunit,*) NLoadedElementSidesSolidMatPoints() ! Loaded faces
                 
-                allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidMatPoints), stat = IError)
-                ElementUponWhichLoadIsApplied_NURBS = 0.0
+                NLoadedElementSidesSolidMatPoints = NLoadSystems_Traction_NumberOfElements
                 
-                if (NLoadedElementSidesSolidMatPoints > 0) then 
+                !allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidMatPoints), stat = IError)
+                !ElementUponWhichLoadIsApplied_NURBS = 0.0
+                
+                if (NLoadedElementSidesSolidMatPoints(ILoadSystem, IPatch) > 0) then 
                     
-                    do L = 1, NLoadedElementSidesSolidMatPoints
+                    do L = 1, NLoadedElementSidesSolidMatPoints(ILoadSystem, IPatch)
                         
-                        read(GOMunit,*) ElementUponWhichLoadIsApplied_NURBS(L)
+                        read(GOMunit,*) ElementUponWhichLoadIsApplied_NURBS(L, ILoadSystem, IPatch)
                         
                     end do 
                     
@@ -755,21 +799,21 @@
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 
                 
-                else if (trim(BName) == '$$XI_KNOT_TRACTION') then
-                do I = 1, NXiKnotEntries_Traction ! loop over all nodes
-                            !(IPatch)
-                    read (GOMunit, *) XiKnotEntries_Traction(I) ! Xi knot vector
-                                        !(I,IPatch)
-                    
-                end do ! loop over all nodes
+                !else if (trim(BName) == '$$XI_KNOT_TRACTION') then
+                !do I = 1, NXiKnotEntries_Traction ! loop over all nodes
+                !            !(IPatch)
+                !    read (GOMunit, *) XiKnotEntries_Traction(I) ! Xi knot vector
+                !                        !(I,IPatch)
+                !    
+                !end do ! loop over all nodes
                 
                 
-            else if (trim(BName) == '$$ETA_KNOT_TRACTION') then
-                do I = 1, NEtaKnotEntries_Traction ! loop over all nodes
-                    read (GOMunit, *) EtaKnotEntries_Traction(I) ! Eta knot vector 
-                                        !,IPatch
-
-                end do ! loop over all nodes
+            !else if (trim(BName) == '$$ETA_KNOT_TRACTION') then
+            !    do I = 1, NEtaKnotEntries_Traction ! loop over all nodes
+            !        read (GOMunit, *) EtaKnotEntries_Traction(I) ! Eta knot vector 
+            !                            !,IPatch
+            !
+            !    end do ! loop over all nodes
               
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1077,70 +1121,70 @@
                 end if
               end do ! loop over removed fixed nodes
 
-            else if (trim(BName)=='$$START_LOAD_ON_NODES_SOLID') then
-              read(GOMunit,*) NLoadedElementSidesSolidNodes ! Loaded faces
-              if (NLoadedElementSidesSolidNodes > 0) then
-                if ( NDIM == 3 ) then
-                    
-                    ! not multipatch generalized and goes for the first patch only
-                    !---------------------------------------------
-                    ! hardcoded for xi direction traction and needs generalization
-                    allocate(LoadOnNodesConnectivitiesSolid(NXiKnotOrder(IPatch_Temporary)+1, NLoadedElementSidesSolidNodes), stat = IError) 
-                    allocate(LoadValuesOnNodesSolid_NURBS(NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
-                    ! I am considering this as an input from the GOM file but this needs to be generalized to a 
-                    ! more generic search which element belongs to these control points
-                    allocate(ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidNodes) )
-                    
-                    
-                    
-                    do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded faces
-                    read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1,L), LoadOnNodesConnectivitiesSolid(2,L),  &
-                                    LoadOnNodesConnectivitiesSolid(3,L), LoadOnNodesConnectivitiesSolid(4,L), &
-                                    ElementUponWhichLoadIsApplied_NURBS(L), &
-                                    LoadValuesOnNodesSolid_NURBS(1, L), &
-                                    LoadValuesOnNodesSolid_NURBS(2, L), &
-                                    LoadValuesOnNodesSolid_NURBS(3, L)
-                                    !LoadValuesOnNodesSolid(1,1,L), LoadValuesOnNodesSolid(1,2,L), LoadValuesOnNodesSolid(1,3,L), &
-                                    !LoadValuesOnNodesSolid(3,1,L), LoadValuesOnNodesSolid(3,2,L), LoadValuesOnNodesSolid(3,3,L), &
-                                    !LoadValuesOnNodesSolid(5,1,L), LoadValuesOnNodesSolid(5,2,L), LoadValuesOnNodesSolid(5,3,L), &
-                                    !LoadValuesOnNodesSolid(2,1,L), LoadValuesOnNodesSolid(2,2,L), LoadValuesOnNodesSolid(2,3,L), &
-                                    !LoadValuesOnNodesSolid(4,1,L), LoadValuesOnNodesSolid(4,2,L), LoadValuesOnNodesSolid(4,3,L), &
-                                    !LoadValuesOnNodesSolid(6,1,L), LoadValuesOnNodesSolid(6,2,L), LoadValuesOnNodesSolid(6,3,L)
-                  end do ! loop over loaded faces
-                    
-                    
-                    
-                    
-                    !---------------------------------------------
-                    
-                    
-                  !allocate(LoadOnNodesConnectivitiesSolid(N_BOUNDARY_NODES_HOE, NLoadedElementSidesSolidNodes), stat = IError)
-                  !allocate(LoadValuesOnNodesSolid(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
-                  !do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded faces
-                  !  read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1,L), LoadOnNodesConnectivitiesSolid(3,L),  &
-                  !                  LoadOnNodesConnectivitiesSolid(5,L), LoadOnNodesConnectivitiesSolid(2,L), &
-                  !                  LoadOnNodesConnectivitiesSolid(4,L), LoadOnNodesConnectivitiesSolid(6,L), &
-                  !                  LoadValuesOnNodesSolid(1,1,L), LoadValuesOnNodesSolid(1,2,L), LoadValuesOnNodesSolid(1,3,L), &
-                  !                  LoadValuesOnNodesSolid(3,1,L), LoadValuesOnNodesSolid(3,2,L), LoadValuesOnNodesSolid(3,3,L), &
-                  !                  LoadValuesOnNodesSolid(5,1,L), LoadValuesOnNodesSolid(5,2,L), LoadValuesOnNodesSolid(5,3,L), &
-                  !                  LoadValuesOnNodesSolid(2,1,L), LoadValuesOnNodesSolid(2,2,L), LoadValuesOnNodesSolid(2,3,L), &
-                  !                  LoadValuesOnNodesSolid(4,1,L), LoadValuesOnNodesSolid(4,2,L), LoadValuesOnNodesSolid(4,3,L), &
-                  !                  LoadValuesOnNodesSolid(6,1,L), LoadValuesOnNodesSolid(6,2,L), LoadValuesOnNodesSolid(6,3,L)
-                  !end do ! loop over loaded faces
-                else if ( NDIM == 2 ) then
-
-                    ! hardcoded for xi direction traction and needs generalization
-                  allocate(LoadOnNodesConnectivitiesSolid(ELEMENTBOUNDARYNODES, NLoadedElementSidesSolidNodes), stat = IError) 
-                  
-                  allocate(LoadValuesOnNodesSolid(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
-
-                  do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded element sides
-
-                    read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnNodesSolid(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
-
-                  end do ! loop over loaded element sides  
-                end if
-              end if
+            !else if (trim(BName)=='$$START_LOAD_ON_NODES_SOLID') then
+            !  read(GOMunit,*) NLoadedElementSidesSolidNodes ! Loaded faces
+            !  if (NLoadedElementSidesSolidNodes > 0) then
+            !    if ( NDIM == 3 ) then
+            !        
+            !        ! not multipatch generalized and goes for the first patch only
+            !        !---------------------------------------------
+            !        ! hardcoded for xi direction traction and needs generalization
+            !        allocate(LoadOnNodesConnectivitiesSolid(NXiKnotOrder(IPatch_Temporary)+1, NLoadedElementSidesSolidNodes), stat = IError) 
+            !        allocate(LoadValuesOnNodesSolid_NURBS(NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
+            !        ! I am considering this as an input from the GOM file but this needs to be generalized to a 
+            !        ! more generic search which element belongs to these control points
+            !        allocate(ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidNodes) )
+            !        
+            !        
+            !        
+            !        do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded faces
+            !        read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1,L), LoadOnNodesConnectivitiesSolid(2,L),  &
+            !                        LoadOnNodesConnectivitiesSolid(3,L), LoadOnNodesConnectivitiesSolid(4,L), &
+            !                        ElementUponWhichLoadIsApplied_NURBS(L), &
+            !                        LoadValuesOnNodesSolid_NURBS(1, L), &
+            !                        LoadValuesOnNodesSolid_NURBS(2, L), &
+            !                        LoadValuesOnNodesSolid_NURBS(3, L)
+            !                        !LoadValuesOnNodesSolid(1,1,L), LoadValuesOnNodesSolid(1,2,L), LoadValuesOnNodesSolid(1,3,L), &
+            !                        !LoadValuesOnNodesSolid(3,1,L), LoadValuesOnNodesSolid(3,2,L), LoadValuesOnNodesSolid(3,3,L), &
+            !                        !LoadValuesOnNodesSolid(5,1,L), LoadValuesOnNodesSolid(5,2,L), LoadValuesOnNodesSolid(5,3,L), &
+            !                        !LoadValuesOnNodesSolid(2,1,L), LoadValuesOnNodesSolid(2,2,L), LoadValuesOnNodesSolid(2,3,L), &
+            !                        !LoadValuesOnNodesSolid(4,1,L), LoadValuesOnNodesSolid(4,2,L), LoadValuesOnNodesSolid(4,3,L), &
+            !                        !LoadValuesOnNodesSolid(6,1,L), LoadValuesOnNodesSolid(6,2,L), LoadValuesOnNodesSolid(6,3,L)
+            !      end do ! loop over loaded faces
+            !        
+            !        
+            !        
+            !        
+            !        !---------------------------------------------
+            !        
+            !        
+            !      !allocate(LoadOnNodesConnectivitiesSolid(N_BOUNDARY_NODES_HOE, NLoadedElementSidesSolidNodes), stat = IError)
+            !      !allocate(LoadValuesOnNodesSolid(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
+            !      !do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded faces
+            !      !  read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1,L), LoadOnNodesConnectivitiesSolid(3,L),  &
+            !      !                  LoadOnNodesConnectivitiesSolid(5,L), LoadOnNodesConnectivitiesSolid(2,L), &
+            !      !                  LoadOnNodesConnectivitiesSolid(4,L), LoadOnNodesConnectivitiesSolid(6,L), &
+            !      !                  LoadValuesOnNodesSolid(1,1,L), LoadValuesOnNodesSolid(1,2,L), LoadValuesOnNodesSolid(1,3,L), &
+            !      !                  LoadValuesOnNodesSolid(3,1,L), LoadValuesOnNodesSolid(3,2,L), LoadValuesOnNodesSolid(3,3,L), &
+            !      !                  LoadValuesOnNodesSolid(5,1,L), LoadValuesOnNodesSolid(5,2,L), LoadValuesOnNodesSolid(5,3,L), &
+            !      !                  LoadValuesOnNodesSolid(2,1,L), LoadValuesOnNodesSolid(2,2,L), LoadValuesOnNodesSolid(2,3,L), &
+            !      !                  LoadValuesOnNodesSolid(4,1,L), LoadValuesOnNodesSolid(4,2,L), LoadValuesOnNodesSolid(4,3,L), &
+            !      !                  LoadValuesOnNodesSolid(6,1,L), LoadValuesOnNodesSolid(6,2,L), LoadValuesOnNodesSolid(6,3,L)
+            !      !end do ! loop over loaded faces
+            !    else if ( NDIM == 2 ) then
+            !
+            !        ! hardcoded for xi direction traction and needs generalization
+            !      allocate(LoadOnNodesConnectivitiesSolid(ELEMENTBOUNDARYNODES, NLoadedElementSidesSolidNodes), stat = IError) 
+            !      
+            !      allocate(LoadValuesOnNodesSolid(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesSolidNodes), stat = IError)
+            !
+            !      do L = 1, NLoadedElementSidesSolidNodes ! loop over loaded element sides
+            !
+            !        read(GOMunit,*) LoadOnNodesConnectivitiesSolid(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnNodesSolid(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
+            !
+            !      end do ! loop over loaded element sides  
+            !    end if
+            !  end if
               
               
               
@@ -1171,34 +1215,34 @@
                 end if
               end if  
 
-            else if (trim(BName)=='$$START_LOAD_ON_MATERIAL_POINTS_SOLID') then ! Traction boundary condition in GOM file starts here
-              read(GOMunit,*) NLoadedElementSidesSolidMatPoints ! Loaded faces
-              if (NLoadedElementSidesSolidMatPoints > 0) then
-                if (.not.IsMPMComputation()) then
-                  call GiveWarning('A load on material points (solid) is specified while not using MPM.')
-                end if
-				if ( NDIM == 3 ) then
-                	allocate(LoadOnMatPointsConnectivitiesSolid(N_BOUNDARY_NODES_HOE, NLoadedElementSidesSolidMatPoints), stat = IError)
-                	allocate(LoadValuesOnMatPointsSolid(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesSolidMatPoints), stat = IError)
-                	do L = 1, NLoadedElementSidesSolidMatPoints ! loop over loaded faces
-                  	read(GOMunit,*) LoadOnMatPointsConnectivitiesSolid(1,L), LoadOnMatPointsConnectivitiesSolid(3,L),  &
-                                  	LoadOnMatPointsConnectivitiesSolid(5,L), LoadOnMatPointsConnectivitiesSolid(2,L), &
-                                  	LoadOnMatPointsConnectivitiesSolid(4,L), LoadOnMatPointsConnectivitiesSolid(6,L), &
-                            		LoadValuesOnMatPointsSolid(1,1,L), LoadValuesOnMatPointsSolid(1,2,L), LoadValuesOnMatPointsSolid(1,3,L), &
-                            		LoadValuesOnMatPointsSolid(3,1,L), LoadValuesOnMatPointsSolid(3,2,L), LoadValuesOnMatPointsSolid(3,3,L), &
-                            		LoadValuesOnMatPointsSolid(5,1,L), LoadValuesOnMatPointsSolid(5,2,L), LoadValuesOnMatPointsSolid(5,3,L), &
-                            		LoadValuesOnMatPointsSolid(2,1,L), LoadValuesOnMatPointsSolid(2,2,L), LoadValuesOnMatPointsSolid(2,3,L), &
-                            		LoadValuesOnMatPointsSolid(4,1,L), LoadValuesOnMatPointsSolid(4,2,L), LoadValuesOnMatPointsSolid(4,3,L), &
-                            		LoadValuesOnMatPointsSolid(6,1,L), LoadValuesOnMatPointsSolid(6,2,L), LoadValuesOnMatPointsSolid(6,3,L)
-                	end do ! loop over loaded faces
-				else if ( NDIM == 2 ) then
-                  allocate(LoadOnMatPointsConnectivitiesSolid(ELEMENTBOUNDARYNODES, NLoadedElementSidesSolidMatPoints), stat = IError)
-                  allocate(LoadValuesOnMatPointsSolid(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesSolidMatPoints), stat = IError)
-                  do L = 1, NLoadedElementSidesSolidMatPoints ! loop over loaded element sides
-                    read(GOMunit,*) LoadOnMatPointsConnectivitiesSolid(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnMatPointsSolid(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
-                  end do ! loop over loaded element sides
-                end if
-              end if
+    !        else if (trim(BName)=='$$START_LOAD_ON_MATERIAL_POINTS_SOLID') then ! Traction boundary condition in GOM file starts here
+    !          read(GOMunit,*) NLoadedElementSidesSolidMatPoints ! Loaded faces
+    !          if (NLoadedElementSidesSolidMatPoints > 0) then
+    !            if (.not.IsMPMComputation()) then
+    !              call GiveWarning('A load on material points (solid) is specified while not using MPM.')
+    !            end if
+				!if ( NDIM == 3 ) then
+    !            	allocate(LoadOnMatPointsConnectivitiesSolid(N_BOUNDARY_NODES_HOE, NLoadedElementSidesSolidMatPoints), stat = IError)
+    !            	allocate(LoadValuesOnMatPointsSolid(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesSolidMatPoints), stat = IError)
+    !            	do L = 1, NLoadedElementSidesSolidMatPoints ! loop over loaded faces
+    !              	read(GOMunit,*) LoadOnMatPointsConnectivitiesSolid(1,L), LoadOnMatPointsConnectivitiesSolid(3,L),  &
+    !                              	LoadOnMatPointsConnectivitiesSolid(5,L), LoadOnMatPointsConnectivitiesSolid(2,L), &
+    !                              	LoadOnMatPointsConnectivitiesSolid(4,L), LoadOnMatPointsConnectivitiesSolid(6,L), &
+    !                        		LoadValuesOnMatPointsSolid(1,1,L), LoadValuesOnMatPointsSolid(1,2,L), LoadValuesOnMatPointsSolid(1,3,L), &
+    !                        		LoadValuesOnMatPointsSolid(3,1,L), LoadValuesOnMatPointsSolid(3,2,L), LoadValuesOnMatPointsSolid(3,3,L), &
+    !                        		LoadValuesOnMatPointsSolid(5,1,L), LoadValuesOnMatPointsSolid(5,2,L), LoadValuesOnMatPointsSolid(5,3,L), &
+    !                        		LoadValuesOnMatPointsSolid(2,1,L), LoadValuesOnMatPointsSolid(2,2,L), LoadValuesOnMatPointsSolid(2,3,L), &
+    !                        		LoadValuesOnMatPointsSolid(4,1,L), LoadValuesOnMatPointsSolid(4,2,L), LoadValuesOnMatPointsSolid(4,3,L), &
+    !                        		LoadValuesOnMatPointsSolid(6,1,L), LoadValuesOnMatPointsSolid(6,2,L), LoadValuesOnMatPointsSolid(6,3,L)
+    !            	end do ! loop over loaded faces
+				!else if ( NDIM == 2 ) then
+    !              allocate(LoadOnMatPointsConnectivitiesSolid(ELEMENTBOUNDARYNODES, NLoadedElementSidesSolidMatPoints), stat = IError)
+    !              allocate(LoadValuesOnMatPointsSolid(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesSolidMatPoints), stat = IError)
+    !              do L = 1, NLoadedElementSidesSolidMatPoints ! loop over loaded element sides
+    !                read(GOMunit,*) LoadOnMatPointsConnectivitiesSolid(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnMatPointsSolid(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
+    !              end do ! loop over loaded element sides
+    !            end if
+    !          end if
               
              else if (trim(BName)=='$$START_LOAD_ON_MATERIAL_POINTS_SOLID_B') then
               read(GOMunit,*) NLoadedElementSidesSolidMatPointsB ! Loaded faces
@@ -1230,31 +1274,31 @@
                 end if
               end if 
 
-            else if ((trim(BName)=='$$START_LOAD_ON_NODES_LIQUID')) then
-              read(GOMunit,*) NLoadedElementSidesWaterNodes ! Loaded faces
-              if (NLoadedElementSidesWaterNodes > 0) then
-                  if (NDIM == 3) then 
-                    allocate(LoadOnNodesConnectivitiesWater(N_BOUNDARY_NODES_HOE, NLoadedElementSidesWaterNodes), stat = IError)
-                    allocate(LoadValuesOnNodesWater(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesWaterNodes), stat = IError)
-                    do L = 1, NLoadedElementSidesWaterNodes ! loop over loaded faces
-                        read(GOMunit,*) LoadOnNodesConnectivitiesWater(1,L), LoadOnNodesConnectivitiesWater(3,L),  &
-                                LoadOnNodesConnectivitiesWater(5,L), LoadOnNodesConnectivitiesWater(2,L), &
-                                LoadOnNodesConnectivitiesWater(4,L), LoadOnNodesConnectivitiesWater(6,L), &
-                                LoadValuesOnNodesWater(1,1,L), LoadValuesOnNodesWater(1,2,L), LoadValuesOnNodesWater(1,3,L), &
-                                LoadValuesOnNodesWater(3,1,L), LoadValuesOnNodesWater(3,2,L), LoadValuesOnNodesWater(3,3,L), &
-                                LoadValuesOnNodesWater(5,1,L), LoadValuesOnNodesWater(5,2,L), LoadValuesOnNodesWater(5,3,L), &
-                                LoadValuesOnNodesWater(2,1,L), LoadValuesOnNodesWater(2,2,L), LoadValuesOnNodesWater(2,3,L), &
-                                LoadValuesOnNodesWater(4,1,L), LoadValuesOnNodesWater(4,2,L), LoadValuesOnNodesWater(4,3,L), &
-                                LoadValuesOnNodesWater(6,1,L), LoadValuesOnNodesWater(6,2,L), LoadValuesOnNodesWater(6,3,L)
-                    end do ! loop over loaded faces
-                 else if ( NDIM == 2 ) then
-                    allocate(LoadOnNodesConnectivitiesWater(ELEMENTBOUNDARYNODES, NLoadedElementSidesWaterNodes), stat = IError)
-                    allocate(LoadValuesOnNodesWater(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesWaterNodes), stat = IError)
-                    do L = 1, NLoadedElementSidesWaterNodes ! loop over loaded element sides
-                      read(GOMunit,*) LoadOnNodesConnectivitiesWater(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnNodesWater(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
-                    end do ! loop over loaded element sides  
-                end if
-              end if
+            !else if ((trim(BName)=='$$START_LOAD_ON_NODES_LIQUID')) then
+            !  read(GOMunit,*) NLoadedElementSidesWaterNodes ! Loaded faces
+            !  if (NLoadedElementSidesWaterNodes > 0) then
+            !      if (NDIM == 3) then 
+            !        allocate(LoadOnNodesConnectivitiesWater(N_BOUNDARY_NODES_HOE, NLoadedElementSidesWaterNodes), stat = IError)
+            !        allocate(LoadValuesOnNodesWater(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesWaterNodes), stat = IError)
+            !        do L = 1, NLoadedElementSidesWaterNodes ! loop over loaded faces
+            !            read(GOMunit,*) LoadOnNodesConnectivitiesWater(1,L), LoadOnNodesConnectivitiesWater(3,L),  &
+            !                    LoadOnNodesConnectivitiesWater(5,L), LoadOnNodesConnectivitiesWater(2,L), &
+            !                    LoadOnNodesConnectivitiesWater(4,L), LoadOnNodesConnectivitiesWater(6,L), &
+            !                    LoadValuesOnNodesWater(1,1,L), LoadValuesOnNodesWater(1,2,L), LoadValuesOnNodesWater(1,3,L), &
+            !                    LoadValuesOnNodesWater(3,1,L), LoadValuesOnNodesWater(3,2,L), LoadValuesOnNodesWater(3,3,L), &
+            !                    LoadValuesOnNodesWater(5,1,L), LoadValuesOnNodesWater(5,2,L), LoadValuesOnNodesWater(5,3,L), &
+            !                    LoadValuesOnNodesWater(2,1,L), LoadValuesOnNodesWater(2,2,L), LoadValuesOnNodesWater(2,3,L), &
+            !                    LoadValuesOnNodesWater(4,1,L), LoadValuesOnNodesWater(4,2,L), LoadValuesOnNodesWater(4,3,L), &
+            !                    LoadValuesOnNodesWater(6,1,L), LoadValuesOnNodesWater(6,2,L), LoadValuesOnNodesWater(6,3,L)
+            !        end do ! loop over loaded faces
+            !     else if ( NDIM == 2 ) then
+            !        allocate(LoadOnNodesConnectivitiesWater(ELEMENTBOUNDARYNODES, NLoadedElementSidesWaterNodes), stat = IError)
+            !        allocate(LoadValuesOnNodesWater(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesWaterNodes), stat = IError)
+            !        do L = 1, NLoadedElementSidesWaterNodes ! loop over loaded element sides
+            !          read(GOMunit,*) LoadOnNodesConnectivitiesWater(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnNodesWater(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
+            !        end do ! loop over loaded element sides  
+            !    end if
+            !  end if
               else if ((trim(BName)=='$$START_LOAD_ON_NODES_LIQUID_B')) then
               read(GOMunit,*) NLoadedElementSidesWaterNodesB ! Loaded faces
               if (NLoadedElementSidesWaterNodesB > 0) then
@@ -1282,35 +1326,35 @@
                 end if
               end if
 
-            else if ((trim(BName)=='$$START_LOAD_ON_MATERIAL_POINTS_LIQUID')) then
-              read(GOMunit,*) NLoadedElementSidesWaterMatPoints ! Loaded faces
-              if (NLoadedElementSidesWaterMatPoints > 0) then
-                  
-                if (.not.IsMPMComputation()) then
-                  call GiveWarning('A load on material points (liquid) is specified while not using MPM')
-                end if
-              if (NDIM == 3) then 
-                allocate(LoadOnMatPointsConnectivitiesWater(N_BOUNDARY_NODES_HOE, NLoadedElementSidesWaterMatPoints), stat = IError)
-                allocate(LoadValuesOnMatPointsWater(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesWaterMatPoints), stat = IError)
-                do L = 1, NLoadedElementSidesWaterMatPoints ! loop over loaded faces
-                  read(GOMunit,*) LoadOnMatPointsConnectivitiesWater(1,L), LoadOnMatPointsConnectivitiesWater(3,L),  &
-                                  LoadOnMatPointsConnectivitiesWater(5,L), LoadOnMatPointsConnectivitiesWater(2,L), &
-                                  LoadOnMatPointsConnectivitiesWater(4,L), LoadOnMatPointsConnectivitiesWater(6,L), &
-                            LoadValuesOnMatPointsWater(1,1,L), LoadValuesOnMatPointsWater(1,2,L), LoadValuesOnMatPointsWater(1,3,L), &
-                            LoadValuesOnMatPointsWater(3,1,L), LoadValuesOnMatPointsWater(3,2,L), LoadValuesOnMatPointsWater(3,3,L), &
-                            LoadValuesOnMatPointsWater(5,1,L), LoadValuesOnMatPointsWater(5,2,L), LoadValuesOnMatPointsWater(5,3,L), &
-                            LoadValuesOnMatPointsWater(2,1,L), LoadValuesOnMatPointsWater(2,2,L), LoadValuesOnMatPointsWater(2,3,L), &
-                            LoadValuesOnMatPointsWater(4,1,L), LoadValuesOnMatPointsWater(4,2,L), LoadValuesOnMatPointsWater(4,3,L), &
-                            LoadValuesOnMatPointsWater(6,1,L), LoadValuesOnMatPointsWater(6,2,L), LoadValuesOnMatPointsWater(6,3,L)
-                end do ! loop over loaded faces
-              else if ( NDIM == 2 ) then
-                allocate(LoadOnMatPointsConnectivitiesWater(ELEMENTBOUNDARYNODES, NLoadedElementSidesWaterMatPoints), stat = IError)
-                allocate(LoadValuesOnMatPointsWater(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesWaterMatPoints), stat = IError)
-                  do L = 1, NLoadedElementSidesWaterMatPoints ! loop over loaded element sides
-                    read(GOMunit,*) LoadOnMatPointsConnectivitiesWater(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnMatPointsWater(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
-                  end do ! loop over loaded element sides
-              end if
-              end if
+            !else if ((trim(BName)=='$$START_LOAD_ON_MATERIAL_POINTS_LIQUID')) then
+            !  read(GOMunit,*) NLoadedElementSidesWaterMatPoints ! Loaded faces
+            !  if (NLoadedElementSidesWaterMatPoints > 0) then
+            !      
+            !    if (.not.IsMPMComputation()) then
+            !      call GiveWarning('A load on material points (liquid) is specified while not using MPM')
+            !    end if
+            !  if (NDIM == 3) then 
+            !    allocate(LoadOnMatPointsConnectivitiesWater(N_BOUNDARY_NODES_HOE, NLoadedElementSidesWaterMatPoints), stat = IError)
+            !    allocate(LoadValuesOnMatPointsWater(N_BOUNDARY_NODES_HOE, NDOFL, NLoadedElementSidesWaterMatPoints), stat = IError)
+            !    do L = 1, NLoadedElementSidesWaterMatPoints ! loop over loaded faces
+            !      read(GOMunit,*) LoadOnMatPointsConnectivitiesWater(1,L), LoadOnMatPointsConnectivitiesWater(3,L),  &
+            !                      LoadOnMatPointsConnectivitiesWater(5,L), LoadOnMatPointsConnectivitiesWater(2,L), &
+            !                      LoadOnMatPointsConnectivitiesWater(4,L), LoadOnMatPointsConnectivitiesWater(6,L), &
+            !                LoadValuesOnMatPointsWater(1,1,L), LoadValuesOnMatPointsWater(1,2,L), LoadValuesOnMatPointsWater(1,3,L), &
+            !                LoadValuesOnMatPointsWater(3,1,L), LoadValuesOnMatPointsWater(3,2,L), LoadValuesOnMatPointsWater(3,3,L), &
+            !                LoadValuesOnMatPointsWater(5,1,L), LoadValuesOnMatPointsWater(5,2,L), LoadValuesOnMatPointsWater(5,3,L), &
+            !                LoadValuesOnMatPointsWater(2,1,L), LoadValuesOnMatPointsWater(2,2,L), LoadValuesOnMatPointsWater(2,3,L), &
+            !                LoadValuesOnMatPointsWater(4,1,L), LoadValuesOnMatPointsWater(4,2,L), LoadValuesOnMatPointsWater(4,3,L), &
+            !                LoadValuesOnMatPointsWater(6,1,L), LoadValuesOnMatPointsWater(6,2,L), LoadValuesOnMatPointsWater(6,3,L)
+            !    end do ! loop over loaded faces
+            !  else if ( NDIM == 2 ) then
+            !    allocate(LoadOnMatPointsConnectivitiesWater(ELEMENTBOUNDARYNODES, NLoadedElementSidesWaterMatPoints), stat = IError)
+            !    allocate(LoadValuesOnMatPointsWater(ELEMENTBOUNDARYNODES, NDOFL, NLoadedElementSidesWaterMatPoints), stat = IError)
+            !      do L = 1, NLoadedElementSidesWaterMatPoints ! loop over loaded element sides
+            !        read(GOMunit,*) LoadOnMatPointsConnectivitiesWater(1:ELEMENTBOUNDARYNODES, L), ( LoadValuesOnMatPointsWater(I, 1:NDOFL, L), I = 1, ELEMENTBOUNDARYNODES )
+            !      end do ! loop over loaded element sides
+            !  end if
+            !  end if
               
               else if ((trim(BName)=='$$START_LOAD_ON_MATERIAL_POINTS_LIQUID_B')) then
               read(GOMunit,*) NLoadedElementSidesWaterMatPointsB ! Loaded faces
@@ -1583,8 +1627,38 @@
             
           end do 
           
+          
+          
+          ! THIS IS FOR APPLYING TRACTION ON THE NODES 
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              do IPatch = 1, Counters%NPatches
+                  do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+              
+                    
+                      call MatchControlPointsNodes(ILoadSystem, IPatch) ! traction on the control points 
+              
+
+                      !! THIS IS FOR APPLYING TRACTION ON THE MATERIAL POINTS 
+                      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                      call MatchControlPointsElements(ILoadSystem, IPatch) ! traction on the elements
+                      call MatchTractionElementToActualMaterialSide(ILoadSystem, IPatch) ! compare traction side to all sides of actual material. 
+                                                              ! We need to know side our traction is on. 
+              !end if
+              
+                  end do 
+              end do 
+          
+          
+          
+          
+          
+          
+          
           close(GOMunit)
 
+          ! we need to transfer these variabels into counters type
+          NLoadedElementSidesSolidNodes = NLoadSystems_Traction_NumberOfElements 
+          
           call InitCountersFromFile(CalParams%ApplyContactAlgorithm, &
                                     sum_nel_NURBS, sum_NControlPoints, &!NElements, NNodes, &
                                     CalParams%NumberOfMaterials, &
@@ -2205,7 +2279,7 @@
         
         
         
-        subroutine MatchControlPointsNodes() 
+        subroutine MatchControlPointsNodes(ILoadSystem, IPatch) 
         !-------------------------------------------------------------
         ! Purpose: This subroutine is used to match the control points in the 
         ! traction to the actual material. The main variable that is populated is 
@@ -2225,19 +2299,31 @@
               logical, allocatable, dimension(:) :: Traction_Matching_Status 
               ! index local variables 
               integer(INTEGER_TYPE) :: IPatch_Temporary, IControlPoint_Traction, IControlPoint_ActualMaterial
+              integer(INTEGER_TYPE), intent(in) :: IPatch
+              
+              ! Load system generalization 
+              integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+              integer(INTEGER_TYPE), intent(in) :: ILoadSystem
               
               ! initialize 
               IPatch_Temporary = 1 ! work with patch 1
-              allocate(Traction_Matching_Status(NControlPoints(IPatch_Temporary)) ) ! allocate the variable based 
+              
+              
+              
+              allocate(Traction_Matching_Status(NControlPoints(IPatch)) ) ! allocate the variable based 
                                                                                     ! on no of control point in a patch
               Traction_Matching_Status = .false. ! initialize as false
               Node_success = .false. ! initialize as false
               
-              do IControlPoint_Traction = 1, NControlPoints_Traction ! loop over traction control points
+              do IControlPoint_Traction = 1, NControlPoints_Traction(ILoadSystem, IPatch) ! loop over traction control points
               
+                  
+                  Node_success = .false.
 
-                  do IControlPoint_ActualMaterial = 1, NControlPoints(IPatch_Temporary) ! loop over actual material control points
+                  do IControlPoint_ActualMaterial = 1, NControlPoints(IPatch) ! loop over actual material control points
 
+                      
+                      
                       if (Node_success) then ! have we detected this traction node and assigned it an actual material node?
                           Node_success = .false. 
                           exit ! if so, then exit and move on to the next control point
@@ -2248,12 +2334,12 @@
                       if (NDIM == 2) then 
                           
                           ! check if we have spotted the matching actual node to the traction node
-                          if ( (NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
-                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) &
+                          if ( (NodalCoordinates_Traction(IControlPoint_Traction,1, ILoadSystem, IPatch)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch)) &
+                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2, ILoadSystem, IPatch)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch)) &
                           .and. (Traction_Matching_Status(IControlPoint_ActualMaterial)==.false.)) then 
                           
                               ! record the matching actual node 
-                              Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
+                              Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction, ILoadSystem, IPatch) = IControlPoint_ActualMaterial
                               Node_success = .true. ! set to true so that we can exit the loop for this traction node
                               Traction_Matching_Status(IControlPoint_ActualMaterial) = .true. ! set to true which means that we do not need to 
                                                                                               ! assign more traction nodes to this
@@ -2269,17 +2355,19 @@
                       elseif (NDIM == 3) then  
                           
                           ! check if we have spotted the matching actual node to the traction node
-                          if ((NodalCoordinates_Traction(IControlPoint_Traction,1)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch_Temporary)) &
-                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch_Temporary)) &
-                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,3)==NodalCoordinates(IControlPoint_ActualMaterial,3, IPatch_Temporary)) & 
+                          if ((NodalCoordinates_Traction(IControlPoint_Traction,1, ILoadSystem, IPatch)==NodalCoordinates(IControlPoint_ActualMaterial,1, IPatch)) &
+                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,2, ILoadSystem, IPatch)==NodalCoordinates(IControlPoint_ActualMaterial,2, IPatch)) &
+                          .and. (NodalCoordinates_Traction(IControlPoint_Traction,3, ILoadSystem, IPatch)==NodalCoordinates(IControlPoint_ActualMaterial,3, IPatch)) & 
                           .and. (Traction_Matching_Status(IControlPoint_ActualMaterial)==.false.) ) then 
                           
                               ! record the matching actual node 
-                              Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction) = IControlPoint_ActualMaterial
+                              Traction_Connecting_Local_To_Global_ControlPoints(IControlPoint_Traction, ILoadSystem, IPatch) = IControlPoint_ActualMaterial
                               Node_success = .true. ! set to true so that we can exit the loop for this traction node
                               Traction_Matching_Status(IControlPoint_ActualMaterial) = .true. ! set to true which means that we do not need to 
                                                                                               ! assign more traction nodes to this
                           
+                              ControlPoint_Weights_Traction(IControlPoint_Traction, ILoadSystem, IPatch) = ControlPoint_Weights(IControlPoint_ActualMaterial, IPatch)
+                              
                           else
                               
                               !... need an error message here
@@ -2304,7 +2392,7 @@
         
         
         
-        subroutine MatchControlPointsElements() ! traction on the material points 
+        subroutine MatchControlPointsElements(ILoadSystem, IPatch) ! traction on the material points 
               !---------------------------------------------------------
               !
               !
@@ -2315,10 +2403,18 @@
               integer(INTEGER_TYPE) :: ICount
               integer(INTEGER_TYPE) :: IElement_Traction
               integer(INTEGER_TYPE) :: IElement_ActualMaterial
-              integer(INTEGER_TYPE) :: IPatch_Temporary
+              
               integer(INTEGER_TYPE) :: IElementCon_Traction
               integer(INTEGER_TYPE) :: IElementCon_ActualMaterial
               logical :: element_success
+              
+              ! Multipatch generalization 
+              integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+              integer(INTEGER_TYPE), intent(in) :: IPatch
+              
+              ! Load system generalization 
+              integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+              integer(INTEGER_TYPE), intent(in) :: ILoadSystem
               
               ! initialize integers
               IPatch_Temporary = 1
@@ -2328,34 +2424,34 @@
                   
                   
               ! looping accross traction element
-              do IElement_Traction = 1, nel_NURBS_Traction
+              do IElement_Traction = 1, nel_NURBS_Traction(ILoadSystem, IPatch)
                   
                   
                   element_success = .false.
                   
                       ! looping accross actual element
-                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
+                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch)
                           
                           if (element_success == .true.) then 
                                   exit 
                           end if 
                           
-                          do IElementCon_Traction = 1, nen_NURBS_Traction
+                          do IElementCon_Traction = 1, nen_NURBS_Traction(ILoadSystem, IPatch)
                               
                               if (element_success == .true.) then 
                                   exit 
                               end if 
                               
                           
-                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
-                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. &
-                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary))  ) then 
+                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch)                              
+                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 1, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),1, IPatch ))  .and. &
+                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 2, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),2, IPatch ))  ) then 
                 
                                     ICount = ICount + 1
                               
-                                    if (ICount == nen_NURBS_Traction) then 
+                                    if (ICount == nen_NURBS_Traction(ILoadSystem, IPatch)) then 
                               
-                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
+                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction, ILoadSystem, IPatch) = IElement_ActualMaterial
                                         ICount = 0
                                         element_success = .true. 
                                         exit
@@ -2380,35 +2476,35 @@
                   
               
               ! looping accross traction element
-              do IElement_Traction = 1, nel_NURBS_Traction
+              do IElement_Traction = 1, nel_NURBS_Traction(ILoadSystem, IPatch)
                   
                   
                   element_success = .false.
                   
                       ! looping accross actual element
-                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch_Temporary)
+                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch)
                           
                           if (element_success == .true.) then 
                                   exit 
                           end if 
                           
-                          do IElementCon_Traction = 1, nen_NURBS_Traction
+                          do IElementCon_Traction = 1, nen_NURBS_Traction(ILoadSystem, IPatch)
                               
                               if (element_success == .true.) then 
                                   exit 
                               end if 
                               
                           
-                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch_Temporary)                              
-                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 1)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),1, IPatch_Temporary))  .and. &
-                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 2)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),2, IPatch_Temporary)) .and. &
-                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction), 3)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch_Temporary ),3, IPatch_Temporary)) ) then 
+                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch)                              
+                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 1, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),1, IPatch))  .and. &
+                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 2, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),2, IPatch)) .and. &
+                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 3, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),3, IPatch)) ) then 
                 
                                     ICount = ICount + 1
                               
-                                    if (ICount == nen_NURBS_Traction) then 
+                                    if (ICount == nen_NURBS_Traction(ILoadSystem, IPatch)) then 
                               
-                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction) = IElement_ActualMaterial
+                                        Traction_Connecting_Local_To_Global_Elements(IElement_Traction, ILoadSystem, IPatch) = IElement_ActualMaterial
                                         ICount = 0
                                         element_success = .true. 
                                         exit
@@ -2436,7 +2532,7 @@
         
         
         
-        subroutine MatchTractionElementToActualMaterialSide() 
+        subroutine MatchTractionElementToActualMaterialSide(ILoadSystem, IPatch) 
         !--------------------------------------------------------
         ! The actual material is a hexahedral which has 6 sides. 
         ! We need to identify where our quadrilateral sits on this 
@@ -2444,10 +2540,10 @@
 
         integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES, ELEMENTSIDES) :: VerticesID
 
-        integer(INTEGER_TYPE) :: IPatch_Temporary
+        !integer(INTEGER_TYPE) :: IPatch_Temporary
         integer(INTEGER_TYPE) :: ICount
         
-        logical, dimension(ELEMENTSIDES, nel_NURBS_Traction) :: side_test
+        logical, dimension(ELEMENTSIDES, nel_NURBS_Traction(1, 1)) :: side_test ! hardcoded 1 but should be generalized based on number of patches
         integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES, NDIM) :: NodalCoordinatesTractionSide
         !integer(INTEGER_TYPE), dimension(ELEMENTSIDES, NDIM) :: NodalCoordinatesGlobalSide
 
@@ -2458,7 +2554,15 @@
         integer(INTEGER_TYPE) :: IElement_Traction
         integer(INTEGER_TYPE) :: ISide, INode
         
-        IPatch_Temporary = 1
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+        integer(INTEGER_TYPE), intent(in) :: IPatch
+        
+        ! Load system generalization 
+        integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+        integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+        
+        !IPatch_Temporary = 1
               
              if (NDIM == 2) then 
                  
@@ -2578,12 +2682,12 @@
               
               
               ! looping accross traction element
-              do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
+              do IElement_Traction = 1, nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) ! traction elements
                   
-                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction), :)
+                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary), :, ILoadSystem_Temporary, IPatch_Temporary)
                   
                   
-                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
+                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary)
                   
                   NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
                   
@@ -2598,7 +2702,7 @@
                           
                               side_test(ISide , IElement_Traction) = .true.
                               
-                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction) = ISide
+                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary) = ISide
                               
                             end if 
                               
@@ -2613,15 +2717,15 @@
               
               else if (NDIM == 3) then 
               
-                  do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
+                  do IElement_Traction = 1, nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) ! traction elements
                   
                   
                   side_test = .false.
                   
-                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction), :)
+                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary), :, ILoadSystem_Temporary, IPatch_Temporary)
                   
                   
-                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction)
+                  GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary)
                   
                   NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
                   
@@ -2637,7 +2741,7 @@
                           
                               side_test(ISide , IElement_Traction) = .true.
                               
-                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction) = ISide
+                              Traction_Connecting_Local_To_Global_Sides(IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary) = ISide
                               
                               
                               !return

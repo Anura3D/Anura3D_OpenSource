@@ -2045,8 +2045,13 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
           
           
           maxParticle = 1
@@ -2086,7 +2091,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           IntLoadWaterLoc = 0.0
           GravityLoadWaterLoc = 0.0
           GravityLoadMixtureLoc = 0.0
-          IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
+          IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem_Temporary, IPatch_Temporary) + Counters%NLoadedElementSidesWaterMatPointsB)>0
 
             !do IAEl = 1, Counters%NAEl
                 do IPatch = 1, Counters%NPatches ! Loop over patches
@@ -2834,6 +2839,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
           integer(INTEGER_TYPE) :: IPatch
 
           IEl = 0
@@ -2849,7 +2855,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           ExtLoadWaterLoc = 0.0
           GravityLoadWaterLoc = 0.0
           GravityLoadMixtureLoc = 0.0
-          IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
+          IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem_Temporary, IPatch_Temporary) +Counters%NLoadedElementSidesWaterMatPointsB)>0
 
                  !do IAEl = 1, Counters%NAEl
                      
@@ -3090,6 +3096,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+          
           maxParticle = 1
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
@@ -3105,7 +3115,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           ExtLoadWaterPorosityLoc = 0.0
           IntLoadWaterPorosityLoc = 0.0
           GravityLoadWaterPorosityLoc = 0.0
-          IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
+          IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem_Temporary, IPatch_Temporary) +Counters%NLoadedElementSidesWaterMatPointsB)>0
 
           do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
@@ -3381,12 +3391,16 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
         logical :: IsLoadOnMP
         
         ! Multipatch variables 
-        integer(INTEGER_TYPE) :: IPatch_Temporary
+        !integer(INTEGER_TYPE) :: IPatch_Temporary
         integer(INTEGER_TYPE) :: IPatch
+        
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: ILoadSystem_Temporary
 
         ExtLoadWaterPorosityLoc = 0.0
         GravityLoadWaterPorosityLoc = 0.0
-        IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints+Counters%NLoadedElementSidesWaterMatPointsB)>0
+        IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem_Temporary, IPatch_Temporary) +Counters%NLoadedElementSidesWaterMatPointsB)>0
 
         !do IAEl = 1, Counters%NAEl
             

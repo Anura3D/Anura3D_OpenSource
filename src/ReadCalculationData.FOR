@@ -89,7 +89,7 @@
 
         real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights_VolLockSmooth
         
-        real(REAL_TYPE), allocatable, dimension(:) :: ControlPoint_Weights_Traction
+        real(REAL_TYPE), allocatable, dimension(:, :,:) :: ControlPoint_Weights_Traction ! added a rank for load systems ! added a rank for multipatch 
         
         !real(REAL_TYPE), allocatable, dimension(:) :: ElementUponWhichLoadIsApplied_NURBS
         
@@ -102,7 +102,8 @@
         
         
         ! Number of load systems in each patch 
-        real(REAL_TYPE), allocatable, dimension(:) :: NLoadSystems
+        integer(INTEGER_TYPE), allocatable, dimension(:) :: NLoadSystems_Traction
+        real(REAL_TYPE), allocatable, dimension(:,:) :: TractionDimensionForEachLoadSystem ! N
         
         
         type LoadMultiplierType ! Load multipliers

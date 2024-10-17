@@ -6044,20 +6044,46 @@
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
         integer(INTEGER_TYPE) :: IPatch
         
+        ! Load system generalization 
+        integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+        integer(INTEGER_TYPE) :: ILoadSystem
+        
         ! Original ElementGaussPoints variable is protected so we are going for a local variable here
         integer(INTEGER_TYPE) :: ELEMENTGAUSSPOINTS_LOCAL 
         integer(INTEGER_TYPE) :: IGaussPoint
         
         real(REAL_TYPE) :: WeiGP_Xi, WeiGP_Eta
         
-        allocate( GPWeight_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
-            ELEMENTBOUNDARYGAUSSPOINTS) )   
         
-        allocate( GPShapeFunction_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
-            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        
+        
+        !allocate( GPWeight_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        !    ELEMENTBOUNDARYGAUSSPOINTS) )   
+        !
+        !allocate( GPShapeFunction_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        !    ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        !    
+        !allocate( GPShapeFunctionDerivative_AllElements( (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        !    ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, 2) ) !--> this is linked to a 2D surface
+        
+        
+        
+        
+        
+        allocate( GPWeight_AllElements(  Maximum_nel_NURBS_Traction, &
+            ELEMENTBOUNDARYGAUSSPOINTS, &
+            Maximum_NLoadSystems_Traction, Counters%NPatches) )   
+        
+        allocate( GPShapeFunction_AllElements(  Maximum_nel_NURBS_Traction, &
+            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, &
+            Maximum_NLoadSystems_Traction, Counters%NPatches) )
             
-        allocate( GPShapeFunctionDerivative_AllElements( (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction)*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
-            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, 2) ) !--> this is linked to a 2D surface
+        allocate( GPShapeFunctionDerivative_AllElements( Maximum_nel_NURBS_Traction, &
+            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, 2, &
+            Maximum_NLoadSystems_Traction, Counters%NPatches) ) !--> this is linked to a 2D surface
+        
+        
+        
         
         !NDOFL-1
         
@@ -6120,10 +6146,13 @@
         GPShapeFunctionDerivative_AllElements = 0.0 
         GPShapeFunction_AllElements = 0.0 
         GPWeight_AllElements = 0.0
-
-            
+        
+        ! loop over patches
+        do IPatch = 1, Counters%NPatches
+        ! loop over load systems
+        do ILoadSystem = 1, NLoadSystems_Traction(IPatch)    
         ! we do not have this patch implementation just yet...
-        do ee = 1, nel_NURBS_Traction!(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
+        do ee = 1, nel_NURBS_Traction(ILoadSystem, IPatch)!(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
         
         
             
@@ -6144,7 +6173,7 @@
                !GPWeightBoundary_XI_AllElements(ee,IGaussPoint) = WeiGP_Xi
                !GPWeightBoundary_ETA_AllElements(ee,IGaussPoint) = WeiGP_Eta
             
-               GPWeight_AllElements(ee,IGaussPoint) = WeiGP
+               GPWeight_AllElements(ee,IGaussPoint, ILoadSystem, IPatch) = WeiGP
                
                 
                 
@@ -6165,13 +6194,48 @@
             !                                        IPatch_Temporary)!, &
                                                     !IPatch) !NURBS related inputs in the eta direction 
             
-           call ShapeLocPosPointer_IGA_2D_Traction(PosGP, GPShapeFunction_AllElements(ee,IGaussPoint,:), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:), & !classic inout parameters
-                                                    XiKnotEntries_Traction, NXiKnotEntries_Traction, NXiKnotOrder_Traction, & !NURBS related inputs in the xi direction 
-                                                    EtaKnotEntries_Traction, NEtaKnotEntries_Traction, NEtaKnotOrder_Traction, &
-                                                    nen_NURBS_Traction, ee, IPatch) ! needs multipatch generalization    
+           !call ShapeLocPosPointer_IGA_2D_Traction(PosGP, GPShapeFunction_AllElements(ee,IGaussPoint,:), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:), & !classic inout parameters
+           !                                         XiKnotEntries_Traction, NXiKnotEntries_Traction, NXiKnotOrder_Traction, & !NURBS related inputs in the xi direction 
+           !                                         EtaKnotEntries_Traction, NEtaKnotEntries_Traction, NEtaKnotOrder_Traction, &
+           !                                         nen_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary), ee, IPatch) ! needs multipatch generalization    
                                                      !NURBS related inputs in the eta direction 
+             
+             if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then ! XI_ETA
+             
+             
+                 call ShapeLocPosPointer_IGA_2D_Traction(PosGP, GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), & !classic inout parameters
+                                         XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                         EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch), &
+                                         nen_NURBS_Traction(ILoadSystem, IPatch), ee, ILoadSystem, IPatch, &
+                                         ELEMENTBOUNDARYNODES_XI, &
+                                         ELEMENTBOUNDARYNODES_ETA) ! needs multipatch generalization    
+                                          !NURBS related inputs in the eta direction 
                 
+             else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then ! XI_ZETA
+                 
+                 
+                 call ShapeLocPosPointer_IGA_2D_Traction(PosGP, GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), & !classic inout parameters
+                                         XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                         ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), NZetaKnotOrder(IPatch), &
+                                         nen_NURBS_Traction(ILoadSystem, IPatch), ee, ILoadSystem, IPatch, &
+                                         ELEMENTBOUNDARYNODES_XI, &
+                                         ELEMENTBOUNDARYNODES_ZETA) ! needs multipatch generalization    
+                 
+                 
+             else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then ! ETA_ZETA
            
+                 
+                 call ShapeLocPosPointer_IGA_2D_Traction(PosGP, GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), & !classic inout parameters
+                                         EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                         ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), NZetaKnotOrder(IPatch), &
+                                         nen_NURBS_Traction(ILoadSystem, IPatch), ee, ILoadSystem, IPatch, &
+                                         ELEMENTBOUNDARYNODES_ETA, &
+                                         ELEMENTBOUNDARYNODES_ZETA) ! needs multipatch generalization    
+                 
+                 
+                 
+             end if 
+             
            !subroutine ShapeLocPosPointer_IGA_2D_Traction(LocPos, RR, dR_dxi, & !classic inout parameters
            !                                         XiKnotEntries, NXiKnotEntries, NXiKnotOrder, & !NURBS related inputs in the xi direction 
            !                                         EtaKnotEntries, NEtaKnotEntries, NEtaKnotOrder, &
@@ -6236,8 +6300,9 @@
             ! loop over the number of knot spans in xi direction 
         
         
-        end do ! loop over the number of knot spans in eta direction 
+           end do ! loop over the number of knot spans in eta direction 
         
+           
         
         ! seperate these into two loops 
         ! one loop you loop over all the ni in all the elements
@@ -6326,9 +6391,9 @@
         !!    
         !!end if 
         !
-            end do
-            !end do
-        !end do 
+            end do ! loop over elements
+            end do ! loop over load systems
+        end do ! loop over patches
         
         
         !end do ! loop over patches
@@ -6420,6 +6485,10 @@
         integer(INTEGER_TYPE) :: IPatch_Temporary =1 
         integer(INTEGER_TYPE) :: IPatch
         
+        ! Load system generalization 
+        integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+        integer(INTEGER_TYPE) :: ILoadSystem
+        
         ! Original ElementGaussPoints variable is protected so we are going for a local variable here
         integer(INTEGER_TYPE) :: ELEMENTGAUSSPOINTS_LOCAL 
         integer(INTEGER_TYPE) :: IGaussPoint
@@ -6430,14 +6499,42 @@
         !allocate( GPShapeFunctionBoundary_XI(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
         !allocate( GPShapeFunctionDerivativeBoundary_XI(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
         
-        allocate( GPWeight_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
-            ELEMENTBOUNDARYGAUSSPOINTS) )   
+        !allocate( GPWeight_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        !    ELEMENTBOUNDARYGAUSSPOINTS) )   
+        !
+        !allocate( GPShapeFunction_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        !    ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        !    
+        !allocate( GPShapeFunctionDerivative_AllElements( (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        !    ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, 1) ) !2) ) !--> this is linked to a 2D surface
         
-        allocate( GPShapeFunction_AllElements(  (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
-            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        
+        
+        
+        
+        
+        
+        
+        
+        allocate( GPWeight_AllElements(  Maximum_nel_NURBS_Traction, &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+            ELEMENTBOUNDARYGAUSSPOINTS, &
+            Maximum_NLoadSystems_Traction, Counters%NPatches) )   
+        
+        allocate( GPShapeFunction_AllElements(  Maximum_nel_NURBS_Traction, &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, &
+            Maximum_NLoadSystems_Traction, Counters%NPatches) )
             
-        allocate( GPShapeFunctionDerivative_AllElements( (nn_NURBS_NumberOfUnivariateXiKnots_Traction-NXiKnotOrder_Traction), &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
-            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, 1) ) !2) ) !--> this is linked to a 2D surface
+        allocate( GPShapeFunctionDerivative_AllElements( Maximum_nel_NURBS_Traction, &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+            ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, 1, &
+            Maximum_NLoadSystems_Traction, Counters%NPatches) ) !2) ) !--> this is linked to a 2D surface
+        
+        
+        
+        
+        
+        
+        
+        
         
         !NDOFL-1
         
@@ -6828,9 +6925,11 @@
         !GPShapeFunctionDerivativeBoundary_XI_AllElements = 0
         !GPShapeFunctionDerivativeBoundary_ZETA_AllElements = 0
         
-        !do IPatch = 1, Counters%NPatches ! loop over patches
+        do IPatch = 1, Counters%NPatches ! loop over patches
+        ! loop over load systems 
+        do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
         ! loop over NURBS elements 
-        do ee = 1, nel_NURBS_Traction!(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
+        do ee = 1, nel_NURBS_Traction(ILoadSystem, IPatch) !(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
         
         ! temporary fix 
         !ee = nel_NURBS
@@ -6867,7 +6966,7 @@
                !GPWeightBoundary_XI_AllElements(ee,IGaussPoint) = WeiGP_Xi
                !GPWeightBoundary_ETA_AllElements(ee,IGaussPoint) = WeiGP_Eta
             
-               GPWeight_AllElements(ee,IGaussPoint) = WeiGP_Xi
+               GPWeight_AllElements(ee,IGaussPoint, ILoadSystem, IPatch) = WeiGP_Xi
                
                ! evaluate parametric domain
                !Xi_ParametricDomain =  ( (XiKnotEntries_Traction(ni+1) - XiKnotEntries_Traction(ni) ) * xi_tilde & ! ,IPatch
@@ -6916,9 +7015,33 @@
             !                                        IPatch_Temporary) 
             
             
-            call ShapeLocPosPointer_IGA_1D_Traction(PosGP(1), GPShapeFunction_AllElements(ee,IGaussPoint,:), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:), &!Wt, & !classic inout parameters
-                                                    XiKnotEntries_Traction(:), NXiKnotEntries_Traction, NXiKnotOrder_Traction, & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
-                                                    ee, IPatch_Temporary) !NURBS related inputs in the eta direction 
+            !call ShapeLocPosPointer_IGA_1D_Traction(PosGP(1), GPShapeFunction_AllElements(ee,IGaussPoint,:), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:), &!Wt, & !classic inout parameters
+            !                                        XiKnotEntries_Traction(:), NXiKnotEntries_Traction, NXiKnotOrder_Traction, & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
+            !                                        ee, IPatch_Temporary) !NURBS related inputs in the eta direction 
+            
+                 ! XI
+                 if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                 
+             call ShapeLocPosPointer_IGA_1D_Traction(PosGP(1), GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), &!Wt, & !classic inout parameters
+                                                    XiKnotEntries(:, IPatch), NXiKnotEntries(IPatch), NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
+                                                    ee, ILoadSystem, IPatch, &
+                                                    ELEMENTBOUNDARYNODES_XI) !NURBS related inputs in the eta direction 
+            
+             
+
+                 ! ETA
+                 else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                 
+                     call ShapeLocPosPointer_IGA_1D_Traction(PosGP(1), GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), &!Wt, & !classic inout parameters
+                                                    EtaKnotEntries(:, IPatch), NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch), & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
+                                                    ee, ILoadSystem, IPatch, &
+                                                    ELEMENTBOUNDARYNODES_ETA) !NURBS related inputs in the eta direction 
+                     
+                     
+                     
+                 end if 
+                 
+            
             
                                                     !GPShapeFunctionBoundary_ETA_AllElements(ee,IGaussPoint,:), GPShapeFunctionDerivativeBoundary_ETA_AllElements(ee,IGaussPoint,:), & !GPWeightBoundary_ETA, &
                                                     !EtaKnotEntries_Traction(:), NEtaKnotEntries_Traction, Eta_ParametricDomain, NEtaKnotOrder_Traction, &
@@ -7075,9 +7198,9 @@
         !!    
         !!end if 
         !
-            end do
-            !end do
-        !end do 
+            end do ! loop over elements
+            end do ! loop over load systems
+        end do ! loop over patches
         
         
         !end do ! loop over patches
@@ -7281,7 +7404,9 @@
       
       
       
-      subroutine NormalOnQUAD_NURBS(Co, dHS, Vn, Vl, ElementUponWhichLoadIsApplied) 
+      subroutine NormalOnQUAD_NURBS(Co, dHS, Vn, Vl, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch, &
+          NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific, &
+          NEtaKnotEntries_SideSpecific, EtaKnotEntries_SideSpecific) 
       ! Int --> gauss point of interest
       ! Co --> coordinates of traction surface --> NOT the usual coordinates BUT the traction ones --> (NControlPoints_TRACTION, 3) rank 3
       ! dHS --> we will have sixteen nodes with each with 2 component for xi and eta --> (16,2) rank 2
@@ -7340,10 +7465,32 @@
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
+      ! Multipatch variables
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+      integer(INTEGER_TYPE), intent(in) :: IPatch
+
+      ! Load system generalization 
+      integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+      integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      
+      integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific
+      real(REAL_TYPE), intent(in), dimension(NXiKnotEntries_SideSpecific) :: XiKnotEntries_SideSpecific
+
+      integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries_SideSpecific
+      real(REAL_TYPE), intent(in), dimension(NEtaKnotEntries_SideSpecific) :: EtaKnotEntries_SideSpecific
+      
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      
       dR_dxi_tilde = 0.0
       
-      ni = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied),1)!,IPatch)    
-      nj = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied),2)!,IPatch)
+      ni = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch),1, ILoadSystem, IPatch)!,IPatch)    
+      nj = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch),2, ILoadSystem, IPatch)!,IPatch)
+      
       !if (NDIM == 3) then
       !    nk = INN(IEN(1,IElement,IPatch),3,IPatch)    
       !end if 
@@ -7382,15 +7529,15 @@
       
       
       ! THIS BELOW SUBROUTINE NEEDS TO BE FOR 2D
-      call Get_dxi_dtildexi_MapFromParentElToParmtr_QUAD(NXiKnotEntries_Traction, XiKnotEntries_Traction, ni, & !(IPatch)                                                                  
-                                                                     NEtaKnotEntries_Traction, EtaKnotEntries_Traction, nj, &   !(IPatch)
+      call Get_dxi_dtildexi_MapFromParentElToParmtr_QUAD(NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific, ni, & !(IPatch)                                                                  
+                                                                     NEtaKnotEntries_SideSpecific, EtaKnotEntries_SideSpecific, nj, &   !(IPatch)
                                                                      dxi_dtildexi)
       
       
       
        dR_dxi_tilde = 0.0
         
-        do loc_num = 1, nen_NURBS_Traction
+        do loc_num = 1, nen_NURBS_Traction(ILoadSystem, IPatch)
             do aa = 1, 2!NDIM 
                 do bb = 1, 2!NDIM 
                     dR_dxi_tilde(loc_num, aa) = dR_dxi_tilde(loc_num, aa) + &
@@ -7500,7 +7647,7 @@
       
       do INode = 1, ELEMENTBOUNDARYNODES !--> LOOP FROM NODE 1 TO NODE 16
           
-          NN = IEN_TRACTION(INode, ElementUponWhichLoadIsApplied)
+          NN = IEN_TRACTION(INode, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch)
       
           !IEN_TRACTION(CONTROLPOINTNUMBER, ELEMENTNUMBERONTHESURFACE) !--> we have not incuded multipatch in this
           !IEN_TRACTION(CONTROLPOINTNUMBER, ELEMENTNUMBERONTHESURFACE) !--> we have not incuded multipatch in this
@@ -7574,7 +7721,7 @@
       
       
       
-      subroutine NormalOnLINE_NURBS(Co, dHS, Vn, Vl, ElementUponWhichLoadIsApplied) 
+      subroutine NormalOnLINE_NURBS(Co, dHS, Vn, Vl, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch, NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific) 
       ! Int --> gauss point of interest
       ! Co --> coordinates of traction surface --> NOT the usual coordinates BUT the traction ones --> (NControlPoints_TRACTION, 3) rank 3
       ! dHS --> we will have sixteen nodes with each with 2 component for xi and eta --> (16,2) rank 2
@@ -7631,11 +7778,35 @@
       
       real(REAL_TYPE) :: Magnitude_Normal_Xi, Magnitude_Normal_Eta
       
+            
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      ! Multipatch variables
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+      integer(INTEGER_TYPE), intent(in) :: IPatch
+
+      ! Load system generalization 
+      integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+      integer(INTEGER_TYPE), intent(in) :: ILoadSystem
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      
+      
+      
+      integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific
+      
+      
+      real(REAL_TYPE), intent(in), dimension(NXiKnotEntries_SideSpecific) :: XiKnotEntries_SideSpecific
+      
+      
+      
+      
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       dR_dxi_tilde = 0.0
       
-      ni = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied),1)!,IPatch)    
+      ni = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch),1, ILoadSystem, IPatch)!,IPatch)    
       !nj = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied),2)!,IPatch)
       !if (NDIM == 3) then
       !    nk = INN(IEN(1,IElement,IPatch),3,IPatch)    
@@ -7675,7 +7846,7 @@
       
       
       ! THIS BELOW SUBROUTINE NEEDS TO BE FOR 2D
-      call Get_dxi_dtildexi_MapFromParentElToParmtr_LINE(NXiKnotEntries_Traction, XiKnotEntries_Traction, ni, & !(IPatch)           
+      call Get_dxi_dtildexi_MapFromParentElToParmtr_LINE(NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific, ni, & !(IPatch)           
                                                                         dxi_dtildexi)
                                                                      !NEtaKnotEntries_Traction, EtaKnotEntries_Traction, nj, &   !(IPatch)
                                                                      
@@ -7685,11 +7856,11 @@
       bb = 1.0
        dR_dxi_tilde = 0.0
         
-        do loc_num = 1, nen_NURBS_Traction
+        do loc_num = 1, nen_NURBS_Traction(ILoadSystem, IPatch)
             !do aa = 1, 1!NDIM 
                 !do bb = 1, 1!NDIM 
                     dR_dxi_tilde(loc_num, aa) = dR_dxi_tilde(loc_num, aa) + &
-                                                         (dHS(loc_num, bb) * dxi_dtildexi(bb, aa) )  !*2
+                                                         ( dHS(loc_num, bb) * dxi_dtildexi(bb, aa) )  !*2
                 !end do
             !end do
         end do
@@ -7795,7 +7966,7 @@
       
       do INode = 1, ELEMENTBOUNDARYNODES !--> LOOP FROM NODE 1 TO NODE 16
           
-          NN = IEN_TRACTION(INode, ElementUponWhichLoadIsApplied)
+          NN = IEN_TRACTION(INode, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch)
       
           !IEN_TRACTION(CONTROLPOINTNUMBER, ELEMENTNUMBERONTHESURFACE) !--> we have not incuded multipatch in this
           !IEN_TRACTION(CONTROLPOINTNUMBER, ELEMENTNUMBERONTHESURFACE) !--> we have not incuded multipatch in this

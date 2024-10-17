@@ -53,22 +53,39 @@
       
       implicit none
 
-        if ( Counters%NLoadedElementSidesSolid > 0) then ! solid !Counters%NLoadedElementSidesSolid    !Counters%NLoadedElementSidesSolidNodes
-          call InitialiseTractionLoadVector(LOADTYPE_SOLID)
+      
+      integer(INTEGER_TYPE) :: IPatch, ILoadSystem
+      
+      
+      do IPatch = 1, Counters%NPatches ! loop over patches       
+          do ILoadSystem = 1, NLoadSystems_Traction(IPatch) ! loop over load systems
+      
+        if ( Counters%NLoadedElementSidesSolid(ILoadSystem,IPatch)  > 0) then ! solid !Counters%NLoadedElementSidesSolid    !Counters%NLoadedElementSidesSolidNodes
+          call InitialiseTractionLoadVector(LOADTYPE_SOLID, ILoadSystem, IPatch)
           if (NDIM == 3) call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoadVector, ExtLoadVector) ! 3D function, only if IS3DCYLINDRIC=.true.
           if (NDIM == 3) call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoadVectorB, ExtLoadVectorB) ! 3D function, only if IS3DCYLINDRIC=.true.
         end if
         
-        if (((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) .or. (Counters%NLoadedElementSidesWater > 0)) then ! liquid
+          end do ! loop over load systems
+      end do  ! loop over patches
+      
+      
+      do IPatch = 1, Counters%NPatches ! loop over patches       
+          do ILoadSystem = 1, NLoadSystems_Traction(IPatch) ! loop over load systems
+        
+        if (((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) .or. (Counters%NLoadedElementSidesWater(ILoadSystem,IPatch) > 0)) then ! liquid
         !just temporary: need to find a different condition
-          call InitialiseTractionLoadVector(LOADTYPE_LIQUID)  
+          call InitialiseTractionLoadVector(LOADTYPE_LIQUID, ILoadSystem, IPatch)  
           if (NDIM == 3) call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoadVectorwater, ExtLoadVectorWater) ! 3D function, only if IS3DCYLINDRIC=.true.
           if (NDIM == 3) call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoadVectorwaterB, ExtLoadVectorWaterB) ! 3D function, only if IS3DCYLINDRIC=.true.
           ! note: the rotation of the BC for the liquid has to be fixed
         end if
-        
+      
+          end do ! loop over load systems
+      end do ! loop over patches
+      
         if (Counters%NLoadedElementSidesGas > 0) then ! gas
-          call InitialiseTractionLoadVector(LOADTYPE_GAS)  
+          call InitialiseTractionLoadVector(LOADTYPE_GAS, ILoadSystem, IPatch)  
           if (NDIM == 3) call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoadVectorGas, ExtLoadVectorGas) ! 3D function, only if IS3DCYLINDRIC=.true.
           if (NDIM == 3) call RotVec(IRotation, NRotNodes, RotMat, ReducedDof, ExtLoadVectorGasB, ExtLoadVectorGasB) ! 3D function, only if IS3DCYLINDRIC=.true.
           ! note: the rotation of the BC for the gas has to be fixed
@@ -77,7 +94,7 @@
       end subroutine InitialiseTractionLoad
       
       
-      subroutine InitialiseTractionLoadVector(LoadType)
+      subroutine InitialiseTractionLoadVector(LoadType, ILoadSystem, IPatch)
       !**********************************************************************
       !
       !>    Function:  Initialisation of the traction load vector, splitting  
@@ -102,6 +119,11 @@
       
       ! Multipatch variables 
       integer(INTEGER_TYPE) :: IPatch_Temporary
+      integer(INTEGER_TYPE), intent(in) :: IPatch
+      
+      
+      integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+      integer(INTEGER_TYPE), intent(in) :: ILoadSystem
       
       !real(REAL_TYPE), dimension(Counters%N) :: ExtLoadVector_MapToPoints
       
@@ -109,17 +131,70 @@
       
       !ExtLoadVector_MapToPoints = 0.0
       
-      NNodes = NXiKnotOrder(IPatch_Temporary)+1
+      NNodes = NXiKnotOrder(IPatch)+1
 
       if ( LoadType == LOADTYPE_SOLID ) then ! solid
 
           ! initialise ExtLoadVector with distributed load on nodes
           if (NDIM == 3) then ! for 3D
-            do I = 1, Counters%NLoadedElementSidesSolidNodes
+              
+            !do IPatch = 1, Counters%NPatches
+            !  
+            !    
+            !    do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+              
+                    
+                    
+                    
+                    
+                    
+            do I = 1, Counters%NLoadedElementSidesSolidNodes(ILoadSystem, IPatch)
                 ! IEN_Traction --> subscripts are hardcoded --> we need to loop over the list of elements
-                ee = ElementUponWhichLoadIsApplied_NURBS(I) 
-              call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+                ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch) 
+              
+                
+                
+                ! we need to check the directions of the traction load system and input the knot vectors 
+                ! XI_ETA
+                if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                
+                call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                    ILoadSystem, IPatch, &
+                    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch) )
+            
+                ! XI_ZETA
+                elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                    
+                call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                    ILoadSystem, IPatch, &
+                    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                    NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NZetaKnotEntries(IPatch), IPatch) )
+                
+                
+                ! ETA_ZETA
+                elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then 
+                    
+                call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                    ILoadSystem, IPatch, &
+                    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch), &
+                    NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NZetaKnotEntries(IPatch), IPatch) )
+                
+                    
+                end if 
+                
+            
             end do
+            
+            
+            
+            !    end do 
+            !    
+            !    
+            !    
+            !    
+            !end do 
+            
             ! I COMMENTED THE LOAD SYSTEM B FOR NOW
             !do I = 1, Counters%NLoadedElementSidesSolidNodesB
             !    ee = ElementUponWhichLoadIsApplied_NURBS_B(I) 
@@ -129,18 +204,43 @@
             !end do
           elseif (NDIM == 2) then ! for 2D
               
-            do I = 1, Counters%NLoadedElementSidesSolidNodes
+              !do IPatch = 1, Counters%NPatches ! loop over patches
+              !
+              !    do ILoadSystem = 1, NLoadSystems_Traction(IPatch) ! loop over load systems
+                      
+            do I = 1, Counters%NLoadedElementSidesSolidNodes(ILoadSystem, IPatch) ! loop over elements
               !call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
               
                 ! IEN_Traction --> subscripts are hardcoded --> we need to loop over the list of elements
-                ee = ElementUponWhichLoadIsApplied_NURBS(I) 
-                call Load2D_NURBS(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
+                ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch) 
+                
+                 !we need to check the directions of the traction load system and input the knot vectors 
+                ! XI
+                if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                
+                call Load2D_NURBS(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch) )! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
               !call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates, 2, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! let's try two here 
-            end do
+
+                
+                ! ETA
+                else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                    
+                    
+                    call Load2D_NURBS(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch) )
+                    
+                    
+                end if 
+                
+            end do ! loop over elements
             !do I = 1, Counters%NLoadedElementSidesSolidNodesB
             !  call Load2D(ExtLoadVectorB, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, LoadOnNodesConnectivitiesSolidB(1, I), LoadValuesOnNodesSolidB(1, 1, I), LoadType)              
             !end do
-          
+            
+            !      end do ! loop over load systems
+            !
+            !end do ! loop over patches
           
           end if  
           
@@ -150,13 +250,60 @@
           ! initialise Particle%ExtLoadVector with distributed load on material points (only in first load step)
           if (.not.IsFollowUpPhase()) then
             if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
-              do I = 1, Counters%NLoadedElementSidesSolidMatPoints
-                  ee = ElementUponWhichLoadIsApplied_NURBS(I)                   
+              
+                
+                !do IPatch = 1, Counters%NPatches ! loop over patches
+                !
+                !  do ILoadSystem = 1, NLoadSystems_Traction(IPatch) ! loop over load systems
+                      
+                
+                do I = 1, Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem, IPatch)
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch)                   
                   !call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES)!, IEN_Traction)!, ElementUponWhichLoadIsApplied_NURBS(I))
                   !call Load3D(ExtLoadVector_MapToPoints, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))          
-                  call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
-              
-              end do
+                 
+                  ! XI_ETA
+                  if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                  
+                  call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                      NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                      NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch) )
+                  
+                  
+                  ! XI_ZETA
+                  elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                      
+                      
+                  call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                      NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                      NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch) )
+                      
+                      
+                  ! ETA_ZETA
+                  elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then 
+                      
+                      
+                      
+                  call Load3D_NURBS_OnMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                      NEtaKnotEntries(IPatch), EtaKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                      NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NZetaKnotEntries(IPatch), IPatch) )
+                      
+                      
+                      
+                      
+                  end if 
+                  
+                  
+                  
+                end do
+                
+                
+                
+                
+                !  end do ! loop over load systems
+                !  
+                !end do ! loop over patches
+                
               
               
               !do I = 1, Counters%NLoadedElementSidesSolidMatPoints
@@ -174,9 +321,16 @@
                 call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates(:,:,IPatch_Temporary),2)
 			  end do
             elseif (NDIM == 2) then ! for 2D
-              do I = 1, Counters%NLoadedElementSidesSolidMatPoints
+                
+                
+                
+                !do IPatch = 1, Counters%NPatches
+                !
+                !do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+                
+              do I = 1, Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem, IPatch)
                   
-                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch) 
                   
                   !I need to update the inputs to this subroutine
                   !call TransferExternalLoadsToParticles_NURBS(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, 1, 1)
@@ -186,7 +340,23 @@
                   ! IEN_Traction --> subscripts are hardcoded --> we need to loop over the list of elements
                   !Traction_Connecting_Local_To_Global_Elements(I)!
 
-                  call Load2D_NURBS_onMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+                  ! XI
+                  if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then
+                  
+                  call Load2D_NURBS_onMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                      NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch) )! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+                  
+                  ! ETA
+                  else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then
+                  
+                  call Load2D_NURBS_onMPs(ExtLoadVector, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                      NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch) )! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+                  
+                  
+                  end if 
+                  
+                  
+                  
 
                   !call Load2D(ExtLoadVector, ReducedDof, NodalCoordinates, 2, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! let's try two here 
                   !end do
@@ -196,6 +366,11 @@
                   ! I need to map ExtLoadVector to the material points 
               
               end do
+              
+                !end do 
+                !
+                !end do 
+                
               do I = 1, Counters%NLoadedElementSidesSolidMatPointsB
                 call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesSolidB(1, I), LoadValuesOnMatPointsSolidB(1, 1, I), 1, NodalCoordinates(:,:,IPatch_Temporary),2)
               end do
@@ -226,56 +401,221 @@
           
           ! initialise ExtLoadVectorWater with distributed load on nodes
           if (NDIM == 3) then ! for 3D
-              do I = 1, Counters%NLoadedElementSidesWaterNodes
-                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+              
+              !do IPatch = 1, Counters%NPatches
+              !    
+              !    do ILoadSystem = 1, NloadSystems_Traction(IPatch)
+              
+              do I = 1, Counters%NLoadedElementSidesWaterNodes(ILoadSystem, IPatch)
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch) 
                   !call Load3D(ExtLoadVectorWater, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesWater(1, I), LoadValuesOnNodesWater(1, 1, I), LoadType)
-                  call Load3D(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+                  
+                  
+                  ! we need to check the directions of the traction load system and input the knot vectors 
+                  ! XI_ETA
+                  if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                  
+                  call Load3D(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                      ILoadSystem, IPatch, &
+                      NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                      NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch))
+                  
+                  ! XI_ZETA
+                  elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                  
+                  call Load3D(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                      ILoadSystem, IPatch, &
+                      NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                      NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NZetaKnotEntries(IPatch), IPatch))
+                  
+                  ! ETA_ZETA
+                  elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then 
+                  
+                  call Load3D(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                      ILoadSystem, IPatch, &
+                      NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch), &
+                      NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NZetaKnotEntries(IPatch), IPatch))
+                  
+                  
+                  end if 
+                  
+                  
+                  
+                  
                   
               end do
+              
+              
+              !    end do 
+              !    
+              !end do
+              
               !do I = 1, Counters%NLoadedElementSidesWaterNodesB
               !    call Load3D(ExtLoadVectorWaterB, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesWaterB(1, I), LoadValuesOnNodesWaterB(1, 1, I), LoadType)
               !end do
           else if (NDIM == 2) then ! for2D
-              do I = 1, Counters%NLoadedElementSidesWaterNodes                  
+              
+              !do IPatch = 1, Counters%NPatches
+              !    
+              !    do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+              
+              
+              do I = 1, Counters%NLoadedElementSidesWaterNodes(ILoadSystem, IPatch)                  
                   ! IEN_Traction --> subscripts are hardcoded --> we need to loop over the list of elements
-                ee = ElementUponWhichLoadIsApplied_NURBS(I) 
-                call Load2D_NURBS(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
-                  
+                ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch) 
+                
+                
+                
+                
+                ! XI
+                if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then
+                
+                call Load2D_NURBS(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch) )! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
+                
+                ! ETA
+                else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then
+                
+                call Load2D_NURBS(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NXiKnotEntries(IPatch), IPatch) )! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
+                
+                end if 
+                
+                
+                
+                
+                
+                
+                
+                
+                
                   !call Load2D(ExtLoadVectorWater, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesWater(1, I), LoadValuesOnNodesWater(1, 1, I), LoadType)
               end do 
               !do I = 1, Counters%NLoadedElementSidesWaterNodesB
               !    call Load2D(ExtLoadVectorWaterB, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesWaterB(1, I), LoadValuesOnNodesWaterB(1, 1, I), LoadType)
               !end do
+              
+              !    end do 
+              !
+              !end do 
+              
           end if 
         
           ! initialise Particle%ExtLoadVectorWater with distributed load on material points (only in first load step)
           if (.not.IsFollowUpPhase()) then
             if (NDIM == 3) then ! for 3D
-              do I = 1, Counters%NLoadedElementSidesWaterMatPoints
+                
+                !do IPatch = 1, Counters%NPatches
+                !    
+                !    
+                !    do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+                
+                
+              do I = 1, Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem, IPatch) 
                 !call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesWater(1, I), LoadValuesOnMatPointsWater(1, 1, I), 1, NodalCoordinates,1)
                                   
                  
-                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
-                  call Load3D_NURBS_OnMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch) 
+                  
+                  
+                  
+                  
+                  
+                  ! we need to check the directions of the traction load system and input the knot vectors 
+    ! XI_ETA
+    if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+    
+        call Load3D_NURBS_OnMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                      ILoadSystem, IPatch, &
+                      NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                      NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch))
+    
+
+    ! XI_ZETA
+    elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+        
+        call Load3D_NURBS_OnMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                      ILoadSystem, IPatch, &
+                      NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                      NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NZetaKnotEntries(IPatch), IPatch))
+    
+    
+    ! ETA_ZETA
+    elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then 
+        
+        call Load3D_NURBS_OnMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                      ILoadSystem, IPatch, &
+                      NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch), &
+                      NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NZetaKnotEntries(IPatch), IPatch))
+    
+        
+    end if 
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  !call Load3D_NURBS_OnMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                  !    ILoadSystem, IPatch, &
+                  !    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                  !    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch))
 
                 !call Load2D_NURBS_onMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
 
                 
               end do
+              
+                !    end do 
+                !    
+                !end do 
+                
+              
+              
               do I = 1, Counters%NLoadedElementSidesWaterMatPointsB
                 call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesWaterB(1, I), LoadValuesOnMatPointsWaterB(1, 1, I), 1, NodalCoordinates,2)
               end do
             elseif (NDIM == 2) then ! for 2D
-              do I = 1, Counters%NLoadedElementSidesWaterMatPoints
-                  
+              
+                !do IPatch = 1, Counters%NPatches ! loop over patches
+                !
+                !do ILoadSystem = 1, NLoadSystems_Traction(IPatch) ! loop over load systems
+                
+                
+                do I = 1, Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem, IPatch) ! loop over 
                 
                   !call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesWater(1, I), LoadValuesOnMatPointsWater(1, 1, I), 1, NodalCoordinates,1)  
                     
-                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
-                call Load2D_NURBS_onMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
-
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch) 
                   
-              end do
+                  ! XI  
+                  if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                  
+                call Load2D_NURBS_onMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch) )! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+
+                ! ETA  
+                  else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                      
+                call Load2D_NURBS_onMPs(ExtLoadVectorWater, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch) )! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code   
+      
+                  end if 
+                  
+                
+                !, &
+                !    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch)
+                  
+                end do
+                
+                
+                !end do 
+                !
+                !
+                !end do
+                
               !do I = 1, Counters%NLoadedElementSidesWaterMatPointsB
               !  call TransferExternalLoadsToParticles(LoadType, ELEMENTBOUNDARYNODES, ELEMENTNODES, LoadOnMatPointsConnectivitiesWaterB(1, I), LoadValuesOnMatPointsWaterB(1, 1, I), 1, NodalCoordinates,2)  
               !end do
@@ -289,8 +629,60 @@
             do I = 1, Counters%NLoadedElementSidesGasNodes
               
                 !call Load3D(ExtLoadVectorGas, ReducedDof, NodalCoordinates, 1, N_BOUNDARY_NODES_HOE, LoadOnNodesConnectivitiesGas(1, I), LoadValuesOnNodesGas(1, 1, I), LoadType)
-                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
-                call Load3D(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch) 
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  ! we need to check the directions of the traction load system and input the knot vectors 
+    ! XI_ETA
+    if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+    
+        call Load3D(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch) )
+    
+
+    ! XI_ZETA
+    elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+        
+        call Load3D(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                    NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NZetaKnotEntries(IPatch), IPatch) )
+    
+    
+    ! ETA_ZETA
+    elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then 
+        
+        call Load3D(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch), &
+                    NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch) )
+    
+    end if 
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                !call Load3D(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                !    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                !    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch) )
 
             end do
             
@@ -303,8 +695,23 @@
               do I = 1, Counters%NLoadedElementSidesGasNodes
                   !call Load2D(ExtLoadVectorGas, ReducedDof, NodalCoordinates, 1, LoadOnNodesConnectivitiesGas(1, I), LoadValuesOnNodesGas(1, 1, I), LoadType)
               
-                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
-                call Load2D_NURBS(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch) 
+                  
+                  ! XI
+                  if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then
+                  
+                call Load2D_NURBS(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch) )! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
+                  
+                ! ETA  
+                  else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                
+                call Load2D_NURBS(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS,  ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), ILoadSystem, IPatch, &
+                    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NXiKnotEntries(IPatch), IPatch) )! LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid(1, 1, I), LoadType) ! hardcoded as one in the code
+                
+                end if 
+                  
+                  
                   
               end do 
               
@@ -318,9 +725,49 @@
             if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
               do I = 1, Counters%NLoadedElementSidesGasMatPoints
                 
-                  ee = ElementUponWhichLoadIsApplied_NURBS(I) 
+                  ee = ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem_Temporary, IPatch_Temporary) 
                   
-                  call Load3D_NURBS_OnMPs(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee), ElementUponWhichLoadIsApplied_NURBS(I))
+                  
+                  
+                  ! we need to check the directions of the traction load system and input the knot vectors 
+    ! XI_ETA
+    if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+    
+        call Load3D_NURBS_OnMPs(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                      ILoadSystem, IPatch, &
+                      NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                      NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch))
+    
+
+    ! XI_ZETA
+    elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+        
+
+        call Load3D_NURBS_OnMPs(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                      ILoadSystem, IPatch, &
+                      NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                      NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch))
+
+    ! ETA_ZETA
+    elseif (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then 
+        
+    
+        call Load3D_NURBS_OnMPs(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem, IPatch), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem, IPatch), &
+                      ILoadSystem, IPatch, &
+                      NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch), &
+                      NZetaKnotEntries(IPatch), ZetaKnotEntries(1:NZetaKnotEntries(IPatch), IPatch))
+
+        
+    end if 
+                  
+                  
+                  
+                  
+                  
+                  !call Load3D_NURBS_OnMPs(ExtLoadVectorGas, ReducedDof, NodalCoordinates_Traction(:,:, ILoadSystem_Temporary, IPatch_Temporary), ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, IEN_Traction(:,ee, ILoadSystem_Temporary, IPatch_Temporary), ElementUponWhichLoadIsApplied_NURBS(I, ILoadSystem_Temporary, IPatch_Temporary), &
+                  !    ILoadSystem, IPatch, &
+                  !    NXiKnotEntries(IPatch), XiKnotEntries(1:NXiKnotEntries(IPatch), IPatch), &
+                  !    NEtaKnotEntries(IPatch), EtaKnotEntries(1:NEtaKnotEntries(IPatch), IPatch))
 
                   !call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesGas(1, I), LoadValuesOnMatPointsGas(1, 1, I), 1, NodalCoordinates,1)
               end do
@@ -930,7 +1377,9 @@
     
       
       
-      subroutine Load3D(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied)
+      subroutine Load3D(RLoad, NDof, Coord, NInt, NNod, ILoadCon, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch, &
+          NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific, &
+          NEtaKnotEntries_SideSpecific, EtaKnotEntries_SideSpecific)
       !call Load3D(ExtLoadVector, ReducedDof, NodalCoordinates(:,:,IPatch_Temporary), 1, NNodes, LoadOnNodesConnectivitiesSolid(1, I), LoadValuesOnNodesSolid_NURBS(:, I), LoadType)
       !**********************************************************************
       !
@@ -970,7 +1419,22 @@
         
         integer(INTEGER_TYPE) :: NElemNode1, NElemNode2, NElemNode3, IElNode1, IElNode2, IElNode3, ElementOfNode1, ElementOfNode2, ElementOfNode3, ISharedElement, INode
         real(REAL_TYPE) :: ScalarProduct
+        
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+        integer(INTEGER_TYPE), intent(in) :: IPatch
+        integer(INTEGER_TYPE), intent(in) :: ILoadSystem
          
+        integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific
+        real(REAL_TYPE), dimension(NXiKnotEntries_SideSpecific), intent(in) :: XiKnotEntries_SideSpecific
+        
+        
+        integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntries_SideSpecific
+        real(REAL_TYPE), dimension(NEtaKnotEntries_SideSpecific), intent(in) :: EtaKnotEntries_SideSpecific
+        
+        
+        
         RLoad_DEBUG = 0.0
         SE_DEBUG = 0.0
         
@@ -980,14 +1444,17 @@
       
         do I = 1, ELEMENTBOUNDARYGAUSSPOINTS
             
-            call NormalOnQUAD_NURBS(NodalCoordinates_Traction, GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:), &
-                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
+            call NormalOnQUAD_NURBS(NodalCoordinates_Traction(:,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,I,:,:, ILoadSystem, IPatch), &
+                NormalVector, VectorLength, ElementUponWhichLoadIsApplied, &
+                ILoadSystem, IPatch, &
+                NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific, &
+                NEtaKnotEntries_SideSpecific, EtaKnotEntries_SideSpecific)
           
           ! calculate traction at Nodes
           do K = 1, ELEMENTBOUNDARYNODES!NNodLOE ! Corner nodes
             do J = 1, NVECTOR  
                 
-                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K) * VectorLength * NormalVector(J) & 
+                Temp = GPWeight_AllElements(ElementUponWhichLoadIsApplied,I, ILoadSystem, IPatch) * GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, I, K, ILoadSystem, IPatch) * VectorLength * NormalVector(J) & 
                     * -1 
                 ! hardcoded negative sign to make traction go inwards
                 SE(K,J) = SE(K,J) + ( Temp )!* TractionGaussPoint(K, J) )
@@ -1003,7 +1470,7 @@
 
         ! add to global load vector
         do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
-          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied)))!NDof(ILoadConLocal(I))
+          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch), ILoadSystem, IPatch))!NDof(ILoadConLocal(I))
           do J = 1, NVECTOR
             RLoad(ND + J) = RLoad(ND + J) + SE(I,J)    
             RLoad_DEBUG = RLoad_DEBUG + RLoad(ND + J)

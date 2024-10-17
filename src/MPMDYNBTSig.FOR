@@ -90,14 +90,19 @@
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
           integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, IPart, IAEl, NElemPart, iEntityID, iNode, iDof, ParticleIndex, NodeID, GlobDof, iEntity, MaterialIndex,ILoadSystem
-          logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity, IsLoadOnMP
-                   
+          logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity 
+           
+          logical, dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: IsLoadOnMP
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          
+          ! Multipatch variables 
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
           
           ! these are needed to have GetParticleIndex into the the subroutine FormB3()
           maxParticle = 1
@@ -121,8 +126,13 @@
           Reactions = 0.0
           ReactionsWater = 0.0
           BulkViscousLD = 0.0
-          IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
-          
+          !IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem_Temporary, IPatch_Temporary)+Counters%NLoadedElementSidesSolidMatPointsB)>0
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+              do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+          IsLoadOnMP(ILoadSystem, IPatch) =(Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem, IPatch))>0
+                            !+Counters%NLoadedElementSidesSolidMatPointsB
+              end do 
+          end do 
           
           do IPatch = 1, Counters%NPatches ! Loop over patches
                 do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
@@ -150,15 +160,18 @@
                 NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(INode, IEl, IPatch), IPatch )  ! nodal global ID
                 GlobDof = ReducedDof(NodeID)
 
-                if (IsLoadOnMP) then
-                  do ILoadSystem =1, Counters%NSoilLoadSystems
+                ! This needs to be generalized in a better way 
+                
+                do ILoadSystem =1, NLoadSystems_Traction(IPatch)!Counters%NSoilLoadSystems
+                if (IsLoadOnMP(ILoadSystem, IPatch)) then
+                  !do ILoadSystem =1, Counters%NSoilLoadSystems
                   !  ILoadSystem=1
                     PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                       ExternalLD(GlobDof + I, iEntity) = ExternalLD(GlobDof + I, iEntity) + PartLoad(I) 
                     end do
-                  end do
                 end if
+                end do
 
                 if (CalParams%ApplySubmergedCalculation) then
                   PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
@@ -355,15 +368,17 @@
                 NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(INode, IEl, IPatch), IPatch ) ! nodal global ID
                 IDof = ReducedDof(NodeID)
                 
-                if (IsLoadOnMP) then
+                
                   do ILoadSystem=1, Counters%NSoilLoadSystems
+                      if (IsLoadOnMP(ILoadSystem, IPatch)) then
                   ! ILoadSystem=1
                     PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                       ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
-                    end do  
+                    end do 
+                    end if
                   end do
-                end if
+                
 
                 PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
                 do I = 1, NVECTOR                     
@@ -536,9 +551,16 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
           
+          ! Multipatch variables 
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+          
+          ILoadSystem_Temporary = 1
+          IPatch_Temporary = 1
+          
           ExternalLD = 0.0
           GravityLD = 0.0
-          IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
+          IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem_Temporary, IPatch_Temporary)+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, Counters%NPatches ! Loop over patches

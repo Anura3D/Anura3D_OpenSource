@@ -238,6 +238,21 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IEl, INode, SNode, Count
           
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      
+            
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+
+      
+          ! Load system generalization 
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+          
           NElements = 0
           IElements = 0
           ISides = 0
@@ -260,7 +275,7 @@
           
           
           
-          do IEl = 1, nel_NURBS_Traction!NEl
+          do IEl = 1, nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) !NEl
             !if (IsElm(IEl)) then ! Loop over all active elements
               
               Count = 0
