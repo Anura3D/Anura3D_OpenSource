@@ -679,25 +679,25 @@
     jloc = 0
     ! kloc = 0
     
-    do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) ! loop over the eta univariate basis function
-        do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch) ! loop over the xi univariate basis function
+    do jj = 1,NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) ! loop over the eta univariate basis function
+        do ii = 1,NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) ! loop over the xi univariate basis function
             
             AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
             !assign NURBS coordinate 
-            INN(AA, 1, IPatch) = ii
-            INN(AA, 2, IPatch) = jj
+            NURBS%INN(AA, 1, IPatch) = ii
+            NURBS%INN(AA, 2, IPatch) = jj
             
-            if ( (ii>=NXiKnotOrder(IPatch)+1) .and. (jj>=NEtaKnotOrder(IPatch)+1) ) then 
+            if ( (ii>=NURBS%NXiKnotOrder(IPatch)+1) .and. (jj>=NURBS%NEtaKnotOrder(IPatch)+1) ) then 
                 ee=ee+1 !increment element number 
                 
-                do jloc = 0,NEtaKnotOrder(IPatch)
-                    do iloc = 0,NXiKnotOrder(IPatch)
-                        BB = AA - jloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch) - iloc !global function number 
-                        CC = (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
+                do jloc = 0,NURBS%NEtaKnotOrder(IPatch)
+                    do iloc = 0,NURBS%NXiKnotOrder(IPatch)
+                        BB = AA - jloc*NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) - iloc !global function number 
+                        CC = (jloc*(NURBS%NXiKnotOrder(IPatch)+1)) + iloc + 1
                         !IEN(nen_NURBS(IPatch)+1-CC,ee,IPatch) = BB
                         
-                        IEN(CC,ee,IPatch) = BB
+                        ElementConnectivities(CC,ee,IPatch) = BB
 
                     end do 
                 end do 
@@ -814,25 +814,25 @@
     jloc = 0
     ! kloc = 0
     
-    do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) ! loop over the eta univariate basis function
-        do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) ! loop over the xi univariate basis function
+    do jj = 1,NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) ! loop over the eta univariate basis function
+        do ii = 1,NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) ! loop over the xi univariate basis function
             
             AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
             !assign NURBS coordinate 
-            INN_VolLockSmooth(AA, 1, IPatch) = ii
-            INN_VolLockSmooth(AA, 2, IPatch) = jj
+            NURBS%INN_VolLockSmooth(AA, 1, IPatch) = ii
+            NURBS%INN_VolLockSmooth(AA, 2, IPatch) = jj
             
-            if ( (ii>=NXiKnotOrder_VolLockSmooth(IPatch)+1) .and. (jj>=NEtaKnotOrder_VolLockSmooth(IPatch)+1) ) then 
+            if ( (ii>=NURBS%NXiKnotOrder_VolLockSmooth(IPatch)+1) .and. (jj>=NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)+1) ) then 
                 ee=ee+1 !increment element number 
                 
-                do jloc = 0,NEtaKnotOrder_VolLockSmooth(IPatch)
-                    do iloc = 0,NXiKnotOrder_VolLockSmooth(IPatch)
-                        BB = AA - jloc*nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) - iloc !global function number 
-                        CC = (jloc*(NXiKnotOrder_VolLockSmooth(IPatch)+1)) + iloc + 1
+                do jloc = 0,NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)
+                    do iloc = 0,NURBS%NXiKnotOrder_VolLockSmooth(IPatch)
+                        BB = AA - jloc*NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) - iloc !global function number 
+                        CC = (jloc*(NURBS%NXiKnotOrder_VolLockSmooth(IPatch)+1)) + iloc + 1
                         !IEN(nen_NURBS(IPatch)+1-CC,ee,IPatch) = BB
                         
-                        IEN_VolLockSmooth(CC,ee,IPatch) = BB
+                        NURBS%ElementConnectivities_VolLockSmooth(CC,ee,IPatch) = BB
     
                     end do 
                 end do 
@@ -960,30 +960,30 @@
     jloc = 0
     ! kloc = 0
     
-    do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) ! loop over the zeta univariate basis function
-        do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) ! loop over the eta univariate basis function
-            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch) ! loop over the xi univariate basis function
+    do kk = 1,NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) ! loop over the zeta univariate basis function
+        do jj = 1,NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
                 !assign NURBS coordinate 
-                INN(AA, 1, IPatch) = ii
-                INN(AA, 2, IPatch) = jj
-                INN(AA, 3, IPatch) = kk
+                NURBS%INN(AA, 1, IPatch) = ii
+                NURBS%INN(AA, 2, IPatch) = jj
+                NURBS%INN(AA, 3, IPatch) = kk
             
-                if ( (ii>=NXiKnotOrder(IPatch)+1) .and. (jj>=NEtaKnotOrder(IPatch)+1) .and. (kk>=NZetaKnotOrder(IPatch)+1) ) then 
+                if ( (ii>=NURBS%NXiKnotOrder(IPatch)+1) .and. (jj>=NURBS%NEtaKnotOrder(IPatch)+1) .and. (kk>=NURBS%NZetaKnotOrder(IPatch)+1) ) then 
                     ee=ee+1 !increment element number 
                 
-                    do kloc = 0, NZetaKnotOrder(IPatch) 
-                        do jloc = 0,NEtaKnotOrder(IPatch)
-                            do iloc = 0,NXiKnotOrder(IPatch)
+                    do kloc = 0, NURBS%NZetaKnotOrder(IPatch) 
+                        do jloc = 0,NURBS%NEtaKnotOrder(IPatch)
+                            do iloc = 0,NURBS%NXiKnotOrder(IPatch)
                                 BB = AA &
-                                - kloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
-                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                - kloc*NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
+                                - jloc*NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
                                 - iloc !global function number 
-                                CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
+                                CC = (kloc*(NURBS%NXiKnotOrder(IPatch)+1)*(NURBS%NEtaKnotOrder(IPatch)+1)) + (jloc*(NURBS%NXiKnotOrder(IPatch)+1)) + iloc + 1
                                 !IEN(nen_NURBS+1-CC,ee) = BB
-                                IEN(CC,ee,IPatch) = BB
+                                ElementConnectivities(CC,ee,IPatch) = BB
 
                             end do 
                         end do
@@ -1116,30 +1116,30 @@
     jloc = 0
     ! kloc = 0
     
-    do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) ! loop over the zeta univariate basis function
-        do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) ! loop over the eta univariate basis function
-            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) ! loop over the xi univariate basis function
+    do kk = 1,NURBS%oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) ! loop over the zeta univariate basis function
+        do jj = 1,NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
                 !assign NURBS coordinate 
-                INN_VolLockSmooth(AA, 1, IPatch) = ii
-                INN_VolLockSmooth(AA, 2, IPatch) = jj
-                INN_VolLockSmooth(AA, 3, IPatch) = kk
+                NURBS%INN_VolLockSmooth(AA, 1, IPatch) = ii
+                NURBS%INN_VolLockSmooth(AA, 2, IPatch) = jj
+                NURBS%INN_VolLockSmooth(AA, 3, IPatch) = kk
             
-                if ( (ii>=NXiKnotOrder_VolLockSmooth(IPatch)+1) .and. (jj>=NEtaKnotOrder_VolLockSmooth(IPatch)+1) .and. (kk>=NZetaKnotOrder_VolLockSmooth(IPatch)+1) ) then 
+                if ( (ii>=NURBS%NXiKnotOrder_VolLockSmooth(IPatch)+1) .and. (jj>=NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)+1) .and. (kk>=NURBS%NZetaKnotOrder_VolLockSmooth(IPatch)+1) ) then 
                     ee=ee+1 !increment element number 
                 
-                    do kloc = 0, NZetaKnotOrder_VolLockSmooth(IPatch) 
-                        do jloc = 0,NEtaKnotOrder_VolLockSmooth(IPatch)
-                            do iloc = 0,NXiKnotOrder_VolLockSmooth(IPatch)
+                    do kloc = 0, NURBS%NZetaKnotOrder_VolLockSmooth(IPatch) 
+                        do jloc = 0,NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)
+                            do iloc = 0,NURBS%NXiKnotOrder_VolLockSmooth(IPatch)
                                 BB = AA &
-                                - kloc*nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) &
-                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
+                                - kloc*NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)*NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) &
+                                - jloc*NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
                                 - iloc !global function number 
-                                CC = (kloc*(NXiKnotOrder_VolLockSmooth(IPatch)+1)*(NEtaKnotOrder_VolLockSmooth(IPatch)+1)) + (jloc*(NXiKnotOrder_VolLockSmooth(IPatch)+1)) + iloc + 1
+                                CC = (kloc*(NURBS%NXiKnotOrder_VolLockSmooth(IPatch)+1)*(NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)+1)) + (jloc*(NURBS%NXiKnotOrder_VolLockSmooth(IPatch)+1)) + iloc + 1
                                 
-                                IEN_VolLockSmooth(CC,ee,IPatch) = BB
+                                NURBS%ElementConnectivities_VolLockSmooth(CC,ee,IPatch) = BB
     
                             end do 
                         end do
@@ -1269,30 +1269,30 @@
     ! kloc = 0
     
     !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
-        do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !_Traction!(IPatch) ! loop over the eta univariate basis function
-            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch) !_Traction!(IPatch) ! loop over the xi univariate basis function
+        do jj = 1,NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !_Traction!(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) !_Traction!(IPatch) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
                 !assign NURBS coordinate 
-                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
-                INN_Traction(AA, 2, ILoadSystem, IPatch) = jj !, IPatch)
+                NURBS%INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
+                NURBS%INN_Traction(AA, 2, ILoadSystem, IPatch) = jj !, IPatch)
                 !INN_Traction(AA, 3, IPatch) = kk
             
-                if ( (ii>=NXiKnotOrder(IPatch)+1) .and. (jj>=NEtaKnotOrder(IPatch)+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                if ( (ii>=NURBS%NXiKnotOrder(IPatch)+1) .and. (jj>=NURBS%NEtaKnotOrder(IPatch)+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
                             !(IPatch)                   (IPatch)                    (IPatch)
                     ee=ee+1 !increment element number 
                         
                     !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
-                        do jloc = 0,NEtaKnotOrder(IPatch) !_Traction!(IPatch)
-                            do iloc = 0,NXiKnotOrder(IPatch) !_Traction!(IPatch)
+                        do jloc = 0,NURBS%NEtaKnotOrder(IPatch) !_Traction!(IPatch)
+                            do iloc = 0,NURBS%NXiKnotOrder(IPatch) !_Traction!(IPatch)
                                 BB = AA &
-                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch) & !(IPatch) !_Traction
+                                - jloc*NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) & !(IPatch) !_Traction
                                 - iloc !global function number 
                                 !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
-                                CC = (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1 !(IPatch) !_Traction
+                                CC = (jloc*(NURBS%NXiKnotOrder(IPatch)+1)) + iloc + 1 !(IPatch) !_Traction
                                 !IEN(nen_NURBS+1-CC,ee) = BB
-                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
+                                 NURBS%ElementConnectivities_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
 
                             end do 
                         end do
@@ -1441,30 +1441,30 @@
     ! kloc = 0
     
     !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
-        do jj = 1,oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)!(IPatch) ! loop over the eta univariate basis function
-            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch)!(IPatch) ! loop over the xi univariate basis function
+        do jj = 1,NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)!(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)!(IPatch) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
                 !assign NURBS coordinate 
-                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
-                INN_Traction(AA, 2, ILoadSystem, IPatch) = jj !, IPatch)
+                NURBS%INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
+                NURBS%INN_Traction(AA, 2, ILoadSystem, IPatch) = jj !, IPatch)
                 !INN_Traction(AA, 3, IPatch) = kk
             
-                if ( (ii>=NXiKnotOrder(IPatch)+1) .and. (jj>=NZetaKnotOrder(IPatch)+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                if ( (ii>=NURBS%NXiKnotOrder(IPatch)+1) .and. (jj>=NURBS%NZetaKnotOrder(IPatch)+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
                             !(IPatch)                   (IPatch)                    (IPatch)
                     ee=ee+1 !increment element number 
                         
                     !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
-                        do jloc = 0,NEtaKnotOrder(IPatch)!(IPatch)
-                            do iloc = 0,NXiKnotOrder(IPatch)!(IPatch)
+                        do jloc = 0,NURBS%NEtaKnotOrder(IPatch)!(IPatch)
+                            do iloc = 0,NURBS%NXiKnotOrder(IPatch)!(IPatch)
                                 BB = AA &
-                                - jloc*nn_NURBS_NumberOfUnivariateXiKnots(IPatch) & !(IPatch)
+                                - jloc*NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) & !(IPatch)
                                 - iloc !global function number 
                                 !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
-                                CC = (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1 !(IPatch)
+                                CC = (jloc*(NURBS%NXiKnotOrder(IPatch)+1)) + iloc + 1 !(IPatch)
                                 !IEN(nen_NURBS+1-CC,ee) = BB
-                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
+                                NURBS%ElementConnectivities_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
 
                             end do 
                         end do
@@ -1627,30 +1627,30 @@
     ! kloc = 0
     
     !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
-        do jj = 1,oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)!(IPatch) ! loop over the eta univariate basis function
-            do ii = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !_Traction!(IPatch) ! loop over the xi univariate basis function
+        do jj = 1,NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)!(IPatch) ! loop over the eta univariate basis function
+            do ii = 1,NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !_Traction!(IPatch) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
                 !assign NURBS coordinate 
-                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
-                INN_Traction(AA, 2, ILoadSystem, IPatch) = jj !, IPatch)
+                NURBS%INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
+                NURBS%INN_Traction(AA, 2, ILoadSystem, IPatch) = jj !, IPatch)
                 !INN_Traction(AA, 3, IPatch) = kk
             
-                if ( (ii>=NXiKnotOrder(IPatch)+1) .and. (jj>=NZetaKnotOrder(IPatch)+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                if ( (ii>=NURBS%NXiKnotOrder(IPatch)+1) .and. (jj>=NURBS%NZetaKnotOrder(IPatch)+1) ) then !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
                             !(IPatch)                   (IPatch)                    (IPatch)
                     ee=ee+1 !increment element number 
                         
                     !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
-                        do jloc = 0,NZetaKnotOrder(IPatch) !_Traction!(IPatch)
-                            do iloc = 0,NEtaKnotOrder(IPatch) !(IPatch)
+                        do jloc = 0,NURBS%NZetaKnotOrder(IPatch) !_Traction!(IPatch)
+                            do iloc = 0,NURBS%NEtaKnotOrder(IPatch) !(IPatch)
                                 BB = AA &
-                                - jloc*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) & !(IPatch) !_Traction
+                                - jloc*NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) & !(IPatch) !_Traction
                                 - iloc !global function number 
                                 !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
-                                CC = (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1 !(IPatch)
+                                CC = (jloc*(NURBS%NXiKnotOrder(IPatch)+1)) + iloc + 1 !(IPatch)
                                 !IEN(nen_NURBS+1-CC,ee) = BB
-                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
+                                NURBS%ElementConnectivities_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
 
                             end do 
                         end do
@@ -1783,22 +1783,22 @@
     
     !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
         !do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_Traction!(IPatch) ! loop over the eta univariate basis function
-            do ii = 1,nn_NURBS_NumberOfUnivariateXiKnots(IPatch) !(IPatch) ! loop over the xi univariate basis function
+            do ii = 1,NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) !(IPatch) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
                 !assign NURBS coordinate 
-                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
+                NURBS%INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
                 !INN_Traction(AA, 2) = jj !, IPatch)
                 !INN_Traction(AA, 3, IPatch) = kk
             
-                if ( (ii>=NXiKnotOrder(IPatch)+1) ) then !.and. (jj>=NEtaKnotOrder_Traction+1) !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                if ( (ii>=NURBS%NXiKnotOrder(IPatch)+1) ) then !.and. (jj>=NEtaKnotOrder_Traction+1) !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
                             !(IPatch)                   (IPatch)                    (IPatch)
                     ee=ee+1 !increment element number 
                         
                     !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
                         !do jloc = 0,NEtaKnotOrder_Traction!(IPatch)
-                            do iloc = 0, NXiKnotOrder(IPatch)!(IPatch)
+                            do iloc = 0, NURBS%NXiKnotOrder(IPatch)!(IPatch)
                                 BB = AA &
                                     - iloc !global function number 
                                 !- jloc*nn_NURBS_NumberOfUnivariateXiKnots_Traction & !(IPatch)
@@ -1806,7 +1806,7 @@
                                 !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
                                 CC = + iloc + 1 !(IPatch) !(jloc*(NXiKnotOrder_Traction+1))
                                 !IEN(nen_NURBS+1-CC,ee) = BB
-                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
+                                NURBS%ElementConnectivities_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
                             end do 
                         !end do
                     !end do 
@@ -1931,22 +1931,22 @@
     
     !do kk = 1,oo_NURBS_NumberOfUnivariateZetaKnots_Traction!(IPatch) ! loop over the zeta univariate basis function
         !do jj = 1,mm_NURBS_NumberOfUnivariateEtaKnots_Traction!(IPatch) ! loop over the eta univariate basis function
-            do ii = 1,mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !(IPatch) ! loop over the xi univariate basis function
+            do ii = 1,NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !(IPatch) ! loop over the xi univariate basis function
             
                 AA=AA+1 !increment global function number (AA should have a max of mm*nn = 12 = number of global basis = number of control points)
             
                 !assign NURBS coordinate 
-                INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
+                NURBS%INN_Traction(AA, 1, ILoadSystem, IPatch) = ii !, IPatch)
                 !INN_Traction(AA, 2) = jj !, IPatch)
                 !INN_Traction(AA, 3, IPatch) = kk
             
-                if ( (ii>=NEtaKnotOrder(IPatch)+1) ) then !.and. (jj>=NEtaKnotOrder_Traction+1) !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
+                if ( (ii>=NURBS%NEtaKnotOrder(IPatch)+1) ) then !.and. (jj>=NEtaKnotOrder_Traction+1) !.and. (kk>=NZetaKnotOrder_Traction+1) ) then 
                             !(IPatch)                   (IPatch)                    (IPatch)
                     ee=ee+1 !increment element number 
                         
                     !do kloc = 0, NZetaKnotOrder_Traction(IPatch) 
                         !do jloc = 0,NEtaKnotOrder_Traction!(IPatch)
-                            do iloc = 0, NEtaKnotOrder(IPatch)!(IPatch)
+                            do iloc = 0, NURBS%NEtaKnotOrder(IPatch)!(IPatch)
                                 BB = AA &
                                     - iloc !global function number 
                                 !- jloc*nn_NURBS_NumberOfUnivariateXiKnots_Traction & !(IPatch)
@@ -1954,7 +1954,7 @@
                                 !CC = (kloc*(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)) + (jloc*(NXiKnotOrder(IPatch)+1)) + iloc + 1
                                 CC = + iloc + 1 !(IPatch) !(jloc*(NXiKnotOrder_Traction+1))
                                 !IEN(nen_NURBS+1-CC,ee) = BB
-                                IEN_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
+                                NURBS%ElementConnectivities_Traction(CC,ee, ILoadSystem, IPatch) = BB !,IPatch
                             end do 
                         !end do
                     !end do 
@@ -3010,8 +3010,8 @@
           integer(INTEGER_TYPE) :: IError, stat    
           
           ! get ni, and nj 
-          ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
-          nj = INN(IEN(1,IElement,IPatch),2,IPatch)
+          ni = NURBS%INN(ElementConnectivities(1,IElement,IPatch),1,IPatch)    
+          nj = NURBS%INN(ElementConnectivities(1,IElement,IPatch),2,IPatch)
          
          
           ! calculate parametric domain values 
@@ -3342,8 +3342,8 @@
           integer(INTEGER_TYPE) :: IError, stat    
 
           ! get ni, and nj 
-          ni = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),1,IPatch)    
-          nj = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),2,IPatch)
+          ni = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,IElement,IPatch),1,IPatch)    
+          nj = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,IElement,IPatch),2,IPatch)
          
           ! calculate parametric domain values 
           Xi_ParametricDomain =  ( (XiKnotEntries_VolLockSmooth(ni+1) - XiKnotEntries_VolLockSmooth(ni) ) * LocPos(1) &
@@ -3480,7 +3480,7 @@
                               
                               
                               ! find the corresponding control point to find the weight
-                              NodeForFinidingControlPointWeight = IEN_VolLockSmooth(loc_num, IElement, IPatch)
+                              NodeForFinidingControlPointWeight = NURBS%ElementConnectivities_VolLockSmooth(loc_num, IElement, IPatch)
                               WeightForControlPoint = ControlPoint_Weights_VolLockSmooth(NodeForFinidingControlPointWeight, IPatch)
                               
                               
@@ -3907,7 +3907,7 @@
                               loc_num = loc_num + 1
                               
                               ! find the corresponding control point to find the weight 
-                              NodeForFinidingControlPointWeight = IEN_Traction(loc_num, IElement, ILoadSystem_Temporary, IPatch_Temporary)!, IPatch)
+                              NodeForFinidingControlPointWeight = NURBS%ElementConnectivities_Traction(loc_num, IElement, ILoadSystem_Temporary, IPatch_Temporary)!, IPatch)
                               WeightForControlPoint = ControlPoint_Weights_Traction(NodeForFinidingControlPointWeight, ILoadSystem_Temporary, IPatch_Temporary)!, IPatch)
                               
                               
@@ -4195,8 +4195,8 @@
           integer(INTEGER_TYPE) :: IError, stat    
           
           ! get ni, and nj 
-          ni = INN_Traction(IEN_Traction(1,IElement, ILoadSystem, IPatch),1, ILoadSystem, IPatch)!,IPatch)    
-          nj = INN_Traction(IEN_Traction(1,IElement, ILoadSystem, IPatch),2, ILoadSystem, IPatch)!,IPatch)
+          ni = NURBS%INN_Traction(NURBS%ElementConnectivities_Traction(1,IElement, ILoadSystem, IPatch),1, ILoadSystem, IPatch)!,IPatch)    
+          nj = NURBS%INN_Traction(NURBS%ElementConnectivities_Traction(1,IElement, ILoadSystem, IPatch),2, ILoadSystem, IPatch)!,IPatch)
          
           ! calculate parametric domain values 
           Xi_ParametricDomain =  ( (XiKnotEntries_SideSpecific(ni+1) - XiKnotEntries_SideSpecific(ni) ) * LocPos(1) &
@@ -4264,7 +4264,7 @@
                               loc_num = loc_num + 1
                               
                               ! find the corresponding control point to find the weight 
-                              NodeForFinidingControlPointWeight = IEN_Traction(loc_num, IElement, ILoadSystem, IPatch)!, IPatch)
+                              NodeForFinidingControlPointWeight = NURBS%ElementConnectivities_Traction(loc_num, IElement, ILoadSystem, IPatch)!, IPatch)
                               WeightForControlPoint = ControlPoint_Weights_Traction(NodeForFinidingControlPointWeight, ILoadSystem, IPatch)!, IPatch)
                               
                               
@@ -4829,7 +4829,7 @@
           !NURBS related inputs in the xi direction 
           integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder_SideSpecific
           integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific
-          real(REAL_TYPE), dimension(Maximum_NXiKnotEntries), intent(in) :: XiKnotEntries_SideSpecific
+          real(REAL_TYPE), dimension(NURBS%Maximum_NXiKnotEntries), intent(in) :: XiKnotEntries_SideSpecific
           
           real(REAL_TYPE) :: Xi_ParametricDomain !, dimension(NXiGaussPoints)  !, intent(in)
           
@@ -4899,7 +4899,7 @@
           integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
         
           
-          ni = INN_Traction(IEN_Traction(1,IElement, ILoadSystem, IPatch),1, ILoadSystem, IPatch)    
+          ni = NURBS%INN_Traction(NURBS%ElementConnectivities_Traction(1,IElement, ILoadSystem, IPatch),1, ILoadSystem, IPatch)    
 
           
           Xi_ParametricDomain =  ( (XiKnotEntries_SideSpecific(ni+1) - XiKnotEntries_SideSpecific(ni) ) * LocPos(1) &!xi_tilde & ! ,IPatch
@@ -4938,7 +4938,7 @@
                               loc_num = loc_num + 1
                               
                               ! find the corresponding control point to find the weight 
-                              NodeForFinidingControlPointWeight = IEN_Traction(loc_num, IElement, ILoadSystem, IPatch)!, IPatch)
+                              NodeForFinidingControlPointWeight = NURBS%ElementConnectivities_Traction(loc_num, IElement, ILoadSystem, IPatch)!, IPatch)
                               WeightForControlPoint = ControlPoint_Weights_Traction(NodeForFinidingControlPointWeight, ILoadSystem, IPatch)!, IPatch)
                               
                               
@@ -4961,7 +4961,7 @@
                       counter = 0 !--> counter is equal to 1 always because we do this for one material point.              
                       counter = counter + 1
               
-              do loc_num = 1, nen_NURBS_Traction(ILoadSystem, IPatch)!(ILoadSystem_Temporary, IPatch_Temporary) !(IPatch) 
+              do loc_num = 1, NURBS%nen_NURBS_Traction(ILoadSystem, IPatch)!(ILoadSystem_Temporary, IPatch_Temporary) !(IPatch) 
                   
                   RR(loc_num) = RR(loc_num)/sum_tot!(counter) !--> normalizing the shape functions to have a sum of 1
 
@@ -5705,9 +5705,9 @@
           
           integer(INTEGER_TYPE) :: IError, stat    
                
-          ni = INN(IEN(1,IElement,IPatch),1,IPatch) 
-          nj = INN(IEN(1,IElement,IPatch),2,IPatch)
-          nk = INN(IEN(1,IElement,IPatch),3,IPatch)
+          ni = NURBS%INN(ElementConnectivities(1,IElement,IPatch),1,IPatch) 
+          nj = NURBS%INN(ElementConnectivities(1,IElement,IPatch),2,IPatch)
+          nk = NURBS%INN(ElementConnectivities(1,IElement,IPatch),3,IPatch)
          
          ! calculate parametric domain values 
          Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
@@ -6027,9 +6027,9 @@
           
           integer(INTEGER_TYPE) :: IError, stat    
                
-          ni = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),1,IPatch) 
-          nj = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),2,IPatch)
-          nk = INN_VolLockSmooth(IEN_VolLockSmooth(1,IElement,IPatch),3,IPatch)
+          ni = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,IElement,IPatch),1,IPatch) 
+          nj = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,IElement,IPatch),2,IPatch)
+          nk = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,IElement,IPatch),3,IPatch)
          
          ! calculate parametric domain values 
          Xi_ParametricDomain =  ( (XiKnotEntries_VolLockSmooth(ni+1) - XiKnotEntries_VolLockSmooth(ni) ) * LocPos(1) &
@@ -6120,7 +6120,7 @@
                                       loc_num = loc_num + 1
                                       
                                       ! find the corresponding control point to find the weight 
-                                      NodeForFinidingControlPointWeight = IEN_VolLockSmooth(loc_num, IElement, IPatch)
+                                      NodeForFinidingControlPointWeight = NURBS%ElementConnectivities_VolLockSmooth(loc_num, IElement, IPatch)
                                       WeightForControlPoint = ControlPoint_Weights_VolLockSmooth(NodeForFinidingControlPointWeight, IPatch)
                                       
                                       ! calculate shape function based on the cross product 

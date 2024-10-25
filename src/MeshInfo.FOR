@@ -348,13 +348,13 @@
                      NLoadedElementSidesSolidNodesB, NLoadedElementSidesWaterNodesB, NLoadedElementSidesGasNodesB, &
                      NLoadedElementSidesSolidMatPointsB, NLoadedElementSidesWaterMatPointsB, NLoadedElementSidesGasmatPointsB 
           
-          integer(INTEGER_TYPE), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesSolidNodes
+          integer(INTEGER_TYPE), dimension(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesSolidNodes
           
-          integer(INTEGER_TYPE), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterNodes
+          integer(INTEGER_TYPE), dimension(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterNodes
           
-          integer(INTEGER_TYPE), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesSolidMatPoints
+          integer(INTEGER_TYPE), dimension(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesSolidMatPoints
           
-          integer(INTEGER_TYPE), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterMatPoints
+          integer(INTEGER_TYPE), dimension(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterMatPoints
           
           integer(INTEGER_TYPE) :: IDNControlGrid
           
@@ -382,7 +382,7 @@
           !call DestroyMeshData() ! --> I commented this
           
           ! Multipatch variable
-          integer(INTEGER_TYPE), dimension(Maximum_NControlPoints, Counters%NPatches, Counters%NPatches) :: NumberOfRepetitions
+          integer(INTEGER_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%NPatches, Counters%NPatches) :: NumberOfRepetitions
           logical :: NonUnique
           
           logical :: IsItUnique
@@ -447,7 +447,7 @@
           IPatch_Temporary = 1
 
           !allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidNodes), stat = IError)      
-          allocate( ElementUponWhichLoadIsApplied_NURBS(Maximum_nel_NURBS_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError)      
+          allocate( ElementUponWhichLoadIsApplied_NURBS(NURBS%Maximum_nel_NURBS_Traction, NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError)      
           ElementUponWhichLoadIsApplied_NURBS = 0.0
           
           
@@ -500,7 +500,7 @@
                 
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS') then
-              do I = 1, NControlPoints(IPatch)!NNodes ! loop over all nodes
+              do I = 1, Counters%NodTot(IPatch)!NNodes ! loop over all nodes
                   
                   !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                   
@@ -513,7 +513,7 @@
               
               
             else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS') then
-                do I = 1, NControlPoints(IPatch)!NNodes ! loop over all nodes
+                do I = 1, Counters%NodTot(IPatch)!NNodes ! loop over all nodes
                     
                     !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                     
@@ -527,7 +527,7 @@
                 
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS_VOLLOCK_SMOOTH') then
         
-                do I = 1, NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
+                do I = 1, NURBS%NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
                   !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                     read (GOMunit, *) (NodalCoordinates_VolLockSmooth(I, J, IPatch), J = 1, NVECTOR) ! nodal coordinates
                     if ( ISAXISYMMETRIC ) call Assert(NodalCoordinates_VolLockSmooth(I, 1, IPatch) >= 0.0, 'GOM file: For axysimmetric analysis the x-coordinate (radial direction) has to be zero or positive.' )  
@@ -536,7 +536,7 @@
               
               
             else if (trim(BName) == '$$NURBS_CONTROL_POINT_WEIGHTS_VOLLOCK_SMOOTH') then
-                do I = 1, NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
+                do I = 1, NURBS%NControlPoints_VolLockSmooth(IPatch)!NNodes ! loop over all nodes
                     read (GOMunit, *) ControlPoint_Weights_VolLockSmooth(I,IPatch) ! for every control point there must be a weight
                 end do 
                 
@@ -582,9 +582,9 @@
             else if (trim(BName) == '$$NURBS_CONTROL_POINTS_TRACTION') then
                 
                 !element_success = .false.
-                if (NControlPoints_Traction(ILoadSystem, IPatch)==0) cycle
+                if (NURBS%NControlPoints_Traction(ILoadSystem, IPatch)==0) cycle
                 
-              do I = 1, NControlPoints_Traction(ILoadSystem, IPatch) !(IPatch)!NNodes ! loop over all nodes
+              do I = 1, NURBS%NControlPoints_Traction(ILoadSystem, IPatch) !(IPatch)!NNodes ! loop over all nodes
                   
                   !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                   
@@ -603,17 +603,17 @@
               ! this basically gives us the global number given that we input the number of the local control point for that surface
               !allocate( Traction_Connecting_Local_To_Global_ControlPoints(NControlPoints_Traction(ILoadSystem_Temporary, IPatch_Temporary)),  stat = IError)
               !Traction_Connecting_Local_To_Global_ControlPoints = 0
-              allocate( Traction_Connecting_Local_To_Global_ControlPoints(Maximum_NControlPoints_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches),  stat = IError)
+              allocate( Traction_Connecting_Local_To_Global_ControlPoints(NURBS%Maximum_NControlPoints_Traction, NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches),  stat = IError)
               Traction_Connecting_Local_To_Global_ControlPoints = 0
               
               !allocate( Traction_Connecting_Local_To_Global_Elements(nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary)),  stat = IError)
               !Traction_Connecting_Local_To_Global_Elements = 0
-              allocate( Traction_Connecting_Local_To_Global_Elements(Maximum_nel_NURBS_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches),  stat = IError)
+              allocate( Traction_Connecting_Local_To_Global_Elements(NURBS%Maximum_nel_NURBS_Traction, NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches),  stat = IError)
               Traction_Connecting_Local_To_Global_Elements = 0
               
               !allocate( Traction_Connecting_Local_To_Global_Sides(nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary)),  stat = IError)
               !Traction_Connecting_Local_To_Global_Sides = 0
-              allocate( Traction_Connecting_Local_To_Global_Sides(Maximum_nel_NURBS_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches),  stat = IError)
+              allocate( Traction_Connecting_Local_To_Global_Sides(NURBS%Maximum_nel_NURBS_Traction, NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches),  stat = IError)
               Traction_Connecting_Local_To_Global_Sides = 0
               
               !if (element_success) then 
@@ -660,7 +660,7 @@
                 
                 !read(GOMunit,*) NLoadedElementSidesSolidNodes(ILoadSystem, IPatch) ! Loaded faces
                 
-                NLoadedElementSidesSolidNodes = NLoadSystems_Traction_NumberOfElements
+                NLoadedElementSidesSolidNodes = NURBS%NLoadSystems_Traction_NumberOfElements(ILoadSystem, IPatch)
                 
                 if (NLoadedElementSidesSolidNodes(ILoadSystem, IPatch) > 0) then 
                     
@@ -678,7 +678,7 @@
                 
                 !read(GOMunit,*) NLoadedElementSidesWaterNodes ! Loaded faces
                 
-                NLoadedElementSidesWaterNodes = NLoadSystems_Traction_NumberOfElements
+                NLoadedElementSidesWaterNodes = NURBS%NLoadSystems_Traction_NumberOfElements(ILoadSystem, IPatch)
                 
                 !allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesWaterNodes), stat = IError)
                 !ElementUponWhichLoadIsApplied_NURBS = 0.0
@@ -700,7 +700,7 @@
                 
                 !read(GOMunit,*) NLoadedElementSidesSolidMatPoints() ! Loaded faces
                 
-                NLoadedElementSidesSolidMatPoints = NLoadSystems_Traction_NumberOfElements
+                NLoadedElementSidesSolidMatPoints = NURBS%NLoadSystems_Traction_NumberOfElements
                 
                 !allocate( ElementUponWhichLoadIsApplied_NURBS(NLoadedElementSidesSolidMatPoints), stat = IError)
                 !ElementUponWhichLoadIsApplied_NURBS = 0.0
@@ -722,23 +722,23 @@
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             else if (trim(BName) == '$$XI_KNOT') then
-                do I = 1, NXiKnotEntries(IPatch) ! loop over all nodes
-                    read (GOMunit, *) XiKnotEntries(I,IPatch) ! Xi knot vector     
+                do I = 1, NURBS%NXiKnotEntries(IPatch) ! loop over all nodes
+                    read (GOMunit, *) NURBS%XiKnotEntries(I,IPatch) ! Xi knot vector     
                 end do ! loop over all nodes
                 
-                call FindNumberOfUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), NXiKnotEntriesUNIQUE(IPatch))
+                call FindNumberOfUniqueEnteriesInVector(NURBS%XiKnotEntries(:,IPatch), NURBS%NXiKnotEntries(IPatch), NURBS%NXiKnotEntriesUNIQUE(IPatch))
                 
                 ! find the maximum of the unique entries - note that this will update with every patch
-                Maximum_NXiKnotEntriesUNIQUE = maxval(NXiKnotEntriesUNIQUE)
+                NURBS%Maximum_NXiKnotEntriesUNIQUE = maxval(NURBS%NXiKnotEntriesUNIQUE)
                 
                 if (CalParams%ApplyFBar) then 
-                    XiKnotEntries_VolLockSmooth = 0.0
+                    NURBS%XiKnotEntries_VolLockSmooth = 0.0
                     
-                    OrderDifference = NXiKnotOrder(IPatch) - NXiKnotOrder_VolLockSmooth(IPatch)
+                    OrderDifference = NURBS%NXiKnotOrder(IPatch) - NURBS%NXiKnotOrder_VolLockSmooth(IPatch)
                     
-                    do I_LowerOrder = NXiKnotOrder_VolLockSmooth(IPatch)+2, NXiKnotEntries_VolLockSmooth(IPatch)
+                    do I_LowerOrder = NURBS%NXiKnotOrder_VolLockSmooth(IPatch)+2, NURBS%NXiKnotEntries_VolLockSmooth(IPatch)
                     
-                        XiKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = XiKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
+                        NURBS%XiKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = NURBS%XiKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
                         
                     end do 
                     
@@ -746,26 +746,26 @@
                 
                 
             else if (trim(BName) == '$$ETA_KNOT') then
-                do I = 1, NEtaKnotEntries(IPatch) ! loop over all nodes
-                    read (GOMunit, *) EtaKnotEntries(I,IPatch) ! Eta knot vector 
+                do I = 1, NURBS%NEtaKnotEntries(IPatch) ! loop over all nodes
+                    read (GOMunit, *) NURBS%EtaKnotEntries(I,IPatch) ! Eta knot vector 
                 end do ! loop over all nodes
                 
                 ! find unique knots items in the knot vector                
                 !call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE)
-                call FindNumberOfUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), NEtaKnotEntriesUNIQUE(IPatch))
+                call FindNumberOfUniqueEnteriesInVector(NURBS%EtaKnotEntries(:,IPatch), NURBS%NEtaKnotEntries(IPatch), NURBS%NEtaKnotEntriesUNIQUE(IPatch))
                 
                 ! find the maximum of the unique entries - note that this will update with every patch
-                Maximum_NEtaKnotEntriesUNIQUE = maxval(NEtaKnotEntriesUNIQUE)
+                NURBS%Maximum_NEtaKnotEntriesUNIQUE = maxval(NURBS%NEtaKnotEntriesUNIQUE)
                 
                 
                 if (CalParams%ApplyFBar) then 
-                    EtaKnotEntries_VolLockSmooth = 0.0
+                    NURBS%EtaKnotEntries_VolLockSmooth = 0.0
                     
-                    OrderDifference = NEtaKnotOrder(IPatch) - NEtaKnotOrder_VolLockSmooth(IPatch)
+                    OrderDifference = NURBS%NEtaKnotOrder(IPatch) - NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)
                     
-                    do I_LowerOrder = NEtaKnotOrder_VolLockSmooth(IPatch)+2, NEtaKnotEntries_VolLockSmooth(IPatch)
+                    do I_LowerOrder = NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)+2, NURBS%NEtaKnotEntries_VolLockSmooth(IPatch)
                     
-                        EtaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = EtaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
+                        NURBS%EtaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = NURBS%EtaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
                         
                     end do 
                     
@@ -773,23 +773,23 @@
                 
             
             else if (trim(BName) == '$$ZETA_KNOT') then
-                do I = 1, NZetaKnotEntries(IPatch) ! loop over all nodes
-                    read (GOMunit, *) ZetaKnotEntries(I,IPatch) ! Eta knot vector
+                do I = 1, NURBS%NZetaKnotEntries(IPatch) ! loop over all nodes
+                    read (GOMunit, *) NURBS%ZetaKnotEntries(I,IPatch) ! Eta knot vector
                 end do ! loop over all nodes
 
-                call FindNumberOfUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), NZetaKnotEntriesUNIQUE(IPatch))
+                call FindNumberOfUniqueEnteriesInVector(NURBS%ZetaKnotEntries(:,IPatch), NURBS%NZetaKnotEntries(IPatch), NURBS%NZetaKnotEntriesUNIQUE(IPatch))
 
                 ! find the maximum of the unique entries - note that this will update with every patch
-                Maximum_NZetaKnotEntriesUNIQUE = maxval(NZetaKnotEntriesUNIQUE)
+                NURBS%Maximum_NZetaKnotEntriesUNIQUE = maxval(NURBS%NZetaKnotEntriesUNIQUE)
                 
                 if (CalParams%ApplyFBar) then 
-                    ZetaKnotEntries_VolLockSmooth = 0.0
+                    NURBS%ZetaKnotEntries_VolLockSmooth = 0.0
                     
-                    OrderDifference = NZetaKnotOrder(IPatch) - NZetaKnotOrder_VolLockSmooth(IPatch)
+                    OrderDifference = NURBS%NZetaKnotOrder(IPatch) - NURBS%NZetaKnotOrder_VolLockSmooth(IPatch)
                     
-                    do I_LowerOrder = NZetaKnotOrder_VolLockSmooth(IPatch)+2, NZetaKnotEntries_VolLockSmooth(IPatch)
+                    do I_LowerOrder = NURBS%NZetaKnotOrder_VolLockSmooth(IPatch)+2, NURBS%NZetaKnotEntries_VolLockSmooth(IPatch)
                     
-                        ZetaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = ZetaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
+                        NURBS%ZetaKnotEntries_VolLockSmooth(I_LowerOrder, IPatch) = NURBS%ZetaKnotEntries(I_LowerOrder+OrderDifference, IPatch) 
                         
                     end do 
                     
@@ -828,7 +828,7 @@
               if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
                 
                   !do IPatch = 1, Counters%NPatches
-                  do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
+                  do IDElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!NElements ! loop over elements
                       ! in the GOM-file always 10 nodes per element are written
                       read (GOMunit,*) (ElementConnectivities10Node(IDConnectivity, IDElement), IDConnectivity = 1, N_NODES_HOE) 
                   do J = 1, ELEMENTNODES ! loop over element nodes
@@ -841,7 +841,7 @@
               else ! elementtypes since v2018.2
                 
                   !do IPatch = 1, Counters%NPatches ! loop over patches
-                  do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
+                  do IDElement = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!NElements ! loop over elements
                   read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement, IPatch), IDConnectivity = 1, ELEMENTNODES)
                   end do ! loop over elements 
                   !end do ! loop over patches
@@ -1565,7 +1565,7 @@
           ! do not need this flag here
           
           !do IPatch = 1, Counters%NPatches ! loop over patches
-          do IDElement = 1, nel_NURBS(IPatch)!NElements ! loop over elements
+          do IDElement = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!NElements ! loop over elements
                 read (GOMunit,*) ElementMaterialID(IDElement,IPatch) ! get the material ID of the element
                 if (ElementMaterialID(IDElement,IPatch)==0) then
                   ElementMaterialID(IDElement,IPatch) = -1 ! set the initially deactivated elements
@@ -1632,7 +1632,7 @@
           ! THIS IS FOR APPLYING TRACTION ON THE NODES 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               do IPatch = 1, Counters%NPatches
-                  do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+                  do ILoadSystem = 1, NURBS%NLoadSystems_Traction(IPatch)
               
                     
                       call MatchControlPointsNodes(ILoadSystem, IPatch) ! traction on the control points 
@@ -1657,10 +1657,10 @@
           close(GOMunit)
 
           ! we need to transfer these variabels into counters type
-          NLoadedElementSidesSolidNodes = NLoadSystems_Traction_NumberOfElements 
+          NLoadedElementSidesSolidNodes = NURBS%NLoadSystems_Traction_NumberOfElements 
           
           call InitCountersFromFile(CalParams%ApplyContactAlgorithm, &
-                                    sum_nel_NURBS, sum_NControlPoints, &!NElements, NNodes, &
+                                    Counters%Sum_NEl, Counters%Sum_NodTot, &!NElements, NNodes, & !NURBS%sum_nel_NURBS, NURBS%sum_NControlPoints
                                     CalParams%NumberOfMaterials, &
                                     NLoadedElementSidesSolidNodes,  &
                                     NLoadedElementSidesSolidNodesB,  &
@@ -1676,11 +1676,12 @@
                                     NLoadedElementSidesGasMatPointsB, &
                                     SoilSurfaceNumberofSides, &
                                     PhreaticSurfaceNumberofSides, &
-                                    CalParams%NumberOfMaterials)
+                                    CalParams%NumberOfMaterials, &
+                                    NURBS%Maximum_NLoadSystems_Traction)
           
           ! overwriting these two counters based on multipatch NURBS implementation
-          Counters%NEl = sum_nel_NURBS
-          Counters%NodTot = sum_NControlPoints
+          !Counters%NEl = NURBS%sum_nel_NURBS
+          !Counters%NodTot = NURBS%sum_NControlPoints
         
           if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
               call InitialiseNumberOfActiveElements()
@@ -1695,29 +1696,29 @@
           !
           
           ! Allocating the unique entries vectors based on the maximum read unique vectors for multiple patches and the number of patches
-          allocate(XiKnotEntriesUNIQUE(Maximum_NXiKnotEntriesUNIQUE, Counters%NPatches) )
-          allocate(EtaKnotEntriesUNIQUE(Maximum_NEtaKnotEntriesUNIQUE, Counters%NPatches) )
-          allocate(ZetaKnotEntriesUNIQUE(Maximum_NZetaKnotEntriesUNIQUE, Counters%NPatches) )
+          allocate(NURBS%XiKnotEntriesUNIQUE(NURBS%Maximum_NXiKnotEntriesUNIQUE, Counters%NPatches) )
+          allocate(NURBS%EtaKnotEntriesUNIQUE(NURBS%Maximum_NEtaKnotEntriesUNIQUE, Counters%NPatches) )
+          allocate(NURBS%ZetaKnotEntriesUNIQUE(NURBS%Maximum_NZetaKnotEntriesUNIQUE, Counters%NPatches) )
           
           ! Populate XiKnotEntriesUNIQUE, EtaKnotEntriesUNIQUE, ZetaKnotEntriesUNIQUE for each patch 
           do IPatch = 1, Counters%NPatches ! loop over patches
               
-              call FindUniqueEnteriesInVector(XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), XiKnotEntriesUNIQUE(:,IPatch))
-              call FindUniqueEnteriesInVector(EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), EtaKnotEntriesUNIQUE(:,IPatch))
-              call FindUniqueEnteriesInVector(ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), ZetaKnotEntriesUNIQUE(:,IPatch))
+              call FindUniqueEnteriesInVector(NURBS%XiKnotEntries(:,IPatch), NURBS%NXiKnotEntries(IPatch), NURBS%XiKnotEntriesUNIQUE(:,IPatch))
+              call FindUniqueEnteriesInVector(NURBS%EtaKnotEntries(:,IPatch), NURBS%NEtaKnotEntries(IPatch), NURBS%EtaKnotEntriesUNIQUE(:,IPatch))
+              call FindUniqueEnteriesInVector(NURBS%ZetaKnotEntries(:,IPatch), NURBS%NZetaKnotEntries(IPatch), NURBS%ZetaKnotEntriesUNIQUE(:,IPatch))
               
           end do ! loop over patches
           
           if (NDIM ==  2) then 
         
-              NoOfItems = Maximum_NXiKnotEntriesUNIQUE * &
-                  Maximum_NEtaKnotEntriesUNIQUE
+              NoOfItems = NURBS%Maximum_NXiKnotEntriesUNIQUE * &
+                  NURBS%Maximum_NEtaKnotEntriesUNIQUE
               
           else if (NDIM == 3) then 
               
-          NoOfItems = Maximum_NXiKnotEntriesUNIQUE * &
-                  Maximum_NEtaKnotEntriesUNIQUE * &
-                  Maximum_NZetaKnotEntriesUNIQUE
+          NoOfItems = NURBS%Maximum_NXiKnotEntriesUNIQUE * &
+                  NURBS%Maximum_NEtaKnotEntriesUNIQUE * &
+                  NURBS%Maximum_NZetaKnotEntriesUNIQUE
         
           end if 
           
@@ -1729,8 +1730,8 @@
           do IPatch = 1, Counters%NPatches ! loop over patches
           ! I need to generalize below bezier mesh for multiple patches!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           if (NDIM == 2) then 
-              call FormBezierMeshUsingUniqueKnotVectors(XiKnotEntriesUNIQUE(:,IPatch), NXiKnotEntriesUNIQUE(IPatch), & 
-                                                    EtaKnotEntriesUNIQUE(:,IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
+              call FormBezierMeshUsingUniqueKnotVectors(NURBS%XiKnotEntriesUNIQUE(:,IPatch), NURBS%NXiKnotEntriesUNIQUE(IPatch), & 
+                                                    NURBS%EtaKnotEntriesUNIQUE(:,IPatch), NURBS%NEtaKnotEntriesUNIQUE(IPatch), &
                                                     KnotBezierMesh(:,:,IPatch)) 
               
           else if (NDIM ==3) then 
@@ -1738,9 +1739,9 @@
               
               
               
-              call FormBezierMeshUsingUniqueKnotVectors_3D(XiKnotEntriesUNIQUE(:,IPatch), NXiKnotEntriesUNIQUE(IPatch), & 
-                                                    EtaKnotEntriesUNIQUE(:,IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
-                                                    ZetaKnotEntriesUNIQUE(:,IPatch), NZetaKnotEntriesUNIQUE(IPatch), &
+              call FormBezierMeshUsingUniqueKnotVectors_3D(NURBS%XiKnotEntriesUNIQUE(:,IPatch), NURBS%NXiKnotEntriesUNIQUE(IPatch), & 
+                                                    NURBS%EtaKnotEntriesUNIQUE(:,IPatch), NURBS%NEtaKnotEntriesUNIQUE(IPatch), &
+                                                    NURBS%ZetaKnotEntriesUNIQUE(:,IPatch), NURBS%NZetaKnotEntriesUNIQUE(IPatch), &
                                                     KnotBezierMesh(:,:,IPatch)) 
               
           end if
@@ -1752,8 +1753,8 @@
           if (NDIM == 2) then 
               
               ! I changed this so that it can take into account repeated knots in the middle of the knot vectors
-              NumberOfElements_Xi = NXiKnotEntries(IPatch_Temporary) - (2*NXiKnotOrder(IPatch_Temporary) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
-              NumberOfElements_Eta = NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
+              NumberOfElements_Xi = NURBS%NXiKnotEntries(IPatch_Temporary) - (2*NURBS%NXiKnotOrder(IPatch_Temporary) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+              NumberOfElements_Eta = NURBS%NEtaKnotEntries(IPatch_Temporary) - (2*NURBS%NEtaKnotOrder(IPatch_Temporary) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
         
 
             !  allocate(KnotBezierMeshConnectivity( &
@@ -1762,7 +1763,7 @@
             !Counters%NPatches) )
               
               allocate(KnotBezierMeshConnectivity( &
-            Maximum_nel_NURBS, 4, &
+            NURBS%Maximum_nel_NURBS, 4, &
             Counters%NPatches) )
 
               
@@ -1774,7 +1775,7 @@
           !  Counters%NPatches) )
           
           allocate(KnotBezierMeshConnectivity( &
-            Maximum_nel_NURBS , 8, &
+            NURBS%Maximum_nel_NURBS , 8, &
             Counters%NPatches) )
           
           
@@ -1791,9 +1792,9 @@
           else if (NDIM == 3) then 
               
               
-              call FormBezierMeshKnotConnectivity_3D(NXiKnotEntriesUNIQUE(IPatch), &
-                  NEtaKnotEntriesUNIQUE(IPatch), &
-                  NZetaKnotEntriesUNIQUE(IPatch), &
+              call FormBezierMeshKnotConnectivity_3D(NURBS%NXiKnotEntriesUNIQUE(IPatch), &
+                  NURBS%NEtaKnotEntriesUNIQUE(IPatch), &
+                  NURBS%NZetaKnotEntriesUNIQUE(IPatch), &
                   KnotBezierMeshConnectivity(:,:,IPatch), &
                   IPatch)    
           
@@ -1801,21 +1802,21 @@
           end do ! loop over patches
           
           
-          do IPatch = 1, Counters%NPatches ! loop over patches
-          if (NDIM == 2) then 
-              
-          call Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), &
-                                                                NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), & 
-                                                                NControlPoints(IPatch), IPatch)!NNodes)
-          
-          elseif (NDIM == 3) then 
-              
-          call Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE(IPatch), NEtaKnotEntriesUNIQUE(IPatch), NZetaKnotEntriesUNIQUE(IPatch), &
-                                                                NXiKnotOrder(IPatch), NEtaKnotOrder(IPatch), NZetaKnotOrder(IPatch), & 
-                                                                NControlPoints(IPatch))!NNodes) 
-          end if 
-          
-          end do ! loop over patches
+          !do IPatch = 1, Counters%NPatches ! loop over patches
+          !if (NDIM == 2) then 
+          !    
+          !call Generate_STARTELEMCON_ElementConnectivities(NURBS%NXiKnotEntriesUNIQUE(IPatch), NURBS%NEtaKnotEntriesUNIQUE(IPatch), &
+          !                                                      NURBS%NXiKnotOrder(IPatch), NURBS%NEtaKnotOrder(IPatch), & 
+          !                                                      NURBS%NControlPoints(IPatch), IPatch)!NNodes)
+          !
+          !elseif (NDIM == 3) then 
+          !    
+          !call Generate_STARTELEMCON_ElementConnectivities_3D(NURBS%NXiKnotEntriesUNIQUE(IPatch), NURBS%NEtaKnotEntriesUNIQUE(IPatch), NURBS%NZetaKnotEntriesUNIQUE(IPatch), &
+          !                                                      NURBS%NXiKnotOrder(IPatch), NURBS%NEtaKnotOrder(IPatch), NURBS%NZetaKnotOrder(IPatch), & 
+          !                                                      NURBS%NControlPoints(IPatch))!NNodes) 
+          !end if 
+          !
+          !end do ! loop over patches
           
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1958,14 +1959,14 @@
           
           IPatch = 1 
           ! Arranging global nodal coordinates in the GlobalMultipatchNodalCoordinates that we just allocated     
-          GlobalMultipatchNodalCoordinates(1:NControlPoints(IPatch), 1:NVECTOR) = NodalCoordinates(:, 1:NVECTOR, IPatch)
+          GlobalMultipatchNodalCoordinates(1:Counters%NodTot(IPatch), 1:NVECTOR) = NodalCoordinates(:, 1:NVECTOR, IPatch)
           
           ! Since we stored everything from the first patch
-          GlobalMultipatchNodalIndex = NControlPoints(IPatch)+1 ! starting from the second patch
+          GlobalMultipatchNodalIndex = Counters%NodTot(IPatch)+1 ! starting from the second patch
           
           
           ! this is for the first patch
-          do ControlPointIndex = 1, NControlPoints(1)
+          do ControlPointIndex = 1, Counters%NodTot(1)
               Multipatch_Connecting_Local_To_Global_ControlPoints(ControlPointIndex,1) = ControlPointIndex
               
           end do 
@@ -1981,7 +1982,7 @@
           ! start from the second patch
           ! finding the number of nodes that are in common, and the number of nodes that are unique  
           do IPatch = 2, Counters%NPatches !loop over patches first time 
-              do INode = 1, NControlPoints(IPatch) !loop over NodTot in first patch
+              do INode = 1, Counters%NodTot(IPatch) !loop over NodTot in first patch
                   
                   
                   IsItWritten = .false. 
@@ -2002,7 +2003,7 @@
                       
                       logic_test=.true.
                       ! loop over the NodTot of the second patch 
-                      do INode_Other = 1, NControlPoints(IPatch_Other) !loop over control points in other patch
+                      do INode_Other = 1, Counters%NodTot(IPatch_Other) !loop over control points in other patch
                           
                           if (NDIM == 2) then 
                               
@@ -2199,13 +2200,13 @@
           logical :: IsItUnique
           
           ! select the first patch as a base patch 
-          NumberOfGlobalControlPointsUniqueMultipatch=NControlPoints(1) !(IPatch) 
+          NumberOfGlobalControlPointsUniqueMultipatch=Counters%NodTot(1) !(IPatch) 
           !end do 
           
           ! Take the first patch 
           do IPatch_Loop_1 = 2, Counters%NPatches  ! IPatch_Loop_1     
               ! loop accross the control points of the the Patch_Loop_1
-              do INode_Loop_1 = 1, NControlPoints(IPatch_Loop_1) ! INode_Loop_2
+              do INode_Loop_1 = 1, Counters%NodTot(IPatch_Loop_1) ! INode_Loop_2
               
                   ! find the control point coordinates 
                   NodeCoordinatesSelected = NodalCoordinates(INode_Loop_1,:,IPatch_Loop_1)
@@ -2213,7 +2214,7 @@
                   ! Loop accross all the other patches to detect matches
                   do IPatch_Loop_2 = 1,(IPatch_Loop_1-1) ! IPatch_Loop_2
                       ! loop accross the control points of the the Patch_Loop_2
-                      do INode_Loop_2 = 1, NControlPoints(IPatch_Loop_2) ! INode_Loop_2
+                      do INode_Loop_2 = 1, Counters%NodTot(IPatch_Loop_2) ! INode_Loop_2
                           
                           ! Two dimensional
                           if (NDIM == 2) then 
@@ -2310,17 +2311,17 @@
               
               
               
-              allocate(Traction_Matching_Status(NControlPoints(IPatch)) ) ! allocate the variable based 
+              allocate(Traction_Matching_Status(Counters%NodTot(IPatch)) ) ! allocate the variable based 
                                                                                     ! on no of control point in a patch
               Traction_Matching_Status = .false. ! initialize as false
               Node_success = .false. ! initialize as false
               
-              do IControlPoint_Traction = 1, NControlPoints_Traction(ILoadSystem, IPatch) ! loop over traction control points
+              do IControlPoint_Traction = 1, NURBS%NControlPoints_Traction(ILoadSystem, IPatch) ! loop over traction control points
               
                   
                   Node_success = .false.
 
-                  do IControlPoint_ActualMaterial = 1, NControlPoints(IPatch) ! loop over actual material control points
+                  do IControlPoint_ActualMaterial = 1, Counters%NodTot(IPatch) ! loop over actual material control points
 
                       
                       
@@ -2343,6 +2344,8 @@
                               Node_success = .true. ! set to true so that we can exit the loop for this traction node
                               Traction_Matching_Status(IControlPoint_ActualMaterial) = .true. ! set to true which means that we do not need to 
                                                                                               ! assign more traction nodes to this
+                              
+                              ControlPoint_Weights_Traction(IControlPoint_Traction, ILoadSystem, IPatch) = ControlPoint_Weights(IControlPoint_ActualMaterial, IPatch)
                               
                           else
                               
@@ -2424,32 +2427,32 @@
                   
                   
               ! looping accross traction element
-              do IElement_Traction = 1, nel_NURBS_Traction(ILoadSystem, IPatch)
+              do IElement_Traction = 1, NURBS%nel_NURBS_Traction(ILoadSystem, IPatch)
                   
                   
                   element_success = .false.
                   
                       ! looping accross actual element
-                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch)
+                      do IElement_ActualMaterial = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)
                           
                           if (element_success == .true.) then 
                                   exit 
                           end if 
                           
-                          do IElementCon_Traction = 1, nen_NURBS_Traction(ILoadSystem, IPatch)
+                          do IElementCon_Traction = 1, NURBS%nen_NURBS_Traction(ILoadSystem, IPatch)
                               
                               if (element_success == .true.) then 
                                   exit 
                               end if 
                               
                           
-                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch)                              
-                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 1, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),1, IPatch ))  .and. &
-                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 2, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),2, IPatch ))  ) then 
+                          do IElementCon_ActualMaterial = 1, NURBS%nen_NURBS(IPatch)                              
+                              if ( (NodalCoordinates_Traction(NURBS%ElementConnectivities_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 1, ILoadSystem, IPatch)==NodalCoordinates(ElementConnectivities( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),1, IPatch ))  .and. &
+                                  (NodalCoordinates_Traction(NURBS%ElementConnectivities_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 2, ILoadSystem, IPatch)==NodalCoordinates(ElementConnectivities( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),2, IPatch ))  ) then 
                 
                                     ICount = ICount + 1
                               
-                                    if (ICount == nen_NURBS_Traction(ILoadSystem, IPatch)) then 
+                                    if (ICount == NURBS%nen_NURBS_Traction(ILoadSystem, IPatch)) then 
                               
                                         Traction_Connecting_Local_To_Global_Elements(IElement_Traction, ILoadSystem, IPatch) = IElement_ActualMaterial
                                         ICount = 0
@@ -2476,33 +2479,33 @@
                   
               
               ! looping accross traction element
-              do IElement_Traction = 1, nel_NURBS_Traction(ILoadSystem, IPatch)
+              do IElement_Traction = 1, NURBS%nel_NURBS_Traction(ILoadSystem, IPatch)
                   
                   
                   element_success = .false.
                   
                       ! looping accross actual element
-                      do IElement_ActualMaterial = 1, nel_NURBS(IPatch)
+                      do IElement_ActualMaterial = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)
                           
                           if (element_success == .true.) then 
                                   exit 
                           end if 
                           
-                          do IElementCon_Traction = 1, nen_NURBS_Traction(ILoadSystem, IPatch)
+                          do IElementCon_Traction = 1, NURBS%nen_NURBS_Traction(ILoadSystem, IPatch)
                               
                               if (element_success == .true.) then 
                                   exit 
                               end if 
                               
                           
-                          do IElementCon_ActualMaterial = 1, nen_NURBS(IPatch)                              
-                              if ( (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 1, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),1, IPatch))  .and. &
-                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 2, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),2, IPatch)) .and. &
-                                  (NodalCoordinates_Traction(IEN_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 3, ILoadSystem, IPatch)==NodalCoordinates(IEN( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),3, IPatch)) ) then 
+                          do IElementCon_ActualMaterial = 1, NURBS%nen_NURBS(IPatch)                              
+                              if ( (NodalCoordinates_Traction(NURBS%ElementConnectivities_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 1, ILoadSystem, IPatch)==NodalCoordinates(ElementConnectivities( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),1, IPatch))  .and. &
+                                  (NodalCoordinates_Traction(NURBS%ElementConnectivities_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 2, ILoadSystem, IPatch)==NodalCoordinates(ElementConnectivities( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),2, IPatch)) .and. &
+                                  (NodalCoordinates_Traction(NURBS%ElementConnectivities_Traction( IElementCon_Traction, IElement_Traction, ILoadSystem, IPatch), 3, ILoadSystem, IPatch)==NodalCoordinates(ElementConnectivities( IElementCon_ActualMaterial, IElement_ActualMaterial, IPatch ),3, IPatch)) ) then 
                 
                                     ICount = ICount + 1
                               
-                                    if (ICount == nen_NURBS_Traction(ILoadSystem, IPatch)) then 
+                                    if (ICount == NURBS%nen_NURBS_Traction(ILoadSystem, IPatch)) then 
                               
                                         Traction_Connecting_Local_To_Global_Elements(IElement_Traction, ILoadSystem, IPatch) = IElement_ActualMaterial
                                         ICount = 0
@@ -2543,7 +2546,7 @@
         !integer(INTEGER_TYPE) :: IPatch_Temporary
         integer(INTEGER_TYPE) :: ICount
         
-        logical, dimension(ELEMENTSIDES, nel_NURBS_Traction(1, 1)) :: side_test ! hardcoded 1 but should be generalized based on number of patches
+        logical, dimension(ELEMENTSIDES, NURBS%nel_NURBS_Traction(1, 1)) :: side_test ! hardcoded 1 but should be generalized based on number of patches
         integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES, NDIM) :: NodalCoordinatesTractionSide
         !integer(INTEGER_TYPE), dimension(ELEMENTSIDES, NDIM) :: NodalCoordinatesGlobalSide
 
@@ -2568,7 +2571,7 @@
                  
               
               
-              if (NXiKnotOrder(IPatch_Temporary) == 1) then  
+              if (NURBS%NXiKnotOrder(IPatch_Temporary) == 1) then  
               ! linear 
               VerticesID = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
                                  2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
@@ -2576,7 +2579,7 @@
                                  3, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
                               (/ 2, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
               
-              else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
+              else if (NURBS%NXiKnotOrder(IPatch_Temporary) == 2) then 
 
               ! quadratic 
               VerticesID = reshape( (/ 1, 2, 3,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
@@ -2586,7 +2589,7 @@
                               (/ 3, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
 
               
-              else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
+              else if (NURBS%NXiKnotOrder(IPatch_Temporary) == 3) then 
 
               ! cubic 
               VerticesID = reshape( (/ 1, 2, 3, 4,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
@@ -2596,7 +2599,7 @@
                               (/ 4, 4 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
               
               
-              else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
+              else if (NURBS%NXiKnotOrder(IPatch_Temporary) == 4) then 
 
               
               ! quartic 
@@ -2613,7 +2616,7 @@
                  
               
                  
-                 if (NXiKnotOrder(IPatch_Temporary) == 1) then  
+                 if (NURBS%NXiKnotOrder(IPatch_Temporary) == 1) then  
               ! linear 
               VerticesID = reshape( (/ 1, 2, 6, 5,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
                                  1, 5, 7, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
@@ -2624,7 +2627,7 @@
                               (/ 4, 6 /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
               
                                   
-                 else if (NXiKnotOrder(IPatch_Temporary) == 2) then 
+                 else if (NURBS%NXiKnotOrder(IPatch_Temporary) == 2) then 
                 ! quadratic 
               VerticesID = reshape( (/ 1,2,3, 10,11,12, 19,20,21,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
                                  1,10,19, 4,13,22, 7,16,25,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
@@ -2636,7 +2639,7 @@
                                   
                      
                      
-                 else if (NXiKnotOrder(IPatch_Temporary) == 3) then 
+                 else if (NURBS%NXiKnotOrder(IPatch_Temporary) == 3) then 
                 ! cubic
               VerticesID = reshape( (/ 1,2,3,4, 17,18,19,20, 33,34,35,36, 49,50,51,52,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
                                  1,17,33,49, 5,21,37,53, 9,25,41,57, 13,29,45,61,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
@@ -2648,7 +2651,7 @@
                                   
                  
               
-              else if (NXiKnotOrder(IPatch_Temporary) == 4) then 
+              else if (NURBS%NXiKnotOrder(IPatch_Temporary) == 4) then 
                 ! quartic
               VerticesID = reshape( (/ 1,2,3,4,5, 26,27,28,29,30, 51,52,53,54,55, 76,77,78,79,80, 101,102,103,104,105,  & ! Corner nodes to check for side 1 spanned by nodes 1-2
                                  1,26,51,76,101, 6,31,56,81,106, 11,36,61,86,111, 16,41,66,91,116, 21,46,71,96,121,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
@@ -2682,14 +2685,14 @@
               
               
               ! looping accross traction element
-              do IElement_Traction = 1, nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) ! traction elements
+              do IElement_Traction = 1, NURBS%nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) ! traction elements
                   
-                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary), :, ILoadSystem_Temporary, IPatch_Temporary)
+                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( NURBS%ElementConnectivities_Traction(:,IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary), :, ILoadSystem_Temporary, IPatch_Temporary)
                   
                   
                   GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary)
                   
-                  NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
+                  NodalCoordinatesGlobalSide = NodalCoordinates( ElementConnectivities(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
                   
                   do ISide = 1, ELEMENTSIDES ! sides
                   
@@ -2717,17 +2720,17 @@
               
               else if (NDIM == 3) then 
               
-                  do IElement_Traction = 1, nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) ! traction elements
+                  do IElement_Traction = 1, NURBS%nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) ! traction elements
                   
                   
                   side_test = .false.
                   
-                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( IEN_Traction(:,IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary), :, ILoadSystem_Temporary, IPatch_Temporary)
+                  NodalCoordinatesTractionSide = NodalCoordinates_Traction( NURBS%ElementConnectivities_Traction(:,IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary), :, ILoadSystem_Temporary, IPatch_Temporary)
                   
                   
                   GlobalElementForTraction = Traction_Connecting_Local_To_Global_Elements(IElement_Traction, ILoadSystem_Temporary, IPatch_Temporary)
                   
-                  NodalCoordinatesGlobalSide = NodalCoordinates( IEN(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
+                  NodalCoordinatesGlobalSide = NodalCoordinates( ElementConnectivities(:,GlobalElementForTraction, IPatch_Temporary), :, IPatch_Temporary)
                   
                   do ISide = 1, ELEMENTSIDES ! sides
                   
@@ -2818,8 +2821,8 @@
 
         
         !KnotBezierMeshConnectivity = 0
-        NumberOfElements_Xi = NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
-        NumberOfElements_Eta = NEtaKnotEntries(IPatch) - (2*NEtaKnotOrder(IPatch) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
+        NumberOfElements_Xi = NURBS%NXiKnotEntries(IPatch) - (2*NURBS%NXiKnotOrder(IPatch) + 1)!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+        NumberOfElements_Eta = NURBS%NEtaKnotEntries(IPatch) - (2*NURBS%NEtaKnotOrder(IPatch) + 1)!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
         
         ! 1) For each element start with number of element ee 
         ! 2) use 2ee-1 as a starting element index 
@@ -2847,7 +2850,7 @@
             do jj = 1, NumberOfElements_Xi
 
                 counter = counter + 1
-                if (counter > nel_NURBS(IPatch)) then 
+                if (counter > Counters%NEl(IPatch)) then !NURBS%nel_NURBS(IPatch) 
                     exit 
                 end if 
                 do kk = 1, 4 ! 4 points in one element
@@ -2942,9 +2945,9 @@
         
         
         KnotBezierMeshConnectivity = 0
-        NumberOfElements_Xi = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch))!NXiKnotEntriesUNIQUE-1
-        NumberOfElements_Eta = (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch))!NEtaKnotEntriesUNIQUE-1
-        NumberOfElements_Zeta = (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))!NZetaKnotEntriesUNIQUE-1
+        NumberOfElements_Xi = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch))!NXiKnotEntriesUNIQUE-1
+        NumberOfElements_Eta = (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch))!NEtaKnotEntriesUNIQUE-1
+        NumberOfElements_Zeta = (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NURBS%NZetaKnotOrder(IPatch))!NZetaKnotEntriesUNIQUE-1
 
         
         
@@ -3349,11 +3352,11 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
 
-          allocate(EdgeNodeTyingsHOE(2, Counters%NodTot), stat = IError)
+          allocate(EdgeNodeTyingsHOE(2, Counters%Sum_NodTot), stat = IError)
           EdgeNodeTyingsHOE = 0
        
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points 
               
               !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -3363,7 +3366,7 @@
           end do ! loop over patches
           
           if (ELEMENTTYPE == TETRAOLD) then ! dimension 10 as only for 10-noded tetrahedral element
-            do I = 1, Counters%NEl!(IPatch_Temporary)
+            do I = 1, Counters%Sum_NEl !NURBS%Sum_nel_NURBS!Counters%NEl!(IPatch_Temporary)
               call TieHOENode(ElementConnectivities10Node(1:10, I), 1, 5, 2)
               call TieHOENode(ElementConnectivities10Node(1:10, I), 2, 6, 3)
               call TieHOENode(ElementConnectivities10Node(1:10, I), 3, 7, 1)
@@ -3828,9 +3831,9 @@
         implicit none
 
           ! Local variables
-          integer(INTEGER_TYPE), dimension(NDOFL*Counters%NodTot) :: NTreat
-          integer(INTEGER_TYPE), dimension(NDOFL*Counters%NodTot) :: NTreatWater
-          integer(INTEGER_TYPE), dimension(NDOFL*Counters%NodTot) :: NTreatGas
+          integer(INTEGER_TYPE), dimension(NDOFL*Counters%Sum_NodTot) :: NTreat
+          integer(INTEGER_TYPE), dimension(NDOFL*Counters%Sum_NodTot) :: NTreatWater
+          integer(INTEGER_TYPE), dimension(NDOFL*Counters%Sum_NodTot) :: NTreatGas
           integer(INTEGER_TYPE) :: IError
           
           NTreat = 1
@@ -3856,7 +3859,7 @@
           !call FillNTreatGas(NTreatGas)
           !call FillNPBoundaryGas(NTreatGas)
       
-          allocate(RateVolStrain(Maximum_nel_NURBS), stat = IError)!Counters%NEl
+          allocate(RateVolStrain(NURBS%Maximum_nel_NURBS), stat = IError)!Counters%NEl
           RateVolStrain = 0.0
 
           !nel_NURBS(IPatch)
@@ -3890,7 +3893,7 @@
           !end if
           
           do IPatch = 1, Counters%NPatches ! loop over all patches
-          do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          do IActiveElement = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
           !do IActiveElement = 1, Counters%NAEl
             ElementID = ActiveElement(IActiveElement, IPatch)!,IPatch_Temporary)
             do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES ! loop on element nodes
@@ -3922,7 +3925,7 @@
           integer(INTEGER_TYPE) :: IPatch  
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IEl = 1, nel_NURBS(IPatch) ! this is local element numbering
+          do IEl = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch) ! this is local element numbering
             ISet = ElementMaterialID(IEl,IPatch) !IEl = local element number within a patch
             ! Initialise activation status of elements
             if (ISet < 0) then
@@ -3933,7 +3936,7 @@
                 
                   !Counters%NAEl = Counters%NAEl + 1 ! for single patch
                 
-                NAEl_NURBS(IPatch) = NAEl_NURBS(IPatch) + 1
+                Counters%NAEl(IPatch) = Counters%NAEl(IPatch) + 1 !NURBS%NAEl_NURBS
               
               end if
             end if
@@ -3942,9 +3945,11 @@
           
           ! bookmark
           ! calculate the sum of the acitve elements
-          sum_nael_NURBS = 0
+          !NURBS%sum_nael_NURBS = 0
+          Counters%Sum_NAEl = 0
           do IPatch = 1, Counters%NPatches
-          sum_nael_NURBS = sum_nael_NURBS + nael_NURBS(IPatch)
+          !NURBS%sum_nael_NURBS = NURBS%sum_nael_NURBS + Counters%NAEl(IPatch)
+          Counters%Sum_NAEl = Counters%Sum_NAEl + Counters%NAEl(IPatch)
           end do 
 
         end subroutine InitialiseNumberOfActiveElements
@@ -3972,22 +3977,22 @@
           iErr = 0
           !sum_nael_NURBS
           !allocate(ElementDeterminant(Counters%NAEl), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
-          allocate(ElementDeterminant(sum_nael_NURBS, Counters%NPatches), stat = iErr) ! Abdelrahman Alsardi: this might need generalization
+          allocate(ElementDeterminant(Counters%Sum_NAEl, Counters%NPatches), stat = iErr) ! Abdelrahman Alsardi: this might need generalization !NURBS%sum_nael_NURBS
           call AllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
         else
-          if (size(ElementDeterminant) /= NAEl_NURBS (IPatch)) then !Counters%NAEl
+          if (size(ElementDeterminant) /= Counters%NAEl(IPatch)) then !Counters%NAEl
             iErr = 0
             deallocate(ElementDeterminant, stat = iErr)
             call DeAllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
             !allocate(ElementDeterminant(Counters%NAEl), stat = iErr)
-            allocate(ElementDeterminant(sum_nael_NURBS, Counters%NPatches), stat = iErr)
+            allocate(ElementDeterminant(Counters%Sum_NAEl, Counters%NPatches), stat = iErr) !NURBS%sum_nael_NURBS
             call AllocationError(IErr, 'ElementDeterminant', 'setElementDeterminant')
           endif
         endif
 
         !do iEl=1,Counters%NAEl ! loop active elements
        do IPatch = 1, Counters%NPatches ! loop over all patches
-          do iEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          do iEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
 
             ElementDeterminant(iEl, IPatch) = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), DShapeValuesArray)
           enddo
@@ -4025,7 +4030,7 @@
         !do iEl=1,Counters%NAEl
             
         do IPatch = 1, Counters%NPatches ! loop over all patches
-          do iEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          do iEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements !_NURBS
 
           if (ElementDeterminant(iEl, IPatch) > 0) then
             DeterminantRatio = GetElementDeterminant(iEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), DShapeValuesArray) / ElementDeterminant(iEl, IPatch)
@@ -4093,7 +4098,7 @@
           PBoundary = 1.0 ! Set to 1
           UMax = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+          do I = 1, Counters%NodTot(IPatch) !Counters%NodTot ! loop all nodes !NURBS%NControlPoints
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4110,7 +4115,7 @@
           end if
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4218,7 +4223,7 @@
         
           PBoundaryQuasiStatic = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+          do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
               
@@ -4268,7 +4273,7 @@
           PBoundaryWater = 1.0 ! Set to 1
           UMax = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4286,7 +4291,7 @@
           end if
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop all nodes
               
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -4338,7 +4343,7 @@
           PBoundaryGas = 1.0 ! Set to 1
           UMax = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4355,7 +4360,7 @@
           end if
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop all nodes
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop all nodes
               
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -4419,7 +4424,7 @@
           NodAct = 1
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -4436,7 +4441,7 @@
           ReducedDof =-1
           J = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4463,7 +4468,7 @@
           
           NTreat = 1
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4477,7 +4482,7 @@
           end do ! loop over patches
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch) !Counters%NodTot
+          do I = 1, Counters%NodTot(IPatch) !Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4546,12 +4551,12 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
                     
-          allocate(ReducedDof_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary) + 1), stat = IError)
+          allocate(ReducedDof_VolLockSmooth(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary) + 1), stat = IError)
           
           ReducedDof_VolLockSmooth =-1
           J = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints_VolLockSmooth(IPatch)!Counters%NodTot
+          do I = 1, NURBS%NControlPoints_VolLockSmooth(IPatch)!Counters%NodTot
               
               !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4565,11 +4570,11 @@
           end do ! loop over patches
           
           ! Write up the last reduced dof number for the very last control point
-          ReducedDof_VolLockSmooth(NControlPoints_VolLockSmooth + 1) = NControlPoints_VolLockSmooth(IPatch_Temporary)*NVector
+          ReducedDof_VolLockSmooth(NURBS%NControlPoints_VolLockSmooth + 1) = NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary)*NVector
           
           !Counters%N = ReducedDof(NumberOfGlobalControlPointsUniqueMultipatch(IPatch_Temporary) + 1) ! this is the total number of dof's
           ! Total number of degrees of freedom for the lower order degree of freedoms
-          Counters%N_VolLockSmooth = ReducedDof_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary) + 1) !ReducedDof(GlobalNodeID + 1) ! this is the total number of dof's
+          Counters%N_VolLockSmooth = ReducedDof_VolLockSmooth(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary) + 1) !ReducedDof(GlobalNodeID + 1) ! this is the total number of dof's
         
           
         
@@ -4603,12 +4608,12 @@
         integer(INTEGER_TYPE) :: IPatch
         integer(INTEGER_TYPE) :: GlobalNodeID
 
-        allocate(ReducedDofQuasiStatic(Counters%NodTot + 1), stat = IError)
+        allocate(ReducedDofQuasiStatic(Counters%Sum_NodTot + 1), stat = IError)
         
         ReducedDofQuasiStatic = -1
         J = 0
         do IPatch = 1, Counters%NPatches ! loop over patches
-        do I = 1, NControlPoints(IPatch)!Counters%NodTot
+        do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
             
@@ -4643,11 +4648,11 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
           
-          allocate(NodAct(Counters%NodTot), stat = IError)
+          allocate(NodAct(Counters%Sum_NodTot), stat = IError)
  
           NodAct = 1
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points 
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4661,7 +4666,7 @@
                    
           NTreatWater = 1
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4674,7 +4679,7 @@
           end do ! loop over patches
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4714,11 +4719,11 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
           
-          allocate(NodAct(Counters%NodTot), stat = IError)
+          allocate(NodAct(Counters%Sum_NodTot), stat = IError)
 
           NodAct = 1
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points 
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4732,7 +4737,7 @@
 
           NTreatGas = 1
           do IPatch = 1, Counters%NPatches ! loop over patches 
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4745,7 +4750,7 @@
           end do ! loop over patches
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points 
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -4836,25 +4841,25 @@
           
           if (CalParams%ApplyFBarLowerOrder) then 
  
-          allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
           WeightedStrainIncrementTensor_Numerator = 0.0
           
-          allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
           NodalStrainIncrement_VolLockSmooth = 0.0
           
           
-          allocate(WeightedStressIncrementTensor_Numerator(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          allocate(WeightedStressIncrementTensor_Numerator(NTENSOR, NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
           WeightedStressIncrementTensor_Numerator = 0.0
           
-          allocate(NodalStressIncrement_VolLockSmooth(NTENSOR, NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          allocate(NodalStressIncrement_VolLockSmooth(NTENSOR, NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
           NodalStressIncrement_VolLockSmooth = 0.0
           
           
           ! if 2-phase 
-          allocate(WeightedWP_Numerator(NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError) !NTENSOR, 
+          allocate(WeightedWP_Numerator(NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError) !NTENSOR, 
           WeightedWP_Numerator = 0.0
           
-          allocate(NodalWP_VolLockSmooth(NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError) !NTENSOR, 
+          allocate(NodalWP_VolLockSmooth(NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError) !NTENSOR, 
           NodalWP_VolLockSmooth = 0.0
           
           
@@ -4862,23 +4867,23 @@
           
           else
               
-          allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, NControlPoints(1), Counters%NEntity), stat = IError)
+          allocate(WeightedStrainIncrementTensor_Numerator(NTENSOR, Counters%NodTot(1), Counters%NEntity), stat = IError)
           WeightedStrainIncrementTensor_Numerator = 0.0
           
-          allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, NControlPoints(1), Counters%NEntity), stat = IError)
+          allocate(NodalStrainIncrement_VolLockSmooth(NTENSOR, Counters%NodTot(1), Counters%NEntity), stat = IError)
           NodalStrainIncrement_VolLockSmooth = 0.0    
           
-          allocate(WeightedStressIncrementTensor_Numerator(NTENSOR, NControlPoints(1), Counters%NEntity), stat = IError)
+          allocate(WeightedStressIncrementTensor_Numerator(NTENSOR, Counters%NodTot(1), Counters%NEntity), stat = IError)
           WeightedStressIncrementTensor_Numerator = 0.0
           
-          allocate(NodalStressIncrement_VolLockSmooth(NTENSOR, NControlPoints(1), Counters%NEntity), stat = IError)
+          allocate(NodalStressIncrement_VolLockSmooth(NTENSOR, Counters%NodTot(1), Counters%NEntity), stat = IError)
           NodalStressIncrement_VolLockSmooth = 0.0   
           
           ! if 2-phase 
-          allocate(WeightedWP_Numerator(NControlPoints(1), Counters%NEntity), stat = IError) !NTENSOR, 
+          allocate(WeightedWP_Numerator(Counters%NodTot(1), Counters%NEntity), stat = IError) !NTENSOR, 
           WeightedWP_Numerator = 0.0
           
-          allocate(NodalWP_VolLockSmooth(NControlPoints(1), Counters%NEntity), stat = IError) !NTENSOR, 
+          allocate(NodalWP_VolLockSmooth(Counters%NodTot(1), Counters%NEntity), stat = IError) !NTENSOR, 
           NodalWP_VolLockSmooth = 0.0
               
           end if
@@ -4925,6 +4930,9 @@
                   
           allocate(AccelerationSoil(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil = 0.0
+          
+          allocate(AccelerationSoilGeneralizedAlpha(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationSoilGeneralizedAlpha = 0.0 !This vector is populated from the acceleration of the material points 
 
           allocate(TotalVelocitySoil(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil = 0.0
@@ -4989,27 +4997,27 @@
           allocate(FReactionGas(Counters%N, Counters%NEntity), stat = IError)
           FReactionGAs = 0.0
           
-          allocate(NodalUnitMassGradient(Counters%NodTot, NDIM), stat = IError)
+          allocate(NodalUnitMassGradient(Counters%Sum_NodTot, NDIM), stat = IError)
           NodalUnitMassGradient = 0.0
-          allocate(ExtFlow(Counters%NodTot), stat = IError)
+          allocate(ExtFlow(Counters%Sum_NodTot), stat = IError)
           ExtFlow = 0.0
 
-          allocate(RateOfFlux(Counters%NodTot), stat = IError)
+          allocate(RateOfFlux(Counters%Sum_NodTot), stat = IError)
           RateOfFlux = 0.0
           
-          allocate(IntFlow(Counters%NodTot), stat = IError)
+          allocate(IntFlow(Counters%Sum_NodTot), stat = IError)
           IntFlow = 0.0
           
-          allocate(IncrementalPressure(Counters%NodTot), stat = IError)
+          allocate(IncrementalPressure(Counters%Sum_NodTot), stat = IError)
           IncrementalPressure = 0.0
 
-          allocate(TotalPressure(Counters%NodTot), stat = IError)
+          allocate(TotalPressure(Counters%Sum_NodTot), stat = IError)
           TotalPressure = 0.0
           
           allocate(SubIncrementalDisplacement(Counters%N), stat = IError)
           SubIncrementalDisplacement = 0.0
       
-          allocate(SubIncrementalPressure(Counters%NodTot), stat = IError)
+          allocate(SubIncrementalPressure(Counters%Sum_NodTot), stat = IError)
           SubIncrementalPressure = 0.0
           
         end subroutine InitialiseNodalArrays
@@ -5031,7 +5039,7 @@
           character(len=255) :: BName
           character(len=255), dimension(MAXOUTPUTSURFACES) :: DumSurfaceName
           
-          allocate(IsReactionNode(Counters%NodTot), stat = Ierror)
+          allocate(IsReactionNode(Counters%Sum_NodTot), stat = Ierror)
           IsReactionNode = .false.
         
           
@@ -5089,7 +5097,7 @@
           Counters%NReactionSurfaceOutput = NSurfaces
           
           !allocate vectors
-          allocate(IsReactionNodeSurface(Counters%NodTot,NSurfaces), stat = Ierror)
+          allocate(IsReactionNodeSurface(Counters%Sum_NodTot,NSurfaces), stat = Ierror)
           allocate(OutputSurfaceName(NSurfaces), stat = IError)
           
           OutputSurfaceName(1:NSurfaces) = DumSurfaceName(1:NSurfaces)
@@ -5359,7 +5367,7 @@
           !NXiKnotEntriesUNIQUE
           !NEtaKnotEntriesUNIQUE
           
-          ElementConnectivities = 0
+          !ElementConnectivities = 0
 !          
 !          KnotSpan_X_Order = NXiKnotOrder
 !          KnotSpan_Y_Order = NEtaKnotOrder
@@ -5440,7 +5448,7 @@
 
           
           ! I need to comment all above this
-          ElementConnectivities = IEN
+          !ElementConnectivities = IEN
           
                                                                 end subroutine 
        
@@ -5496,7 +5504,7 @@
           !NXiKnotEntriesUNIQUE
           !NEtaKnotEntriesUNIQUE
           
-          ElementConnectivities = IEN
+          !ElementConnectivities = IEN
           
 !          KnotSpan_X_Order = NXiKnotOrder
 !          KnotSpan_Y_Order = NEtaKnotOrder

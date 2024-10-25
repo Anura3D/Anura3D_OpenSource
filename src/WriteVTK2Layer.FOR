@@ -446,7 +446,7 @@ module ModWriteVTKTwoLayer
     !********** END: writing tensor material point data ****************************************
 
     !********** START: writing scalar mesh data ****************************************
-    NumberElements = Counters%NEl ! total number of elements
+    NumberElements = Counters%Sum_NEl ! total number of elements
     DataSetSize = 1 ! total number of datasets for elements to be written
     allocate(DataSetName(DataSetSize))
     allocate(DataSetScalar(NumberElements,DataSetSize))

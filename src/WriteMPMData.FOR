@@ -484,7 +484,7 @@
           integer(INTEGER_TYPE) :: IPatch
 
           NVals = 1
-          NByts = ((Counters%NParticles + Counters%NEl) * NVals * 8) !+ (4*Counters%NPatches) ! 4 corresponds to integer
+          NByts = ((Counters%NParticles + Counters%Sum_NEl) * NVals * 8) !+ (4*Counters%NPatches) ! 4 corresponds to integer
           write(FileUnit) '$$DPBVD__R$$', NByts
 
           do I = 1, Counters%NParticles
@@ -493,7 +493,7 @@
           ! do we need a patch loop here?
           do IPatch = 1, Counters%NPatches
           !write(FileUnit) (IPatch)
-          do I = 1, nel_NURBS(IPatch)!Counters%NEl
+          do I = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl
             write(FileUnit) RateVolStrain(I)
           end do
           end do 
@@ -812,7 +812,7 @@
           integer(INTEGER_TYPE) :: IPatch !, intent(in)
 
           do IPatch = 1, Counters%NPatches
-          NVals = nel_NURBS(IPatch)!Counters%NEl
+          NVals = Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl
           NByts = (NVals * 4) !+ 4 ! add 4 more byts to write the patch number
           write(FileUnit) '$$NUMPARTI$$', NByts
 
@@ -916,13 +916,13 @@
           integer(INTEGER_TYPE) :: IPatch ! this needs to be intent in?? !, intent(in)
 
           do IPatch = 1, Counters%NPatches
-          NVals = nel_NURBS(IPatch)!Counters%NEl
+          NVals = Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl
           NByts = (NVals *4) !+4! I added 4 corresponding to byts of IPatch
           write(FileUnit) '$$ELPARTHI$$', NByts
           
           !write(FileUnit) (IPatch)
 
-          write(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
+          write(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, Counters%NEl(IPatch))!Counters%NEl) !NURBS%nel_NURBS
 
           end do 
         end subroutine WriteBlockELPARTHI
@@ -1530,13 +1530,13 @@
           integer(INTEGER_TYPE) :: IPatch !, intent(in)
           
           do IPatch = 1, Counters%NPatches
-          NVals = nel_NURBS(IPatch)!Counters%NEl
+          NVals = Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl
           NByts = (NVals * 4) !+ 4 ! added 4 byts for IPatch
           write(FileUnit) '$$USEPARTI$$', NByts
           
           !write(FileUnit) (IPatch)
           
-          write(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
+          write(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, Counters%NEl(IPatch))!Counters%NEl) !NURBS%nel_NURBS !Counters%NEl
 
           end do
         end subroutine WriteBlockUSEPARTI
@@ -1571,14 +1571,14 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch, IElement, IParticle
           
-          NVals = Counters%NParticles * Maximum_nel_NURBS * Counters%NPatches
+          NVals = Counters%NParticles * NURBS%Maximum_nel_NURBS * Counters%NPatches
           
           NByts = (NVals * 4) 
           write(FileUnit) '$$GETPINDX$$', NByts
         
           do IPatch = 1, Counters%NPatches
           
-              do IElement = 1, Maximum_nel_NURBS
+              do IElement = 1, NURBS%Maximum_nel_NURBS
                   
                   do IParticle = 1, Counters%NParticles
               

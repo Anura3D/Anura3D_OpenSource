@@ -83,8 +83,8 @@
     
     NumberMaterialPoints = Counters%NParticles      ! Total number of material points
     TimeStep = CalParams%IStep                      ! Time step
-    NumberElements = Counters%NEl                   ! Total number of elements
-    NNodes = Counters%NodTot                        ! Total number of nodes
+    NumberElements = Counters%Sum_NEl                   ! Total number of elements
+    NNodes = Counters%Sum_NodTot                        ! Total number of nodes
     NVECTOR = NDIM                                  ! Dimension
     NoMPs = Counters%NParticles                     ! Number of MPs
 
@@ -859,8 +859,8 @@
     
     NumberMaterialPoints = Counters%NParticles   
     TimeStep = CalParams%IStep                   
-    NumberElements = Counters%NEl                   
-    NNodes = Counters%NodTot                        
+    NumberElements = Counters%Sum_NEl                   
+    NNodes = Counters%Sum_NodTot                        
     NVECTOR = NDIM                                 
     NoMPs = Counters%NParticles                     
     

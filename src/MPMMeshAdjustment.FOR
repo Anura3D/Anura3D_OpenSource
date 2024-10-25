@@ -129,7 +129,7 @@
 
               !allocate(AreaNodeAssignment(CalParams%MovingMesh%NMovingMeshDirections, Counters%NodTot), stat = IError)          
               ! NEED TO INCLUDE MULTIPATCH GENERALIZATION --> I moved this here
-              allocate(AreaNodeAssignment(CalParams%MovingMesh%NMovingMeshDirections(IPatch_Temporary), Maximum_NControlPoints, Counters%NPatches), stat = IError)! , Counters%NPatches ! 
+              allocate(AreaNodeAssignment(CalParams%MovingMesh%NMovingMeshDirections(IPatch_Temporary), NURBS%Maximum_NControlPoints, Counters%NPatches), stat = IError)! , Counters%NPatches ! 
               AreaNodeAssignment = 0
           
              
@@ -145,7 +145,7 @@
               allocate(CalParams%MovingMesh%StructureNodes(CalParams%MovingMesh%NStructureNodes(IPatch), Counters%NPatches), stat = IError)
               I = 1
               !do IPatch = 1, Counters%NPatches ! loop over patches
-              do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+              do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
                   
@@ -470,7 +470,7 @@
   
           if (CalParams%ApplyContactAlgorithm.and.CalParams%ApplyContactMeshBoundary) then
               do IPatch = 1, Counters%NPatches ! loop over patches
-            do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+            do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
                 
@@ -482,7 +482,7 @@
             end do ! loop over patches
           else
               do IPatch = 1, Counters%NPatches ! loop over patches
-            do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+            do IEl = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               do IPart = 1, NPartEle(IEl, IPatch)
                 ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)
                 if (EntityIDArray(ParticleIndex)==HARD_ENTITY) then
@@ -643,7 +643,7 @@
         
           !do IPatch = 1, Counters%NPatches ! loop over patches
           
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -684,7 +684,7 @@
           !IPatch_Temporary = 1
         
           !do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over the control points for each patch
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over the control points for each patch
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -828,7 +828,7 @@
           ! input multipatch generalization 
           integer(INTEGER_TYPE), intent(in) :: IPatch
           
-          real(REAL_TYPE), dimension(NControlPoints(IPatch), NVECTOR), intent(in) :: Coordinates
+          real(REAL_TYPE), dimension(Counters%NodTot(IPatch), NVECTOR), intent(in) :: Coordinates
           
           
           
@@ -912,7 +912,7 @@
         
           !do IPatch = 1, Counters%NPatches ! loop over patches
               
-          do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
 
@@ -972,11 +972,11 @@
           
           ! Determine nodes that belong to structure volume elements
           !allocate(NodeCheck(Counters%NodTot), stat = IError)
-          allocate(NodeCheck(NControlPoints(IPatch)), stat = IError) !, Counters%NPatches
+          allocate(NodeCheck(Counters%NodTot(IPatch)), stat = IError) !, Counters%NPatches
           NodeCheck = 0
           
           !do IPatch = 1, Counters%NPatches ! loop over patches
-              do IEl = 1, nel_NURBS(IPatch) !Counters%NEl
+              do IEl = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch) !Counters%NEl
             
                   if (IsActiveElement(IEl,IPatch)) then ! if active element
                       if (NPartEle(IEl, IPatch)>0) then ! Loop over all activated elements that contain particles
@@ -1032,7 +1032,7 @@
 
           !integer(INTEGER_TYPE), dimension(Counters%NodTot), intent(in) :: NodeCheck
           integer(INTEGER_TYPE), intent(in) :: IPatch
-          integer(INTEGER_TYPE), dimension(NControlPoints(IPatch)), intent(in) :: NodeCheck ! this has value of 1 if part of the moving mesh !Maximum_NControlPoints !, Counters%NPatches
+          integer(INTEGER_TYPE), dimension(Counters%NodTot(IPatch)), intent(in) :: NodeCheck ! this has value of 1 if part of the moving mesh !Maximum_NControlPoints !, Counters%NPatches
           ! Local variables
           integer(INTEGER_TYPE) :: I, INode, IError, count
           
@@ -1046,7 +1046,7 @@
           
           !do IPatch = 1, Counters%NPatches ! loop over patches
           
-              do INode = 1, NControlPoints(IPatch) ! loop over nodes in the patch !Counters%NodTot
+              do INode = 1, Counters%NodTot(IPatch) ! loop over nodes in the patch !Counters%NodTot
               
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch) ! obtain global node ID
             
@@ -1076,7 +1076,7 @@
           
           !do IPatch = 1, Counters%NPatches ! loop over patches
          
-              do INode = 1, NControlPoints(IPatch) ! loop over number of nodes in a patch !Counters%NodTot
+              do INode = 1, Counters%NodTot(IPatch) ! loop over number of nodes in a patch !Counters%NodTot
               
                   ! obtain global node ID 
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)

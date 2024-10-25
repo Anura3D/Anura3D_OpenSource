@@ -89,6 +89,7 @@
 
       !********** 1 - kernel initialisation ******************************
       call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
+      !call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call InitialiseElementType() ! initialises the element type in global variables ! -> NURBS implementation
       call OpenTextOutputFiles() ! open TextOutputFiles
       call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
@@ -112,6 +113,7 @@
 #endif      
 
       !********** 2 - mesh data initialisation ******************************
+      call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call InitialiseMeshData() ! allocate and assign mesh related arrays by reading GOM file
       !call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
       
@@ -145,7 +147,7 @@
           
       end if 
       
-      call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
+      !call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
       call ReadSHE() ! only if ApplyEmptyElements
       call Initialise3DCylindricalAnalysis() ! only for 3D Cylindrical Analysis
@@ -193,13 +195,13 @@
       call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
       
       
-      if (NDIM == 2) then 
-      ! assuming y-direction as the vertical direction 
+      !if (NDIM == 2) then 
+      !! assuming y-direction as the vertical direction 
       call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
-      else if (NDIM == 3) then 
-      ! assuming z-direction as the vertical direction
-      call InitialiseMaterialPointsForK0Stresses_zdirection() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
-      end if 
+      !else if (NDIM == 3) then 
+      !! assuming z-direction as the vertical direction
+      !call InitialiseMaterialPointsForK0Stresses_zdirection() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      !end if 
       
       call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
       call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation

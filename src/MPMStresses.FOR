@@ -844,7 +844,7 @@
          end if
               
           ! Compute vertical total stress for constant load
-          SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
+          SigY = SigY + CalParams%InitialVerticalLoadK0 !* CalParams%Multipliers%SolidARealised(1) ! I commented this to remove load dependency on this multiplier
 
           !Calculate water pressure
           if ((Counters%SoilSurfaceNumberofSides > 0) .or. (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)) then
@@ -1250,7 +1250,7 @@
         
           integer(INTEGER_TYPE), intent(in) :: IEl, LocalID
           !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Co
-          real(REAL_TYPE), dimension(Maximum_NControlPoints, NVECTOR), intent(in) :: Co ! this might need to be generalized so that IPatch is an input and we loop on the outside....
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NVECTOR), intent(in) :: Co ! this might need to be generalized so that IPatch is an input and we loop on the outside....
 
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(out) :: B
           real(REAL_TYPE) :: WtN !, intent(out)
@@ -1270,7 +1270,7 @@
           !do IAEl = 1, Counters%NAEl
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
@@ -1280,7 +1280,7 @@
           if (IsParticleIntegration(IEl, IPatch) ) then ! Particle
             IParticleIndex = GetParticleIndex(LocalID, IEl, IPatch)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
-                         ELEMENTNODES, nel_NURBS(IPatch),  NControlPoints(IPatch), NVECTOR, IEl, ElementConnectivities(:,:,IPatch), Co, B, &
+                         ELEMENTNODES, Counters%NEl(IPatch),  Counters%NodTot(IPatch), NVECTOR, IEl, ElementConnectivities(:,:,IPatch), Co, B, & !NURBS%nel_NURBS(IPatch)
                          IPatch)!, !Det) !Counters%NEl!Counters%NodTot
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
@@ -2108,7 +2108,7 @@
           !do IAEl = 1, Counters%NAEl
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)

@@ -168,6 +168,7 @@
 
         
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
+        !real(REAL_TYPE), allocatable :: AccelerationWaterArray(:,:)       !> Acceleration of the particle (water)
         
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
@@ -433,14 +434,14 @@
         integer(INTEGER_TYPE) :: StartingValue
         
         integer(INTEGER_TYPE) :: ParticleIndex
-        integer(INTEGER_TYPE), dimension(Counters%NEl, Counters%NPatches) :: IParticle !Counters%NPatches
+        integer(INTEGER_TYPE), dimension(Counters%Sum_NEl, Counters%NPatches) :: IParticle !Counters%NPatches !Counters%NEl
         
         IParticle = 0
         
         maxParticle = 1
         maxEl       = 1
         do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
         !do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl, IPatch)
           maxEl = max(maxEl, iEl)
@@ -452,13 +453,13 @@
 
         !!!!!!!!!!!!!!!!!!!!
 
-        allocate(GetParticleIndex_Temporary(Counters%NParticles, Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+        allocate(GetParticleIndex_Temporary(Counters%NParticles, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
 
         GetParticleIndex_Temporary = -huge(GetParticleIndex_Temporary)
         
         if (allocated(GetParticleIndex)) then
         do IPatch = 1, Counters%NPatches ! Loop over patches
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
           
                 iEl = ActiveElement(IAEl, IPatch)
@@ -480,7 +481,7 @@
           call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         endif
 
-        allocate(GetParticleIndex(Counters%NParticles, Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+        allocate(GetParticleIndex(Counters%NParticles, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
 
         !Counters%NParticles
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
@@ -549,7 +550,7 @@
         maxParticle = 1
         maxEl       = 1
         do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
         !do IAEl = 1, Counters%NAEl
           iEl = ActiveElement(IAEl, IPatch)
           maxEl = max(maxEl, iEl)
@@ -563,13 +564,13 @@
         !Counters%NParticles
         !allocate(GetParticleIndex_Temporary(maxParticle_previous, maxEl, NumberOfPatches), stat = IError)
         !allocate(GetParticleIndex_Temporary(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
-        allocate(GetParticleIndex_Temporary(Counters%NParticles, Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+        allocate(GetParticleIndex_Temporary(Counters%NParticles, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
 
         GetParticleIndex_Temporary = -huge(GetParticleIndex_Temporary)
         
         if (allocated(GetParticleIndex)) then
         do IPatch = 1, Counters%NPatches ! Loop over patches
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
           
                 iEl = ActiveElement(IAEl, IPatch)
@@ -594,7 +595,7 @@
         !allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
         !allocate(GetParticleIndex(maxParticle, maxEl, NumberOfPatches), stat = IError)
         !allocate(GetParticleIndex(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
-        allocate(GetParticleIndex(Counters%NParticles, Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+        allocate(GetParticleIndex(Counters%NParticles, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
 
         !Counters%NParticles
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
@@ -608,7 +609,7 @@
 
         !if (.not.allocated(GetParticleIndex)) then
         do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
           iEl = ActiveElement(IAEl, IPatch)
           do int = 1, NPartEle(iEl,IPatch)
@@ -886,7 +887,7 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           !allocate(EleParticlesHelp(Counters%NEl), stat = IError) ! I need to make this patch dependent         
-          allocate(EleParticlesHelp(Maximum_nel_NURBS,Counters%NPatches), stat = IError) ! I need to make this patch dependent
+          allocate(EleParticlesHelp(NURBS%Maximum_nel_NURBS,Counters%NPatches), stat = IError) ! I need to make this patch dependent
           EleParticlesHelp = -1
           
           allocate(EleParticles(Counters%NParticles), stat = IError)
@@ -965,13 +966,13 @@
           
           ! stress for gauss point integration for each phase
           !allocate(SigmaEffArrayGaussPoints             (Counters%NEl, Counters%NGaussPoints, NTENSOR), stat = IError) !--> solid skeleton --> tensor for each GP
-          allocate(SigmaEffArrayGaussPointsWaterPressure(Counters%NEl, Counters%NGaussPoints), stat = IError) !--> water pressure --> scalar for each GP
-          allocate(SigmaEffArrayGaussPointsGasPressure  (Counters%NEl, Counters%NGaussPoints), stat = IError) !--> gas pressure --> scalar for each GP
-          allocate(SigmaEffArrayGaussPointsBulkViscousPressure(Counters%NEl, Counters%NGaussPoints), stat = IError) !--> bulk viscous damping
+          allocate(SigmaEffArrayGaussPointsWaterPressure(Counters%Sum_NEl, Counters%NGaussPoints), stat = IError) !--> water pressure --> scalar for each GP !Counters%NEl
+          allocate(SigmaEffArrayGaussPointsGasPressure  (Counters%Sum_NEl, Counters%NGaussPoints), stat = IError) !--> gas pressure --> scalar for each GP !Counters%NEl
+          allocate(SigmaEffArrayGaussPointsBulkViscousPressure(Counters%Sum_NEl, Counters%NGaussPoints), stat = IError) !--> bulk viscous damping !Counters%NEl
           
           
           ! in each element, we are tracking how many material points associated with a gauss point in an element
-          allocate(SubElementMPOrganization(Counters%NEl, Counters%NGaussPoints), stat = IError) ! --> global matrix
+          allocate(SubElementMPOrganization(Counters%Sum_NEl, Counters%NGaussPoints), stat = IError) ! --> global matrix
           
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
           allocate(DShapeValuesArray_VolLockSmooth(Counters%NParticles,ELEMENTNODES_VolLockSmooth,NVECTOR), stat = IError)
@@ -989,7 +990,7 @@
           !allocate(IsParticleIntegration(Counters%NEl), stat = IError)
           
           !allocate(IsParticleIntegration(Counters%NEl), stat = IError)         
-          allocate(IsParticleIntegration(Maximum_nel_NURBS, Counters%NPatches), stat = IError) 
+          allocate(IsParticleIntegration(NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError) 
             
           ! above this should the number of control point elements which is only three 
           
@@ -1055,7 +1056,7 @@
         logical :: Success, OutsideElement
         
         
-        integer(INTEGER_TYPE), dimension(maximum_nel_NURBS, Counters%NPatches), intent(inout) :: InitialSolidMaterialPoints
+        integer(INTEGER_TYPE), dimension(NURBS%maximum_nel_NURBS, Counters%NPatches), intent(inout) :: InitialSolidMaterialPoints
         
         integer(INTEGER_TYPE) :: counter
         
@@ -1094,7 +1095,7 @@
             
             do IPatch = 1, Counters%NPatches ! loop over patches
                 
-                do IEl = 1, nel_NURBS(IPatch) ! loop over number of elements in patch
+                do IEl = 1, Counters%NEl(IPatch) ! loop over number of elements in patch
                     
                             
                             do IMP = 1, Counters%NParticles ! loop over material points
@@ -1123,10 +1124,10 @@
                             
                         call GetLocalCoordinates_StructuredMesh(GlobPosArray(IMP,:), &
                                    IEl, &
-                                   ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
-                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                                   ELEMENTNODES, Counters%NEl(IPatch),  & !Counters%NEl
+                                   Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,IPatch), &
-                                   IEN(:,:,IPatch), &
+                                   ElementConnectivities(:,:,IPatch), &
                                    NewLocPos, &
                                    OutsideElement, Success, IPatch)!, ElementAdjacencies(:,:, IPatch), IPatch)!, &
                             
@@ -1146,8 +1147,8 @@
                     call GetLocalCoordinates(GlobPosArray(IMP,:), &
                                    UStepArray(IMP,:), &
                                    IEl, &
-                                   ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
-                                   NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                                   ELEMENTNODES, Counters%NEl(IPatch),  & !Counters%NEl
+                                   Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,IPatch), &
                                    ElementConnectivities(:,:,IPatch), &
                                    NewLocPos, &
@@ -1733,12 +1734,12 @@
           
           ! finding the NURBS coordinates for the element
 
-          ni = INN(IEN(1,ElementID,PatchID),1,PatchID)    
-          nj = INN(IEN(1,ElementID,PatchID),2,PatchID)
+          ni = NURBS%INN(ElementConnectivities(1,ElementID,PatchID),1,PatchID)    
+          nj = NURBS%INN(ElementConnectivities(1,ElementID,PatchID),2,PatchID)
           
           	
           if (NDIM == 3) then 
-              nk = INN(IEN(1,ElementID,PatchID),3,PatchID)
+              nk = NURBS%INN(ElementConnectivities(1,ElementID,PatchID),3,PatchID)
           end if 
           
           
@@ -1795,7 +1796,7 @@
           ! Calculating dR/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !Calculate derivative of basis functions with respect to physical coordinates
-          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID, nen_NURBS) ! dR_dx = dxi_dx * dR_dxi 
+          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID, NURBS%nen_NURBS) ! dR_dx = dxi_dx * dR_dxi 
           
           
           
@@ -1954,10 +1955,10 @@
           
           ! finding the NURBS coordinates for the element
       
-          ni = INN_VolLockSmooth(IEN_VolLockSmooth(1,ElementID,PatchID),1,PatchID)    
-          nj = INN_VolLockSmooth(IEN_VolLockSmooth(1,ElementID,PatchID),2,PatchID)
+          ni = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,ElementID,PatchID),1,PatchID)    
+          nj = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,ElementID,PatchID),2,PatchID)
           if (NDIM == 3) then 
-              nk = INN_VolLockSmooth(IEN_VolLockSmooth(1,ElementID,PatchID),3,PatchID)
+              nk = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,ElementID,PatchID),3,PatchID)
           end if 
           
           
@@ -2015,7 +2016,7 @@
           ! Calculating dR/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !Calculate derivative of basis functions with respect to physical coordinates
-          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID, nen_NURBS_VolLockSmooth) ! dR_dx = dxi_dx * dR_dxi 
+          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID, NURBS%nen_NURBS_VolLockSmooth) ! dR_dx = dxi_dx * dR_dxi 
           
           
           
@@ -2364,7 +2365,7 @@
 
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
         
             do IParticle = 1, NPartEle(IElement,IPatch)
 

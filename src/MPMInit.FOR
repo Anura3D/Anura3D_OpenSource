@@ -252,7 +252,7 @@
 
           ! local variables
           integer(INTEGER_TYPE) :: IElement, ParticleIndex, IParticle, Index, EntityID, IDCounter, IDim 
-          integer(INTEGER_TYPE), dimension(maximum_nel_NURBS, Counters%NPatches) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints !Counters%NEl
+          integer(INTEGER_TYPE), dimension(NURBS%maximum_nel_NURBS, Counters%NPatches) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints !Counters%NEl
           real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
           integer(INTEGER_TYPE) :: MaterialPointType
@@ -291,8 +291,8 @@
 
 
             if((CalParams%ComputationMethod==FEM).or.(CalParams%ComputationMethod==UL_FEM)) then !for FEM calculation
-              CalParams%NMaterialPoints = 1
-              InitialSolidMaterialPoints = 1
+              CalParams%NMaterialPoints = ELEMENTGAUSSPOINTS !1
+              InitialSolidMaterialPoints = ELEMENTGAUSSPOINTS !1
               InitialLiquidMaterialPoints = 0
             else ! for MPM calculation, as specified in GOM file
               call ReadNumberOfMaterialPointsPerElement(InitialSolidMaterialPoints, InitialLiquidMaterialPoints)
@@ -316,7 +316,7 @@
           ParticleIndex = 0
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             if (IsActiveElement(IElement,IPatch)) then ! only if active element
 
               ! loop over total number of material points (solid+liquid) per element 
@@ -349,8 +349,8 @@
                 !    IPatch)
                 
                 call DetJacob(HS, dHS, &
-                    LocPos, nel_NURBS(IPatch), NControlPoints(IPatch), NDIM, &
-                    IElement, ElementConnectivities(:,1:nel_NURBS(IPatch), IPatch), NodalCoordinates(1:NControlPoints(IPatch),:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    LocPos, Counters%NEl(IPatch), Counters%NodTot(IPatch), NDIM, &
+                    IElement, ElementConnectivities(:,1:Counters%NEl(IPatch), IPatch), NodalCoordinates(1:Counters%NodTot(IPatch),:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                     dxi_dx, dtildexi_dxi, &
                     IPatch)
 
@@ -430,7 +430,7 @@
                 ! set material point shape function values and derivatives --> Volumetric locking smoothing 
                 if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then 
                     call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, &
-                        IEN_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                        NURBS%ElementConnectivities_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
                 end if 
                 
 
@@ -487,7 +487,7 @@
         
           ! local variables
           integer(INTEGER_TYPE) :: IElement, ParticleIndex, IParticle, Index, EntityID, IDCounter
-          integer(INTEGER_TYPE), dimension(maximum_nel_NURBS, Counters%NPatches) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints !Counters%NEl
+          integer(INTEGER_TYPE), dimension(NURBS%maximum_nel_NURBS, Counters%NPatches) :: InitialSolidMaterialPoints, InitialLiquidMaterialPoints !Counters%NEl
           real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
           integer(INTEGER_TYPE) :: MaterialPointType
@@ -531,8 +531,8 @@
           
         
             if((CalParams%ComputationMethod==FEM).or.(CalParams%ComputationMethod==UL_FEM)) then !for FEM calculation
-              CalParams%NMaterialPoints = 1
-              InitialSolidMaterialPoints = 1
+              CalParams%NMaterialPoints = ELEMENTGAUSSPOINTS!1
+              InitialSolidMaterialPoints = ELEMENTGAUSSPOINTS!1
               InitialLiquidMaterialPoints = 0
             else ! for MPM calculation, as specified in GOM file
 
@@ -587,7 +587,7 @@
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             if (IsActiveElement(IElement,IPatch)) then ! only if active element
         
                 
@@ -650,9 +650,9 @@
               
                 ! determine the determinant of the Jacobian     
                 call DetJacob(HS, dHS, &
-                    LocPos, nel_NURBS(PatchID), NControlPoints(PatchID), NDIM, &
-                    ElementID, ElementConnectivities(:,1:nel_NURBS(PatchID), PatchID), &
-                    NodalCoordinates(1:NControlPoints(PatchID),:,PatchID), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    LocPos, Counters%NEl(PatchID), Counters%NodTot(PatchID), NDIM, &
+                    ElementID, ElementConnectivities(:,1:Counters%NEl(PatchID), PatchID), & !NURBS%nel_NURBS(PatchID)
+                    NodalCoordinates(1:Counters%NodTot(PatchID),:,PatchID), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                     dxi_dx, dtildexi_dxi, &
                     PatchID)
                     
@@ -729,7 +729,7 @@
                 ! continue here (6/14/2024)
                 ! set material point shape function values and derivatives --> Volumetric locking smoothing 
                 if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then 
-                    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, ElementID, IEN_VolLockSmooth(:,:, IPatch), &
+                    call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, ElementID, NURBS%ElementConnectivities_VolLockSmooth(:,:, IPatch), &
                         NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
                 end if 
         
@@ -812,7 +812,7 @@
             call InitialiseModEmptyElementsData()
           end if
           
-          allocate(NPartEle(Maximum_nel_NURBS, Counters%NPatches), stat = IError) !Counters%NEl
+          allocate(NPartEle(NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError) !Counters%NEl
           NPartEle = 0 ! Initialise to zero
 
           ! Fill particle house-keeping arrays with data from the BRF file of the previous load phase
@@ -981,7 +981,7 @@
 
             do IPatch = 1, Counters%NPatches ! loop over patches
             
-            do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+            do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                 
@@ -999,7 +999,7 @@
             do IPatch = 1, Counters%NPatches ! loop over patches
             !call ReadNodalCoordinates(FileName, Counters%NodTot, NDIM, NodalCoordinates(:,:,IPatch))
             !call ReadNodalCoordinates(FileName, NControlPoints(IPatch), NDIM, NodalCoordinates(:,:,IPatch))
-            call ReadNodalCoordinates(FileName, NControlPoints(IPatch), NDIM, NodalCoordinates)
+            call ReadNodalCoordinates(FileName, Counters%NodTot(IPatch), NDIM, NodalCoordinates)
 
         
             NodalCoordinatesUpd = NodalCoordinates
@@ -1073,7 +1073,7 @@
               PatchID = PatchIDArray(ParticleIndex)
               
             call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex,ElementID, &
-                IEN_VolLockSmooth(:,:, PatchID), &
+                NURBS%ElementConnectivities_VolLockSmooth(:,:, PatchID), &
                 NodalCoordinates_VolLockSmooth(:,:,PatchID), PatchID) ! This needs to be done properly here!!!
           end do
         
@@ -1121,11 +1121,15 @@
           integer(INTEGER_TYPE) :: IPatch
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl
+              
+              ! I included this here for initialization 
+              Counters%NAEl(IPatch) = 0
+              
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl
             if (NPartEle(IElement,IPatch)>0) then ! There is a particle inside the element
               IsActiveElement(IElement,IPatch) = .true.
               
-              NAEl_NURBS(IPatch) = NAEl_NURBS(IPatch) + 1 
+              Counters%NAEl(IPatch) = Counters%NAEl(IPatch) + 1 
               
             else
               IsActiveElement(IElement,IPatch) = .false.
@@ -1162,11 +1166,11 @@
           integer(INTEGER_TYPE) :: IPatch, ii
 
           !allocate(NPartEle(Counters%NEl), stat = IError)
-          allocate(NPartEle(Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+          allocate(NPartEle(NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
           !allocate(NSolidEle(Counters%NEl), stat = IError)
-          allocate(NSolidEle(Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+          allocate(NSolidEle(NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
           !allocate(NLiquidEle(Counters%NEl), stat = IError)
-          allocate(NLiquidEle(Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+          allocate(NLiquidEle(NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
 
           
           NPartEle = 0
@@ -1177,7 +1181,7 @@
           Counters%LiquidMaterialPoints = 0
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements 
+          do ElementID = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements 
             if (IsActiveElement(ElementID,IPatch)) then ! only if active element
               NSolidEle(ElementID, IPatch) = InitialSolidMaterialPoints(ElementID, IPatch)
               NLiquidEle(ElementID, IPatch) = InitialLiquidMaterialPoints(ElementID, IPatch)
@@ -1197,7 +1201,7 @@
 
           do IPatch = 1, Counters%NPatches ! loop over patches
           ! Loop to find the maximum value in the specified column
-          do ii = 1, nel_NURBS(IPatch) ! loop over elements
+          do ii = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch) ! loop over elements
               if (NPartEle(ii, IPatch) > Maximum_NPartEle) then
                   Maximum_NPartEle = NPartEle(ii, IPatch)
               end if
@@ -1232,7 +1236,7 @@
           NParticles = 0
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch) !Counters%NEl ! loop all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch) !Counters%NEl ! loop all elements
             if (IsActiveElement(IElement,IPatch)) then ! only initially active element
 
               if ( NFORMULATION == 1 ) then
@@ -1251,7 +1255,7 @@
               do ISide = 1, ELEMENTSIDES ! Loop over all sides of active elements
 
                 ! Determine whether ISide lies on the boundary of the active elements
-                BoundarySurface = BoundaryElementSurface(IElement, ISide, IsActiveElement(:,IPatch), Counters%NEl)
+                BoundarySurface = BoundaryElementSurface(IElement, ISide, IsActiveElement(:,IPatch), Counters%Sum_NEl)
               
                 if (BoundarySurface==1) then
                   ! Surface between activated and deactivated elements:
@@ -1350,7 +1354,7 @@
           integer(INTEGER_TYPE), intent(in) :: NSurfaceNodes, NGaussPoints, IElTyp, LoadType, ILoadSystem !
           integer(INTEGER_TYPE), dimension(NSurfaceNodes) :: IConGlobal !, intent(in)
           real(REAL_TYPE), dimension(NSurfaceNodes, NVECTOR) :: LoadsGlobal !, intent(in)
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR) :: NodeCoord !, intent(in)
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot, NVECTOR) :: NodeCoord !, intent(in)
         
           ! local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IElement, NElements, NLoadedParticles, NParticles, IError, ParticleID
@@ -1415,14 +1419,14 @@
             !  ElCon = ElementConnectivities10Node
             !else
               ! for NURBS we can apply this too
-              allocate( ElCon(ELEMENTNODES, Counters%NEl) )
+              allocate( ElCon(ELEMENTNODES, Counters%Sum_NEl) )
               ElCon = ElementConnectivities(:,:, IPatch_Temporary) ! we are just rewriting the connectivites
                 
             !end if
          
             ! no need for change here for NURBS
             ! determine which elements lie next to the loaded surface and which side of the elements are adjacent to the loaded surface
-            call DetermineElementsAdjacentSurface(IElTyp, Counters%NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement(:,IPatch_Temporary), NElements, IElements, ISides)
+            call DetermineElementsAdjacentSurface(IElTyp, Counters%Sum_NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement(:,IPatch_Temporary), NElements, IElements, ISides)
             ! IElements(1) has the element number where the traction is applied. That is the only thing we are getting from above subroutine. 
             ! IElements(1) = 40
             
@@ -1447,7 +1451,7 @@
             if ( NElements > 0 ) then ! found at least one ACTIVE element, maybe 2
         
               ! determine total load in x, y and z direction acting on the surface
-              TotalSurfaceLoad = IntegrateVectorSurface(NSurfaceNodes, NGaussPoints, Counters%NodTot, NodeCoord, IConLocal, LoadsLocal, IElements, NumberOfTractionElements, NURBSTractionNodes)
+              TotalSurfaceLoad = IntegrateVectorSurface(NSurfaceNodes, NGaussPoints, Counters%Sum_NodTot, NodeCoord, IConLocal, LoadsLocal, IElements, NumberOfTractionElements, NURBSTractionNodes)
         
               do IElement = 1, NElements ! 1 or 2
               
@@ -1483,7 +1487,7 @@
         
                       if(ParticleStatus(ParticleID)) then ! this MP is loaded
         
-                        LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%NodTot, NodeCoord, Loadtype, IElements, NumberOfTractionElements, NURBSTractionNodes)
+                        LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%Sum_NodTot, NodeCoord, Loadtype, IElements, NumberOfTractionElements, NURBSTractionNodes)
         
                         if ( LoadType == 1 ) then ! assign to solid phase / solid material point
                           call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
@@ -1644,7 +1648,7 @@
           integer(INTEGER_TYPE), intent(in) :: NSurfaceNodes, NGaussPoints, IElTyp, LoadType, ILoadSystem
           integer(INTEGER_TYPE), dimension(NSurfaceNodes), intent(in) :: IConGlobal
           real(REAL_TYPE), dimension(NSurfaceNodes, NVECTOR), intent(in) :: LoadsGlobal
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot, NVECTOR), intent(in) :: NodeCoord
         
           ! local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IElement, NElements, NLoadedParticles, NParticles, IError, ParticleID
@@ -1669,7 +1673,7 @@
           
           ! if CornerControlPoints is 1 then it is a corner node 
           !integer(INTEGER_TYPE), dimension(4) :: CornerControlPoints ! this should be cubic order + 1 = 3 + 1 = 4
-          integer(INTEGER_TYPE), dimension(NXiKnotOrder(1)+1) :: CornerControlPoints ! this should be cubic order + 1 = 3 + 1 = 4 ! Hardcoded for now
+          integer(INTEGER_TYPE), dimension(NURBS%NXiKnotOrder(1)+1) :: CornerControlPoints ! this should be cubic order + 1 = 3 + 1 = 4 ! Hardcoded for now
 
           
           
@@ -1714,7 +1718,7 @@
          
             ! no need for change here for NURBS
             ! determine which elements lie next to the loaded surface and which side of the elements are adjacent to the loaded surface
-            call DetermineElementsAdjacentSurface(IElTyp, Counters%NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement(:,IPatch_Temporary), NElements, IElements, ISides)
+            call DetermineElementsAdjacentSurface(IElTyp, Counters%Sum_NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement(:,IPatch_Temporary), NElements, IElements, ISides)
             
             ! this needs fixing here 
             ! IElements(1) has the element number where the traction is applied. That is the only thing we are getting from above subroutine. 
@@ -1741,7 +1745,7 @@
             if ( NElements > 0 ) then ! found at least one ACTIVE element, maybe 2
         
               ! determine total load in x, y and z direction acting on the surface
-              TotalSurfaceLoad = IntegrateVectorSurface(NSurfaceNodes, NGaussPoints, Counters%NodTot, NodeCoord, IConLocal, LoadsLocal, IElements, NumberOfTractionElements, NURBSTractionNodes)
+              TotalSurfaceLoad = IntegrateVectorSurface(NSurfaceNodes, NGaussPoints, Counters%Sum_NodTot, NodeCoord, IConLocal, LoadsLocal, IElements, NumberOfTractionElements, NURBSTractionNodes)
         
               do IElement = 1, NElements ! 1 or 2
               
@@ -1777,7 +1781,7 @@
         
                       if(ParticleStatus(ParticleID)) then ! this MP is loaded
         
-                        LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%NodTot, NodeCoord, Loadtype, IElements, NumberOfTractionElements, NURBSTractionNodes)
+                        LoadPerParticle = DetermineLoadPerParticle(NLoadedParticles, NSurfaceNodes, IConLocal, LoadsLocal, Counters%Sum_NodTot, NodeCoord, Loadtype, IElements, NumberOfTractionElements, NURBSTractionNodes)
         
                         if ( LoadType == 1 ) then ! assign to solid phase / solid material point
                           call IncreaseFExt(Particles(ParticleIndex), LoadPerParticle,ILoadSystem)
@@ -2237,7 +2241,7 @@
             
             else if (trim(BName)=='$$START_NUMBER_OF_MATERIAL_POINTS') then
               !do IPatch = 1, Counters%NPatches ! loop over patches
-                do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+                do ElementID = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
                 read (GOMunit,*,iostat=ios) DumI1, DumI2
                 call Assert( ios == 0, messageIOS // trim(BName) )   
                 select case(ELEMENTTYPE)
@@ -2298,7 +2302,7 @@
             NSolid = 0
             NLiquid = 0
                 
-            do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+            do ElementID = 1, Counters%NEl(IPatch) ! NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               NSolid = NSolid + NumberOfSolidMaterialPoints(ElementID, IPatch)
               NLiquid = NLiquid + NumberOfLiquidMaterialPoints(ElementID, IPatch)
             end do  ! loop over elements
@@ -2318,7 +2322,7 @@
               
 
                 !do IPatch = 1, Counters%NPatches ! loop over patches
-                do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+                do ElementID = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
         
                 if (ElementMaterialID(ElementID,IPatch) <= 0) then ! inactive element
                   
@@ -2339,7 +2343,7 @@
             else ! double-point formulation  
             
                 !do IPatch = 1, Counters%NPatches ! loop over patches
-              do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+              do ElementID = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
                 if (ElementMaterialID(ElementID,IPatch) <= 0) then ! inactive element
                   
                   if((NumberOfSolidMaterialPoints(ElementID, IPatch) > 0) .or. (NumberOfLiquidMaterialPoints(ElementID, IPatch) > 0)) then
@@ -2431,11 +2435,11 @@
           allocate( IConLocal(NSurfaceNodes), LoadsLocal(NSurfaceNodes, NVECTOR) )
 
           if ( ELEMENTTYPE == TETRAOLD ) then 
-            allocate( ElCon( N_NODES_HOE, Counters%NEl) )
+            allocate( ElCon( N_NODES_HOE, Counters%Sum_NEl) )
             ElCon = ElementConnectivities10Node
             IElTyp = N_NODES_HOE
           else
-            allocate( ElCon( ELEMENTNODES, Counters%NEl) )
+            allocate( ElCon( ELEMENTNODES, Counters%Sum_NEl) )
             ElCon = ElementConnectivities(:,:, IPatch_Temporary)
             IElTyp = ELEMENTNODES
           end if
@@ -2446,7 +2450,7 @@
           if ( IsLoadApplied(LoadsLocal, NSurfaceNodes) ) then ! load values are not all zero
 
             ! determine which elements are located next to the loaded surface and which elementsides are adjacent to the loaded surface
-            call DetermineElementsAdjacentSurface(IElTyp, Counters%NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement(:,IPatch_Temporary), NElements, IElements, ISides)
+            call DetermineElementsAdjacentSurface(IElTyp, Counters%Sum_NEl, NSurfaceNodes, IConLocal, ElCon, IsActiveElement(:,IPatch_Temporary), NElements, IElements, ISides)
 
             if ( NElements > 0 ) then ! found at least one ACTIVE element, maybe 2
 
@@ -2502,6 +2506,8 @@
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         integer(INTEGER_TYPE) :: IPatch
+        
+        if (.not.CalParams%PrescribedVelo%ApplyPrescribedVelo) RETURN
         
         PrescribedDirection(:) = .false.
         
@@ -2725,10 +2731,10 @@
         ! arguments
         integer(INTEGER_TYPE), intent(in) :: NInt, NNod!, LoadType 
         integer(INTEGER_TYPE), dimension(NNod) :: ILoadCon
-        integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NDof
+        integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot) :: NDof
         !real(REAL_TYPE), dimension(NNod, NVECTOR), intent(in) ::  LoadValue
-        real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
-        real(REAL_TYPE), dimension(Counters%NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
+        real(REAL_TYPE), dimension(Counters%Sum_NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
+        real(REAL_TYPE), dimension(Counters%Sum_NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
         integer(INTEGER_TYPE), intent(in) :: ElementUponWhichLoadIsApplied
       
         
@@ -2864,8 +2870,8 @@
                 NormalVector, VectorLength, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch, NXiKnotEntries_SideSpecific, XiKnotEntries_SideSpecific)
             
             ! hardcoded 
-            NormalVector(1) = 0.0
-            NormalVector(2) = -1
+            !NormalVector(1) = 0.0
+            !NormalVector(2) = -1
             !call Normal_T3( I, Coord, ILoadConLocal, NNodLOE, &  
             !                GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
             !                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
@@ -2983,9 +2989,9 @@
         ! THIS IS NEEDED FOR NODAL FORCES TRACTION 
         ! add to global load vector
         do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
-          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch), ILoadSystem, IPatch))!NDof(ILoadConLocal(I))
+          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(NURBS%ElementConnectivities_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch), ILoadSystem, IPatch))!NDof(ILoadConLocal(I))
           do J = 1, NVECTOR
-            RLoad(ND + J) = RLoad(ND + J) + (SE(I,J) * -1.0) ! HARDCODED NEGATIVE 1 
+            RLoad(ND + J) = RLoad(ND + J) + (SE(I,J) )!* -1.0) ! HARDCODED NEGATIVE 1 
             RLoad_DEBUG = RLoad_DEBUG + SE(I,J)!RLoad(ND + J)
           end do
         end do
@@ -3120,10 +3126,10 @@
         ! arguments
         integer(INTEGER_TYPE), intent(in) :: NInt, NNod!, LoadType 
         integer(INTEGER_TYPE), dimension(NNod) :: ILoadCon
-        integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NDof
+        integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot) :: NDof
         !real(REAL_TYPE), dimension(NNod, NVECTOR), intent(in) ::  LoadValue
-        real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
-        real(REAL_TYPE), dimension(Counters%NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
+        real(REAL_TYPE), dimension(Counters%Sum_NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
+        real(REAL_TYPE), dimension(Counters%Sum_NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
         integer(INTEGER_TYPE), intent(in) :: ElementUponWhichLoadIsApplied
       
         
@@ -3370,7 +3376,7 @@
         ! THIS IS NEEDED FOR NODAL FORCES TRACTION 
         ! add to global load vector
         do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
-          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch), ILoadSystem, IPatch))!NDof(ILoadConLocal(I))
+          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(NURBS%ElementConnectivities_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch), ILoadSystem, IPatch))!NDof(ILoadConLocal(I))
           do J = 1, NVECTOR
             !RLoad(ND + J) = RLoad(ND + J) + (SE(I,J)   * -1) ! HARDCODED NEGATIVE 1 
             RLoad_DEBUG = RLoad_DEBUG + (SE(I,J)   * -1) !RLoad(ND + J)
@@ -3832,10 +3838,10 @@
         ! arguments
         integer(INTEGER_TYPE), intent(in) :: NInt, NNod!, LoadType 
         integer(INTEGER_TYPE), dimension(NNod) :: ILoadCon
-        integer(INTEGER_TYPE), dimension(Counters%NodTot) :: NDof
+        integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot) :: NDof
         !real(REAL_TYPE), dimension(NNod, NVECTOR), intent(in) ::  LoadValue
-        real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
-        real(REAL_TYPE), dimension(Counters%NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
+        real(REAL_TYPE), dimension(Counters%Sum_NodTot, NVECTOR), intent(in) :: Coord       ! Coordinates vector
+        real(REAL_TYPE), dimension(Counters%Sum_NodTot*NDOFL), intent(inout) :: RLoad      ! Resulting load vector
         integer(INTEGER_TYPE), intent(in) :: ElementUponWhichLoadIsApplied
       
         
@@ -4088,7 +4094,7 @@
 
         ! add to global load vector
         do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
-          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(IEN_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem_Temporary, IPatch_Temporary), ILoadSystem_Temporary, IPatch_Temporary))!NDof(ILoadConLocal(I))
+          ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(NURBS%ElementConnectivities_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem_Temporary, IPatch_Temporary), ILoadSystem_Temporary, IPatch_Temporary))!NDof(ILoadConLocal(I))
           do J = 1, NVECTOR
             !RLoad(ND + J) = RLoad(ND + J) + SE(I,J)    
             RLoad_DEBUG = RLoad_DEBUG + SE(I,J) !+ RLoad(ND + J)

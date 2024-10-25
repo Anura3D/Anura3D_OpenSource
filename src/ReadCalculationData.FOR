@@ -63,22 +63,22 @@
         ! Material point intialization file that stores data from file *.MP_INIT
         real(REAL_TYPE), dimension(:,:), allocatable :: MPInitFileMatrix
         
-        ! NURBS variables 
-        real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntriesUNIQUE
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntriesUNIQUE
+        ! NURBS variables --> changed these to NURBSType variables 
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntriesUNIQUE
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntriesUNIQUE
         
-        real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntriesUNIQUE
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntriesUNIQUE
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntriesUNIQUE
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntriesUNIQUE
         
-        real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntriesUNIQUE
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntriesUNIQUE
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntriesUNIQUE
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntriesUNIQUE
         
         
-        integer(INTEGER_TYPE) :: Maximum_NXiKnotEntriesUNIQUE 
-        !Maximum_NXiKnotEntriesUNIQUE = 0
-        integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntriesUNIQUE
-        !Maximum_NEtaKnotEntriesUNIQUE = 0
-        integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntriesUNIQUE
+        !integer(INTEGER_TYPE) :: Maximum_NXiKnotEntriesUNIQUE 
+        !!Maximum_NXiKnotEntriesUNIQUE = 0
+        !integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntriesUNIQUE
+        !!Maximum_NEtaKnotEntriesUNIQUE = 0
+        !integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntriesUNIQUE
         !Maximum_NZetaKnotEntriesUNIQUE = 0
        
         
@@ -101,9 +101,9 @@
         !real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
         
         
-        ! Number of load systems in each patch 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NLoadSystems_Traction
-        real(REAL_TYPE), allocatable, dimension(:,:) :: TractionDimensionForEachLoadSystem ! N
+        !! Number of load systems in each patch 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NLoadSystems_Traction
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: TractionDimensionForEachLoadSystem ! N
         
         
         type LoadMultiplierType ! Load multipliers
@@ -240,7 +240,28 @@
           character(len=255) :: FileNameHydraulicHead = 'X'
           integer(INTEGER_TYPE) :: HydraulicHeadFileNumberOfLines = 0
           
-        end type HydraulicHeadType
+         end type HydraulicHeadType
+         
+         
+         
+         
+         
+         type ApplyGeneralizedAlphaTimeSchemeType !This type is for numerical parameters associated with the generalized alpha time scheme            
+            logical :: Switch = .false. ! true = activate generalized alpha time scheme; false = deactivate generalized alpha time scheme
+            real(REAL_TYPE) :: Rho_infty = 0.0 ! Rho_infty = desirable value of spectral radius at infinity. This value is user input but usually has value of 0.818. 
+            real(REAL_TYPE) :: Alpha_m = 0.0 ! Alpha = calculated numerical parameter for acceleration as a function of rho_infty. 
+            real(REAL_TYPE) :: Beta = 0.0 ! Beta = calculated numerical parameter for displacement as a function of rho_infty
+            real(REAL_TYPE) :: Gamma = 0.0 ! Gamma = calculated numerical parameter for velocity as a function of rho_infty
+            
+        end type ApplyGeneralizedAlphaTimeSchemeType
+         
+         
+         
+         
+         
+         
+         
+         
             
         type ParabolicTrajectoryType(vsize)
           integer(INTEGER_TYPE), len :: vsize 
@@ -401,6 +422,8 @@
           type(MPInitializationType):: MPInitialization
           type(HydraulicHeadType):: PrescribedHead
           type(BoundaryConditionsType) :: BoundaryConditions !(:,:)), allocatable :: BoundaryConditions
+          type(ApplyGeneralizedAlphaTimeSchemeType):: ApplyGeneralizedAlphaTimeScheme  ! generalized alpha scheme
+
      
           real(REAL_TYPE) :: TimeIncrement, & ! The size of time increment
                               TotalTime, & ! The total time of simulation
@@ -616,6 +639,238 @@
         end type CalParamType
 
         type(CalParamType(:, :)), allocatable, public, save :: CalParams ! Stores variables that manipulate the Dynamic MPM calculation process
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        type NURBSType
+            
+            ! Knot vector variables 
+            ! Xi 
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntriesUNIQUE
+            real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntriesUNIQUE 
+            real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntries ! Xi vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots       != -1 ! number of univariate basis functions for eta direction 
+            integer(INTEGER_TYPE) :: Maximum_NXiKnotEntriesUNIQUE
+
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder_VolLockSmooth             != -1 ! Xi vector number of entries (reduced order)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries_VolLockSmooth
+            real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntries_VolLockSmooth ! Xi vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth       != -1 ! number of univariate basis functions for eta direction
+            
+            
+            ! Eta
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries
+            real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntriesUNIQUE
+            real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntries ! Eta vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots       != -1 ! number of univariate basis functions for eta direction 
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntriesUNIQUE
+            integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntriesUNIQUE
+            
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder_VolLockSmooth             != -1 ! Xi vector number of entries (reduced order)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries_VolLockSmooth
+            real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntries_VolLockSmooth ! Xi vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth       != -1 ! number of univariate basis functions for eta direction
+            
+            
+            ! Zeta
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries
+            real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntriesUNIQUE
+            real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntries ! Zeta vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots     != -1 ! number of univariate basis functions for zeta direction 
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntriesUNIQUE
+            
+            
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder_VolLockSmooth
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries_VolLockSmooth
+            real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntries_VolLockSmooth ! Zeta vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth     != -1 ! number of univariate basis functions for zeta direction 
+            integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntriesUNIQUE
+            
+            ! Control point variables
+            !integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints_VolLockSmooth 
+        
+            integer(INTEGER_TYPE), allocatable, dimension(:,:)  :: NControlPoints_Traction 
+            integer(INTEGER_TYPE), allocatable, dimension(:,:)  :: NURBS_Traction_Dimension ! this tells us which dimension we are considering based on the integer
+                                                                                            ! e.g., xi, eta, zeta, xi_eta, ...
+            
+            ! MP Prescribed Material Point Velocity --> MULTIPATCH GENERALIZATION
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NElemMPPrescribedVelocity ! -> MP prescribed velocity
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NNodePrescribedVelocity   ! -> Node prescribed velocity
+            
+            
+            
+            ! Knot connectivity array (multipatch rank)
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN ! NURBS coordinates telling you (early) knots that define an element 
+            !integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN ! Knot connectivity
+        
+            !------- volumetric locking (reduced order)
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN_VolLockSmooth ! NURBS coordinates telling you (early) knots that define an element 
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: ElementConnectivities_VolLockSmooth ! Knot connectivity
+        
+            !------- traction
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :,:) :: INN_Traction ! NURBS coordinates telling you (early) knots that define an element 
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :,:) :: ElementConnectivities_Traction ! Knot connectivity
+            
+            
+            
+            
+            ! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
+            !integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS                        ! number of elements 
+        
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS                        ! number of global basis functions 
+                                                                                ! (global here refers to its global domain within the 'super' element)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS                        ! number of local basis functions
+                                                                                ! (local here refers to a knot span i.e. accross one single element)  
+        
+            
+            ! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS_VolLockSmooth                        ! number of elements
+        
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS_VolLockSmooth                        ! number of global basis functions 
+                                                                                ! (global here refers to its global domain within the 'super' element)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS_VolLockSmooth                        ! number of local basis functions
+                                                                                ! (local here refers to a knot span i.e. accross one single element)  
+        
+            
+            !------traction
+            integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nel_NURBS_Traction                        ! number of elements 
+            ! Rank 1 --> LoadSystems
+            ! Rank 2 --> NumberOfPatch
+        
+            integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nnp_NURBS_Traction                        ! number of global basis functions 
+            ! Rank 1 --> LoadSystems
+            ! Rank 2 --> NumberOfPatch
+        
+                                                                        ! (global here refers to its global domain within the 'super' element)
+            integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nen_NURBS_Traction                        ! number of local basis functions
+            ! Rank 1 --> LoadSystems
+            ! Rank 2 --> NumberOfPatch
+                                                                                ! (local here refers to a knot span i.e. accross one single element)  
+            
+            integer(INTEGER_TYPE), allocatable, dimension(:,:) :: NLoadSystems_Traction_NumberOfElements                        ! number of local basis functions
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NLoadSystems_Traction
+            
+            ! Number of active elements
+            !integer(INTEGER_TYPE), allocatable, dimension(:) :: nael_NURBS
+        
+            
+            ! Number of load systems in each patch 
+            !integer(INTEGER_TYPE), allocatable, dimension(:) :: NLoadSystems_Traction
+            real(REAL_TYPE), allocatable, dimension(:,:) :: TractionDimensionForEachLoadSystem ! N
+            
+            
+            
+            
+            ! Maximum counters
+            integer(INTEGER_TYPE) :: Maximum_NControlPoints ! temporarily initialized here
+            integer(INTEGER_TYPE) :: Maximum_NControlPoints_Traction ! temporarily initialized here
+
+            integer(INTEGER_TYPE) :: Maximum_NXiKnotEntries ! temporarily initialized here
+            integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntries ! temporarily initialized here
+            integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntries ! temporarily initialized here  
+        
+            integer(INTEGER_TYPE) :: Maximum_NXiKnotOrder
+            integer(INTEGER_TYPE) :: Maximum_NEtaKnotOrder
+            integer(INTEGER_TYPE) :: Maximum_NZetaKnotOrder
+        
+            integer(INTEGER_TYPE) :: Maximum_NElemMPPrescribedVelocity
+            integer(INTEGER_TYPE) :: Maximum_NNodePrescribedVelocity
+            
+            integer(INTEGER_TYPE) :: Maximum_NLoadSystems_Traction
+            
+            integer(INTEGER_TYPE) :: Maximum_nel_NURBS
+            integer(INTEGER_TYPE) :: Maximum_nnp_NURBS
+            integer(INTEGER_TYPE) :: Maximum_nen_NURBS
+        
+        
+            integer(INTEGER_TYPE) :: Maximum_nel_NURBS_Traction
+            integer(INTEGER_TYPE) :: Maximum_nnp_NURBS_Traction
+            integer(INTEGER_TYPE) :: Maximum_nen_NURBS_Traction
+        
+        
+            ! these need to be part of counters --> I commented these so that we can put them in the CountersType
+            !integer(INTEGER_TYPE) :: Sum_nel_NURBS
+            !integer(INTEGER_TYPE) :: Sum_nael_NURBS
+            !integer(INTEGER_TYPE) :: Sum_NControlPoints
+            
+            
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: NumberOfGlobalControlPointsUniqueMultipatch
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NumberOfUniqueNodes
+            
+            !real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
+            !real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
+            !
+            !real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
+            !real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
+            !
+            !real(REAL_TYPE), allocatable :: OO_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
+            !real(REAL_TYPE), allocatable :: dO_dzeta_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
+        
+            ! Particle index variables 
+            !integer(INTEGER_TYPE) :: maxParticle_previous =0
+            !integer(INTEGER_TYPE) :: GetParticleIndexCounter        
+            !logical :: FirstTimeGetParticleIndex 
+            !! I added this here from MeshInfo.FOR
+            !integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: GetParticleIndex ! (rank 3 for multipatch implementation)
+            !
+            !!> stores material point indices based on subelements
+            !integer(INTEGER_TYPE), dimension(:,:), allocatable :: SubElementMPOrganization !--> number of MPs in each subzone
+            !integer(INTEGER_TYPE), dimension(:,:,:), allocatable :: GetParticleIndexInSubElement !--> storing the actual indices in the matrix
+            !
+            !
+            !! Bound MP Prescribed Velocity
+            !integer(INTEGER_TYPE) :: NBoundMPPrescVelo_X = 0
+            !integer(INTEGER_TYPE) :: NBoundMPPrescVelo_Y = 0
+            !integer(INTEGER_TYPE) :: NBoundMPPrescVelo_Z = 0
+            !
+            !real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_X
+            !real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_Y
+            !real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_Z
+            !
+            !! Moving mesh variables 
+            !integer(INTEGER_TYPE) :: ExtendingMeshPatchID = 0
+            !integer(INTEGER_TYPE) :: CompressingMeshPatchID = 0
+            !integer(INTEGER_TYPE) :: MovingMeshPatchID = 0
+            
+            
+        end type NURBSType
+        
+        
+        type(NURBSType) :: NURBS ! Stores variables that manipulate the Dynamic MPM calculation process
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         character(len=255), dimension(999), public, save :: ActiveParams = 'not defined' ! stores the labels of calculation parameters that are active (dimension = number of lines in CPS file, len = number of columns in CPS file)
            
@@ -1487,7 +1742,13 @@
               
               
               
-              
+              ! GENERALIZED ALPHA TIME SCHEME 
+            else if (trim(BName)=='$$GENERALIZED_ALPHA_TIME_SCHEME') then
+                read(FileUnit, *, iostat=ios) DumI(1), DumR(1) ! DumI = switch on/off; DumR = rho_infty 
+                CalParams%ApplyGeneralizedAlphaTimeScheme%Switch = DumI(1)
+                CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty = DumR(1)
+                
+                call CalculateGeneralizedAlphaTimeSchemeParameters()
               
               
               
@@ -2124,6 +2385,33 @@
 
         
         end subroutine ReadCPS
+        
+        
+        
+        
+        subroutine CalculateGeneralizedAlphaTimeSchemeParameters()
+        ! subroutine to calculate calculation parameters for the generalized alpha time scheme. 
+        ! rho_inty is an input parameter and it is recommended to use rho_infty = (9/11) = 0.818 
+        ! --> Kontoe (2006)
+        implicit none
+        
+        CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m = &
+            (2.0*CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty - 1.0)/& !numerator
+            (1.0 + CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty) !denominator 
+        CalParams%ApplyGeneralizedAlphaTimeScheme%Beta = &
+            (5.0 - 3.0*CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty)& !numerator
+            /( ((1.0 + CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty)**2.0) * (2.0 - CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty) ) !denominator 
+        CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma = &
+            1.5 - CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m 
+        
+        end subroutine CalculateGeneralizedAlphaTimeSchemeParameters
+        
+        
+        
+        
+        
+        
+        
   
         subroutine CheckChangeFEMtoMPM()
         !**********************************************************************
@@ -3299,6 +3587,8 @@
           call WriteLogic(FileUnit, '$$APPLY_SEEPAGE_FACE', [CalParams%BoundaryConditions%UseSeepageFace], 1, .true.) 
           call WriteLogic(FileUnit, '$$APPLY_INFILTRATION', [CalParams%BoundaryConditions%UseInfiltration], 1, .true.) 
           call WriteStringReal(FileUnit, '$$PRESCRIBED_VELOCITY', CalParams%Multipliers%VelocitySolidLoadType, [CalParams%Multipliers%VelocitySolidCurrent, CalParams%Multipliers%VelocitySolidFinal], .true.)
+          
+          call WriteLogicReal(FileUnit, '$$GENERALIZED_ALPHA_TIME_SCHEME', [CalParams%ApplyGeneralizedAlphaTimeScheme%Switch], [CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty], 1,.true.)
 
           ! MOVING MESH 
           call WriteLogic(FileUnit, '$$MOVING_MESH', [CalParams%ApplyMovingMesh], 1, .true.)

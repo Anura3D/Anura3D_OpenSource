@@ -84,11 +84,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError
 
-          allocate(IsEmptyElement(Counters%NEl), stat = IError)
+          allocate(IsEmptyElement(Counters%Sum_NEl), stat = IError)
           IsEmptyElement = .false. ! Initially all fully filled elements should be considered filled
           NEmptyElements = 0
            
-          allocate(IsDanglingElement(Counters%NEl), stat = IError)
+          allocate(IsDanglingElement(Counters%Sum_NEl), stat = IError)
           IsDanglingElement = .false.
 
           NSkipEleActivation = 0
@@ -177,10 +177,10 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError
 
-          allocate(Holes(Counters%NEl), stat = IError)
+          allocate(Holes(Counters%Sum_NEl), stat = IError)
           Holes = 0
           
-          allocate(CheckedElements(Counters%NEl), stat = IError)
+          allocate(CheckedElements(Counters%Sum_NEl), stat = IError)
           CheckedElements = 0 ! No elements checked, no groups found
           allocate(GroupStorage(CalParams%RecursionThreshold), stat = IError)
           GroupStorage = 0 
@@ -260,7 +260,7 @@
           integer(INTEGER_TYPE) :: IPatch
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
             if ((IsActiveElement(IElement,IPatch).and.(ActivationStatus==1)).or. &
                 (.not.IsActiveElement(IElement,IPatch).and.(ActivationStatus==0))) then ! Loop over de-/activated elements
               if (CheckedElements(IElement)==0) then ! The element has not yet been checked
@@ -389,7 +389,7 @@
           GroupSizes = 0
           GroupCounter = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
             if ( ((IsActiveElement(IElement,IPatch).and.(ActivationStatus==1)).or. &
                   (.not.IsActiveElement(IElement,IPatch).and.(ActivationStatus==0))).and. &
                  (CheckedElements(IElement)/=0) ) then
@@ -441,7 +441,7 @@
           NEmptyElements = 0
           NActivatedElements = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
             if (.not.IsActiveElement(IElement,IPatch)) then ! Check for deactivated elements
               IGroup = CheckedElements(IElement)
               if (IGroup>0) then ! Element assigned to group
@@ -489,12 +489,12 @@
             end if
             !Counters%NAEl = Counters%NAEl + NActivatedElements
             
-            nael_NURBS(IPatch) = nael_NURBS(IPatch) + NActivatedElements
+            Counters%NAEl(IPatch) = Counters%NAEl(IPatch) + NActivatedElements
             
-            allocate(ActiveElement(Counters%NAEl, Counters%NPatches), stat = IError) ! need to generalize this for multipatch
+            allocate(ActiveElement(Counters%Sum_NAEl, Counters%NPatches), stat = IError) ! need to generalize this for multipatch
             AElCounter = 0
             do IPatch = 1, Counters%NPatches ! loop over patches
-            do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+            do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
               if (IsActiveElement(IElement,IPatch)) then
                 AElCounter = AElCounter + 1
                 ActiveElement(AElCounter, IPatch) = IElement
@@ -570,11 +570,11 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
 
-          allocate(CheckElements(Counters%NEl), stat = IError) !, Counters%NPatches
+          allocate(CheckElements(Counters%Sum_NEl), stat = IError) !, Counters%NPatches
           CheckElements = Holes ! Copy Holes array for noting which elements have been checked
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
             if ( (Holes(IElement)>0) .and. (CheckElements(IElement)>0) ) then ! Loop over holes !, IPatch_Temporary
               
               ! Set up array containing element ID's of the hole
@@ -583,7 +583,7 @@
               
               ! Determine elements of considered group and mark elements belonging to it as checked
               ElementCounter = 1
-              do CheckElement = IElement, Counters%NEl
+              do CheckElement = IElement, Counters%Sum_NEl
                 if (Holes(CheckElement)==IGroup) then
                   CheckElements(CheckElement) = 0 ! Set to checked !, IPatch_Temporary
                   GroupElements(ElementCounter) = CheckElement
@@ -630,7 +630,7 @@
      
           IsDanglingElement = .false.
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl !
+          do IElement = 1, Counters%NEl(IPatch)!Counters%NEl !
             if (IsActiveElement(IElement,IPatch)) then ! Check for activated elements
               IGroup = CheckedElements(IElement)
               if (IGroup>0) then ! Element assigned to group
@@ -667,7 +667,7 @@
           
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
             if (CheckedElements(IElement)==0) then
               IsAllElementsChecked = .false.
               if (CalParams%OutputDebugData) then
@@ -704,7 +704,7 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: SurroundingElements
 
             ! Search for all activated elements surrounding / connected to the group
-            call SearchSurroundingElements(Counters%NEl, NGroupElements, GroupElements, NSurroundingElements, SurroundingElements)
+            call SearchSurroundingElements(Counters%Sum_NEl, NGroupElements, GroupElements, NSurroundingElements, SurroundingElements)
 
             ! Check material of surrounding elements and assign material to elements of hole
             call SetMaterialHoleElements(NGroupElements, GroupElements, NSurroundingElements, SurroundingElements)

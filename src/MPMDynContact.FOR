@@ -147,11 +147,11 @@
             allocate(LumpedMassSys(Counters%N), stat = IError)
             allocate(TotalVelocitySys(Counters%N), stat = IError)
             allocate(AccelerationSys(Counters%N), stat = IError)
-            allocate(ContactNodeNormals(NVECTOR, Counters%NodTot), stat = IError)
-            allocate(InterfaceNodes(Counters%NodTot), stat = IError)
-            allocate(NodeElement(Counters%NodTot, 100), stat = IError)
-            allocate(InterfaceNodesAdhesion(Counters%NodTot,CalParams%NumberOfMaterials), stat = IError)
-            allocate(ContactSurfaceSoilElements(Counters%NEl), stat = IError)
+            allocate(ContactNodeNormals(NVECTOR, Counters%Sum_NodTot), stat = IError)
+            allocate(InterfaceNodes(Counters%Sum_NodTot), stat = IError)
+            allocate(NodeElement(Counters%Sum_NodTot, 100), stat = IError)
+            allocate(InterfaceNodesAdhesion(Counters%Sum_NodTot,CalParams%NumberOfMaterials), stat = IError)
+            allocate(ContactSurfaceSoilElements(Counters%Sum_NEl), stat = IError)
           else
             allocate(LumpedMassSys(1), stat = IError)
             allocate(TotalVelocitySys(1), stat = IError)
@@ -187,8 +187,8 @@
         implicit none
         
         ! local variables
-        integer(INTEGER_TYPE), dimension(Counters%nEntity,Counters%NodTot) :: EntityNodes      !for each entity a list of the global nodes belonging to elements containing particles belonging to this entity 
-        integer(INTEGER_TYPE), dimension(CalParams%NumberOfMaterials,Counters%NodTot) :: MaterialNodes      
+        integer(INTEGER_TYPE), dimension(Counters%nEntity,Counters%Sum_NodTot) :: EntityNodes      !for each entity a list of the global nodes belonging to elements containing particles belonging to this entity 
+        integer(INTEGER_TYPE), dimension(CalParams%NumberOfMaterials,Counters%Sum_NodTot) :: MaterialNodes      
         real(REAL_TYPE), dimension(NVECTOR) :: Unormal      !unit normal vector at node for specific entity
         real(REAL_TYPE), dimension(NVECTOR) :: VelDiff      !Difference in entity and system velocity
         real(REAL_TYPE), dimension(3) :: CrossP      !cross product
@@ -217,7 +217,7 @@
         
         do IPatch = 1, Counters%NPatches ! loop over patches
         ! loop through all nodes in model, in global coordinate system
-        do nn=1,NControlPoints(IPatch)!Counters%NodTot
+        do nn=1,Counters%NodTot(IPatch)!Counters%NodTot
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(nn,IPatch)
         
@@ -388,7 +388,7 @@
 
         implicit none
         
-          integer(INTEGER_TYPE), dimension(Counters%nEntity,Counters%NodTot), intent(inout) :: EntityNodes
+          integer(INTEGER_TYPE), dimension(Counters%nEntity,Counters%Sum_NodTot), intent(inout) :: EntityNodes
      
           ! local variables
           integer(INTEGER_TYPE) :: iel, iael, iEnt, inode, nn, I
@@ -403,7 +403,7 @@
           !EntityNodes
           !do iael=1,Counters%Nael                       !loop through all elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             iel = ActiveElement(iael, IPatch)
             do ient=1,Counters%nEntity                    !loop through all entities
               if (EntityElements(ient,iel,IPatch_Temporary) == 1) then !entity contains this element
@@ -419,7 +419,7 @@
           if (CalParams%ApplyContactMeshBoundary) then
             
               do IPatch = 1, Counters%NPatches ! loop over patches
-              do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                   
@@ -445,7 +445,7 @@
 
         implicit none
         
-          integer(INTEGER_TYPE), dimension(CalParams%NumberOfMaterials,Counters%NodTot), intent(inout) :: MaterialNodes
+          integer(INTEGER_TYPE), dimension(CalParams%NumberOfMaterials,Counters%Sum_NodTot), intent(inout) :: MaterialNodes
      
           ! local variables
           integer(INTEGER_TYPE) :: iel, iael, iEnt, inode, nn
@@ -457,7 +457,7 @@
           MaterialNodes = 0
 
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
           !do iael=1,Counters%Nael                       !loop through all elements
             iel = ActiveElement(iael, IPatch)
             do ient=1,CalParams%NumberOfMaterials                    !loop through all materials
@@ -570,7 +570,7 @@
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
+          do IEl = 1, Counters%NEl(IPatch)!Counters%NEl
             do INode=1, ELEMENTNODES
               NN = ElementConnectivities(INode, IEl, IPatch_Temporary)
               I = NodeElement(NN, 100) + 1
@@ -703,8 +703,8 @@
           
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
 
-          allocate(AdhesionVector(Counters%NodTot, CalParams%NumberOfMaterials), stat=IError) 
-          allocate(FrictionVector(Counters%NodTot, CalParams%NumberOfMaterials), stat=IError) 
+          allocate(AdhesionVector(Counters%Sum_NodTot, CalParams%NumberOfMaterials), stat=IError) 
+          allocate(FrictionVector(Counters%Sum_NodTot, CalParams%NumberOfMaterials), stat=IError) 
           
           FrictionVector = 0.0
           AdhesionVector = 0.0
@@ -756,7 +756,7 @@
                    
           do K = 1, CalParams%NumberOfMaterials 
             do IPatch = 1, Counters%NPatches ! loop over patches
-              do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
                   
@@ -801,8 +801,8 @@
           
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
 
-          allocate(AdhesionVector(Counters%NodTot, CalParams%NumberOfMaterials), stat=IError) 
-          allocate(FrictionVector(Counters%NodTot, CalParams%NumberOfMaterials), stat=IError) 
+          allocate(AdhesionVector(Counters%Sum_NodTot, CalParams%NumberOfMaterials), stat=IError) 
+          allocate(FrictionVector(Counters%Sum_NodTot, CalParams%NumberOfMaterials), stat=IError) 
           
           FrictionVector = 0.0
           AdhesionVector = 0.0
@@ -862,7 +862,7 @@
                    
           do K = 1, CalParams%NumberOfMaterials 
               do IPatch = 1, Counters%NPatches ! loop over patches
-            do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+            do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
                 
@@ -907,8 +907,8 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
 
-          allocate(Element(Counters%NEl), stat=IError)
-          allocate(GlobContElement(Counters%NEl), stat=IError) 
+          allocate(Element(Counters%Sum_NEl), stat=IError)
+          allocate(GlobContElement(Counters%Sum_NEl), stat=IError) 
         
           if (allocated(ContactSurfaces) ) then
             deallocate(ContactSurfaces, stat = IError)
@@ -976,7 +976,7 @@
                do ISide = 1, 4
                  DummyElem = ContactVolumes(IEl,1)  
                  ContElem = BoundaryElementSurface(DummyElem, ISide, &
-                                                IsActiveElement(:,IPatch), Counters%NEl)
+                                                IsActiveElement(:,IPatch), Counters%Sum_NEl)
         !Returns 1 if the element adjacent to side ISide of IElement is deactivated.
                  if (ContElem==1) then 
                    do INode = 1, 6 ! Loop over nodes of side I
@@ -1042,7 +1042,7 @@
             CheckedLoadedSurface = .false.
             NFoundSides = 0
             do IPatch = 1, Counters%NPatches ! loop over patches
-           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+           do IEl = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
              do I = 1, 4
                AdjacentElement = GetAdjacentElement(IEl, I, IPatch_Temporary) 
                if (AdjacentElement==0) then  
@@ -1084,7 +1084,7 @@
        else
          do ISurf= 1, NContSur
              do IPatch = 1, Counters%NPatches ! loop over patches
-           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
+           do IEl = 1, Counters%NEl(IPatch)!Counters%NEl
              if (Element(IEl)) then 
                do I = 1, 4 ! Loop over sides
                  NFoundNodes = 0
@@ -1161,9 +1161,9 @@
 
             if (NContactElm==0) RETURN
 
-            allocate(ContactNodeNormals(3, Counters%NodTot), stat = IError)
+            allocate(ContactNodeNormals(3, Counters%Sum_NodTot), stat = IError)
             ContactNodeNormals = 0.0
-            allocate(InterfaceNodes(Counters%NodTot), stat = IError)
+            allocate(InterfaceNodes(Counters%Sum_NodTot), stat = IError)
             InterfaceNodes = .false.
        
                do I = 1, NContactElm
@@ -1174,7 +1174,7 @@
                end do
             NSideNodes = GetNSideNodes(ELEMENTNODES)
 
-            allocate(BoundaryElements(Counters%NEl), stat = IError)
+            allocate(BoundaryElements(Counters%Sum_NEl), stat = IError)
             BoundaryElements = 0
               do I = 1, NContactElm
                ElementID = ContactSurfaceElmNodes (I, 1)
@@ -1182,8 +1182,8 @@
                BoundaryElements(ElementID) = SideID
               end do
 
-            call DetermineNodeLocalCS(Counters%NodTot, NDIM, &
-                                      ELEMENTNODES, Counters%NEl, &
+            call DetermineNodeLocalCS(Counters%Sum_NodTot, NDIM, &
+                                      ELEMENTNODES, Counters%Sum_NEl, &
                                       NSideNodes, &
                                       NodalCoordinates(:,:,IPatch_Temporary), ElementConnectivities(:,:,IPatch_Temporary), &
                                       BoundaryElements, &
@@ -1191,7 +1191,7 @@
 
             NInterfaceNodes = 0
             do IPatch = 1, Counters%NPatches ! loop over patches
-            do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+            do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                 
@@ -1245,8 +1245,8 @@
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
 
-          allocate(Element(Counters%NEl), stat=IError)
-          allocate(GlobContElement(Counters%NEl), stat=IError) 
+          allocate(Element(Counters%Sum_NEl), stat=IError)
+          allocate(GlobContElement(Counters%Sum_NEl), stat=IError) 
         
           if (allocated(ContactSurfaces) ) then
             deallocate(ContactSurfaces, stat = IError)
@@ -1305,7 +1305,7 @@
                do ISide = 1, 3
                  DummyElem = ContactVolumes(IEl,1)  
                  ContElem = BoundaryElementSurface(DummyElem, ISide, &
-                                                IsActiveElement(:,IPatch), Counters%NEl)
+                                                IsActiveElement(:,IPatch), Counters%Sum_NEl)
         !Returns 1 if the element adjacent to side ISide of IElement is deactivated.
                  if (ContElem==1) then 
                    do INode = 1, 2 ! Loop over nodes of side I
@@ -1384,7 +1384,7 @@
             CheckedLoadedSurface = .false.
             NFoundSides = 0
             do IPatch = 1, Counters%NPatches ! loop over patches
-           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl
+           do IEl = 1, Counters%NEl(IPatch)!Counters%NEl
              do I = 1, 4
                AdjacentElement = GetAdjacentElement(IEl, I, IPatch_Temporary) 
                if (AdjacentElement==0) then  
@@ -1426,7 +1426,7 @@
        else
          do ISurf= 1, NContSur
              do IPatch = 1, Counters%NPatches ! loop over patches
-           do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+           do IEl = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
              if (Element(IEl)) then 
                do I = 1, 3 ! Loop over sides
                  NFoundNodes = 0
@@ -1505,7 +1505,7 @@
 
        if (NContactElm==0) RETURN
 
-       allocate(ContactNodeNormals(2, Counters%NodTot), stat = IError)
+       allocate(ContactNodeNormals(2, Counters%Sum_NodTot), stat = IError)
        allocate(NNodes(3), stat = IError)
        allocate(DVectors(3,2), stat = IError)
        allocate(NNormals(3,2), stat = IError)
@@ -1514,7 +1514,7 @@
        allocate(MatNodesCood(NContactElm,2), stat = IError)
 
        ContactNodeNormals = 0.0
-       allocate(InterfaceNodes(Counters%NodTot), stat = IError)
+       allocate(InterfaceNodes(Counters%Sum_NodTot), stat = IError)
        InterfaceNodes = .false.
 
        do I = 1, NContactElm
@@ -1525,7 +1525,7 @@
        end do
        NSideNodes = GetNSideNodes(ELEMENTNODES)
 
-       allocate(BoundaryElements(Counters%NEl), stat = IError)
+       allocate(BoundaryElements(Counters%Sum_NEl), stat = IError)
        BoundaryElements = 0
        do I = 1, NContactElm
            ElementID = ContactSurfaceElmNodes (I, 1)

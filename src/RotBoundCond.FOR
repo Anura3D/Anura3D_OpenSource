@@ -818,7 +818,7 @@
 				do J= 1, 4
 					Point1=CornerNodes(I, J, :)
                     do IPatch = 1, Counters%NPatches ! loop over patches
-					do K=1, NControlPoints(IPatch)!Counters%NodTot			
+					do K=1, Counters%NodTot(IPatch)!Counters%NodTot			
                         
 						Point2=NodalCoordinates(K,:, IPatch_Temporary)
 						Dist=Distance(Point1, Point2, IDim)
@@ -838,7 +838,7 @@
               
               NBoundaryRadiusNodes = 0
               do IPatch = 1, Counters%NPatches ! loop over patches
-              do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                   
@@ -855,7 +855,7 @@
 
               NBoundaryRadiusNodes = 0
               do IPatch = 1, Counters%NPatches ! loop over patches
-              do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                   
@@ -878,7 +878,7 @@
             ! Fill the nodes that are fixed in x-z-plane
             NfixY=0 
             do IPatch = 1, Counters%NPatches ! loop over patches
-              do I = 1, NControlPoints(IPatch)!Counters%NodTot
+              do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                   
@@ -894,7 +894,7 @@
               XZFixedNodes = 0
 			  NfixY=0
               do IPatch = 1, Counters%NPatches ! loop over patches
-              do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+              do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                   
@@ -983,7 +983,7 @@
           ! local variables
           integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 3D functionality
           integer(INTEGER_TYPE) :: IError
-          allocate(IRotation(Counters%NodTot), stat = IError)
+          allocate(IRotation(Counters%Sum_NodTot), stat = IError)
           
           IRotation = 0
           NRotNodes = 0
@@ -993,7 +993,7 @@
             RotMat = 0.0
             IRotMat = 0.0
             
-            call InitialiseRotationBC(Counters%NodTot, N_NODES_HOE, Counters%NEl, &
+            call InitialiseRotationBC(Counters%Sum_NodTot, N_NODES_HOE, Counters%Sum_NEl, &
                                       ElementConnectivities10Node, ELEMENTNODES)
           else
             allocate(RotMat(1,1,1), IRotMat(1,1,1), stat = IError)
@@ -1058,7 +1058,7 @@
 
       integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 3D functionality
       integer(INTEGER_TYPE) :: NRotNodesLoc
-      integer(INTEGER_TYPE), dimension(Counters%NodTot) :: IRot, NDofEx
+      integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot) :: IRot, NDofEx
       real(REAL_TYPE) :: RMat(IDim, IDim, *) ! third dimension can be NRotationMatrices (if ApplyRotBoundCond) or =1 (all other cases)
       real(REAL_TYPE), dimension(Counters%N) :: V_In, V_Out
       ! local variables
@@ -1074,7 +1074,7 @@
       If (NRotNodesLoc == 0) RETURN
       
       do IPatch = 1, Counters%NPatches ! loop over patches
-      do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+      do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
           

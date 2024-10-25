@@ -69,15 +69,15 @@
               if (NFORMULATION == 1) then ! 1 Constituent
                 if (MatParams(IMatSet)%MaterialType == '1-phase-liquid'.or.MatParams(IMatSet)%MaterialPhases == '1-phase-liquid') then
           
-                  allocate(NodalDensity(Counters%NodTot), stat = IError)
+                  allocate(NodalDensity(Counters%Sum_NodTot), stat = IError)
                   NodalDensity = 0.0
 
-                  allocate(ActiveNodeElementVolume(Counters%NodTot), stat = IError)
+                  allocate(ActiveNodeElementVolume(Counters%Sum_NodTot), stat = IError)
                   ActiveNodeElementVolume = 0.0
           
                   ActiveNode = .false.
                   
-                  allocate(IsElemWithLiquidFreeSurfMP(Counters%NEl), stat = IError)
+                  allocate(IsElemWithLiquidFreeSurfMP(Counters%Sum_NEl), stat = IError)
                   IsElemWithLiquidFreeSurfMP = .false. ! Initially liquid free surface material points are not detected since all elements are fully filled, and IsElemWithLiquidFreeSurfMP is false                  
               
                 end if
@@ -86,15 +86,15 @@
               
               if (.not.(NFORMULATION == 1)) then ! 2 constituents
           
-                  allocate(NodalDensity(Counters%NodTot), stat = IError)
+                  allocate(NodalDensity(Counters%Sum_NodTot), stat = IError)
                   NodalDensity = 0.0
 
-                  allocate(ActiveNodeElementVolume(Counters%NodTot), stat = IError)
+                  allocate(ActiveNodeElementVolume(Counters%Sum_NodTot), stat = IError)
                   ActiveNodeElementVolume = 0.0
           
                   ActiveNode = .false.
                   
-                  allocate(IsElemWithLiquidFreeSurfMP(Counters%NEl), stat = IError)
+                  allocate(IsElemWithLiquidFreeSurfMP(Counters%Sum_NEl), stat = IError)
                   IsElemWithLiquidFreeSurfMP = .false. ! Initially liquid free surface material points are not detected since all elements are fully filled, and IsElemWithLiquidFreeSurfMP is false
               
               end if
@@ -192,7 +192,7 @@
                   !do IAEl = 1, Counters%NAEl 
                   
                   do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over all patches
-                      do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+                      do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
                       
                     IEl = ActiveElement(IAEl,IPatch)
                     NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
@@ -212,7 +212,7 @@
            
                   ActiveNodeElementVolume = 0.0
                   do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
-                  do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points 
+                  do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points 
                       
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                       
@@ -228,7 +228,7 @@
                   end do ! loop over control points 
                   end do ! loop over patches
                   do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
-                  do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                  do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
                       
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                       
@@ -239,7 +239,7 @@
                   end do ! loop over patches
           
                   do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
-                  do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+                  do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
                       
                       
                       GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
@@ -678,7 +678,7 @@
           
           
           do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over all patches
-          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
           !do IAEl = 1, Counters%NAEl
               IElement = ActiveElement(IAEl, IPatch)
 

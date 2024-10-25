@@ -82,7 +82,7 @@
             Momentum, MomentumW, RateofMomentumW, WaterInertia, &
             MomentumG, RateofMomentumG, GasInertia
 
-        real(REAL_TYPE), dimension(Counters%NodTot,NVECTOR) :: PrescribedVelocityNodes
+        real(REAL_TYPE), dimension(Counters%Sum_NodTot,NVECTOR) :: PrescribedVelocityNodes
 
         logical DoSystem                              !CC - flag used to do system velocity too...
 
@@ -120,6 +120,15 @@
           !do ii = 1, Counters%N_VolLockSmooth
           !    TotalMass_Quadratic = TotalMass_Quadratic + LumpedMassDry_VolLockSmooth(ii,1)
           !end do
+          
+          
+          
+          if ((CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /= 1)) then 
+              call MapAccAndVeloP2NGeneralizedAlpha(LumpedMassDry)  ! --> 
+          end if 
+          
+          
+          
 
           ! Form the total lumped mass by adding the lumped masses of all entities
           if (CalParams%ApplyContactAlgorithm) then
@@ -241,13 +250,13 @@
               !    RateofMomentumW(ii,1) = ExtLoadWater(ii,1)
               !end do 
               
-              !if (CalParams%IStep==403 .and. CalParams%TimeStep==1) then 
+              !if (CalParams%IStep==201 .and. CalParams%TimeStep==1) then 
               !    
               !    RateofMomentumWNet = RateofMomentumW(:,1) - ExtLoadWater(:,1)!(GravityLoadWater(:,1) - IntLoadWater(:,1) + QVW(:,1))
               !    
               !end if 
-              !!
-              !do ii = 1, 50
+              !
+              !do ii = 1, 46
               !
               !    RateofMomentumW(ii,1) = RateofMomentumW(ii,1) - RateofMomentumWNet(ii)
               !    
@@ -939,7 +948,7 @@
           maxParticle = 1
           maxEl       = 1
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IAEl = 1, NAEl_NURBS(IPatch)!Counters%NAEl ! loop over active elements
+          do IAEl = 1, Counters%NAEl(IPatch)!Counters%NAEl ! loop over active elements
              NEl = ActiveElement(IAEl,IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
@@ -950,7 +959,7 @@
           NonAdvectiveFluxAirInWater = 0.0
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IAEl = 1, NAEl_NURBS(IPatch) ! loop over active elements !Counters%NAEl
+          do IAEl = 1, Counters%NAEl(IPatch) ! loop over active elements !Counters%NAEl
             IEl = ActiveElement(IAEl,IPatch)
               ! Determine number of integration points inside element
               if (IsParticleIntegration(IEl, IPatch) ) then ! True - particle based integration, false - Gauss point based integration
@@ -1057,7 +1066,7 @@
           AdvectiveFluxDarcyAir = 0.0
           
           do IPatch = 1, Counters%NPatches ! Loop over patches
-          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+          do IEl = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over all elements
             do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
               
               ParticleIndex = GetParticleIndex(IPart,IEl, IPatch) ! get the particle ID
@@ -1180,7 +1189,7 @@
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%NodTot,NVECTOR), intent(out) :: PrescribedVelocityNodes
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot,NVECTOR), intent(out) :: PrescribedVelocityNodes
           ! Local variables
           real(REAL_TYPE), dimension(Counters%N) :: DofPrescribedVelocity
           real(REAL_TYPE), dimension(Counters%N) :: ISPrescribedDof
@@ -1200,7 +1209,7 @@
               
                   if (CalParams%PrescribedVelo%NNodePrescribedVelo(IPatch)>0) then ! prescribed velocity at the nodes
                   
-                      do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
+                      do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot !loop nodes
                       
                           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
                       
@@ -1216,7 +1225,7 @@
 
                       !do IPatch = 1, Counters%NPatches ! loop over patches
                   
-                      do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot !loop nodes
+                      do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot !loop nodes
                       
                           ! global node ID
                           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
@@ -1304,7 +1313,7 @@
            
            if (DoConsiderReactionForces) then ! Compute in global coordinate system for output
              do IPatch = 1, Counters%NPatches ! loop over patches
-               do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+               do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
                    GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
                !IDoF = ReducedDof(I)
                IDoF = ReducedDof(GlobalNodeID)
@@ -1397,7 +1406,7 @@
            DoConsiderReactionForces =  IsPrescribedVelocity 
 
            if (DoConsiderReactionForces) then
-             do I = 1, NControlPoints(IPatch_Temporary)!Counters%NodTot
+             do I = 1, Counters%NodTot(IPatch_Temporary)!Counters%NodTot
                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch_Temporary)
                IDoF = ReducedDof(I)
                do J = 1, NDOFL
@@ -1506,6 +1515,118 @@
           end do ! loop over all degrees-of-freedom
         
         end subroutine ApplyDampingForceGas
+        
+        
+        
+        
+        
+        subroutine MapAccAndVeloP2NGeneralizedAlpha(LumpedMassDry)
+        !**********************************************************************
+        !
+        ! Function:  to map the MP acceleration vector from MP to node 
+        !
+        !
+        !**********************************************************************
+
+        implicit none
+        
+        real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: LumpedMassDry
+          
+          ! Local variables
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape
+          real(REAL_TYPE) :: ParticleMass
+          
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn, IPatch
+
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+          !real(REAL_TYPE), dimension(NVECTOR, Counters%nEntity) :: AccMassGeneralizedAlpha, VeloMassGeneralizedAlpha
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: AccMassGeneralizedAlpha, VeloMassGeneralizedAlpha
+          
+          
+          AccMassGeneralizedAlpha = 0.0
+          VeloMassGeneralizedAlpha = 0.0
+          AccelerationSoilGeneralizedAlpha = 0.0
+          TotalVelocitySoilGeneralizedAlpha = 0.0
+         
+          NoEn = Counters%nEntity
+          
+          do IPatch = 1, Counters%NPatches
+              
+              Ni = 0
+          !if (CalParams%TimeStep == 1) RETURN ! because assume initially ParticleAcceleration = ParticleVelocity = 0.0
+       
+          do IAEl = 1, Counters%NAEl(IPatch) ! loop over all elements
+            
+            IEl = ActiveElement(IAEl, IPatch)
+            
+            do I = 1, NVECTOR
+                Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) ) + I
+            end do
+            
+            do IPart = 1, NPartEle(IEl, IPatch) ! loop over all material points in element
+               ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+
+              if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex) == MaterialPointTypeSolid) ) then ! Only if NumberOfLayers = 1 or SOLID Material Point
+                
+                  ParticleAcceleration = AccelerationArray(ParticleIndex,:) !get particle acceleration vector
+                  ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle acceleration vector
+                  ParticleMass = MassArray(ParticleIndex) !get particle mass
+                  PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
+              
+                if (CalParams%ApplyContactAlgorithm) then
+                  iEntity = EntityIDArray(ParticleIndex)
+                else
+                  iEntity = 1
+                end if
+                
+                !do I=1,NVECTOR
+                !  Mom(I, :, iEntity) = Mom(I, :, iEntity) + ParticleMass * PartShape(:) * ParticleVelocity(I)
+                !end do
+                
+                ! initialize 
+                AccMassGeneralizedAlpha = 0.0
+                VeloMassGeneralizedAlpha = 0.0
+
+                ! nodal acceleration in directions from 1 to NDIM
+                do I=1,NVECTOR
+                    
+                    AccMassGeneralizedAlpha(I, :, iEntity) = AccMassGeneralizedAlpha(I, :, iEntity) &
+                            + (ParticleMass * PartShape(:) * ParticleAcceleration(I)) ! --> this value is for 1 particular node, row 1 is for X and row 2 is for Y... 
+                            !/LumpedMassDry(I, :, iEntity)
+                    VeloMassGeneralizedAlpha(I, :, iEntity) = VeloMassGeneralizedAlpha(I, :, iEntity) &
+                            + (ParticleMass * PartShape(:) * ParticleVelocity(I)) ! --> this value is for 1 particular node, row 1 is for X and row 2 is for Y... 
+                            !/LumpedMassDry(I, :, iEntity)
+                end do
+              
+              end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+            end do ! loop over material points in element
+            
+            ! do I = 1, NVECTOR
+            !  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumMassX( 1:ELEMENTNODES, 1:NoEn )
+            !  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
+            !end do
+            
+            do I = 1, NVECTOR !--> 1 corresponds to X-direction, 2 corresponds to Y-direction, 3 corresponds to Z-direction  
+                ! check the index on the LumpedMassDry vector 
+                !AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + AccMassGeneralizedAlpha( I, 1:ELEMENTNODES, 1:NoEn )!/ LumpedMassDry( Ni(I, 1:ELEMENTNODES), 1:NoEn )) !this is elementwise division 
+                AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + (AccMassGeneralizedAlpha( I, 1:ELEMENTNODES, 1:NoEn ) / LumpedMassDry( Ni(I, 1:ELEMENTNODES), 1:NoEn )) !this is elementwise division 
+                TotalVelocitySoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = TotalVelocitySoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + (VeloMassGeneralizedAlpha( I, 1:ELEMENTNODES, 1:NoEn ) / LumpedMassDry( Ni(I, 1:ELEMENTNODES), 1:NoEn ))
+            
+            end do
+          end do ! loop over Eelements
+          
+          
+          
+          end do ! loop over patches
+          
+        end subroutine MapAccAndVeloP2NGeneralizedAlpha
+        
+        
+        
+        
          
 
         subroutine MapMomentumAndMassP2N(Momentum, LumpedMass)
@@ -1557,7 +1678,7 @@
               Ni = 0
               Mom = 0
               
-          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
 
               
               IEl = ActiveElement(IAEl,IPatch)
@@ -1667,7 +1788,7 @@
               Ni = 0
               Mom = 0
               
-          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
         
               
               IEl = ActiveElement(IAEl,IPatch)
@@ -1677,7 +1798,7 @@
                       
                   Ni(I, 1:ELEMENTNODES_VolLockSmooth) = &
                       ReducedDof_VolLockSmooth( & !Multipatch_Connecting_Local_To_Global_ControlPoints(&
-                      IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch))  + I ! ElementNodes correspond to Element control points in IGA !,IPatch
+                      NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch))  + I ! ElementNodes correspond to Element control points in IGA !,IPatch
         
               end do
               LumMassX = & 
@@ -1899,7 +2020,7 @@
           Momentum = 0.0
           
           do IPatch = 1, Counters%NPatches ! Loop over patches
-          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+          do IEl = 1, Counters%NEl(IPatch) !Counters%NEl ! loop over all elements
             do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in the element (keeping global ID)
               
               ParticleIndex = GetParticleIndex(IPart,IEl, IPatch) ! get the particle global ID
@@ -2039,6 +2160,30 @@
             ! --> END: only for contact algorithm
             
           end do ! loop over all degrees of freedom
+          
+          
+          
+          
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!!!!!!! GENERALIZED ALPHA SCHEME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.)  .and. (CalParams%TimeStep /= 1) ) then !Interpolate accelerations for the generalized alpha scheme 
+          ! Generalized Alpha scheme only works after the first timestep. First timestep is always explicit. 
+              do IDOF = 1, Counters%N ! loop over all degrees of freedom
+                do J = 1, Counters%nEntity ! loop over all entities
+                    AccelerationSoil(IDOF,J) = &
+                        ( AccelerationSoil(IDOF,J) - (CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m * AccelerationSoilGeneralizedAlpha(IDOF,J)) ) * PBoundary(IDOF) & !Numerator
+                        / (1 - CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m) !Denominator 
+                    !In this case alpha_m contols your acceleration solution. This is OK and generalized according to Tran and Solowski (2020) and Kontoe (2006). 
+                    !Need to think about the force solution... Alpha_f needs to be less than 0.5 for unconditional stability. 
+                end do ! loop over all entities
+              end do ! loop over all degrees of freedom
+          end if 
+          
+          
+          
          
         end subroutine CalculateIncrementalNodalAcceleration
 
@@ -2170,11 +2315,11 @@
                   
                   
                   ! I moved this here so that we can have continuous updating of the ymax 
-                  xMax= maxval(NodalCoordinates(1:NControlPoints(IPatch),1,IPatch))   
-                  yMin= minval(NodalCoordinates(1:NControlPoints(IPatch),2,IPatch))
+                  xMax= maxval(NodalCoordinates(1:Counters%NodTot(IPatch),1,IPatch))   
+                  yMin= minval(NodalCoordinates(1:Counters%NodTot(IPatch),2,IPatch))
         
                   if (NDIM == 3) then
-                      zMin= minval(NodalCoordinates(1:NControlPoints(IPatch),2,IPatch))
+                      zMin= minval(NodalCoordinates(1:Counters%NodTot(IPatch),2,IPatch))
                   end if
         
     
@@ -2239,7 +2384,7 @@
                   
                   
                   
-                  do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+                  do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
                       IEl = ActiveElement(IAEl,IPatch)
                       
                       do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
@@ -2293,27 +2438,40 @@
                           ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                   
                   
+                          
+                            X2 = 0.0
+                            X3 = 18.0
+                            X4 = 36.0
+          
+                            X5 = 56.0
+          
+                            Y1 = 6.0
+                            Y2 = 15.0
+                          
+                          
+                          
+                          
                   
                   ! HARDCODED------------------------------------------------------------------------------------------
                   ! Update CalParams%SoilSurfacePoint so that we  
-                  !if (GlobPosArray(ParticleIndex, 1) < X1) then 
-                  !    CalParams%SoilSurfacePoint(2) = Y1
-                  !    
-                  !elseif ( (GlobPosArray(ParticleIndex, 1) < X2) .and. (GlobPosArray(ParticleIndex, 1) > X1) ) then
-                  !    CalParams%SoilSurfacePoint(2) = Y1 + (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X1))
-                  !    
-                  !    
-                  !elseif ((GlobPosArray(ParticleIndex, 1) < X3) .and. (GlobPosArray(ParticleIndex, 1) > X2)) then 
-                  !    CalParams%SoilSurfacePoint(2) = Y2
-                  !    
-                  !    
+                  if (GlobPosArray(ParticleIndex, 1) < X3) then 
+                      CalParams%SoilSurfacePoint(2) = Y2
+                      
+                  elseif ( (GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3) ) then
+                      CalParams%SoilSurfacePoint(2) = Y2 + (((Y1-Y2)/(X4-X3))* (GlobPosArray(ParticleIndex, 1)-X3))
+                      
+                      
+                  elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
+                      CalParams%SoilSurfacePoint(2) = Y1
+                      
+                      
                   !elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
                   !    CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X3))
                   !    
                   !elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
                   !    CalParams%SoilSurfacePoint(2) = Y1
-                  !    
-                  !end if
+                      
+                  end if
                   
                   
                   !if (GlobPosArray(ParticleIndex, 1) < X1) then 
@@ -2669,7 +2827,7 @@
         
               FindMaterialID = .true. ! Reset statement
               do IPatch = 1, Counters%NPatches ! loop over all patches
-                  do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+                  do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
               !do IAEL = 1, Counters%NAEl 
                 if(FindMaterialID) then
                   
@@ -2704,7 +2862,7 @@
               end do
               
           do IPatch = 1, Counters%NPatches ! loop over all patches
-          do IAEl = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
         
           !do IAEl = 1, Counters%NAEl
               IEl = ActiveElement(IAEl,IPatch)
@@ -3110,12 +3268,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I,J, NElemPart, IPart, ParticleIndex, IEl, INode, NN, EntityID, IEnt
           integer(INTEGER_TYPE), dimension(Counters%nEntity) :: NPart
-          integer(INTEGER_TYPE), dimension(Counters%NodTot, Counters%nEntity) :: NodeTimes
+          integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot, Counters%nEntity) :: NodeTimes
           integer(INTEGER_TYPE), dimension(NVECTOR) :: Ni
           
           real(REAL_TYPE) :: DampedOutOffBalance, Damping
-          real(REAL_TYPE), dimension(Counters%NEl, Counters%nEntity) :: AverageDamping
-          real(REAL_TYPE), dimension(Counters%NodTot, Counters%nEntity) :: NodalDamping
+          real(REAL_TYPE), dimension(Counters%Sum_NEl, Counters%nEntity) :: AverageDamping
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot, Counters%nEntity) :: NodalDamping
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
           ! Multipatch variables 
@@ -3128,7 +3286,7 @@
           NodalDamping = 0.0
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IEl = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             if (IsActiveElement(IEl, IPatch)) then ! only for active elements
               NElemPart = NPartEle(IEl,IPatch) ! number of material points in element
@@ -3170,7 +3328,7 @@
           end do ! loop over patches
            
           do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
-          do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
+          do INode=1,Counters%NodTot(IPatch)!Counters%NodTot ! loop over nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
@@ -3216,12 +3374,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I,J, NElemPart, IPart, ParticleIndex, IEl, INode, NN, EntityID, IEnt
           integer(INTEGER_TYPE), dimension(Counters%nEntity) :: NPart
-          integer(INTEGER_TYPE), dimension(Counters%NodTot, Counters%nEntity) :: NodeTimes
+          integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot, Counters%nEntity) :: NodeTimes
           integer(INTEGER_TYPE), dimension(NVECTOR) :: Ni
           
           real(REAL_TYPE) :: DampedOutOffBalance, Damping
-          real(REAL_TYPE), dimension(Counters%NEl, Counters%nEntity) :: AverageDamping
-          real(REAL_TYPE), dimension(Counters%NodTot, Counters%nEntity) :: NodalDamping
+          real(REAL_TYPE), dimension(Counters%Sum_NEl, Counters%nEntity) :: AverageDamping
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot, Counters%nEntity) :: NodalDamping
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
           ! Multipatch variables 
@@ -3234,7 +3392,7 @@
           NodalDamping = 0.0
           
           do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
-          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IEl = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             if (IsActiveElement(IEl, IPatch)) then ! only for active elements
               NElemPart = NPartEle(IEl,IPatch)  ! number of material points in element
@@ -3276,7 +3434,7 @@
           end do ! loop over patches
            
           do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
-          do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
+          do INode=1,Counters%NodTot(IPatch)!Counters%NodTot ! loop over nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
@@ -3321,12 +3479,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I,J, NElemPart, IPart, ParticleIndex, IEl, INode, NN, EntityID, IEnt
           integer(INTEGER_TYPE), dimension(Counters%nEntity) :: NPart
-          integer(INTEGER_TYPE), dimension(Counters%NodTot, Counters%nEntity) :: NodeTimes
+          integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot, Counters%nEntity) :: NodeTimes
           integer(INTEGER_TYPE), dimension(NVECTOR) :: Ni
           
           real(REAL_TYPE) :: DampedOutOffBalance, Damping
-          real(REAL_TYPE), dimension(Counters%NEl, Counters%nEntity) :: AverageDamping
-          real(REAL_TYPE), dimension(Counters%NodTot, Counters%nEntity) :: NodalDamping
+          real(REAL_TYPE), dimension(Counters%Sum_NEl, Counters%nEntity) :: AverageDamping
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot, Counters%nEntity) :: NodalDamping
           real(REAL_TYPE), dimension(Counters%N, Counters%nEntity) :: Dampingfactors  
           
           ! Multipatch variables 
@@ -3339,7 +3497,7 @@
           NodalDamping = 0.0
           
           do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
-          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IEl = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             if (IsActiveElement(IEl, IPatch)) then ! only active elements
               NElemPart = NPartEle(IEl,IPatch)  ! number of material points in element
@@ -3378,7 +3536,7 @@
           end do ! loop over patches
            
           do IPatch = 1, Counters%NPatches!Counters%NPatches
-          do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over nodes
+          do INode=1,Counters%NodTot(IPatch)!Counters%NodTot ! loop over nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
@@ -4210,13 +4368,13 @@
         if (allocated(ContactSurfaceSoilElements)) then
           deallocate(ContactSurfaceSoilElements, stat = IError)
         end if
-        allocate(ContactSurfaceSoilElements(Counters%NEl), stat = IError)
+        allocate(ContactSurfaceSoilElements(Counters%Sum_NEl), stat = IError)
         ContactSurfaceSoilElements = .false.
         
         if (.not.CalParams%ApplyContactAlgorithm) RETURN
         
         do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
-        do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+        do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
             
@@ -4245,7 +4403,7 @@
       
        real(REAL_TYPE), dimension(:,:), intent(inout):: NodalUnitMassGradient
         real(REAL_TYPE), dimension(:), intent(in):: Bcond
-       real(REAL_TYPE), dimension(Counters%NodTot,NDIM):: MassGradient
+       real(REAL_TYPE), dimension(Counters%Sum_NodTot,NDIM):: MassGradient
        real(REAL_TYPE), dimension(NDIM,ELEMENTNODES):: B
        real(REAL_TYPE), dimension(NDIM):: LocPos, NodeMassGradient
        real(REAL_TYPE):: Mass, Vlength, DetJac
@@ -4260,15 +4418,15 @@
       MassGradient = 0.0
       !do IAElem = 1, Counters%NAEl
           do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over all patches
-          do IAElem = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          do IAElem = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
 
           IElem = ActiveElement(IAElem,IPatch)
           do IPart = 1,NPartEle(IElem,IPatch)
               PartIndex = GetParticleIndex(IPart,IElem, IPatch)
               Mass = MassArray(PartIndex)
               LocPos = Particles(PartIndex)%LocPos
-              call BMatrix(LocPos, ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl, &
-                               NControlPoints(IPatch), NDIM, & !Counters%NodTot
+              call BMatrix(LocPos, ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl, &
+                               Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
                                IElem, ElementConnectivities(:,:,IPatch), &
                                NodalCoordinates(:,:,IPatch), B, &
                                IPatch)!, DetJac) !update Jacob -> dxi/dtildexi
@@ -4286,7 +4444,7 @@
           end do
           
       do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches 
-      do NodeID=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points   
+      do NodeID=1,Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points   
           
           GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
           
@@ -4323,7 +4481,7 @@
         
 
         do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
-        do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+        do INode=1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
             

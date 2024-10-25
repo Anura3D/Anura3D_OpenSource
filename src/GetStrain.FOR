@@ -68,12 +68,12 @@
       integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
       !integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%Nel), intent(in) :: ICon    
       !integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
-      integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+      integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%NEl(IPatch)), intent(in) :: ICon
 
 
       real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: B
       real(REAL_TYPE), dimension(Counters%N), intent(in) :: Disp
-      integer(INTEGER_TYPE), dimension(Counters%NodTot+1), intent(in) :: NDofEx
+      integer(INTEGER_TYPE), dimension(Counters%NodTot(IPatch)+1), intent(in) :: NDofEx
       real(REAL_TYPE), dimension(NTENSOR), intent(out) :: Eps
       
       ! local variables
@@ -153,11 +153,11 @@
       implicit none
       
       integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
-      integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+      integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%NEl(IPatch)), intent(in) :: ICon
 
       real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: B
       real(REAL_TYPE), dimension(Counters%N), intent(in) :: Disp
-      integer(INTEGER_TYPE), dimension(Counters%NodTot+1), intent(in) :: NDofEx
+      integer(INTEGER_TYPE), dimension(Counters%NodTot(IPatch)+1), intent(in) :: NDofEx
       real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: RelativeDeformationGradient
       
       ! local variables

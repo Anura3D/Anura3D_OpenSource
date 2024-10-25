@@ -113,7 +113,7 @@
     
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
           IEl = ActiveElement(IAEl, IPatch)
           
             DoSmoothing2Layer = .false. !initialize
@@ -129,8 +129,8 @@
      
               if (DoSmoothing) then
                 call BMatrix(LI, &
-                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
-                             NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
+                             ELEMENTNODES, Counters%NEl(IPatch), &!NURBS%nel_NURBS(IPatch), &!Counters%NEl,  &
+                             Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IEl, ElementConnectivities(:,:, IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch),  &
                              BMatrixDeformed, &
@@ -166,7 +166,7 @@
                 end do 
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -201,7 +201,7 @@
   
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
             DoSmoothing2Layer = .false. !initialize
@@ -318,7 +318,7 @@
           !do IAEl = 1, Counters%NAEl
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
           IEl = ActiveElement(IAEl, IPatch)
               if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
@@ -335,8 +335,8 @@
      
                 if(DoSmoothing) then
                   call BMatrix(LI, &
-                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
-                             NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
+                             ELEMENTNODES, Counters%NEl(IPatch), & !NURBS%nel_NURBS(IPatch), &!Counters%NEl,  &
+                             Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IEl, ElementConnectivities(:,:, IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch),  &
                              BMatrixDeformed, &
@@ -375,7 +375,7 @@
                 end do 
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -412,7 +412,7 @@
           !do IAEl = 1, Counters%NAEl
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
                     
             IEl = ActiveElement(IAEl, IPatch)
@@ -489,7 +489,7 @@
  
           integer(INTEGER_TYPE), intent(in) :: IMatSet
           ! Local variables  
-          real(REAL_TYPE), dimension(Counters%NEl) :: ElementsVolumetricStrain
+          real(REAL_TYPE), dimension(Counters%Sum_NEl) :: ElementsVolumetricStrain
           real(REAL_TYPE) :: EV, EVD, EnhancedVolumetricStrain
           integer(INTEGER_TYPE) :: IEl, IAEl, I, NElemPart, MaterialID, IParticle, ParticleIndex
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
@@ -505,7 +505,7 @@
           !do IAEl = 1, Counters%NAEl  ! active element
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
@@ -533,7 +533,7 @@
 
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -546,7 +546,7 @@
             !do IAEl = 1, Counters%NAEl  ! active element 
                 
                 do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
               IEl = ActiveElement(IAEl, IPatch)
                 if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
@@ -590,7 +590,7 @@
  
           integer(INTEGER_TYPE), intent(in) :: IMatSet
           ! Local variables  
-           real(REAL_TYPE), dimension( Counters%NEl) :: ElementsVolumetricStrain
+           real(REAL_TYPE), dimension( Counters%Sum_NEl) :: ElementsVolumetricStrain
           real(REAL_TYPE) :: EV, EVD, EnhancedVolumetricStrain
           integer(INTEGER_TYPE) :: IEl, IAEl, I, NElemPart, MaterialID, IParticle, ParticleIndex
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
@@ -606,7 +606,7 @@
 
           !do IAEl = 1, Counters%NAEl  ! active element
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
               NElemPart = NPartEle(IEl, IPatch)
@@ -633,7 +633,7 @@
                 end do 
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -647,7 +647,7 @@
             !do IAEl = 1, Counters%NAEl  ! active element 
                 
                 do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
               IEl = ActiveElement(IAEl, IPatch)
                 if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
@@ -744,7 +744,7 @@
           !    IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac, &
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
-              PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+              PosGP, Counters%Sum_NEl, Counters%Sum_NodTot, NVECTOR, &
               IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                   dxi_dx, dtildexi_dxi, &
               IPatch_Temporary)

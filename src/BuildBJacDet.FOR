@@ -64,9 +64,9 @@
       implicit none
       
       integer(INTEGER_TYPE), intent(in) :: Int
-      integer(INTEGER_TYPE) :: IEl, ICon(ELEMENTNODES, nel_NURBS(IPatch))!ICon(ELEMENTNODES, Counters%NEL) 
+      integer(INTEGER_TYPE) :: IEl, ICon(ELEMENTNODES, Counters%NEl(IPatch))!ICon(ELEMENTNODES, Counters%NEL) 
       !real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
-      real(REAL_TYPE) :: Co(Maximum_NControlPoints, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
+      real(REAL_TYPE) :: Co(NURBS%Maximum_NControlPoints, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
       ! local variables
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: dx_dxi(NDIM, NDIM)
@@ -154,16 +154,16 @@
 
       !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
       ! based on element number, IEl --> find ni, nj, nk  
-      ni = INN(IEN(1,IEl,IPatch),1,IPatch)    
-      nj = INN(IEN(1,IEl,IPatch),2,IPatch)
+      ni = NURBS%INN(ElementConnectivities(1,IEl,IPatch),1,IPatch)    
+      nj = NURBS%INN(ElementConnectivities(1,IEl,IPatch),2,IPatch)
       if (NDIM == 3) then 
-          nk = INN(IEN(1,IEl,IPatch),3,IPatch)   
+          nk = NURBS%INN(ElementConnectivities(1,IEl,IPatch),3,IPatch)   
       end if 
     
       ! this is completely based on the parametric domain 
-      call Get_dxi_dtildexi_MapFromParentElToParmtr(NXiKnotEntries(IPatch), XiKnotEntries(:,IPatch), ni, &
-                                                                     NEtaKnotEntries(IPatch), EtaKnotEntries(:,IPatch), nj, &  
-                                                                     NZetaKnotEntries(IPatch), ZetaKnotEntries(:,IPatch), nk, &       
+      call Get_dxi_dtildexi_MapFromParentElToParmtr(NURBS%NXiKnotEntries(IPatch), NURBS%XiKnotEntries(:,IPatch), ni, &
+                                                                     NURBS%NEtaKnotEntries(IPatch), NURBS%EtaKnotEntries(:,IPatch), nj, &  
+                                                                     NURBS%NZetaKnotEntries(IPatch), NURBS%ZetaKnotEntries(:,IPatch), nk, &       
                                                                      dxi_dtildexi)
       
       ! calculate dx_dtildexi = dx_dxi * dxi_dtildexi

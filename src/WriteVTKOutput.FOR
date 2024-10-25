@@ -331,7 +331,7 @@ module ModWriteVTKOutput
     integer(INTEGER_TYPE) :: IPatch_Temporary = 1
     
     
-    NumberNodes = Counters%NodTot ! total number of nodes
+    NumberNodes = Counters%Sum_NodTot ! total number of nodes
     NumberElements = size(DataSetScalar,1) ! total number of elements
     DataSetSize = size(DataSetScalar,2) ! total number of datasets
 
@@ -851,7 +851,7 @@ module ModWriteVTKOutput
     end if
 
     NumberMaterialPoints = Counters%NParticles ! total number of material points
-    NumberNodes = NControlPoints(IPatch) !Counters%NodTot ! total number of nodes
+    NumberNodes = Counters%NodTot(IPatch) !Counters%NodTot ! total number of nodes
     
     !allocate(DataSetVector(NumberMaterialPoints,NVECTOR))
     allocate(DataSetVector_ControlPoints(NumberNodes,NVECTOR))
@@ -1259,7 +1259,7 @@ module ModWriteVTKOutput
     
     !********** START: writing scalar mesh data ****************************************
     
-    NumberElements = Counters%NEl ! total number of elements
+    NumberElements = Counters%Sum_NEl ! total number of elements
     DataSetSize = 2 ! total number of datasets for elements to be written
     allocate(DataSetName(DataSetSize))
     allocate(DataSetScalar(NumberElements,DataSetSize))
@@ -1314,7 +1314,7 @@ module ModWriteVTKOutput
     NumberMaterialPoints = Counters%NParticles ! total number of material points
 
     !********** START: writing scalar node data ****************************************
-    NumberNodes = Counters%NodTot ! total number of nodes
+    NumberNodes = Counters%Sum_NodTot ! total number of nodes
     DataSetSize = 1 ! total number of datasets for material points to be written
     allocate(DataSetNameNode(DataSetSize))
     allocate(DataSetScalarNode(NumberNodes,DataSetSize))

@@ -92,7 +92,7 @@
           integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, IPart, IAEl, NElemPart, iEntityID, iNode, iDof, ParticleIndex, NodeID, GlobDof, iEntity, MaterialIndex,ILoadSystem
           logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity 
            
-          logical, dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: IsLoadOnMP
+          logical, dimension(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) :: IsLoadOnMP
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
           
@@ -109,7 +109,7 @@
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
@@ -128,14 +128,14 @@
           BulkViscousLD = 0.0
           !IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem_Temporary, IPatch_Temporary)+Counters%NLoadedElementSidesSolidMatPointsB)>0
           do IPatch = 1, Counters%NPatches ! Loop over patches
-              do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+              do ILoadSystem = 1, NURBS%NLoadSystems_Traction(IPatch)
           IsLoadOnMP(ILoadSystem, IPatch) =(Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem, IPatch))>0
                             !+Counters%NLoadedElementSidesSolidMatPointsB
               end do 
           end do 
           
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
           !do IAEl = 1, Counters%NAEl ! loop over all active elements
            IEl = ActiveElement(IAEl, IPatch)
@@ -162,7 +162,7 @@
 
                 ! This needs to be generalized in a better way 
                 
-                do ILoadSystem =1, NLoadSystems_Traction(IPatch)!Counters%NSoilLoadSystems
+                do ILoadSystem =1, NURBS%NLoadSystems_Traction(IPatch)!Counters%NSoilLoadSystems
                 if (IsLoadOnMP(ILoadSystem, IPatch)) then
                   !do ILoadSystem =1, Counters%NSoilLoadSystems
                   !  ILoadSystem=1
@@ -221,6 +221,9 @@
               !code version 2017.1 and following
               (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
               
+              ! I removed this from the if statement
+              WTN = Particles(IntGlo)%IntegrationWeight
+              
               ! Set the integration weight
               if (IsParticleIntegration(IEl, IPatch) ) then
                 if ( ISAXISYMMETRIC ) then
@@ -230,7 +233,7 @@
                 end if
                 ! use the integration weight of material point if it is partially filled,
                 ! otherwise the weight of gauss point is used --> from FormB3() subroutine
-                WTN = Particles(IntGlo)%IntegrationWeight
+                !WTN = Particles(IntGlo)%IntegrationWeight
               else
                 if ( ISAXISYMMETRIC ) then
                   Position = GPGlobalPositionElement(1, Int, IEl) ! index 1 is radial direction
@@ -564,7 +567,7 @@
 
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
                
             do IPart = 1, NPartEle(IEl,IPatch)
@@ -642,7 +645,7 @@
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
@@ -657,7 +660,7 @@
 
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
            IEl = ActiveElement(IAEl, IPatch)
 
            if(NFORMULATION==1) then
@@ -691,13 +694,16 @@
               !code version 2017.1 and following
               (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
               
+              ! I moved this out of the if statement
+              WTN = Particles(IntGlo)%IntegrationWeight
+              
               if (IsParticleIntegration(IEl, IPatch) ) then
                 if ( ISAXISYMMETRIC ) then
                   ! the integration weight of the MP is not corrected due to the axisymmetry
                   Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                   ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 end if
-                WTN = Particles(IntGlo)%IntegrationWeight
+                !WTN = Particles(IntGlo)%IntegrationWeight
               else
                 if ( ISAXISYMMETRIC ) then
                   Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)

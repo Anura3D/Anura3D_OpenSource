@@ -1148,9 +1148,9 @@
          !                                        IPatch) !NURBS related inputs in the eta direction 
          
          call ShapeLocPosPointer_IGA_2D(LocPos, ShapeValues, DShapeValues, & !classic inout parameters
-                XiKnotEntries(1:NXiKnotEntries(IPatch),IPatch), NXiKnotEntries(IPatch), NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
-                EtaKnotEntries(1:NEtaKnotEntries(IPatch),IPatch), NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch), &
-                nen_NURBS(IPatch), IElement, IPatch) ! multipatch and element variable
+                NURBS%XiKnotEntries(1:NURBS%NXiKnotEntries(IPatch),IPatch), NURBS%NXiKnotEntries(IPatch), NURBS%NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                NURBS%EtaKnotEntries(1:NURBS%NEtaKnotEntries(IPatch),IPatch), NURBS%NEtaKnotEntries(IPatch), NURBS%NEtaKnotOrder(IPatch), &
+                NURBS%nen_NURBS(IPatch), IElement, IPatch) ! multipatch and element variable
          
          
          
@@ -1170,10 +1170,10 @@
                                                       !  1, 1, 1, & ! assuming one gauss point for this subroutine...
         
          call ShapeLocPosPointer_IGA_3D(LocPos, ShapeValues, DShapeValues, & !classic inout parameters
-                XiKnotEntries(1:NXiKnotEntries(IPatch),IPatch), NXiKnotEntries(IPatch), NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
-                EtaKnotEntries(1:NEtaKnotEntries(IPatch),IPatch), NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch), &
-                ZetaKnotEntries(1:NZetaKnotEntries(IPatch),IPatch), NZetaKnotEntries(IPatch), NZetaKnotOrder(IPatch), &
-                nen_NURBS(IPatch), IElement, IPatch) ! multipatch and element variable
+                NURBS%XiKnotEntries(1:NURBS%NXiKnotEntries(IPatch),IPatch), NURBS%NXiKnotEntries(IPatch), NURBS%NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                NURBS%EtaKnotEntries(1:NURBS%NEtaKnotEntries(IPatch),IPatch), NURBS%NEtaKnotEntries(IPatch), NURBS%NEtaKnotOrder(IPatch), &
+                NURBS%ZetaKnotEntries(1:NURBS%NZetaKnotEntries(IPatch),IPatch), NURBS%NZetaKnotEntries(IPatch), NURBS%NZetaKnotOrder(IPatch), &
+                NURBS%nen_NURBS(IPatch), IElement, IPatch) ! multipatch and element variable
          
          !end if 
          
@@ -1410,9 +1410,9 @@
          
              !InitialiseShapeFunctionsQUAD4_NURBS_VolLockSmooth
          call ShapeLocPosPointer_IGA_2D_VolLockSmooth(LocPos, ShapeValues, DShapeValues, &!Wt, & !classic inout parameters
-                XiKnotEntries_VolLockSmooth(:,IPatch), NXiKnotEntries_VolLockSmooth(IPatch), NXiKnotOrder_VolLockSmooth(IPatch), & !(IPatch)!NURBS related inputs in the xi direction 
-                EtaKnotEntries_VolLockSmooth(:,IPatch), NEtaKnotEntries_VolLockSmooth(IPatch), NEtaKnotOrder_VolLockSmooth(IPatch), & !(IPatch)
-                nen_NURBS_VolLockSmooth(IPatch), IElement, IPatch) !NURBS related inputs in the eta direction 
+                NURBS%XiKnotEntries_VolLockSmooth(:,IPatch), NURBS%NXiKnotEntries_VolLockSmooth(IPatch), NURBS%NXiKnotOrder_VolLockSmooth(IPatch), & !(IPatch)!NURBS related inputs in the xi direction 
+                NURBS%EtaKnotEntries_VolLockSmooth(:,IPatch), NURBS%NEtaKnotEntries_VolLockSmooth(IPatch), NURBS%NEtaKnotOrder_VolLockSmooth(IPatch), & !(IPatch)
+                NURBS%nen_NURBS_VolLockSmooth(IPatch), IElement, IPatch) !NURBS related inputs in the eta direction 
          
          
          !HS_Xi, dHS_Xi, &!Wt_Xi, &
@@ -1422,10 +1422,10 @@
              
              
         call ShapeLocPosPointer_IGA_3D_VolLockSmooth(LocPos, ShapeValues, DShapeValues, &!Wt, & !classic inout parameters
-                XiKnotEntries_VolLockSmooth(:,IPatch), NXiKnotEntries_VolLockSmooth(IPatch), NXiKnotOrder_VolLockSmooth(IPatch), & !(IPatch)!NURBS related inputs in the xi direction 
-                EtaKnotEntries_VolLockSmooth(:,IPatch), NEtaKnotEntries_VolLockSmooth(IPatch), NEtaKnotOrder_VolLockSmooth(IPatch), & !(IPatch)
-                ZetaKnotEntries_VolLockSmooth(:,IPatch), NZetaKnotEntries_VolLockSmooth(IPatch), NZetaKnotOrder_VolLockSmooth(IPatch), & !(IPatch)
-                nen_NURBS_VolLockSmooth(IPatch), IElement, IPatch) !NURBS related inputs in the eta direction 
+                NURBS%XiKnotEntries_VolLockSmooth(:,IPatch), NURBS%NXiKnotEntries_VolLockSmooth(IPatch), NURBS%NXiKnotOrder_VolLockSmooth(IPatch), & !(IPatch)!NURBS related inputs in the xi direction 
+                NURBS%EtaKnotEntries_VolLockSmooth(:,IPatch), NURBS%NEtaKnotEntries_VolLockSmooth(IPatch), NURBS%NEtaKnotOrder_VolLockSmooth(IPatch), & !(IPatch)
+                NURBS%ZetaKnotEntries_VolLockSmooth(:,IPatch), NURBS%NZetaKnotEntries_VolLockSmooth(IPatch), NURBS%NZetaKnotOrder_VolLockSmooth(IPatch), & !(IPatch)
+                NURBS%nen_NURBS_VolLockSmooth(IPatch), IElement, IPatch) !NURBS related inputs in the eta direction 
          
              
          !call InitialiseShapeFunctionsHEXA_NURBS(HS, dHS, &!Wt, & !classic inout parameters
@@ -2140,7 +2140,7 @@
           real(REAL_TYPE) :: Det1
           
           ! Hardcoded : nen_NURBS should be patch specific but here we hardcode to 1 
-          real(REAL_TYPE), dimension(nen_NURBS((IPatch)),NDIM) :: dR_dx ! IPatch_Temporary
+          real(REAL_TYPE), dimension(NURBS%nen_NURBS((IPatch)),NDIM) :: dR_dx ! IPatch_Temporary
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dtildexi_dxi
 
@@ -2182,10 +2182,10 @@
       
           ! finding the NURBS coordinates for the element
           ! Think about this to minimize the times we have to evaluate ni, nj, and nk
-          ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
-          nj = INN(IEN(1,IElement,IPatch),2,IPatch)
+          ni = NURBS%INN(ElementConnectivities(1,IElement,IPatch),1,IPatch)    
+          nj = NURBS%INN(ElementConnectivities(1,IElement,IPatch),2,IPatch)
           if (NDIM == 3) then 
-              nk = INN(IEN(1,IElement,IPatch),3,IPatch)
+              nk = NURBS%INN(ElementConnectivities(1,IElement,IPatch),3,IPatch)
           end if 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dx/dxi
@@ -2201,9 +2201,9 @@
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 
           
-         call Get_dxi_dtildexi_MapFromParentElToParmtr(NXiKnotEntries(IPatch), XiKnotEntries(:,IPatch), ni, &
-                                                                        NEtaKnotEntries(IPatch), EtaKnotEntries(:,IPatch), nj, &  
-                                                                        NZetaKnotEntries(IPatch), ZetaKnotEntries(:,IPatch), nk, &       
+         call Get_dxi_dtildexi_MapFromParentElToParmtr(NURBS%NXiKnotEntries(IPatch), NURBS%XiKnotEntries(:,IPatch), ni, &
+                                                                        NURBS%NEtaKnotEntries(IPatch), NURBS%EtaKnotEntries(:,IPatch), nj, &  
+                                                                        NURBS%NZetaKnotEntries(IPatch), NURBS%ZetaKnotEntries(:,IPatch), nk, &       
                                                                         dxi_dtildexi)
                   
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
@@ -2453,7 +2453,7 @@
           real(REAL_TYPE), dimension(IDim, IDim) :: dxi_dx
 
           ! Hardcoded index to 1
-          real(REAL_TYPE), dimension(nen_NURBS(IPatch),NDIM) :: dR_dx ! IPatch_Temporary
+          real(REAL_TYPE), dimension(NURBS%nen_NURBS(IPatch),NDIM) :: dR_dx ! IPatch_Temporary
           real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
           
           real(REAL_TYPE) :: Det_dx_dxi
@@ -2480,10 +2480,10 @@
           integer(INTEGER_TYPE), intent(in) :: IPatch
           integer(INTEGER_TYPE) :: aa
           
-          ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
-          nj = INN(IEN(1,IElement,IPatch),2,IPatch)
+          ni = NURBS%INN(ElementConnectivities(1,IElement,IPatch),1,IPatch)    
+          nj = NURBS%INN(ElementConnectivities(1,IElement,IPatch),2,IPatch)
           if (NDIM == 3) then 
-              nk = INN(IEN(1,IElement,IPatch),3,IPatch)
+              nk = NURBS%INN(ElementConnectivities(1,IElement,IPatch),3,IPatch)
           end if 
 
           !if (LocPos(2) > 0.99) then 
@@ -2895,12 +2895,12 @@
           
           
           ! Find the maximum x-coordinate 
-          MaximumXCoordinate = maxval(NodeCoord(1:NControlPoints(PatchID),1))
-          MinimumXCoordinate = minval(NodeCoord(1:NControlPoints(PatchID),1))
+          MaximumXCoordinate = maxval(NodeCoord(1:Counters%NodTot(PatchID),1)) !NURBS%NControlPoints
+          MinimumXCoordinate = minval(NodeCoord(1:Counters%NodTot(PatchID),1)) !NURBS%NControlPoints
           
           ! Find the maximum y-coordinate
-          MaximumYCoordinate = maxval(NodeCoord(1:NControlPoints(PatchID),2))
-          MinimumYCoordinate = minval(NodeCoord(1:NControlPoints(PatchID),2))
+          MaximumYCoordinate = maxval(NodeCoord(1:Counters%NodTot(PatchID),2)) !NURBS%NControlPoints
+          MinimumYCoordinate = minval(NodeCoord(1:Counters%NodTot(PatchID),2)) !NURBS%NControlPoints
           
           ! Find Bezier mesh range 
           RangeX = MaximumXCoordinate - MinimumXCoordinate
@@ -3628,15 +3628,15 @@
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
           real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           integer(INTEGER_TYPE), intent(in) :: IElement
-          real(REAL_TYPE), dimension(Maximum_NControlPoints, NDIM), intent(in) :: NodeCoord !(IPatch)
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NDIM), intent(in) :: NodeCoord !(IPatch)
           !real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
           !integer(INTEGER_TYPE), dimension((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), nel_NURBS(IPatch)), intent(in) :: ICon
 
-          integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%NEl(IPatch)), intent(in) :: ICon
           
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos !local position of point is an output 
           logical, intent(out) :: OutsideElement, Success
-          integer(INTEGER_TYPE), dimension(nel_NURBS(IPatch),6), intent(in) :: ElementAdjacencies
+          integer(INTEGER_TYPE), dimension(Counters%NEl(IPatch),6), intent(in) :: ElementAdjacencies
           real(REAL_TYPE), dimension(NDIM, NDIM) :: dtildexi_dx
           ! Local variables
           real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
@@ -3697,24 +3697,24 @@
           
 
           
-         ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
-         nj = INN(IEN(1,IElement,IPatch),2,IPatch)
+         ni = NURBS%INN(ElementConnectivities(1,IElement,IPatch),1,IPatch)    
+         nj = NURBS%INN(ElementConnectivities(1,IElement,IPatch),2,IPatch)
          
          if (NDIM == 3) then 
-         nk = INN(IEN(1,IElement,IPatch),3,IPatch)
+         nk = NURBS%INN(ElementConnectivities(1,IElement,IPatch),3,IPatch)
          end if 
     
           ! Local position in the xi parametric domain 
           !LocPos_Xi = (/0.49*(XiKnotEntries(ni,IPatch)+XiKnotEntries(ni+1,IPatch)), 0.5*(EtaKnotEntries(nj,IPatch)+EtaKnotEntries(nj+1,IPatch))/)!, 0.49*(ZetaKnotEntries(nk,IPatch)+ZetaKnotEntries(nk+1,IPatch))/)  
-          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.32111*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.442112321*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch)))/)  
+          LocPos_Xi = (/NURBS%XiKnotEntries(ni,IPatch)+(0.32111*(NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch))), NURBS%EtaKnotEntries(nj,IPatch)+(0.442112321*(NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch)))/)  
           
           
           
           LocPos_XiTilde = 0
           
           ! Corresponding local position in the xi tilde parent domain
-          LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
-          LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
+          LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (NURBS%XiKnotEntries(ni+1,IPatch)  +  NURBS%XiKnotEntries(ni,IPatch)) )    /(NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch))
+          LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (NURBS%EtaKnotEntries(nj+1,IPatch) + NURBS%EtaKnotEntries(nj,IPatch)) )    /(NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch))
           !LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
           
           ! Calculate global position based on the local position
@@ -3755,11 +3755,11 @@
             ! Determine new LocPos
             DeltaGlobPos = GlobPos - GlobPosIteration
 
-            ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
-            nj = INN(IEN(1,IElement,IPatch),2,IPatch)
+            ni = NURBS%INN(ElementConnectivities(1,IElement,IPatch),1,IPatch)    
+            nj = NURBS%INN(ElementConnectivities(1,IElement,IPatch),2,IPatch)
          
             if (NDIM == 3) then 
-                nk = INN(IEN(1,IElement,IPatch),3,IPatch)
+                nk = NURBS%INN(ElementConnectivities(1,IElement,IPatch),3,IPatch)
             end if 
             
             do I = 1, IDim
@@ -3773,8 +3773,8 @@
             
             
             ! Corresponding local position in the xi tilde parent domain
-            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
-            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (NURBS%XiKnotEntries(ni+1,IPatch)  +  NURBS%XiKnotEntries(ni,IPatch)) )    /(NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (NURBS%EtaKnotEntries(nj+1,IPatch) + NURBS%EtaKnotEntries(nj,IPatch)) )    /(NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch))
             !LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
             
             if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
@@ -3806,29 +3806,29 @@
             return
                     else 
                         ! Dimension 1 (Xi)
-                    if (LocPos_Xi(1) < XiKnotEntries(ni,IPatch) + tolerance_Xi(1)) then
-                        LocPos_Xi(1) = XiKnotEntries(ni,IPatch) + tolerance_Xi(1)
+                    if (LocPos_Xi(1) < NURBS%XiKnotEntries(ni,IPatch) + tolerance_Xi(1)) then
+                        LocPos_Xi(1) = NURBS%XiKnotEntries(ni,IPatch) + tolerance_Xi(1)
                         counter_xi_outsideelement = counter_xi_outsideelement + 1
                     !test = ElementAdjacencies(1,1)
-                    elseif (LocPos_Xi(1) > XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)) then
-                        LocPos_Xi(1) = XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)
+                    elseif (LocPos_Xi(1) > NURBS%XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)) then
+                        LocPos_Xi(1) = NURBS%XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)
                         counter_xi_outsideelement = counter_xi_outsideelement + 1
                     endif
 
                     ! Dimension 2 (Eta)
-                    if (LocPos_Xi(2) < EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)) then
-                        LocPos_Xi(2) = EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)
+                    if (LocPos_Xi(2) < NURBS%EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)) then
+                        LocPos_Xi(2) = NURBS%EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)
                         counter_eta_outsideelement = counter_eta_outsideelement + 1
-                    elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)) then
-                        LocPos_Xi(2) = EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)
+                    elseif (LocPos_Xi(2) > NURBS%EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)) then
+                        LocPos_Xi(2) = NURBS%EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)
                         counter_eta_outsideelement = counter_eta_outsideelement + 1
                     endif
 
                     
                     
                     !  ! Corresponding local position in the xi tilde parent domain
-            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
-            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (NURBS%XiKnotEntries(ni+1,IPatch)  +  NURBS%XiKnotEntries(ni,IPatch)) )    /(NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (NURBS%EtaKnotEntries(nj+1,IPatch) + NURBS%EtaKnotEntries(nj,IPatch)) )    /(NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch))
             
                     
                     end if
@@ -3969,15 +3969,15 @@
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
           real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           integer(INTEGER_TYPE), intent(in) :: IElement
-          real(REAL_TYPE), dimension(NControlPoints(IPatch), NDIM), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(Counters%NodTot(IPatch), NDIM), intent(in) :: NodeCoord
           !real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
           !integer(INTEGER_TYPE), dimension((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), nel_NURBS(IPatch)), intent(in) :: ICon
 
-          integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%NEl(IPatch)), intent(in) :: ICon
           
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos !local position of point is an output 
           logical, intent(out) :: OutsideElement, Success
-          integer(INTEGER_TYPE), dimension(nel_NURBS(IPatch),6), intent(in) :: ElementAdjacencies
+          integer(INTEGER_TYPE), dimension(Counters%NEl(IPatch),6), intent(in) :: ElementAdjacencies
           real(REAL_TYPE), dimension(NDIM, NDIM) :: dtildexi_dx
           ! Local variables
           real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
@@ -4051,18 +4051,18 @@
           ! Global coordinates for guess
           
           
-         ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
-         nj = INN(IEN(1,IElement,IPatch),2,IPatch)
+         ni = NURBS%INN(ElementConnectivities(1,IElement,IPatch),1,IPatch)    
+         nj = NURBS%INN(ElementConnectivities(1,IElement,IPatch),2,IPatch)
          
          if (NDIM == 3) then 
-         nk = INN(IEN(1,IElement,IPatch),3,IPatch)
+         nk = NURBS%INN(ElementConnectivities(1,IElement,IPatch),3,IPatch)
          end if 
          
          
          ! check for repeated knot 
-         if ( ( XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch) == 0.0) .or. &
-              ( EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch) == 0.0) .or. & 
-              ( ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch) == 0.0) ) then 
+         if ( ( NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch) == 0.0) .or. &
+              ( NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch) == 0.0) .or. & 
+              ( NURBS%ZetaKnotEntries(nk+1,IPatch)-NURBS%ZetaKnotEntries(nk,IPatch) == 0.0) ) then 
               Success = .false.
               OutsideElement = .true.
               return 
@@ -4072,16 +4072,16 @@
          
           
           ! Local position in the xi parametric domain    
-          LocPos_Xi = (/XiKnotEntries(ni,IPatch)+(0.55555555*(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))), EtaKnotEntries(nj,IPatch)+(0.55555555555*(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))), ZetaKnotEntries(nk,IPatch)+(0.628111111*(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch)))/)  
+          LocPos_Xi = (/NURBS%XiKnotEntries(ni,IPatch)+(0.55555555*(NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch))), NURBS%EtaKnotEntries(nj,IPatch)+(0.55555555555*(NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch))), NURBS%ZetaKnotEntries(nk,IPatch)+(0.628111111*(NURBS%ZetaKnotEntries(nk+1,IPatch)-NURBS%ZetaKnotEntries(nk,IPatch)))/)  
 
           
           ! initialize           
           LocPos_XiTilde = 0
           
           ! Corresponding local position in the xi tilde parent domain
-          LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
-          LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
-          LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
+          LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (NURBS%XiKnotEntries(ni+1,IPatch)  +  NURBS%XiKnotEntries(ni,IPatch)) )    /(NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch))
+          LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (NURBS%EtaKnotEntries(nj+1,IPatch) + NURBS%EtaKnotEntries(nj,IPatch)) )    /(NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch))
+          LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (NURBS%ZetaKnotEntries(nk+1,IPatch)+NURBS%ZetaKnotEntries(nk,IPatch)) )    /(NURBS%ZetaKnotEntries(nk+1,IPatch)-NURBS%ZetaKnotEntries(nk,IPatch))
           
           ! Calculate global position based on the local position
           call GetGlobalCoordinates(LocPos_XiTilde,  &
@@ -4117,11 +4117,11 @@
             ! Determine new LocPos
             DeltaGlobPos = GlobPos - GlobPosIteration
 
-            ni = INN(IEN(1,IElement,IPatch),1,IPatch)    
-            nj = INN(IEN(1,IElement,IPatch),2,IPatch)
+            ni = NURBS%INN(ElementConnectivities(1,IElement,IPatch),1,IPatch)    
+            nj = NURBS%INN(ElementConnectivities(1,IElement,IPatch),2,IPatch)
          
             if (NDIM == 3) then 
-                nk = INN(IEN(1,IElement,IPatch),3,IPatch)
+                nk = NURBS%INN(ElementConnectivities(1,IElement,IPatch),3,IPatch)
             end if 
             
             do I = 1, IDim
@@ -4134,9 +4134,9 @@
             
             
             ! Corresponding local position in the xi tilde parent domain
-            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
-            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
-            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (NURBS%XiKnotEntries(ni+1,IPatch)  +  NURBS%XiKnotEntries(ni,IPatch)) )    /(NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (NURBS%EtaKnotEntries(nj+1,IPatch) + NURBS%EtaKnotEntries(nj,IPatch)) )    /(NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch))
+            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (NURBS%ZetaKnotEntries(nk+1,IPatch)+NURBS%ZetaKnotEntries(nk,IPatch)) )    /(NURBS%ZetaKnotEntries(nk+1,IPatch)-NURBS%ZetaKnotEntries(nk,IPatch))
             
             if (.not.IsInsideElementLocPos(LocPos_XiTilde) ) then
                     ! based on which side you crossed you can knot which element you are in
@@ -4167,30 +4167,30 @@
             return
                     else 
                         ! Dimension 1 (Xi)
-                    if (LocPos_Xi(1) < XiKnotEntries(ni,IPatch) + tolerance_Xi(1)) then
-                        LocPos_Xi(1) = XiKnotEntries(ni,IPatch) + tolerance_Xi(1)
+                    if (LocPos_Xi(1) < NURBS%XiKnotEntries(ni,IPatch) + tolerance_Xi(1)) then
+                        LocPos_Xi(1) = NURBS%XiKnotEntries(ni,IPatch) + tolerance_Xi(1)
                         counter_xi_outsideelement = counter_xi_outsideelement + 1
                     !test = ElementAdjacencies(1,1)
-                    elseif (LocPos_Xi(1) > XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)) then
-                        LocPos_Xi(1) = XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)
+                    elseif (LocPos_Xi(1) > NURBS%XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)) then
+                        LocPos_Xi(1) = NURBS%XiKnotEntries(ni+1,IPatch) - tolerance_Xi(1)
                         counter_xi_outsideelement = counter_xi_outsideelement + 1
                     endif
 
                     ! Dimension 2 (Eta)
-                    if (LocPos_Xi(2) < EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)) then
-                        LocPos_Xi(2) = EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)
+                    if (LocPos_Xi(2) < NURBS%EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)) then
+                        LocPos_Xi(2) = NURBS%EtaKnotEntries(nj,IPatch) + tolerance_Xi(2)
                         counter_eta_outsideelement = counter_eta_outsideelement + 1
-                    elseif (LocPos_Xi(2) > EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)) then
-                        LocPos_Xi(2) = EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)
+                    elseif (LocPos_Xi(2) > NURBS%EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)) then
+                        LocPos_Xi(2) = NURBS%EtaKnotEntries(nj+1,IPatch) - tolerance_Xi(2)
                         counter_eta_outsideelement = counter_eta_outsideelement + 1
                     endif
 
                     ! Dimension 3 (Zeta)
-                    if (LocPos_Xi(3) < ZetaKnotEntries(nk,IPatch) + tolerance_Xi(3)) then
-                        LocPos_Xi(3) = ZetaKnotEntries(nk,IPatch) + tolerance_Xi(3)
+                    if (LocPos_Xi(3) < NURBS%ZetaKnotEntries(nk,IPatch) + tolerance_Xi(3)) then
+                        LocPos_Xi(3) = NURBS%ZetaKnotEntries(nk,IPatch) + tolerance_Xi(3)
                         counter_zeta_outsideelement = counter_zeta_outsideelement + 1
-                    elseif (LocPos_Xi(3) > ZetaKnotEntries(nk+1,IPatch) - tolerance_Xi(3)) then
-                        LocPos_Xi(3) = ZetaKnotEntries(nk+1,IPatch) - tolerance_Xi(3)
+                    elseif (LocPos_Xi(3) > NURBS%ZetaKnotEntries(nk+1,IPatch) - tolerance_Xi(3)) then
+                        LocPos_Xi(3) = NURBS%ZetaKnotEntries(nk+1,IPatch) - tolerance_Xi(3)
                         counter_zeta_outsideelement = counter_zeta_outsideelement + 1
                     endif
                     
@@ -4198,9 +4198,9 @@
                     
                     
                     !  ! Corresponding local position in the xi tilde parent domain
-            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (XiKnotEntries(ni+1,IPatch)  +  XiKnotEntries(ni,IPatch)) )    /(XiKnotEntries(ni+1,IPatch)-XiKnotEntries(ni,IPatch))
-            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) )    /(EtaKnotEntries(nj+1,IPatch)-EtaKnotEntries(nj,IPatch))
-            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (ZetaKnotEntries(nk+1,IPatch)+ZetaKnotEntries(nk,IPatch)) )    /(ZetaKnotEntries(nk+1,IPatch)-ZetaKnotEntries(nk,IPatch))
+            LocPos_XiTilde(1) = ( (2*LocPos_Xi(1)) - (NURBS%XiKnotEntries(ni+1,IPatch)  +  NURBS%XiKnotEntries(ni,IPatch)) )    /(NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch))
+            LocPos_XiTilde(2) = ( (2*LocPos_Xi(2)) - (NURBS%EtaKnotEntries(nj+1,IPatch) + NURBS%EtaKnotEntries(nj,IPatch)) )    /(NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch))
+            LocPos_XiTilde(3) = ( (2*LocPos_Xi(3)) - (NURBS%ZetaKnotEntries(nk+1,IPatch)+NURBS%ZetaKnotEntries(nk,IPatch)) )    /(NURBS%ZetaKnotEntries(nk+1,IPatch)-NURBS%ZetaKnotEntries(nk,IPatch))
             
                     end if
             endif
@@ -4864,7 +4864,7 @@
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos_XiTilde
           integer(INTEGER_TYPE), intent(in) :: IElement
           integer(INTEGER_TYPE), dimension(ELEMENTNODES, NEl), intent(in) :: ICon
-          real(REAL_TYPE), dimension(Maximum_NControlPoints, IDim), intent(in) :: NodeCoord !NodTot
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, IDim), intent(in) :: NodeCoord !NodTot
           !real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: IncrementalDisplacementSoil
           real(REAL_TYPE), dimension(IDim), intent(out) :: GlobPos
           ! Local variables
@@ -6070,17 +6070,17 @@
         
         
         
-        allocate( GPWeight_AllElements(  Maximum_nel_NURBS_Traction, &
+        allocate( GPWeight_AllElements(  NURBS%Maximum_nel_NURBS_Traction, &
             ELEMENTBOUNDARYGAUSSPOINTS, &
-            Maximum_NLoadSystems_Traction, Counters%NPatches) )   
+            NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) )   
         
-        allocate( GPShapeFunction_AllElements(  Maximum_nel_NURBS_Traction, &
+        allocate( GPShapeFunction_AllElements(  NURBS%Maximum_nel_NURBS_Traction, &
             ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, &
-            Maximum_NLoadSystems_Traction, Counters%NPatches) )
+            NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) )
             
-        allocate( GPShapeFunctionDerivative_AllElements( Maximum_nel_NURBS_Traction, &
+        allocate( GPShapeFunctionDerivative_AllElements( NURBS%Maximum_nel_NURBS_Traction, &
             ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, 2, &
-            Maximum_NLoadSystems_Traction, Counters%NPatches) ) !--> this is linked to a 2D surface
+            NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) ) !--> this is linked to a 2D surface
         
         
         
@@ -6138,7 +6138,7 @@
         ! this is a current bug in the evaulation of B when we calculate the internal forces...
         xi_tilde = 0.0
         eta_tilde = 0.0
-
+        
         gauss_point_counter = 0 
         
         
@@ -6150,9 +6150,9 @@
         ! loop over patches
         do IPatch = 1, Counters%NPatches
         ! loop over load systems
-        do ILoadSystem = 1, NLoadSystems_Traction(IPatch)    
+        do ILoadSystem = 1, NURBS%NLoadSystems_Traction(IPatch)    
         ! we do not have this patch implementation just yet...
-        do ee = 1, nel_NURBS_Traction(ILoadSystem, IPatch)!(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
+        do ee = 1, NURBS%nel_NURBS_Traction(ILoadSystem, IPatch)!(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
         
         
             
@@ -6200,35 +6200,35 @@
            !                                         nen_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary), ee, IPatch) ! needs multipatch generalization    
                                                      !NURBS related inputs in the eta direction 
              
-             if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then ! XI_ETA
+             if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then ! XI_ETA
              
              
                  call ShapeLocPosPointer_IGA_2D_Traction(PosGP, GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), & !classic inout parameters
-                                         XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
-                                         EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch), &
-                                         nen_NURBS_Traction(ILoadSystem, IPatch), ee, ILoadSystem, IPatch, &
+                                         NURBS%XiKnotEntries(:,IPatch), NURBS%NXiKnotEntries(IPatch), NURBS%NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                         NURBS%EtaKnotEntries(:,IPatch), NURBS%NEtaKnotEntries(IPatch), NURBS%NEtaKnotOrder(IPatch), &
+                                         NURBS%nen_NURBS_Traction(ILoadSystem, IPatch), ee, ILoadSystem, IPatch, &
                                          ELEMENTBOUNDARYNODES_XI, &
                                          ELEMENTBOUNDARYNODES_ETA) ! needs multipatch generalization    
                                           !NURBS related inputs in the eta direction 
                 
-             else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then ! XI_ZETA
+             else if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then ! XI_ZETA
                  
                  
                  call ShapeLocPosPointer_IGA_2D_Traction(PosGP, GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), & !classic inout parameters
-                                         XiKnotEntries(:,IPatch), NXiKnotEntries(IPatch), NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
-                                         ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), NZetaKnotOrder(IPatch), &
-                                         nen_NURBS_Traction(ILoadSystem, IPatch), ee, ILoadSystem, IPatch, &
+                                         NURBS%XiKnotEntries(:,IPatch), NURBS%NXiKnotEntries(IPatch), NURBS%NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                         NURBS%ZetaKnotEntries(:,IPatch), NURBS%NZetaKnotEntries(IPatch), NURBS%NZetaKnotOrder(IPatch), &
+                                         NURBS%nen_NURBS_Traction(ILoadSystem, IPatch), ee, ILoadSystem, IPatch, &
                                          ELEMENTBOUNDARYNODES_XI, &
                                          ELEMENTBOUNDARYNODES_ZETA) ! needs multipatch generalization    
                  
                  
-             else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then ! ETA_ZETA
+             else if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then ! ETA_ZETA
            
                  
                  call ShapeLocPosPointer_IGA_2D_Traction(PosGP, GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), & !classic inout parameters
-                                         EtaKnotEntries(:,IPatch), NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
-                                         ZetaKnotEntries(:,IPatch), NZetaKnotEntries(IPatch), NZetaKnotOrder(IPatch), &
-                                         nen_NURBS_Traction(ILoadSystem, IPatch), ee, ILoadSystem, IPatch, &
+                                         NURBS%EtaKnotEntries(:,IPatch), NURBS%NEtaKnotEntries(IPatch), NURBS%NEtaKnotOrder(IPatch), & !NURBS related inputs in the xi direction 
+                                         NURBS%ZetaKnotEntries(:,IPatch), NURBS%NZetaKnotEntries(IPatch), NURBS%NZetaKnotOrder(IPatch), &
+                                         NURBS%nen_NURBS_Traction(ILoadSystem, IPatch), ee, ILoadSystem, IPatch, &
                                          ELEMENTBOUNDARYNODES_ETA, &
                                          ELEMENTBOUNDARYNODES_ZETA) ! needs multipatch generalization    
                  
@@ -6516,17 +6516,17 @@
         
         
         
-        allocate( GPWeight_AllElements(  Maximum_nel_NURBS_Traction, &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        allocate( GPWeight_AllElements(  NURBS%Maximum_nel_NURBS_Traction, &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
             ELEMENTBOUNDARYGAUSSPOINTS, &
-            Maximum_NLoadSystems_Traction, Counters%NPatches) )   
+            NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) )   
         
-        allocate( GPShapeFunction_AllElements(  Maximum_nel_NURBS_Traction, &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        allocate( GPShapeFunction_AllElements(  NURBS%Maximum_nel_NURBS_Traction, &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
             ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, &
-            Maximum_NLoadSystems_Traction, Counters%NPatches) )
+            NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) )
             
-        allocate( GPShapeFunctionDerivative_AllElements( Maximum_nel_NURBS_Traction, &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
+        allocate( GPShapeFunctionDerivative_AllElements( NURBS%Maximum_nel_NURBS_Traction, &!*(mm_NURBS_NumberOfUnivariateEtaKnots_Traction-NEtaKnotOrder_Traction),&
             ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, 1, &
-            Maximum_NLoadSystems_Traction, Counters%NPatches) ) !2) ) !--> this is linked to a 2D surface
+            NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) ) !2) ) !--> this is linked to a 2D surface
         
         
         
@@ -6927,9 +6927,9 @@
         
         do IPatch = 1, Counters%NPatches ! loop over patches
         ! loop over load systems 
-        do ILoadSystem = 1, NLoadSystems_Traction(IPatch)
+        do ILoadSystem = 1, NURBS%NLoadSystems_Traction(IPatch)
         ! loop over NURBS elements 
-        do ee = 1, nel_NURBS_Traction(ILoadSystem, IPatch) !(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
+        do ee = 1, NURBS%nel_NURBS_Traction(ILoadSystem, IPatch) !(IPatch)!(IPatch_Temporary) !<- why is this causing problems? for when ee = 1
         
         ! temporary fix 
         !ee = nel_NURBS
@@ -7020,20 +7020,20 @@
             !                                        ee, IPatch_Temporary) !NURBS related inputs in the eta direction 
             
                  ! XI
-                 if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                 if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
                  
              call ShapeLocPosPointer_IGA_1D_Traction(PosGP(1), GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), &!Wt, & !classic inout parameters
-                                                    XiKnotEntries(:, IPatch), NXiKnotEntries(IPatch), NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
+                                                    NURBS%XiKnotEntries(:, IPatch), NURBS%NXiKnotEntries(IPatch), NURBS%NXiKnotOrder(IPatch), & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
                                                     ee, ILoadSystem, IPatch, &
                                                     ELEMENTBOUNDARYNODES_XI) !NURBS related inputs in the eta direction 
             
              
 
                  ! ETA
-                 else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                 else if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
                  
                      call ShapeLocPosPointer_IGA_1D_Traction(PosGP(1), GPShapeFunction_AllElements(ee,IGaussPoint,:, ILoadSystem, IPatch), GPShapeFunctionDerivative_AllElements(ee,IGaussPoint,:,:, ILoadSystem, IPatch), &!Wt, & !classic inout parameters
-                                                    EtaKnotEntries(:, IPatch), NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch), & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
+                                                    NURBS%EtaKnotEntries(:, IPatch), NURBS%NEtaKnotEntries(IPatch), NURBS%NEtaKnotOrder(IPatch), & !NURBS related inputs in the xi direction !Xi_ParametricDomain, ! ni, & !nj, &
                                                     ee, ILoadSystem, IPatch, &
                                                     ELEMENTBOUNDARYNODES_ETA) !NURBS related inputs in the eta direction 
                      
@@ -7488,8 +7488,8 @@
       
       dR_dxi_tilde = 0.0
       
-      ni = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch),1, ILoadSystem, IPatch)!,IPatch)    
-      nj = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch),2, ILoadSystem, IPatch)!,IPatch)
+      ni = NURBS%INN_Traction(NURBS%ElementConnectivities_Traction(1,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch),1, ILoadSystem, IPatch)!,IPatch)    
+      nj = NURBS%INN_Traction(NURBS%ElementConnectivities_Traction(1,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch),2, ILoadSystem, IPatch)!,IPatch)
       
       !if (NDIM == 3) then
       !    nk = INN(IEN(1,IElement,IPatch),3,IPatch)    
@@ -7537,7 +7537,7 @@
       
        dR_dxi_tilde = 0.0
         
-        do loc_num = 1, nen_NURBS_Traction(ILoadSystem, IPatch)
+        do loc_num = 1, NURBS%nen_NURBS_Traction(ILoadSystem, IPatch)
             do aa = 1, 2!NDIM 
                 do bb = 1, 2!NDIM 
                     dR_dxi_tilde(loc_num, aa) = dR_dxi_tilde(loc_num, aa) + &
@@ -7647,7 +7647,7 @@
       
       do INode = 1, ELEMENTBOUNDARYNODES !--> LOOP FROM NODE 1 TO NODE 16
           
-          NN = IEN_TRACTION(INode, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch)
+          NN = NURBS%ElementConnectivities_TRACTION(INode, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch)
       
           !IEN_TRACTION(CONTROLPOINTNUMBER, ELEMENTNUMBERONTHESURFACE) !--> we have not incuded multipatch in this
           !IEN_TRACTION(CONTROLPOINTNUMBER, ELEMENTNUMBERONTHESURFACE) !--> we have not incuded multipatch in this
@@ -7806,7 +7806,7 @@
       
       dR_dxi_tilde = 0.0
       
-      ni = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch),1, ILoadSystem, IPatch)!,IPatch)    
+      ni = NURBS%INN_Traction(NURBS%ElementConnectivities_Traction(1,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch),1, ILoadSystem, IPatch)!,IPatch)    
       !nj = INN_Traction(IEN_Traction(1,ElementUponWhichLoadIsApplied),2)!,IPatch)
       !if (NDIM == 3) then
       !    nk = INN(IEN(1,IElement,IPatch),3,IPatch)    
@@ -7856,7 +7856,7 @@
       bb = 1.0
        dR_dxi_tilde = 0.0
         
-        do loc_num = 1, nen_NURBS_Traction(ILoadSystem, IPatch)
+        do loc_num = 1, NURBS%nen_NURBS_Traction(ILoadSystem, IPatch)
             !do aa = 1, 1!NDIM 
                 !do bb = 1, 1!NDIM 
                     dR_dxi_tilde(loc_num, aa) = dR_dxi_tilde(loc_num, aa) + &
@@ -7966,7 +7966,7 @@
       
       do INode = 1, ELEMENTBOUNDARYNODES !--> LOOP FROM NODE 1 TO NODE 16
           
-          NN = IEN_TRACTION(INode, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch)
+          NN = NURBS%ElementConnectivities_TRACTION(INode, ElementUponWhichLoadIsApplied, ILoadSystem, IPatch)
       
           !IEN_TRACTION(CONTROLPOINTNUMBER, ELEMENTNUMBERONTHESURFACE) !--> we have not incuded multipatch in this
           !IEN_TRACTION(CONTROLPOINTNUMBER, ELEMENTNUMBERONTHESURFACE) !--> we have not incuded multipatch in this

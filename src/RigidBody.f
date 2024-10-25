@@ -66,7 +66,7 @@
           allocate(RigdBodyDOF(Counters%N), stat = IError)
           RigdBodyDOF = .false.
           
-          allocate(RigdBodyInterface(Counters%NodTot), stat = IError)
+          allocate(RigdBodyInterface(Counters%Sum_NodTot), stat = IError)
           RigdBodyInterface = .false.
 
           if (.not.CalParams%RigidBody%IsRigidBody) RETURN
@@ -96,7 +96,7 @@
 		  VelHasBeenFound= .false.
           !do IAEl = 1, Counters%NAEl ! loop over active elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl, IPatch)        
@@ -150,7 +150,7 @@
           !do IAEl = 1, Counters%NAEl ! loop over active elements
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl, IPatch)
@@ -221,7 +221,7 @@
 
           !do IAEl = 1, Counters%NAEl ! loop over active elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
               iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch), IPatch))
@@ -256,7 +256,7 @@
 		 CalParams%RigidBody%InternalForce=0
          
          do IPatch = 1, Counters%NPatches ! loop over patches
-          do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
@@ -290,7 +290,7 @@
           ! Local variables
           character :: FilNME*1023
           integer(INTEGER_TYPE) :: NumNodes, INode, NodeID
-          logical :: RigdInter (Counters%NodTot)
+          logical :: RigdInter (Counters%Sum_NodTot)
           real(REAL_TYPE) :: IDum			
 		  if ( CalParams%ApplyContactAlgorithm ) then
 			  RigdBodyInterface=InterfaceNodes
@@ -348,7 +348,7 @@
 
           !do IAEl = 1, Counters%NAEl ! loop over active elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IAEl)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IAEl)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
               iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch), IPatch) )
@@ -404,7 +404,7 @@
 
           !do IAEl = 1, Counters%NAEl ! loop over active elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes

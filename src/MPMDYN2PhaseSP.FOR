@@ -84,6 +84,11 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: IntLoadWaterPorosityPrevious
         !> Nodal acceleration for water
         real(REAL_TYPE), dimension(:, :), allocatable :: AccelerationWater
+        
+        !> Nodal acceleration for water for generalized alpha scheme
+        real(REAL_TYPE), dimension(:, :), allocatable :: AccelerationWaterGeneralizedAlpha
+        
+        
         !> Nodal load array of external water load
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoadWater
         !> Nodal load array of external water load taking into accont porosity
@@ -260,15 +265,18 @@
                 allocate(IntLoadWaterPorosity(Counters%N, Counters%NEntity), stat = IError)
                 allocate(IntLoadWaterPorosityPrevious(Counters%N, Counters%NEntity), stat = IError)
                 allocate(AccelerationWater(Counters%N, Counters%NEntity), stat = IError)
+                
+                allocate(AccelerationWaterGeneralizedAlpha(Counters%N, Counters%NEntity), stat = IError)
+                
                 allocate(ExtLoadWater(Counters%N, Counters%NEntity), stat = IError)
                 allocate(ExtLoadWaterPorosity(Counters%N, Counters%NEntity), stat = IError)
                 allocate(ExtLoadWaterTotal(Counters%N, Counters%NEntity,Counters%NWaterLoadSystems), stat = IError)
                 allocate(HydraulicHeadLoadTotal(Counters%N, Counters%NEntity), stat = IError)
  				allocate(SpaceTimeExTLoadWater(Counters%N, Counters%NEntity), stat = IError)
-                allocate(IsInfiltrationNode(Counters%NodTot), stat = IError)
+                allocate(IsInfiltrationNode(Counters%Sum_NodTot), stat = IError)
                 allocate(LumpedNodalPorosityDegSat(Counters%N, Counters%NEntity), stat = IError)
-                allocate(IsSeepageFaceNode(Counters%NodTot), stat = IError)
-                allocate(IsHydraulicHeadNode(Counters%NodTot), stat = IError)
+                allocate(IsSeepageFaceNode(Counters%Sum_NodTot), stat = IError)
+                allocate(IsHydraulicHeadNode(Counters%Sum_NodTot), stat = IError)
               else
                 allocate(LumpedMassWater(1, 1), stat = IError)
                 allocate(LumpedMassNWater(1, 1), stat = IError)
@@ -317,7 +325,7 @@
               allocate(ExtLoadWaterTotal(Counters%N, Counters%NEntity, Counters%NWaterLoadSystems), stat = IError) 
               allocate(HydraulicHeadLoadTotal(Counters%N, Counters%NEntity), stat = IError)
 			  allocate(SpaceTimeExTLoadWater(Counters%N, Counters%NEntity), stat = IError)
-			  allocate(IsInfiltrationNode(Counters%NodTot), stat = IError)
+			  allocate(IsInfiltrationNode(Counters%Sum_NodTot), stat = IError)
               allocate(LumpedNodalPorosityDegSat(Counters%N, Counters%NEntity), stat = IError)
           end if
               
@@ -337,6 +345,9 @@
           IntLoadWaterPorosity = 0.0
           IntLoadWaterPorosityPrevious = 0.0
           AccelerationWater = 0.0
+          
+          AccelerationWaterGeneralizedAlpha = 0.0
+          
           ExtLoadWater = 0.0
           ExtLoadWaterPorosity = 0.0
           ExtLoadWaterTotal = 0.0
@@ -436,7 +447,7 @@
 
           !do IAEl = 1, Counters%NAEl ! loop over all elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl,IPatch) ! loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart,IEl, IPatch) ! get the particle ID
@@ -642,14 +653,22 @@
             end do
            end do
            
-            !Selborne Experiment smoothing of the lower boundary condition
-           !do ii = 1, 26
-           !    index = 2+((ii-1)*2)
-           !    AccelerationWater(index,1)=AccelerationWater(4,1)
-           !end do 
-           ! HARDCODED
-           !AccelerationWater(52,1) = AccelerationWater(50,1)
-           !ExtLoadWater(IDof,1) = ((0.0 * LumpedMassWater(IDof,1) ) - GravityLoadWater(IDof,1) + IntLoadWater(IDof,1) )
+           
+           !!!!!!!!!!!!!!!!!!!!! GENERALIZED ALPHA SCHEME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.)  .and. (CalParams%TimeStep /= 1) ) then !Interpolate accelerations for the generalized alpha scheme 
+            ! Generalized Alpha scheme only works after the first timestep. First timestep is always explicit. 
+            do IDOF = 1, Counters%N ! loop over all degrees of freedom
+                do J = 1, Counters%nEntity ! loop over all entities
+                    AccelerationWater(IDOF,J) = &
+                ( AccelerationWater(IDOF,J) - (CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m * AccelerationWaterGeneralizedAlpha(IDOF,J)) ) * PBoundary(IDOF) & !Numerator
+                / (1 - CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m) !Denominator 
+                    !In this case alpha_m contols your acceleration solution. This is OK and generalized according to Tran and Solowski (2020) and Kontoe (2006). 
+                    !Need to think about the force solution... Alpha_f needs to be less than 0.5 for unconditional stability. 
+                end do ! loop over all entities
+      
+            end do ! loop over all degrees of freedom
+  
+            end if 
           
         end subroutine CalculateWaterIncrementalNodalAcceleration
         
@@ -686,7 +705,7 @@
 
              !do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
                  do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
             do I = 1, NVECTOR
@@ -778,7 +797,7 @@
           
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
               ! Loop over dimensions
@@ -862,14 +881,14 @@
           IPatch_Temporary = 1
           
           if (CalParams%ApplyFBarLowerOrder) then
-              allocate( WeightedUpdatedDeformationGradientJacobianWater(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )   
+              allocate( WeightedUpdatedDeformationGradientJacobianWater(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )   
               WeightedUpdatedDeformationGradientJacobianWater = 0.0
-              allocate( UpdatedDeformationGradientJacobianWater(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )
+              allocate( UpdatedDeformationGradientJacobianWater(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )
               UpdatedDeformationGradientJacobianWater = 0.0
           else 
-              allocate( WeightedUpdatedDeformationGradientJacobianWater(Maximum_NControlPoints, Counters%nEntity) )   
+              allocate( WeightedUpdatedDeformationGradientJacobianWater(NURBS%Maximum_NControlPoints, Counters%nEntity) )   
               WeightedUpdatedDeformationGradientJacobianWater = 0.0
-              allocate( UpdatedDeformationGradientJacobianWater(Maximum_NControlPoints, Counters%nEntity) )    
+              allocate( UpdatedDeformationGradientJacobianWater(NURBS%Maximum_NControlPoints, Counters%nEntity) )    
               UpdatedDeformationGradientJacobianWater = 0.0
           end if
           
@@ -883,7 +902,7 @@
 
           !do IAElement = 1, Counters%NAEl     !loop over all elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
      
               NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
@@ -900,8 +919,8 @@
 
                   ! Determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
-                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
-                             NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
+                             ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl,  &
+                             Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch), &!NodalCoordinatesUpd,  &
                              BMatrixDeformed, &
@@ -1168,7 +1187,7 @@ end subroutine CalculateEpsVoigtWater
         
         !integer(INTEGER_TYPE), intent(in) :: IPatch
         ! this is a scalar for each node
-        real(REAL_TYPE), dimension(Maximum_NControlPoints,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobianWater       !CC added nEntity
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobianWater       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -1197,7 +1216,7 @@ end subroutine CalculateEpsVoigtWater
        
           do IPatch = 1, Counters%NPatches ! Loop over patches
           
-              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
                   
                   ! the background grid should have the same exact active element discretization 
                   IEl = ActiveElement(IAEl, IPatch)
@@ -1207,7 +1226,7 @@ end subroutine CalculateEpsVoigtWater
 
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          IEN(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -1271,15 +1290,15 @@ end subroutine CalculateEpsVoigtWater
         integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
         integer(INTEGER_TYPE) :: INode, ITens
         
-        real(REAL_TYPE), dimension(Maximum_NControlPoints, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobianWater
-        real(REAL_TYPE), dimension(Maximum_NControlPoints, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobianWater
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobianWater
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobianWater
         
         
         IPatch_Temporary = 1
         ! initialisation --> not necessary here
         UpdatedDeformationGradientJacobianWater = 0.0
         
-        do INode = 1, NControlPoints(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
@@ -1325,7 +1344,7 @@ end subroutine CalculateEpsVoigtWater
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(Maximum_NControlPoints,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobianWater       !CC added nEntity
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobianWater       !CC added nEntity
           
           
         ! Local variables
@@ -1345,12 +1364,12 @@ end subroutine CalculateEpsVoigtWater
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES) = &
-                        IEN(1:ELEMENTNODES, IEl, IPatch)
+                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                 
                 !do I = 1, NTENSOR
               
@@ -1429,7 +1448,7 @@ implicit none
 
 !integer(INTEGER_TYPE), intent(in) :: IPatch
 ! this is a scalar for each node
-real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobianWater       !CC added nEntity
+real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobianWater       !CC added nEntity
 ! --> above hardcoded to 1... we need better multipatch generalization for this
 
 ! Local variables
@@ -1459,7 +1478,7 @@ real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1),Counters%nEntity), in
        
   do IPatch = 1, Counters%NPatches ! Loop over patches
   
-      do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+      do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
           
           ! the background grid should have the same exact active element discretization 
           IEl = ActiveElement(IAEl, IPatch)
@@ -1469,7 +1488,7 @@ real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1),Counters%nEntity), in
 
               ! degree of freedom for active element 
               INode(1:ELEMENTNODES_VolLockSmooth) = &
-                  IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                  NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
       
               
               
@@ -1538,15 +1557,15 @@ implicit none
 integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
 integer(INTEGER_TYPE) :: INode, ITens
 
-real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobianWater
-real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobianWater
+real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobianWater
+real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobianWater
 
 
 IPatch_Temporary = 1
 ! initialisation --> not necessary here
 UpdatedDeformationGradientJacobianWater = 0.0
 
-do INode = 1, NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+do INode = 1, NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
 
     do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
     
@@ -1595,7 +1614,7 @@ subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth(UpdatedDefor
  implicit none
  
  ! hardcoded on the first patch
- real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobianWater       !CC added nEntity
+ real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobianWater       !CC added nEntity
    
    
  ! Local variables
@@ -1615,12 +1634,12 @@ subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth(UpdatedDefor
    
  do IPatch = 1, Counters%NPatches ! Loop over patches
    
-     do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+     do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
      
          IEl = ActiveElement(IAEl, IPatch)
        
          Nodes_Element(1:ELEMENTNODES_VolLockSmooth) = &
-                 IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
+                 NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
          
          !do I = 1, NTENSOR
        
@@ -1707,7 +1726,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
     
           !do IAElement = 1, Counters%NAEl ! Loop over all elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
            IElement = ActiveElement(IAElement, IPatch)
           
           !reset to zero
@@ -1808,7 +1827,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
            
           !do IAEl = 1, Counters%NAEl                                    ! Loop over all elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl,IPatch)                                 ! Loop over all particles in element
               
@@ -2058,7 +2077,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
@@ -2091,11 +2110,17 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           IntLoadWaterLoc = 0.0
           GravityLoadWaterLoc = 0.0
           GravityLoadMixtureLoc = 0.0
+          
+          ! Temporary
+          ILoadSystem_Temporary = 1
+          IPatch_Temporary = 1
+          
+          
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem_Temporary, IPatch_Temporary) + Counters%NLoadedElementSidesWaterMatPointsB)>0
 
             !do IAEl = 1, Counters%NAEl
                 do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
             !========================================================================
@@ -2459,13 +2484,13 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
         subroutine UpdateMultipliersWaterForSpaceDependency(SpaceTimeExTLoadWater, NDof) 
            
         real(REAL_TYPE), dimension(Counters%N, 1), intent(out) :: SpaceTimeExTLoadWater
-        integer(INTEGER_TYPE), dimension(Counters%NodTot), intent(in) :: NDof   
+        integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot), intent(in) :: NDof   
                  
         ! Local variables
         integer(INTEGER_TYPE), dimension(NDIM) :: NodeID
         integer(INTEGER_TYPE) :: I, J, K, ND
         real(REAL_TYPE) :: HydrHead, yNode, ExternalSuction, WaterAuxSpaceDependency !Gravity, ConstDensityLiquid,
-        real(REAL_TYPE),dimension(Counters%NodTot*NVECTOR):: WaterAuxVector
+        real(REAL_TYPE),dimension(Counters%Sum_NodTot*NVECTOR):: WaterAuxVector
         real(REAL_TYPE) :: GammaW  
         
         ! Multipatch variables 
@@ -2553,7 +2578,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
@@ -2579,7 +2604,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           IntLoadWaterLoc = 0.0
 
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
           !do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl, IPatch)
 
@@ -2855,12 +2880,17 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           ExtLoadWaterLoc = 0.0
           GravityLoadWaterLoc = 0.0
           GravityLoadMixtureLoc = 0.0
+          
+          
+          ILoadSystem_Temporary = 1
+          IPatch_Temporary = 1
+          
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem_Temporary, IPatch_Temporary) +Counters%NLoadedElementSidesWaterMatPointsB)>0
 
                  !do IAEl = 1, Counters%NAEl
                      
                      do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
             !========================================================================
@@ -3024,7 +3054,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
 
           do IPatch = 1, Counters%NPatches ! loop over patches
               
-          do nn = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          do nn = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(nn,IPatch)
 
@@ -3105,7 +3135,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           !do IAEl = 1, Counters%NAEl
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
@@ -3115,10 +3145,15 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           ExtLoadWaterPorosityLoc = 0.0
           IntLoadWaterPorosityLoc = 0.0
           GravityLoadWaterPorosityLoc = 0.0
+          
+          
+          ILoadSystem_Temporary = 1
+          IPatch_Temporary = 1
+          
           IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem_Temporary, IPatch_Temporary) +Counters%NLoadedElementSidesWaterMatPointsB)>0
 
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
           !do IAEl = 1, Counters%NAEl
             IEl = ActiveElement(IAEl, IPatch)
             
@@ -3281,7 +3316,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
@@ -3294,7 +3329,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
     
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 
             ! Determine number of integration points inside element
@@ -3400,12 +3435,16 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
 
         ExtLoadWaterPorosityLoc = 0.0
         GravityLoadWaterPorosityLoc = 0.0
+        
+        IPatch_Temporary = 1
+        ILoadSystem_Temporary = 1
+        
         IsLoadOnMP =(Counters%NLoadedElementSidesWaterMatPoints(ILoadSystem_Temporary, IPatch_Temporary) +Counters%NLoadedElementSidesWaterMatPointsB)>0
 
         !do IAEl = 1, Counters%NAEl
             
             do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
            IEl = ActiveElement(IAEl, IPatch)
 
@@ -3490,12 +3529,12 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
        IsInfiltrationNode = .false.
        !do IEl=1,Counters%NAEl !loop over active lement
        do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
            
          ElemID = ActiveElement(IEl, IPatch)!, IPatch_Temporary)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch), nel_NURBS(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch), Counters%NEl(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes 
@@ -3573,11 +3612,11 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
        IsSeepageNode = .false.
        !do IEl=1,Counters%NAEl !loop over active lement
            do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
          ElemID = ActiveElement(IEl, IPatch)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch), nel_NURBS(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch), Counters%NEl(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                  call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
@@ -3630,11 +3669,11 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
        !do IEl=1,Counters%NAEl !loop over active lement
            
            do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
          ElemID = ActiveElement(IEl, IPatch)
            
          do ISide =1,ELEMENTSIDES !loop over side nodes
-             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch), nel_NURBS(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+             IsBoundarySide = BoundaryElementSurface(ElemID,ISide,IsActiveElement(:,IPatch), Counters%NEl(IPatch))!Counters%NEl) !Give 1 if ISide is adiacent to inactive element
              
              if (IsBoundarySide==1) then !side is on a free surface
                  call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
@@ -3682,7 +3721,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
        integer(INTEGER_TYPE) :: GlobalNodeID
    
        do IPatch = 1, Counters%NPatches ! loop over patches
-        do INode=1,NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+        do INode=1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
             
             GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
             
@@ -3798,7 +3837,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
         !do IAEl = 1, Counters%NAEl        ! Loop over all elements
             
             do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
             do IPart = 1, NPartEle(IEl,IPatch)  ! Loop over all particles in element

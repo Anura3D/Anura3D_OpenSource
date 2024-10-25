@@ -734,6 +734,12 @@
           allocatable :: AccumulatedDisplacementSoil ! Accumulated displacements of a load phase
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: AccelerationSoil  ! Nodal acceleration of soil
+        
+        real(REAL_TYPE), dimension(:, :), & 
+          allocatable :: AccelerationSoilGeneralizedAlpha  ! Nodal acceleration of soil at time step k (i.e., mapped from MP to nodes in the beginning of the LagrangianPhase)
+        real(REAL_TYPE), dimension(:, :), & 
+          allocatable :: TotalVelocitySoilGeneralizedAlpha
+        
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: RateofMomentum  ! Rate of momentum
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ActiveElement ! ID of the active elements (rank 2 for number of patches)
@@ -814,59 +820,59 @@
         
         
         
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ! NURBS related global variables 
-        ! Multipatch variables 
-        !integer(INTEGER_TYPE) :: Counters%NPatches                        = -1 ! number of patches in the multipatch generalization
-        ! Multipatch --> maximum allocation values
-        integer(INTEGER_TYPE) :: Maximum_NControlPoints ! temporarily initialized here
-        integer(INTEGER_TYPE) :: Maximum_NControlPoints_Traction ! temporarily initialized here
-
-        integer(INTEGER_TYPE) :: Maximum_NXiKnotEntries ! temporarily initialized here
-        integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntries ! temporarily initialized here
-        integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntries ! temporarily initialized here
-          
-        
-        integer(INTEGER_TYPE) :: Maximum_NXiKnotOrder
-        integer(INTEGER_TYPE) :: Maximum_NEtaKnotOrder
-        integer(INTEGER_TYPE) :: Maximum_NZetaKnotOrder
-        
-        
-        !integer(INTEGER_TYPE) :: Maximum_NFixities
-        integer(INTEGER_TYPE) :: Maximum_NElemMPPrescribedVelocity
-        integer(INTEGER_TYPE) :: Maximum_NNodePrescribedVelocity
-        
-        
-        ! Number of control points 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints_VolLockSmooth 
-        
-        !integer(INTEGER_TYPE) :: NControlPoints_Traction ! needs multipatch generalization
-        integer(INTEGER_TYPE), allocatable, dimension(:,:)  :: NControlPoints_Traction ! needs multipatch generalization
-        integer(INTEGER_TYPE), allocatable, dimension(:,:)  :: NURBS_Traction_Dimension 
-                                                    ! this tells us which dimension we are considering based on the integer
-        
-        ! Fixities --> MULTIPATCH GENERALIZATION 
-        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NFixities
-        
-        
-        ! MP Prescribed Material Point Velocity --> MULTIPATCH GENERALIZATION
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NElemMPPrescribedVelocity ! -> MP prescribed velocity
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NNodePrescribedVelocity   ! -> Node prescribed velocity
-        
-        
-        ! Xi direction 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries                           != -1 ! Xi vector number of entries
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries_VolLockSmooth                           != -1 ! Xi vector number of entries
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder                             != -1 ! Xi vector order        
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder_VolLockSmooth             != -1 ! Xi vector number of entries (reduced order)
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots       != -1 ! number of univariate basis functions for eta direction 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth       != -1 ! number of univariate basis functions for eta direction 
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !! NURBS related global variables 
+        !! Multipatch variables 
+        !!integer(INTEGER_TYPE) :: Counters%NPatches                        = -1 ! number of patches in the multipatch generalization
+        !! Multipatch --> maximum allocation values
+        !integer(INTEGER_TYPE) :: Maximum_NControlPoints ! temporarily initialized here
+        !integer(INTEGER_TYPE) :: Maximum_NControlPoints_Traction ! temporarily initialized here
+        !
+        !integer(INTEGER_TYPE) :: Maximum_NXiKnotEntries ! temporarily initialized here
+        !integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntries ! temporarily initialized here
+        !integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntries ! temporarily initialized here
+        !  
+        !
+        !integer(INTEGER_TYPE) :: Maximum_NXiKnotOrder
+        !integer(INTEGER_TYPE) :: Maximum_NEtaKnotOrder
+        !integer(INTEGER_TYPE) :: Maximum_NZetaKnotOrder
+        !
+        !
+        !!integer(INTEGER_TYPE) :: Maximum_NFixities
+        !integer(INTEGER_TYPE) :: Maximum_NElemMPPrescribedVelocity
+        !integer(INTEGER_TYPE) :: Maximum_NNodePrescribedVelocity
+        !
+        !
+        !! Number of control points 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints_VolLockSmooth 
+        !
+        !!integer(INTEGER_TYPE) :: NControlPoints_Traction ! needs multipatch generalization
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:)  :: NControlPoints_Traction ! needs multipatch generalization
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:)  :: NURBS_Traction_Dimension 
+        !                                            ! this tells us which dimension we are considering based on the integer
+        !
+        !! Fixities --> MULTIPATCH GENERALIZATION 
+        !!integer(INTEGER_TYPE), allocatable, dimension(:) :: NFixities
+        !
+        !
+        !! MP Prescribed Material Point Velocity --> MULTIPATCH GENERALIZATION
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NElemMPPrescribedVelocity ! -> MP prescribed velocity
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NNodePrescribedVelocity   ! -> Node prescribed velocity
+        !
+        !
+        !! Xi direction 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries                           != -1 ! Xi vector number of entries
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries_VolLockSmooth                           != -1 ! Xi vector number of entries
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder                             != -1 ! Xi vector order        
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder_VolLockSmooth             != -1 ! Xi vector number of entries (reduced order)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots       != -1 ! number of univariate basis functions for eta direction 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth       != -1 ! number of univariate basis functions for eta direction 
 
         integer(INTEGER_TYPE) :: NXiGaussPoints                           = -1 ! number of gauss points in xi direction 
         ! I added a rank for multipatch generalization
-        real(REAL_TYPE), allocatable, dimension(:, :) :: XiKnotEntries            ! Xi knot vector 
-        real(REAL_TYPE), allocatable, dimension(:, :) :: XiKnotEntries_VolLockSmooth ! Xi knot vector 
+        !real(REAL_TYPE), allocatable, dimension(:, :) :: XiKnotEntries            ! Xi knot vector 
+        !real(REAL_TYPE), allocatable, dimension(:, :) :: XiKnotEntries_VolLockSmooth ! Xi knot vector 
         real(REAL_TYPE), allocatable, dimension(:) :: XiGaussPoints            ! Xi gauss points 
 
         
@@ -880,16 +886,16 @@
         !real(REAL_TYPE), allocatable, dimension(:) :: XiKnotEntries_Traction            ! Xi knot vector         
         
         ! Eta direction 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries                          != -1 ! Eta vector number of entries
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries_VolLockSmooth            != -1 ! Eta vector number of entries (reduced order)
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder                            != -1 ! Eta vector order
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder_VolLockSmooth                            != -1 ! Eta vector order
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots      != -1 ! number of univariate basis functions for eta direction 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth      != -1 ! number of univariate basis functions for eta direction
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries                          != -1 ! Eta vector number of entries
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries_VolLockSmooth            != -1 ! Eta vector number of entries (reduced order)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder                            != -1 ! Eta vector order
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder_VolLockSmooth                            != -1 ! Eta vector order
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots      != -1 ! number of univariate basis functions for eta direction 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth      != -1 ! number of univariate basis functions for eta direction
         integer(INTEGER_TYPE) :: NEtaGaussPoints                          = -1 ! number of gauss points in eta direction 
         ! I added a rank for multipatch generalization
-        real(REAL_TYPE), allocatable, dimension(:, :) :: EtaKnotEntries           ! Eta knot vector
-        real(REAL_TYPE), allocatable, dimension(:, :) :: EtaKnotEntries_VolLockSmooth           ! Eta knot vector
+        !real(REAL_TYPE), allocatable, dimension(:, :) :: EtaKnotEntries           ! Eta knot vector
+        !real(REAL_TYPE), allocatable, dimension(:, :) :: EtaKnotEntries_VolLockSmooth           ! Eta knot vector
         real(REAL_TYPE), allocatable, dimension(:) :: EtaGaussPoints           ! Eta gauss points
 
         !------traction
@@ -903,93 +909,93 @@
         
         
         ! Zeta direction 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries                         != -1 ! Zeta vector number of entries
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries_VolLockSmooth            != -1 ! Eta vector number of entries (reduced order)
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder                          != -1 ! Zeta vector order
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder_VolLockSmooth                          != -1 ! Zeta vector order (reduced order)
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots     != -1 ! number of univariate basis functions for zeta direction 
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth     != -1 ! number of univariate basis functions for zeta direction 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries                         != -1 ! Zeta vector number of entries
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries_VolLockSmooth            != -1 ! Eta vector number of entries (reduced order)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder                          != -1 ! Zeta vector order
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder_VolLockSmooth                          != -1 ! Zeta vector order (reduced order)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots     != -1 ! number of univariate basis functions for zeta direction 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth     != -1 ! number of univariate basis functions for zeta direction 
 
         integer(INTEGER_TYPE) :: NZetaGaussPoints                         = -1 ! number of gauss points in zeta direction 
         ! I added a rank for multipatch generalization
-        real(REAL_TYPE), allocatable, dimension(:, :) :: ZetaKnotEntries          ! Zeta knot vector      
-        real(REAL_TYPE), allocatable, dimension(:, :) :: ZetaKnotEntries_VolLockSmooth          ! Zeta knot vector           
+        !real(REAL_TYPE), allocatable, dimension(:, :) :: ZetaKnotEntries          ! Zeta knot vector      
+        !real(REAL_TYPE), allocatable, dimension(:, :) :: ZetaKnotEntries_VolLockSmooth          ! Zeta knot vector           
         real(REAL_TYPE), allocatable, dimension(:) :: ZetaGaussPoints          ! Zeta knot vector           
 
-        ! Knot connectivity array (multipatch rank)
-        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN ! NURBS coordinates telling you (early) knots that define an element 
-        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN ! Knot connectivity
-        
-        !------- volumetric locking (reduced order)
-        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN_VolLockSmooth ! NURBS coordinates telling you (early) knots that define an element 
-        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN_VolLockSmooth ! Knot connectivity
-        
-        !------- traction
-        integer(INTEGER_TYPE), allocatable, dimension(:,:, :,:) :: INN_Traction ! NURBS coordinates telling you (early) knots that define an element 
-        integer(INTEGER_TYPE), allocatable, dimension(:,:, :,:) :: IEN_Traction ! Knot connectivity
+        !! Knot connectivity array (multipatch rank)
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN ! NURBS coordinates telling you (early) knots that define an element 
+        !!integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN ! Knot connectivity
+        !
+        !!------- volumetric locking (reduced order)
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN_VolLockSmooth ! NURBS coordinates telling you (early) knots that define an element 
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: ElementConnectivities_VolLockSmooth ! Knot connectivity
+        !
+        !!------- traction
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:, :,:) :: INN_Traction ! NURBS coordinates telling you (early) knots that define an element 
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:, :,:) :: ElementConnectivities_Traction ! Knot connectivity --> need to be moved to NURBSType
         
         ! I moved this here so that I can access in the shape function subroutine to find the weights
         integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: ElementConnectivities
         
         ! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS                        ! number of elements 
-        
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS                        ! number of global basis functions 
-                                                                                ! (global here refers to its global domain within the 'super' element)
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS                        ! number of local basis functions
-                                                                                ! (local here refers to a knot span i.e. accross one single element)  
-        
-        
-        ! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS_VolLockSmooth                        ! number of elements
-        
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS_VolLockSmooth                        ! number of global basis functions 
-                                                                                ! (global here refers to its global domain within the 'super' element)
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS_VolLockSmooth                        ! number of local basis functions
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS                        ! number of elements 
+        !
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS                        ! number of global basis functions 
+        !                                                                        ! (global here refers to its global domain within the 'super' element)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS                        ! number of local basis functions
+        !                                                                        ! (local here refers to a knot span i.e. accross one single element)  
+        !
+        !
+        !! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS_VolLockSmooth                        ! number of elements
+        !
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS_VolLockSmooth                        ! number of global basis functions 
+        !                                                                        ! (global here refers to its global domain within the 'super' element)
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS_VolLockSmooth                        ! number of local basis functions
                                                                                 ! (local here refers to a knot span i.e. accross one single element)  
         
         
         !------traction
-        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nel_NURBS_Traction                        ! number of elements 
-        ! Rank 1 --> LoadSystems
-        ! Rank 2 --> NumberOfPatch
-        
-        !, allocatable, dimension(:)
-        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nnp_NURBS_Traction                        ! number of global basis functions 
-        ! Rank 1 --> LoadSystems
-        ! Rank 2 --> NumberOfPatch
-        
-                                                                        ! (global here refers to its global domain within the 'super' element)
-        !, allocatable, dimension(:) 
-        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nen_NURBS_Traction                        ! number of local basis functions
-        ! Rank 1 --> LoadSystems
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nel_NURBS_Traction                        ! number of elements 
+        !! Rank 1 --> LoadSystems
+        !! Rank 2 --> NumberOfPatch
+        !
+        !!, allocatable, dimension(:)
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nnp_NURBS_Traction                        ! number of global basis functions 
+        !! Rank 1 --> LoadSystems
+        !! Rank 2 --> NumberOfPatch
+        !
+        !                                                                ! (global here refers to its global domain within the 'super' element)
+        !!, allocatable, dimension(:) 
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nen_NURBS_Traction                        ! number of local basis functions
+        !! Rank 1 --> LoadSystems
         ! Rank 2 --> NumberOfPatch
                                                                                 ! (local here refers to a knot span i.e. accross one single element)  
         !, allocatable, dimension(:) 
         
         
-        integer(INTEGER_TYPE), allocatable, dimension(:,:) :: NLoadSystems_Traction_NumberOfElements                        ! number of local basis functions
-        
-        
-        integer(INTEGER_TYPE) :: Maximum_NLoadSystems_Traction
+        !integer(INTEGER_TYPE), allocatable, dimension(:,:) :: NLoadSystems_Traction_NumberOfElements                        ! number of local basis functions
+        !
+        !
+        !integer(INTEGER_TYPE) :: Maximum_NLoadSystems_Traction
         
         
         ! Number of active elements
-        integer(INTEGER_TYPE), allocatable, dimension(:) :: nael_NURBS
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: nael_NURBS --> I commented this. Use CalParams%NAEl instead
         
-        integer(INTEGER_TYPE) :: Maximum_nel_NURBS
-        integer(INTEGER_TYPE) :: Maximum_nnp_NURBS
-        integer(INTEGER_TYPE) :: Maximum_nen_NURBS
-        
-        
-        integer(INTEGER_TYPE) :: Maximum_nel_NURBS_Traction
-        integer(INTEGER_TYPE) :: Maximum_nnp_NURBS_Traction
-        integer(INTEGER_TYPE) :: Maximum_nen_NURBS_Traction
-        
-        
-        integer(INTEGER_TYPE) :: Sum_nel_NURBS
-        integer(INTEGER_TYPE) :: Sum_nael_NURBS
-        integer(INTEGER_TYPE) :: Sum_NControlPoints
+        !integer(INTEGER_TYPE) :: Maximum_nel_NURBS
+        !integer(INTEGER_TYPE) :: Maximum_nnp_NURBS
+        !integer(INTEGER_TYPE) :: Maximum_nen_NURBS
+        !
+        !
+        !integer(INTEGER_TYPE) :: Maximum_nel_NURBS_Traction
+        !integer(INTEGER_TYPE) :: Maximum_nnp_NURBS_Traction
+        !integer(INTEGER_TYPE) :: Maximum_nen_NURBS_Traction
+        !
+        !
+        !integer(INTEGER_TYPE) :: Sum_nel_NURBS
+        !integer(INTEGER_TYPE) :: Sum_nael_NURBS
+        !integer(INTEGER_TYPE) :: Sum_NControlPoints
         
         !integer(INTEGER_TYPE), allocatable, dimension(:) :: NumberOfGlobalControlPointsUniqueMultipatch
                
@@ -1535,7 +1541,8 @@
         end subroutine SetFormulation
 
 
-        subroutine SetElementType(ReadElementType)
+        subroutine SetElementType(ReadElementType, NXiKnotOrder_Input, NEtaKnotOrder_Input, NZetaKnotOrder_Input, &
+          NXiKnotOrder_VolLockSmooth_Input, NEtaKnotOrder_VolLockSmooth_Input, NZetaKnotOrder_VolLockSmooth_Input)
         !**********************************************************************
         !
         !    Function : Sets constants that depend on the element type 
@@ -1553,7 +1560,14 @@
         
         ! Multipatch variable
         integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-                
+        integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder_Input
+        integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder_Input
+        integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder_Input
+        
+        integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder_VolLockSmooth_Input
+        integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder_VolLockSmooth_Input
+        integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder_VolLockSmooth_Input
+        
         select case (ReadElementType)
             
           case(TRI3) ! 'triangular_3-noded'
@@ -1603,17 +1617,17 @@
               ELEMENTBOUNDARYGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI
               ELEMENTGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI *ELEMENTBOUNDARYGAUSSPOINTS_ETA
               
-              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1!NXiKnotOrder_Traction+1 ! Xi  !(IPatch_Temporary)
-              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!NEtaKnotOrder_Traction+1 ! Eta !(IPatch_Temporary)
+              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder_Input+1!NXiKnotOrder_Traction+1 ! Xi  !(IPatch_Temporary)
+              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder_Input+1!NEtaKnotOrder_Traction+1 ! Eta !(IPatch_Temporary)
               
-              ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
-              ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
+              ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth_Input+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
+              ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NXiKnotOrder_VolLockSmooth_Input+1!(IPatch_Temporary)+1 ! Eta !_Traction
               
               
-              ELEMENTBOUNDARYNODES = NXiKnotOrder(IPatch_Temporary)+1 !(NXiKnotOrder_Traction+1)
+              ELEMENTBOUNDARYNODES = NXiKnotOrder_Input+1 !(NXiKnotOrder_Traction+1)
               
-              ELEMENTNODES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
-              ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
+              ELEMENTNODES_XI = (NDIM * NXiKnotOrder_Input) 
+              ELEMENTNODES_ETA = (NDIM * NEtaKnotOrder_Input)
               
               ELEMENTNODES = ELEMENTBOUNDARYNODES_XI * ELEMENTBOUNDARYNODES_ETA ! if 2GP by 2GP then 4GPs per element
               
@@ -1621,8 +1635,8 @@
                                            ELEMENTBOUNDARYNODES_ETA_VolLockSmooth ! if 2GP by 2GP then 4GPs per element
               
               
-              ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder(IPatch_Temporary)) 
-              ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder(IPatch_Temporary))
+              ELEMENTVERTICES_XI = (NDIM * NXiKnotOrder_Input) 
+              ELEMENTVERTICES_ETA = (NDIM * NEtaKnotOrder_Input)
               ELEMENTVERTICES = (ELEMENTBOUNDARYNODES_XI-1) * (ELEMENTBOUNDARYNODES_ETA-1)
               
               ! consider generalizing this to multiple gauss points
@@ -1678,7 +1692,7 @@
               
               
               
-              ELEMENTBOUNDARYNODES = (NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)!NXiGaussPoints * NEtaGaussPoints!(NXiKnotOrder_Traction+1)*(NEtaKnotOrder_Traction+1) !(IPatch_Temporary)*!4
+              ELEMENTBOUNDARYNODES = (NXiKnotOrder_Input+1)*(NEtaKnotOrder_Input+1)!NXiGaussPoints * NEtaGaussPoints!(NXiKnotOrder_Traction+1)*(NEtaKnotOrder_Traction+1) !(IPatch_Temporary)*!4
               ELEMENTBOUNDARYGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA !ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA!4*4 !1 --> 2D surface
               ELEMENTGAUSSPOINTS = ELEMENTBOUNDARYGAUSSPOINTS_XI*ELEMENTBOUNDARYGAUSSPOINTS_ETA*ELEMENTBOUNDARYGAUSSPOINTS_ZETA !4*4*4
               !ELEMENTSIDES = 6
@@ -1692,8 +1706,8 @@
               !ELEMENTNODES_ETA = NEtaKnotOrder_Traction+1!(NDIM * NEtaKnotOrder(IPatch_Temporary))
               !ELEMENTNODES_ZETA = NZetaKnotOrder_Traction+1!(NDIM * NZetaKnotOrder(IPatch_Temporary))
               
-              ELEMENTVERTICES_XI = NXiKnotOrder(IPatch_Temporary)+1!(NDIM * NXiKnotOrder(IPatch_Temporary)) 
-              ELEMENTVERTICES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!(NDIM * NEtaKnotOrder(IPatch_Temporary))
+              ELEMENTVERTICES_XI = NXiKnotOrder_Input+1!(NDIM * NXiKnotOrder(IPatch_Temporary)) 
+              ELEMENTVERTICES_ETA = NEtaKnotOrder_Input+1!(NDIM * NEtaKnotOrder(IPatch_Temporary))
               !ELEMENTVERTICES_ZETA = NZetaKnotOrder_Traction+1!(NDIM * NZetaKnotOrder(IPatch_Temporary))
               ! consider generalizing this to multiple gauss points
               
@@ -1711,14 +1725,14 @@
 
               !I should be able to have as many gauss points as I want... why do we have this difference between gauss point and material points
               
-              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
-              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
-              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder(IPatch_Temporary)+1
+              ELEMENTBOUNDARYNODES_XI = NXiKnotOrder_Input+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
+              ELEMENTBOUNDARYNODES_ETA = NEtaKnotOrder_Input+1!(IPatch_Temporary)+1 ! Eta !_Traction
+              ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder_Input+1
    
               
-              ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth(IPatch_Temporary)+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
-              ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NEtaKnotOrder_VolLockSmooth(IPatch_Temporary)+1!(IPatch_Temporary)+1 ! Eta !_Traction
-              ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = NZetaKnotOrder_VolLockSmooth(IPatch_Temporary)+1
+              ELEMENTBOUNDARYNODES_XI_VolLockSmooth = NXiKnotOrder_VolLockSmooth_Input+1!NXiKnotOrder(IPatch_Temporary)+1 ! Xi  !_Traction
+              ELEMENTBOUNDARYNODES_ETA_VolLockSmooth = NXiKnotOrder_VolLockSmooth_Input+1!(IPatch_Temporary)+1 ! Eta !_Traction
+              ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth = NXiKnotOrder_VolLockSmooth_Input+1
               
               
               !ELEMENTBOUNDARYNODES_ZETA = NZetaKnotOrder_Traction+1!(IPatch_Temporary)+1 ! Zeta

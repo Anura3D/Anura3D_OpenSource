@@ -200,7 +200,7 @@
           if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
           !do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)            
             NElemPart = NumberOfIntegrationPoints(IEl, IPatch)    ! Get the number of integration per element (Gaussian integration points or number of material points)
            
@@ -247,7 +247,7 @@
           !!******STRAT calculation of effective stresses
           !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
@@ -324,7 +324,7 @@
           !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
@@ -750,7 +750,7 @@
  
           integer(INTEGER_TYPE), intent(in) :: IMatSet
           ! Local variables  
-          real(REAL_TYPE), dimension(Counters%NodTot,2) :: dPressureSmooth
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot,2) :: dPressureSmooth
           real(REAL_TYPE) :: dWP, Weight, dWPWeighted, EnhancedPressureIncrement
           integer(INTEGER_TYPE) :: IEl, IAEl, I, NElemPart, MaterialID, IParticle, ParticleIndex
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
@@ -765,7 +765,7 @@
           !Calculate nodal incremental pressure mapping from MP to element nodes    
           !do IAEl = 1, Counters%NAEl  ! active element
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
             if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
@@ -791,7 +791,7 @@
 
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -803,7 +803,7 @@
        
           !do IAEl = 1, Counters%NAEl  ! active element 
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
               if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
                 LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)

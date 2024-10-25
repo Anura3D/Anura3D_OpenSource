@@ -334,15 +334,15 @@
           
           if (CalParams%ApplyFBarLowerOrder) then 
               ! lower order grid
-              allocate( WeightedUpdatedDeformationGradientJacobian(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )   
+              allocate( WeightedUpdatedDeformationGradientJacobian(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )   
                 WeightedUpdatedDeformationGradientJacobian = 0.0
-              allocate( UpdatedDeformationGradientJacobian(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )
+              allocate( UpdatedDeformationGradientJacobian(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )
                 UpdatedDeformationGradientJacobian = 0.0
           else 
               ! same higher order grid
-              allocate( WeightedUpdatedDeformationGradientJacobian(Maximum_NControlPoints, Counters%nEntity) )  
+              allocate( WeightedUpdatedDeformationGradientJacobian(NURBS%Maximum_NControlPoints, Counters%nEntity) )  
               WeightedUpdatedDeformationGradientJacobian = 0.0
-              allocate( UpdatedDeformationGradientJacobian(Maximum_NControlPoints, Counters%nEntity) )    
+              allocate( UpdatedDeformationGradientJacobian(NURBS%Maximum_NControlPoints, Counters%nEntity) )    
               UpdatedDeformationGradientJacobian = 0.0  
           end if
                       
@@ -358,7 +358,7 @@
           !do IActiveElement = 1, Counters%NAEl ! loop over all active elements
            
           do IPatch = 1, Counters%NPatches ! loop over all patches
-          do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+          do IActiveElement = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
 
               IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
               NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
@@ -375,8 +375,8 @@
                     
                   ! determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
-                               ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
-                               NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                               ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
+                               Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
                                IElement, ElementConnectivities(:,:,IPatch), &
                                NodalCoordinatesUpd(:,:,IPatch),  &
                                BMatrixDeformed, &
@@ -408,7 +408,7 @@
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
                                 RelativeDeformationGradient, &
                                 IPatch) ! RelativeDeformationGradient = relative deformation gradient at material point
-                  
+                        
                       ! Evaluate the jacobian of the relative deformation gradient --> DeltaJ
                       call RJacInv(NDIM, RelativeDeformationGradient, RelativeDeformationGradientInverse, &
                       RelativeDeformationGradientJacobian, RelativeDeformationGradientInverseJacobian)
@@ -527,7 +527,7 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(Maximum_NControlPoints,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
           
           
         ! Local variables
@@ -547,12 +547,12 @@
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES) = &
-                        IEN(1:ELEMENTNODES, IEl, IPatch)
+                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                 
                 !do I = 1, NTENSOR
               
@@ -637,7 +637,7 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
           
           
         ! Local variables
@@ -657,12 +657,12 @@
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES_VolLockSmooth) = &
-                        IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
+                        NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
                 
                 !do I = 1, NTENSOR
               
@@ -911,7 +911,7 @@
         
         !integer(INTEGER_TYPE), intent(in) :: IPatch
         ! this is a scalar for each node
-        real(REAL_TYPE), dimension(Maximum_NControlPoints,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -940,7 +940,7 @@
        
           do IPatch = 1, Counters%NPatches ! Loop over patches
           
-              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
                   
                   ! the background grid should have the same exact active element discretization 
                   IEl = ActiveElement(IAEl, IPatch)
@@ -950,7 +950,7 @@
 
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          IEN(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -1019,7 +1019,7 @@
         
         !integer(INTEGER_TYPE), intent(in) :: IPatch
         ! this is a scalar for each node
-        real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
         ! --> above hardcoded to 1... we need better multipatch generalization for this
         
         ! Local variables
@@ -1049,7 +1049,7 @@
        
           do IPatch = 1, Counters%NPatches ! Loop over patches
           
-              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
                   
                   ! the background grid should have the same exact active element discretization 
                   IEl = ActiveElement(IAEl, IPatch)
@@ -1059,7 +1059,7 @@
 
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES_VolLockSmooth) = &
-                          IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -1130,15 +1130,15 @@
         integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
         integer(INTEGER_TYPE) :: INode, ITens
         
-        real(REAL_TYPE), dimension(Maximum_NControlPoints, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobian
-        real(REAL_TYPE), dimension(Maximum_NControlPoints, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobian
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobian
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobian
         
         
         IPatch_Temporary = 1
         ! initialisation --> not necessary here
         UpdatedDeformationGradientJacobian = 0.0
         
-        do INode = 1, NControlPoints(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
@@ -1196,15 +1196,15 @@
         integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
         integer(INTEGER_TYPE) :: INode, ITens
         
-        real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobian
-        real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobian
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobian
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobian
         
         
         IPatch_Temporary = 1
         ! initialisation --> not necessary here
         UpdatedDeformationGradientJacobian = 0.0
         
-        do INode = 1, NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do INode = 1, NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
@@ -1535,7 +1535,7 @@
 
          !----------------------------------------------------
           do IPatch = 1, Counters%NPatches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl     !loop over all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl     !loop over all elements
             if (IsActiveElement(IElement, IPatch)) then  !active elements only
               
                 NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
@@ -1550,8 +1550,8 @@
 
                   ! Determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
-                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
-                             NControlPoints(IPatch), NDIM, & ! Counters%NodTot
+                             ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl,  &
+                             Counters%NodTot(IPatch), NDIM, & ! Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch), &!NodalCoordinatesUpd, &
                              BMatrixDeformed, &
@@ -1665,7 +1665,7 @@
             call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,PatchIDArray(IParticle)), NodalCoordinates(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
             ! Calculate new particle shape function values -> after updating position --> Volumetric locking smoothing
             if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then
-                call SetParticleShapeFunctionData_VolLockSmooth(Particles(IParticle), IParticle, ElementIDArray(IParticle), IEN_VolLockSmooth(:,:,PatchIDArray(IParticle)), NodalCoordinates_VolLockSmooth(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
+                call SetParticleShapeFunctionData_VolLockSmooth(Particles(IParticle), IParticle, ElementIDArray(IParticle), NURBS%ElementConnectivities_VolLockSmooth(:,:,PatchIDArray(IParticle)), NodalCoordinates_VolLockSmooth(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
             end if 
             
                  
@@ -1730,10 +1730,26 @@
                     NodeID = &
                         Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID,IPatch)), IPatch)
                     DofID = ReducedDof(NodeID) + IDof
+                    
+                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /= 1) ) then 
+                    
+                        
+                        ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                                                     (ShapeValuesArray(ParticleIndex,INode)*TotalVelocitySoil(DofID,iEntity)*CalParams%TimeIncrement) + &
+                                                     ( (CalParams%TimeIncrement**2) * &
+                                                     (ShapeValuesArray(ParticleIndex,INode)* &
+                        ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
+                        
+                        
+                    else
+                        
+                    
                       ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                    ( ShapeValuesArray(ParticleIndex,INode) * &
                                                    IncrementalDisplacementSoil(DofID,iEntity) )
                       
+                      
+                      end if 
                       !ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                       !                             ( VelocityArray(ParticleIndex,IDof) * &
                       !                              CalParams%TimeIncrement )
@@ -1868,7 +1884,7 @@
                         return 
                       end if 
 
-                  call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, nel_NURBS(IPatch),  NControlPoints(IPatch), NDIM, NodalCoordinates(:,:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                  call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, Counters%NEl(IPatch),  Counters%NodTot(IPatch), NDIM, NodalCoordinates(:,:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), &
                                      NewLocPos, OutsideElement, Success, IPatch)
                   
                   else 
@@ -1877,12 +1893,12 @@
                                    UStepArray(ParticleID,:), &
                                    OldElementID, &
                                    ELEMENTNODES, &
-                                   nel_NURBS(IPatch),  & 
-                                   NControlPoints(IPatch), NDIM, & 
+                                   Counters%NEl(IPatch),  & 
+                                   Counters%NodTot(IPatch), NDIM, & 
                                    NodalCoordinates(:,:,IPatch), & 
-                                   ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                                   ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), & !NURBS%nel_NURBS
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
+                                   OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
                       
                   end if 
                   
@@ -1895,7 +1911,7 @@
               if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
 
                       
-                      call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, nel_NURBS(IPatch),  NControlPoints(IPatch), NDIM, NodalCoordinates(:,:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                      call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, Counters%NEl(IPatch),  Counters%NodTot(IPatch), NDIM, NodalCoordinates(:,:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), &
                                      NewLocPos, OutsideElement, Success, IPatch)
                 
               
@@ -1906,12 +1922,12 @@
                                    UStepArray(ParticleID,:), &
                                    OldElementID, &
                                    ELEMENTNODES, &
-                                   nel_NURBS(IPatch),  & 
-                                   NControlPoints(IPatch), NDIM, & 
+                                   Counters%NEl(IPatch),  & 
+                                   Counters%NodTot(IPatch), NDIM, & 
                                    NodalCoordinates(:,1:NDIM,IPatch), & 
                                    ElementConnectivities(:,:,IPatch), & 
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)
+                                   OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)
           
           
                   end if 
@@ -2036,11 +2052,11 @@
                                          UStepArray(ParticleID,:), &
                                          OldElementID, &
                                          ELEMENTNODES,  &
-                                         nel_NURBS(PatchIDArray(ParticleID)), &!Counters%NEl,  &
-                                         NControlPoints(PatchIDArray(ParticleID)), &!Counters%NodTot,  &
+                                         Counters%NEl(PatchIDArray(ParticleID)), &!Counters%NEl,  &
+                                         Counters%NodTot(PatchIDArray(ParticleID)), &!Counters%NodTot,  &
                                          NDIM, &
-                                         NodalCoordinates(1:NControlPoints(IPatch),1:NDIM,IPatch),  &
-                                         ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+                                         NodalCoordinates(1:Counters%NodTot(IPatch),1:NDIM,IPatch),  &
+                                         ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), & !NURBS%nel_NURBS
                                          NewElementID, &
                                          NewLocPos, &
                                          Success, &
@@ -2093,7 +2109,7 @@
                 ! loop accross all elements and check if it would fit into an element 
                 
                 do PatchTrial = 1, Counters%NPatches ! loop over patches
-                do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
+                do ElemTrial = 1, Counters%NEl(PatchTrial) !NURBS%nel_NURBS(PatchTrial) !NURBS%nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
                 
                 !--------------------------------------------------------------------
                 ! Abdel: repeat again to see if we can catch it in the new element
@@ -2127,8 +2143,8 @@
                                 ! debugging
                 
                             call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  ElemTrial, ELEMENTNODES, &
-                                nel_NURBS(PatchTrial),  NControlPoints(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
-                                ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(PatchTrial),PatchTrial), &
+                                Counters%NEl(PatchTrial),  Counters%NodTot(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
+                                ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(PatchTrial),PatchTrial), & !NURBS%nel_NURBS
                                      NewLocPos, OutsideElement, Success, PatchTrial)
                             
                             else
@@ -2136,8 +2152,8 @@
                                 call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    ElemTrial, &
-                                   ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
-                                   NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+                                   ELEMENTNODES, Counters%NEl(PatchTrial),  & !Counters%NEl
+                                   Counters%NodTot(PatchTrial), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,PatchTrial), &
                                    ElementConnectivities(:,:,PatchTrial), &
                                    NewLocPos, &
@@ -2154,8 +2170,8 @@
 
                                                         
                         call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  ElemTrial, ELEMENTNODES, &
-                                nel_NURBS(PatchTrial),  NControlPoints(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
-                                ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(PatchTrial),PatchTrial), &
+                                Counters%NEl(PatchTrial),  Counters%NodTot(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
+                                ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(PatchTrial),PatchTrial), &
                                      NewLocPos, OutsideElement, Success, IPatch)
                         
                                                         
@@ -2165,8 +2181,8 @@
                     call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
                                    UStepArray(ParticleID,:), &
                                    ElemTrial, &
-                                   ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
-                                   NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+                                   ELEMENTNODES, Counters%NEl(PatchTrial),  & !Counters%NEl
+                                   Counters%NodTot(PatchTrial), NDIM, & !Counters%NodTot
                                    NodalCoordinates(:,:,PatchTrial), &
                                    ElementConnectivities(:,:,PatchTrial), &
                                    NewLocPos, &
@@ -2305,9 +2321,9 @@
               
               !FirstParticle = 1!GetParticleIndex(1, )!1
               counters%NAEl = 0
-              nael_NURBS(IPatch) = 0
+              Counters%NAEl(IPatch) = 0
               
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
+          do IElement = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
             
               FirstParticle = GetParticleIndex(1, IElement, IPatch)!1
               
@@ -2317,7 +2333,7 @@
               IsActiveElement(IElement, IPatch) = .false. ! Switch off the element
             else  ! Element contains particles
               !counters%NAEl = counters%NAEl + 1
-              nael_NURBS(IPatch) = nael_NURBS(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
+              Counters%NAEl(IPatch) = Counters%NAEl(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
               EleParticlesHelp(IElement, IPatch) = FirstParticle
               FirstParticle = FirstParticle + NPartEle(IElement,IPatch)
 
@@ -2370,16 +2386,16 @@
               
               FirstParticle = 1!GetParticleIndex(1, )!1
               counters%NAEl = 0
-              nael_NURBS(IPatch) = 0
+              Counters%NAEl(IPatch) = 0
               
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
               if (NPartEle(IElement,IPatch)==0) then ! Empty element
               EleParticlesHelp(IElement, IPatch) = -1
 
               IsActiveElement(IElement, IPatch) = .false. ! Switch off the element
             else  ! Element contains particles
               !counters%NAEl = counters%NAEl + 1
-              nael_NURBS(IPatch) = nael_NURBS(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
+              Counters%NAEl(IPatch) = Counters%NAEl(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
               EleParticlesHelp(IElement, IPatch) = FirstParticle
               FirstParticle = FirstParticle + NPartEle(IElement,IPatch)
 
@@ -2413,7 +2429,7 @@
       
               
           do IPatch = 1, Counters%NPatches ! Loop over patches
-          do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements
+          do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements
             IEl = ActiveElement(IAEl, IPatch)
             NElemPart = NPartEle(IEl,IPatch)
             do IPart= 1, NElemPart                                 !loop through particles in element
@@ -2449,7 +2465,7 @@
           !do IAEl = 1,Counters%NAel                                      !loop through all elements
       
           do IPatch = 1, Counters%NPatches ! Loop over patches
-          do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements
+          do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements
             IEl = ActiveElement(IAEl, IPatch)
             !if (IEl == 0) cycle ! if no active element then cycle to the next patch
             NElemPart = NPartEle(IEl,IPatch)
@@ -2487,19 +2503,21 @@
             deallocate(ActiveElement, stat = IError)
           end if
           
-          sum_nael_NURBS = 0
+          !NURBS%sum_nael_NURBS = 0
+          Counters%Sum_NAEl = 0
           do IPatch = 1, Counters%NPatches
-          sum_nael_NURBS = sum_nael_NURBS + nael_NURBS(IPatch)
+          !NURBS%sum_nael_NURBS = NURBS%sum_nael_NURBS + Counters%NAEl(IPatch)
+          Counters%Sum_NAEl = Counters%Sum_NAEl + Counters%NAEl(IPatch)
           end do 
           
           !allocate(ActiveElement(counters%NAEl, Counters%NPatches), stat = IError) ! this needs to be the sum of all active elements
-          allocate(ActiveElement(sum_nael_NURBS, Counters%NPatches), stat = IError) ! this needs to be the sum of all active elements
+          allocate(ActiveElement(Counters%Sum_NAEl, Counters%NPatches), stat = IError) ! this needs to be the sum of all active elements
           ActiveElement = 0
 
           IAEl = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
               IAEl = 0
-          do IEl=1, nel_NURBS(IPatch) !counters%NEl ! loop over elements
+          do IEl=1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch) !counters%NEl ! loop over elements
             if (IsActiveElement(IEl, IPatch)) then ! Active elements
               IAEl = IAEl + 1
               ActiveElement(IAEl, IPatch) = IEl
@@ -2550,7 +2568,7 @@
             !do IAElement = 1, Counters%NAEl
             do IPatch = 1, Counters%NPatches ! Loop over patches
           
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
    
               IElement = ActiveElement(IAElement, IPatch)
               ContainsBoundaryParticle = .false.
@@ -2628,7 +2646,7 @@
           !do IAElement = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
           
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
             if ( (.not.IsParticleIntegration(IElement, IPatch) ) ) then ! Loop over all active fully filled elements
      
@@ -2705,7 +2723,7 @@
       GaussPointStress = 0.0
       GaussPointDBulkViscousPressure = 0.0
 
-      do IAElement = 1, nael_NURBS(IPatch_Temporary)!Counters%NAEl ! loop over active elements
+      do IAElement = 1, Counters%NAEl(IPatch_Temporary)!Counters%NAEl ! loop over active elements
          IElement = ActiveElement(IAElement,IPatch_Temporary)
          !if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
 
@@ -2816,7 +2834,7 @@
           
           integer(INTEGER_TYPE) :: IPatch
      
-         if (.not.IsMPMComputation()) RETURN ! FEM...no need ..already one particle
+         !if (.not.IsMPMComputation()) RETURN ! FEM...no need ..already one particle --> 21 October 2024 --> I commented this so that we can have multipoint FEM
           
           FirstParticleHPStateVariables   = 0.0
           FirstParticleModifiedHPStateVariables = 0.0
@@ -2832,7 +2850,7 @@
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
           
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IElement = ActiveElement(IAElement, IPatch)
             if ( (.not.IsParticleIntegration(IElement, IPatch) ) ) then ! Loop over all active fully filled elements
@@ -2928,7 +2946,7 @@
                
                do IPatch = 1, Counters%NPatches ! Loop over patches
           
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
              
                     IElement = ActiveElement(IAElement, IPatch)

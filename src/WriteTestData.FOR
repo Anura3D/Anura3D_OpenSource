@@ -152,12 +152,20 @@
                   
                   select case(NDIM)
                   
-                    case(3) !shape functions are missing from here
-                      write(PARUnit + I, '(31A12)')  &
-                            'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
-                            'Ux ', 'Uy ', 'Uz ', 'Vx ', 'Vy ', 'Vz ',  'Ax ', 'Ay ', 'Az ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
-                            'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
-                            'IntWeight ', 'MatID '
+                  case(3) !shape functions are missing from here
+                      !write(PARUnit + I, '(31A12)')  &
+                      !      'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
+                      !      'Ux ', 'Uy ', 'Uz ', 'Vx ', 'Vy ', 'Vz ',  'Ax ', 'Ay ', 'Az ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
+                      !      'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
+                      !      'IntWeight ', 'MatID '
+                      
+                      
+                      ! Write the header
+                    write(PARUnit + I, '(A)')  & 
+                    'LoadStep TimeStep Time PA(1) PA(2) PGravity ID_MP X Y Z ' // &
+                    'Ux Uy Uz Vx Vy Vz Ax Ay Az SigmaXX SigmaYY SigmaZZ SigmaXY SigmaYZ SigmaZX ' // &
+                    'WPressure EpsilonXX EpsilonYY EpsilonZZ GammaXY GammaYZ GammaZX IntWeight MatID'
+                      
                     case(2)
                       !write(PARUnit + I, '(117A17)')  & !117 !79
                       write(PARUnit + I, '(25A17)')  & !117 !79
@@ -800,7 +808,7 @@
           !do IAEl = 1, Counters%NAEl
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
@@ -1023,7 +1031,7 @@
             !code version 2017.1 and following
             (trim(MatParams(MaterialID)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
            
-             do INode = 1, Counters%NodTot
+             do INode = 1, Counters%Sum_NodTot
               If (IsReactionNodeSurface(INode,ISurface)) then
                dof = ReducedDof(INode)
                do IDim = 1, NVECTOR
@@ -1135,15 +1143,15 @@
           DataLabel(6) = 'Current load step' 
           DataValue(6) = IntToStr(CalParams%IStep)
           DataLabel(7) = 'Number of elements' 
-          DataValue(7) = IntToStr(nel_NURBS(IPatch_Temporary))!(Counters%NEl)
+          DataValue(7) = IntToStr(Counters%NEl(IPatch_Temporary))!(Counters%NEl) !NURBS%nel_NURBS
           DataLabel(8) = 'Number of nodes' 
-          DataValue(8) = IntToStr(Counters%NodTot)
+          DataValue(8) = IntToStr(Counters%Sum_NodTot)
           DataLabel(9) = 'Number of degrees of freedom' 
           DataValue(9) = IntToStr(Counters%N)
           DataLabel(10) = 'Number of entities' 
           DataValue(10) = IntToStr(Counters%NEntity)
           DataLabel(11) = 'Number of active elements' 
-          DataValue(11) = IntToStr(nael_NURBS(IPatch_Temporary))!(Counters%NAEl)
+          DataValue(11) = IntToStr(Counters%NAEl(IPatch_Temporary))!(Counters%NAEl)
           DataLabel(12) = 'Number of material points' 
           DataValue(12) = IntToStr(Counters%NParticles)
           DataLabel(13) = 'Number of solid material points' 
@@ -1184,9 +1192,9 @@
             DataLabel(1) = 'Number of load steps' 
             DataValue(1) = IntToStr(CalParams%NLoadSteps)
             DataLabel(2) = 'Number of elements' 
-            DataValue(2) = IntToStr(Counters%NEl)
+            DataValue(2) = IntToStr(Counters%Sum_NEl)
             DataLabel(3) = 'Number of nodes' 
-            DataValue(3) = IntToStr(Counters%NodTot)
+            DataValue(3) = IntToStr(Counters%Sum_NodTot)
             DataLabel(4) = 'Number of degrees of freedom' 
             DataValue(4) = IntToStr(Counters%N)
             DataLabel(5) = 'Number of entities' 
@@ -1276,9 +1284,9 @@
             DataLabel(1) = 'Number of load steps' 
             DataValue(1) = IntToStr(CalParams%NLoadSteps)
             DataLabel(2) = 'Number of elements' 
-            DataValue(2) = IntToStr(Counters%NEl)
+            DataValue(2) = IntToStr(Counters%Sum_NEl)
             DataLabel(3) = 'Number of nodes' 
-            DataValue(3) = IntToStr(Counters%NodTot)
+            DataValue(3) = IntToStr(Counters%Sum_NodTot)
             DataLabel(4) = 'Number of degrees of freedom' 
             DataValue(4) = IntToStr(Counters%N)
             DataLabel(5) = 'Number of entities' 

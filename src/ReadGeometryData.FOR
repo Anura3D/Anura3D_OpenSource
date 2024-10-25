@@ -154,7 +154,7 @@
               GeoParams%MovingMeshExtendingCorners(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, Counters%NPatches), & ! I added a rank for the number of patches
               GeoParams%MovingMeshCompressingCorners(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, Counters%NPatches), & ! I added a rank for the number of patches
               GeoParams%MovingMeshMovingCorners(NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh, Counters%NPatches), & ! I added a rank for the number of patches
-              GeoParams%LocalDampingFactorElement(Maximum_nel_NURBS, Counters%NPatches) )!(Counters%NEl) ) ! I added a rank for the number of patches
+              GeoParams%LocalDampingFactorElement(NURBS%Maximum_nel_NURBS, Counters%NPatches) )!(Counters%NEl) ) ! I added a rank for the number of patches
             
             allocate( GeoParams%MovingMeshReferenceMaterialID(Counters%NPatches) ) ! integer type variable 
             
@@ -319,17 +319,7 @@
               call SetDimension(NDimension, Axisymmetric, Cylindric)
               
               
-            else if (trim(BName) == '$$ELEMENTTYPE') then
-              read(GOMunit, *, iostat=ios) DumS
-              call Assert( ios == 0, messageIOS//trim(BName) )
-              call Assert( DumS == TRI3 .or. DumS == TRI6 .or. DumS == QUAD4 .or. DumS == QUAD4_NURBS .or. DumS == HEXA_NURBS .or. DumS == QUAD8 .or. &
-                           DumS == TETRA4 .or. DumS == TETRA10 .or. DumS == HEXA8 .or. DumS == HEXA20 .or. DumS == TETRAOLD, 'GOM file: ' //trim(BName)// &
-                           ' must be equal to ' // TRI3 // ' or ' // TRI6 // ' or ' // QUAD4 //  ' or ' // QUAD4_NURBS // ' or ' // QUAD8 // ' or ' // &
-                           TETRA4 // ' or ' // TETRA10 // ' or ' // HEXA_NURBS // ' or ' // HEXA8 // ' or ' // HEXA20  // ' or ' // TETRAOLD  // '.' )
-              ReadElementType = DumS
-              
-              call SetElementType(ReadElementType)
-              
+            
               !if () then 
                   
 
@@ -356,67 +346,67 @@
                 
                 ! we need to allocate integer variables pertinent to each patch here 
                 ! Xi integer variables 
-                allocate( NXiKnotEntries(Counters%NPatches)  , stat = IError)
-                allocate( NXiKnotOrder(Counters%NPatches)   , stat = IError)
-                NXiKnotEntries = 0 ! initialise
-                NXiKnotOrder = 0 ! initialise 
+                allocate( NURBS%NXiKnotEntries(Counters%NPatches)  , stat = IError)
+                allocate( NURBS%NXiKnotOrder(Counters%NPatches)   , stat = IError)
+                NURBS%NXiKnotEntries = 0 ! initialise
+                NURBS%NXiKnotOrder = 0 ! initialise 
                 ! Eta integer variables
-                allocate( NEtaKnotEntries(Counters%NPatches)  , stat = IError)
-                allocate( NEtaKnotOrder(Counters%NPatches)    , stat = IError)
-                NEtaKnotEntries = 0 ! initialise
-                NEtaKnotOrder = 0 ! initialise
+                allocate( NURBS%NEtaKnotEntries(Counters%NPatches)  , stat = IError)
+                allocate( NURBS%NEtaKnotOrder(Counters%NPatches)    , stat = IError)
+                NURBS%NEtaKnotEntries = 0 ! initialise
+                NURBS%NEtaKnotOrder = 0 ! initialise
                 ! Zeta integer variables
-                allocate( NZetaKnotEntries(Counters%NPatches)  , stat = IError)
-                allocate( NZetaKnotOrder(Counters%NPatches)    , stat = IError)
-                NZetaKnotEntries = 0 ! initialise
-                NZetaKnotOrder = 0 ! initialise 
+                allocate( NURBS%NZetaKnotEntries(Counters%NPatches)  , stat = IError)
+                allocate( NURBS%NZetaKnotOrder(Counters%NPatches)    , stat = IError)
+                NURBS%NZetaKnotEntries = 0 ! initialise
+                NURBS%NZetaKnotOrder = 0 ! initialise 
                 
                 
                 ! Volumetric locking smoothing knots 
                 ! we need to allocate integer variables pertinent to each patch here 
                 ! Xi integer variables 
-                allocate( NXiKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                allocate( NXiKnotOrder_VolLockSmooth(Counters%NPatches)   , stat = IError)
-                NXiKnotEntries_VolLockSmooth = 0 ! initialise
-                NXiKnotOrder_VolLockSmooth = 0 ! initialise 
+                allocate( NURBS%NXiKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate( NURBS%NXiKnotOrder_VolLockSmooth(Counters%NPatches)   , stat = IError)
+                NURBS%NXiKnotEntries_VolLockSmooth = 0 ! initialise
+                NURBS%NXiKnotOrder_VolLockSmooth = 0 ! initialise 
                 ! Eta integer variables
-                allocate( NEtaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                allocate( NEtaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
-                NEtaKnotEntries_VolLockSmooth = 0 ! initialise
-                NEtaKnotOrder_VolLockSmooth = 0 ! initialise
+                allocate( NURBS%NEtaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate( NURBS%NEtaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
+                NURBS%NEtaKnotEntries_VolLockSmooth = 0 ! initialise
+                NURBS%NEtaKnotOrder_VolLockSmooth = 0 ! initialise
                 ! Zeta integer variables
-                allocate( NZetaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                allocate( NZetaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
-                NZetaKnotEntries_VolLockSmooth = 0 ! initialise
-                NZetaKnotOrder_VolLockSmooth = 0 ! initialise 
+                allocate( NURBS%NZetaKnotEntries_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate( NURBS%NZetaKnotOrder_VolLockSmooth(Counters%NPatches)    , stat = IError)
+                NURBS%NZetaKnotEntries_VolLockSmooth = 0 ! initialise
+                NURBS%NZetaKnotOrder_VolLockSmooth = 0 ! initialise 
                 
                 
                 ! number of element items for each patch
-                allocate(nel_NURBS(Counters%NPatches)  , stat = IError)
-                allocate(nnp_NURBS(Counters%NPatches)  , stat = IError)
-                allocate(nen_NURBS(Counters%NPatches)  , stat = IError)
-                nel_NURBS = 0
-                nnp_NURBS = 0
-                nen_NURBS = 0
+                allocate(Counters%NEl(Counters%NPatches)  , stat = IError) !NURBS%nel_NURBS
+                allocate(NURBS%nnp_NURBS(Counters%NPatches)  , stat = IError)
+                allocate(NURBS%nen_NURBS(Counters%NPatches)  , stat = IError)
+                Counters%NEl = 0 !NURBS%nel_NURBS = 0
+                NURBS%nnp_NURBS = 0
+                NURBS%nen_NURBS = 0
                 
                 ! number of element items for each patch --> Reduced order volumetric locking smoothing
-                allocate(nel_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                allocate(nnp_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                allocate(nen_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                nel_NURBS_VolLockSmooth = 0
-                nnp_NURBS_VolLockSmooth = 0
-                nen_NURBS_VolLockSmooth = 0
+                allocate(NURBS%nel_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate(NURBS%nnp_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                allocate(NURBS%nen_NURBS_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                NURBS%nel_NURBS_VolLockSmooth = 0
+                NURBS%nnp_NURBS_VolLockSmooth = 0
+                NURBS%nen_NURBS_VolLockSmooth = 0
                 
                 ! number of active element for each patch
-                allocate(nael_NURBS(Counters%NPatches)  , stat = IError)
-                nael_NURBS = 0
+                allocate(Counters%NAEl(Counters%NPatches)  , stat = IError)
+                Counters%NAEl = 0
                 
                 ! number of control points for each patch 
-                allocate(NControlPoints(Counters%NPatches)  , stat = IError)
-                NControlPoints = 0
+                allocate(Counters%NodTot(Counters%NPatches)  , stat = IError)
+                Counters%NodTot = 0 !NURBS%NControlPoints = 0
                 
-                allocate(NControlPoints_VolLockSmooth(Counters%NPatches)  , stat = IError)
-                NControlPoints_VolLockSmooth = 0
+                allocate(NURBS%NControlPoints_VolLockSmooth(Counters%NPatches)  , stat = IError)
+                NURBS%NControlPoints_VolLockSmooth = 0
                 
                 
                 ! number of active element for each patch
@@ -425,50 +415,50 @@
                 
                 
                 ! number of elements to prescribed material point velocity --> might need 3D generalization
-                allocate(NElemMPPrescribedVelocity(Counters%NPatches), stat = IError)
-                NElemMPPrescribedVelocity = 0
+                allocate(NURBS%NElemMPPrescribedVelocity(Counters%NPatches), stat = IError)
+                NURBS%NElemMPPrescribedVelocity = 0
                 
                 
                 
-                allocate(NNodePrescribedVelocity(Counters%NPatches), stat = IError)
-                NNodePrescribedVelocity = 0
+                allocate(NURBS%NNodePrescribedVelocity(Counters%NPatches), stat = IError)
+                NURBS%NNodePrescribedVelocity = 0
                 
                 
-                allocate( nn_NURBS_NumberOfUnivariateXiKnots(Counters%NPatches), stat = IError)
-                allocate( mm_NURBS_NumberOfUnivariateEtaKnots(Counters%NPatches), stat = IError)
-                allocate( oo_NURBS_NumberOfUnivariateZetaKnots(Counters%NPatches), stat = IError)
-                nn_NURBS_NumberOfUnivariateXiKnots = 0
-                mm_NURBS_NumberOfUnivariateEtaKnots = 0
-                oo_NURBS_NumberOfUnivariateZetaKnots = 0
+                allocate( NURBS%nn_NURBS_NumberOfUnivariateXiKnots(Counters%NPatches), stat = IError)
+                allocate( NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(Counters%NPatches), stat = IError)
+                allocate( NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(Counters%NPatches), stat = IError)
+                NURBS%nn_NURBS_NumberOfUnivariateXiKnots = 0
+                NURBS%mm_NURBS_NumberOfUnivariateEtaKnots = 0
+                NURBS%oo_NURBS_NumberOfUnivariateZetaKnots = 0
                 
                 ! --> volumetric locking smoothing
-                allocate( nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(Counters%NPatches), stat = IError)
-                allocate( mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
-                allocate( oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
-                nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth = 0
-                mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth = 0
-                oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth = 0
+                allocate( NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(Counters%NPatches), stat = IError)
+                allocate( NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
+                allocate( NURBS%oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(Counters%NPatches), stat = IError)
+                NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth = 0
+                NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth = 0
+                NURBS%oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth = 0
                 
                 
-                allocate( NXiKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
-                NXiKnotEntriesUNIQUE = 0
-                allocate( NEtaKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
-                NEtaKnotEntriesUNIQUE = 0
-                allocate( NZetaKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
-                NZetaKnotEntriesUNIQUE = 0
+                allocate( NURBS%NXiKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
+                NURBS%NXiKnotEntriesUNIQUE = 0
+                allocate( NURBS%NEtaKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
+                NURBS%NEtaKnotEntriesUNIQUE = 0
+                allocate( NURBS%NZetaKnotEntriesUNIQUE(Counters%NPatches), stat = IError)
+                NURBS%NZetaKnotEntriesUNIQUE = 0
                 
                 
                                
                 !allocate( NumberOfGlobalControlPointsUniqueMultipatch(Counters%NPatches), stat = IError)
-                NumberOfGlobalControlPointsUniqueMultipatch = 0
+                NURBS%NumberOfGlobalControlPointsUniqueMultipatch = 0
                 
-                allocate( NumberOfUniqueNodes(Counters%NPatches), stat = IError)
-                NumberOfUniqueNodes = 0
+                allocate( NURBS%NumberOfUniqueNodes(Counters%NPatches), stat = IError)
+                NURBS%NumberOfUniqueNodes = 0
                 
                 
                 !Number of load systems for each patch 
-                allocate( NLoadSystems_Traction(Counters%NPatches), stat = IError)
-                NLoadSystems_Traction = 0
+                allocate( NURBS%NLoadSystems_Traction(Counters%NPatches), stat = IError)
+                NURBS%NLoadSystems_Traction = 0
                 
                 
                 
@@ -497,7 +487,10 @@
                 ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
                 !ILoadSystem = -1
                 ! read patch ID from the GOM file
-                read(GOMunit, *) NLoadSystems_Traction(IPatch)
+                
+                !alloca
+                
+                read(GOMunit, *) NURBS%NLoadSystems_Traction(IPatch)
                 
                 
                 
@@ -523,51 +516,51 @@
             
               
               ! we need to know the maximum number of load systems 
-              Maximum_NLoadSystems_Traction = maxval(NLoadSystems_Traction)
+              NURBS%Maximum_NLoadSystems_Traction = maxval(NURBS%NLoadSystems_Traction)
               
 
-              allocate( NControlPoints_Traction(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
-              NControlPoints_Traction = 0
+              allocate( NURBS%NControlPoints_Traction(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              NURBS%NControlPoints_Traction = 0
               
-              allocate( NURBS_Traction_Dimension(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
-              NURBS_Traction_Dimension = 0
+              allocate( NURBS%NURBS_Traction_Dimension(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              NURBS%NURBS_Traction_Dimension = 0
               
-              allocate( nel_NURBS_Traction(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
-              nel_NURBS_Traction = 0
+              allocate( NURBS%nel_NURBS_Traction(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              NURBS%nel_NURBS_Traction = 0
               
-              allocate( nnp_NURBS_Traction(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
-              nnp_NURBS_Traction = 0
+              allocate( NURBS%nnp_NURBS_Traction(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              NURBS%nnp_NURBS_Traction = 0
               
-              allocate( nen_NURBS_Traction(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
-              nen_NURBS_Traction = 0  
+              allocate( NURBS%nen_NURBS_Traction(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              NURBS%nen_NURBS_Traction = 0  
               
 
               !------------------------------------------------------------------------
               
-              allocate( NLoadSystems_Traction_NumberOfElements(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
-              NLoadSystems_Traction_NumberOfElements = 0
+              allocate( NURBS%NLoadSystems_Traction_NumberOfElements(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              NURBS%NLoadSystems_Traction_NumberOfElements = 0
               
                 !------------------------------------------------------------------------
                 
-              allocate( Counters%NLoadedElementSidesSolidNodes(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              allocate( Counters%NLoadedElementSidesSolidNodes(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
               Counters%NLoadedElementSidesSolidNodes = 0 
               
-              allocate( Counters%NLoadedElementSidesWaterNodes(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              allocate( Counters%NLoadedElementSidesWaterNodes(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
               Counters%NLoadedElementSidesWaterNodes = 0
               
-              allocate( Counters%NLoadedElementSidesSolidMatPoints(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              allocate( Counters%NLoadedElementSidesSolidMatPoints(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
               Counters%NLoadedElementSidesSolidMatPoints = 0
               
-              allocate( Counters%NLoadedElementSidesWaterMatPoints(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              allocate( Counters%NLoadedElementSidesWaterMatPoints(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
               Counters%NLoadedElementSidesWaterMatPoints = 0
                 
                 
               
               
-              allocate( Counters%NLoadedElementSidesSolid(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              allocate( Counters%NLoadedElementSidesSolid(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
               Counters%NLoadedElementSidesSolid = 0
               
-              allocate( Counters%NLoadedElementSidesWater(Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
+              allocate( Counters%NLoadedElementSidesWater(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError )
               Counters%NLoadedElementSidesWater = 0
               
               
@@ -590,7 +583,7 @@
                 ! actual solid shape function knot vectors
                     ! Xi vector 
             else if (trim(BName) == '$$XI_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NXiKnotEntries(IPatch), NXiKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NURBS%NXiKnotEntries(IPatch), NURBS%NXiKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
                 !allocate(XiKnotEntries(NXiKnotEntries(IPatch_Temporary)), stat = IError)
                 !
@@ -598,76 +591,93 @@
                 !call FindUniqueEnteriesInVector(XiKnotEntries, NXiKnotEntries, XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE)
                 
                 ! number of univariate basis functions for the Xi direction 
-                nn_NURBS_NumberOfUnivariateXiKnots(IPatch) = NXiKnotEntries(IPatch) - NXiKnotOrder(IPatch) - 1
+                NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) = NURBS%NXiKnotEntries(IPatch) - NURBS%NXiKnotOrder(IPatch) - 1
                 
                     
                 ! Eta vector
             else if (trim(BName) == '$$ETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NEtaKnotEntries(IPatch), NEtaKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NURBS%NEtaKnotEntries(IPatch), NURBS%NEtaKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
                 !allocate(EtaKnotEntries(NEtaKnotEntries(IPatch_Temporary)), stat = IError)
                 ! number of univariate basis functions for the Eta direction 
-                mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) = NEtaKnotEntries(IPatch) - NEtaKnotOrder(IPatch) - 1
+                NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) = NURBS%NEtaKnotEntries(IPatch) - NURBS%NEtaKnotOrder(IPatch) - 1
                 
                 
                 ! Zeta vector
             else if (trim(BName) == '$$ZETA_NUMBER_OF_KNOTS_AND_ORDER') then 
-                read(GOMunit, *) NZetaKnotEntries(IPatch), NZetaKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NURBS%NZetaKnotEntries(IPatch), NURBS%NZetaKnotOrder(IPatch)  ! reading 1) number of knot entries, 2) knot order 
                 ! allocating allocatable arrays
                 !allocate(ZetaKnotEntries(NZetaKnotEntries(IPatch_Temporary)), stat = IError)
                 ! number of univariate basis functions for the Zeta direction 
-                oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) = NZetaKnotEntries(IPatch) - NZetaKnotOrder(IPatch) - 1
+                NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) = NURBS%NZetaKnotEntries(IPatch) - NURBS%NZetaKnotOrder(IPatch) - 1
      
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                
+                
+                else if (trim(BName) == '$$ELEMENTTYPE') then
+              read(GOMunit, *, iostat=ios) DumS
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumS == TRI3 .or. DumS == TRI6 .or. DumS == QUAD4 .or. DumS == QUAD4_NURBS .or. DumS == HEXA_NURBS .or. DumS == QUAD8 .or. &
+                           DumS == TETRA4 .or. DumS == TETRA10 .or. DumS == HEXA8 .or. DumS == HEXA20 .or. DumS == TETRAOLD, 'GOM file: ' //trim(BName)// &
+                           ' must be equal to ' // TRI3 // ' or ' // TRI6 // ' or ' // QUAD4 //  ' or ' // QUAD4_NURBS // ' or ' // QUAD8 // ' or ' // &
+                           TETRA4 // ' or ' // TETRA10 // ' or ' // HEXA_NURBS // ' or ' // HEXA8 // ' or ' // HEXA20  // ' or ' // TETRAOLD  // '.' )
+              ReadElementType = DumS
+              
+              call SetElementType(ReadElementType, NURBS%NXiKnotOrder(IPatch), NURBS%NEtaKnotOrder(IPatch), NURBS%NZetaKnotOrder(IPatch), &
+                  NURBS%NXiKnotOrder_VolLockSmooth(IPatch), NURBS%NEtaKnotOrder_VolLockSmooth(IPatch), NURBS%NZetaKnotOrder_VolLockSmooth(IPatch))
+              
+                
                 
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 ! Volumetric locking orders
                 
             else if (trim(BName) == '$$XI_ORDER_VOLLOCK_SMOOTH') then               
-                read(GOMunit, *) NXiKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NURBS%NXiKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
                 
                 ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
-                NXiKnotEntries_VolLockSmooth(IPatch) = NXiKnotEntries(IPatch) -&
-                    (2*(NXiKnotOrder(IPatch)+1)) +&
-                    (2*(NXiKnotOrder_VolLockSmooth(IPatch)+1))
+                NURBS%NXiKnotEntries_VolLockSmooth(IPatch) = NURBS%NXiKnotEntries(IPatch) -&
+                    (2*(NURBS%NXiKnotOrder(IPatch)+1)) +&
+                    (2*(NURBS%NXiKnotOrder_VolLockSmooth(IPatch)+1))
                 
-                allocate(XiKnotEntries_VolLockSmooth(NXiKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) ) 
+                allocate(NURBS%XiKnotEntries_VolLockSmooth(NURBS%NXiKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) ) 
                 
                 ! number of univariate basis functions for the Xi direction 
-                nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) = NXiKnotEntries_VolLockSmooth(IPatch) -&
-                                                                           NXiKnotOrder_VolLockSmooth(IPatch) - 1
+                NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) = NURBS%NXiKnotEntries_VolLockSmooth(IPatch) -&
+                                                                           NURBS%NXiKnotOrder_VolLockSmooth(IPatch) - 1
                 
                 
                 
                 
             else if (trim(BName) == '$$ETA_ORDER_VOLLOCK_SMOOTH') then 
-                read(GOMunit, *) NEtaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
                 
                 ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
-                NEtaKnotEntries_VolLockSmooth(IPatch) = NEtaKnotEntries(IPatch) -&
-                    (2*(NEtaKnotOrder(IPatch)+1)) +&
-                    (2*(NEtaKnotOrder_VolLockSmooth(IPatch)+1))
+                NURBS%NEtaKnotEntries_VolLockSmooth(IPatch) = NURBS%NEtaKnotEntries(IPatch) -&
+                    (2*(NURBS%NEtaKnotOrder(IPatch)+1)) +&
+                    (2*(NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)+1))
                 
-                allocate(EtaKnotEntries_VolLockSmooth(NEtaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
+                allocate(NURBS%EtaKnotEntries_VolLockSmooth(NURBS%NEtaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
                 
-                mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) = NEtaKnotEntries_VolLockSmooth(IPatch) -&
-                                                                            NEtaKnotOrder_VolLockSmooth(IPatch) - 1
+                NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) = NURBS%NEtaKnotEntries_VolLockSmooth(IPatch) -&
+                                                                                        NURBS%NEtaKnotOrder_VolLockSmooth(IPatch) - 1
             
                 
             
             else if (trim(BName) == '$$ZETA_ORDER_VOLLOCK_SMOOTH') then 
-                read(GOMunit, *) NZetaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
+                read(GOMunit, *) NURBS%NZetaKnotOrder_VolLockSmooth(IPatch)  ! reading 1) number of knot entries, 2) knot order 
                 
                 
                 ! removing the two tail ends of the knot vector and adding the two tail ends of the reduced order knot vector
-                NZetaKnotEntries_VolLockSmooth(IPatch) = NZetaKnotEntries(IPatch) -&
-                    (2*(NZetaKnotOrder(IPatch)+1)) +&
-                    (2*(NZetaKnotOrder_VolLockSmooth(IPatch)+1))
+                NURBS%NZetaKnotEntries_VolLockSmooth(IPatch) = NURBS%NZetaKnotEntries(IPatch) -&
+                    (2*(NURBS%NZetaKnotOrder(IPatch)+1)) +&
+                    (2*(NURBS%NZetaKnotOrder_VolLockSmooth(IPatch)+1))
                 
-                allocate(ZetaKnotEntries_VolLockSmooth(NZetaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
+                allocate(NURBS%ZetaKnotEntries_VolLockSmooth(NURBS%NZetaKnotEntries_VolLockSmooth(IPatch), Counters%NPatches) )  
                 
-                oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) = NZetaKnotEntries_VolLockSmooth(IPatch) -&
-                                                               NZetaKnotOrder_VolLockSmooth(IPatch) - 1
+                NURBS%oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) = NURBS%NZetaKnotEntries_VolLockSmooth(IPatch) -&
+                                                               NURBS%NZetaKnotOrder_VolLockSmooth(IPatch) - 1
             
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -710,36 +720,36 @@
                 
                 
             else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS') then
-                read(GOMunit, *) NControlPoints(IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+                read(GOMunit, *) Counters%NodTot(IPatch) !NURBS%NControlPoints(IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                                  !         2) NNodes -> number of nodes (control points in the case of NURBS)
                 
                 
                 if (NDIM == 2) then 
                     
-                nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
-                                    (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !* &                
+                Counters%NEl(IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)) * & !NURBS%nel_NURBS(IPatch)
+                                    (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)) !* &                
                                         !(oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
         
-                nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
-                                    *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !&
+                NURBS%nnp_NURBS(IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    * NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !&
                                     !*oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
 
-                nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !* (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                NURBS%nen_NURBS(IPatch) = (NURBS%NXiKnotOrder(IPatch)+1) * (NURBS%NEtaKnotOrder(IPatch)+1) !* (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                     
                     
                     
 
                 else if (NDIM == 3) then 
                 
-                nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
-                                    (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &                
-                                        (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+                Counters%NEl(IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)) * & !NURBS%nel_NURBS(IPatch)
+                                    (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)) * &                
+                                        (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NURBS%NZetaKnotOrder(IPatch))
         
-                nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
-                                    *mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
-                                    *oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+                NURBS%nnp_NURBS(IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    *NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) &
+                                    *NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
 
-                nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                NURBS%nen_NURBS(IPatch) = (NURBS%NXiKnotOrder(IPatch)+1) * (NURBS%NEtaKnotOrder(IPatch)+1) * (NURBS%NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                 
                 
                 
@@ -751,35 +761,35 @@
                 
                 
             else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_VOLLOCK_SMOOTH') then
-                read(GOMunit, *) NControlPoints_VolLockSmooth(IPatch)
+                read(GOMunit, *) NURBS%NControlPoints_VolLockSmooth(IPatch)
                 
                 
                 if (NDIM == 2) then 
                     
-                nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * &
-                                    (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) !* &                
+                NURBS%nel_NURBS_VolLockSmooth(IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NURBS%NXiKnotOrder_VolLockSmooth(IPatch)) * &
+                                    (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)) !* &                
                                         !(oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
             
-                nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
-                                    *mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) !&
+                NURBS%nnp_NURBS_VolLockSmooth(IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
+                                    * NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) !&
                                     !*oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
             
-                nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) !* (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                NURBS%nen_NURBS_VolLockSmooth(IPatch) = (NURBS%NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)+1) !* (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                     
                     
                     
             
                 else if (NDIM == 3) then 
                 
-                nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * &
-                                    (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) * &                
-                                        (oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch)-NZetaKnotOrder_VolLockSmooth(IPatch))
+                NURBS%nel_NURBS_VolLockSmooth(IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NURBS%NXiKnotOrder_VolLockSmooth(IPatch)) * &
+                                    (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)) * &                
+                                        (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch)-NURBS%NZetaKnotOrder_VolLockSmooth(IPatch))
             
-                nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
-                                    *mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) &
-                                    *oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+                NURBS%nnp_NURBS_VolLockSmooth(IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch) &
+                                    *NURBS%mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) &
+                                    *NURBS%oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
             
-                nen_NURBS_VolLockSmooth(IPatch) = (NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NEtaKnotOrder_VolLockSmooth(IPatch)+1) * (NZetaKnotOrder_VolLockSmooth(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+                NURBS%nen_NURBS_VolLockSmooth(IPatch) = (NURBS%NXiKnotOrder_VolLockSmooth(IPatch)+1) * (NURBS%NEtaKnotOrder_VolLockSmooth(IPatch)+1) * (NURBS%NZetaKnotOrder_VolLockSmooth(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                 
                 
                 
@@ -806,16 +816,16 @@
                 ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
                 !ILoadSystem = -1
                 ! read patch ID from the GOM file
-                read(GOMunit, *) NLoadSystems_Traction_NumberOfElements(ILoadSystem, IPatch)
+                read(GOMunit, *) NURBS%NLoadSystems_Traction_NumberOfElements(ILoadSystem, IPatch)
                 
                 
                 
                 else if (trim(BName) == '$$NUMBER_OF_CONTROL_POINTS_TRACTION') then
-                read(GOMunit, *) NControlPoints_Traction(ILoadSystem, IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
+                read(GOMunit, *) NURBS%NControlPoints_Traction(ILoadSystem, IPatch)  ! reading 1) NElements -> number of elements (knot spans in the case of NURBS), 
                                 !(IPatch)
                 read(GOMunit, *) TractionDimension
                 
-                if (NControlPoints_Traction(ILoadSystem, IPatch)==0) cycle
+                if (NURBS%NControlPoints_Traction(ILoadSystem, IPatch)==0) cycle
                 
                 if (NDIM == 2) then !--> 1D
                     ! if NDIM = 2 then we are looking at a line which is 1D
@@ -824,38 +834,38 @@
                     if (TractionDimension == 'XI') then 
                         
                         
-                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 1
+                        NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) = 1
                     
                     
-                    nel_NURBS_Traction(ILoadSystem,IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) !_Traction _Traction
+                    NURBS%nel_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)) !_Traction _Traction
                     !   (IPatch)               (IPatch)                           (IPatch)
               
                     
-                    nnp_NURBS_Traction(ILoadSystem,IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) !_Traction
+                    NURBS%nnp_NURBS_Traction(ILoadSystem,IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) !_Traction
                     !(IPatch)                   (IPatch)
                     !number of global basis functions (global here refers to its global domain within the 'super' element)
                     
                 
-                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NXiKnotOrder(IPatch)+1)  
+                    NURBS%nen_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%NXiKnotOrder(IPatch)+1)  
                     !(IPatch)               (IPatch)
                     !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                     
                     
                     elseif (TractionDimension == 'ETA') then
                         
-                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 2
+                        NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) = 2
                     
                         
-                    nel_NURBS_Traction(ILoadSystem,IPatch) = (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NXiKnotOrder(IPatch)) !_Traction _Traction
+                    NURBS%nel_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)) !_Traction _Traction
                     !   (IPatch)               (IPatch)                           (IPatch)
               
                     
-                    nnp_NURBS_Traction(ILoadSystem,IPatch) = mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !nn_NURBS_NumberOfUnivariateXiKnots_Traction
+                    NURBS%nnp_NURBS_Traction(ILoadSystem,IPatch) = NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !nn_NURBS_NumberOfUnivariateXiKnots_Traction
                     !(IPatch)                   (IPatch)
                     !number of global basis functions (global here refers to its global domain within the 'super' element)
                     
                 
-                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NXiKnotOrder(IPatch)+1)   !_Traction
+                    NURBS%nen_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%NXiKnotOrder(IPatch)+1)   !_Traction
                     !(IPatch)               (IPatch)
                     !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                     
@@ -869,56 +879,56 @@
                     
                     if (TractionDimension == 'XI_ETA') then
                         
-                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 1
+                        NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) = 1
                         
-                    nel_NURBS_Traction(ILoadSystem,IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
-                                    (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) 
+                    NURBS%nel_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)) * &
+                                    (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)) 
         
                 
-                    nnp_NURBS_Traction(ILoadSystem,IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
-                                    * mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !_Traction  
+                    NURBS%nnp_NURBS_Traction(ILoadSystem,IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    * NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !_Traction  
                     !number of global basis functions (global here refers to its global domain within the 'super' element)
 
                 
-                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) 
+                    NURBS%nen_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%NXiKnotOrder(IPatch)+1) * (NURBS%NEtaKnotOrder(IPatch)+1) 
                     !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                     
                     
                     
                     else if (TractionDimension == 'XI_ZETA') then
                         
-                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 2
+                        NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) = 2
                     
                         
-                    nel_NURBS_Traction(ILoadSystem,IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
-                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)) 
+                    NURBS%nel_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)) * &
+                                    (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NURBS%NZetaKnotOrder(IPatch)) 
         
                 
-                    nnp_NURBS_Traction(ILoadSystem,IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
-                                    * oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)  
+                    NURBS%nnp_NURBS_Traction(ILoadSystem,IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    * NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)  
                     !number of global basis functions (global here refers to its global domain within the 'super' element)
 
                 
-                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NXiKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) 
+                    NURBS%nen_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%NXiKnotOrder(IPatch)+1) * (NURBS%NZetaKnotOrder(IPatch)+1) 
                     !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                         
                         
                         
                     else if (TractionDimension == 'ETA_ZETA') then
                         
-                        NURBS_Traction_Dimension(ILoadSystem, IPatch) = 3
+                        NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) = 3
                     
                         
-                    nel_NURBS_Traction(ILoadSystem,IPatch) = (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &
-                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)) 
+                    NURBS%nel_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)) * &
+                                    (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NURBS%NZetaKnotOrder(IPatch)) 
         
                 
-                    nnp_NURBS_Traction(ILoadSystem,IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
-                                    * oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)  
+                    NURBS%nnp_NURBS_Traction(ILoadSystem,IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch) &
+                                    * NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)  
                     !number of global basis functions (global here refers to its global domain within the 'super' element)
 
                 
-                    nen_NURBS_Traction(ILoadSystem,IPatch) = (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) 
+                    NURBS%nen_NURBS_Traction(ILoadSystem,IPatch) = (NURBS%NEtaKnotOrder(IPatch)+1) * (NURBS%NZetaKnotOrder(IPatch)+1) 
                     !number of local basis functions (local here refers to a knot span i.e. accross one single element)
                         
                             
@@ -1003,10 +1013,14 @@
                 
                 
             else if (trim(BName) == '$$NUMBER_OF_PRESCRIBED_MATERIAL_POINT_VELOCITY_SURFACE') then 
-                read(GOMunit, *) NElemMPPrescribedVelocity(IPatch) 
+                read(GOMunit, *) NURBS%NElemMPPrescribedVelocity(IPatch) 
                 ! --> we need to find the maximum for this so that we can allocate the shape of 
                 !     of the prescribed velocity elements
-            
+    
+                
+            else if (trim(BName) == '$$NUMBER_OF_PRESCRIBED_NODAL_VELOCITY_SURFACE') then
+                read(GOMunit, *) NURBS%NNodePrescribedVelocity(IPatch) 
+                
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
                 
@@ -1148,18 +1162,18 @@
           ! MULTIPATCH generlization aspect
           ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign
           ! the size of XiKnotEntries, EtaKnotEntries, ZetaKnotEntries
-          Maximum_NControlPoints = maxval(NControlPoints) ! <- finding maximum value
-          Maximum_NControlPoints_Traction = maxval(NControlPoints_Traction) ! <- finding maximum value
+          NURBS%Maximum_NControlPoints = maxval(Counters%NodTot) !NURBS%NControlPoints) ! <- finding maximum value
+          NURBS%Maximum_NControlPoints_Traction = maxval(NURBS%NControlPoints_Traction) ! <- finding maximum value
           
           
-          Maximum_NXiKnotEntries = maxval(NXiKnotEntries) ! <- finding maximum value in this NPATCHES vector
-          Maximum_NEtaKnotEntries = maxval(NEtaKnotEntries) ! <- finding maximum value in this NPATCHES vector
-          Maximum_NZetaKnotEntries = maxval(NZetaKnotEntries) ! <- finding maximum value in this NPATCHES vector
+          NURBS%Maximum_NXiKnotEntries = maxval(NURBS%NXiKnotEntries) ! <- finding maximum value in this NPATCHES vector
+          NURBS%Maximum_NEtaKnotEntries = maxval(NURBS%NEtaKnotEntries) ! <- finding maximum value in this NPATCHES vector
+          NURBS%Maximum_NZetaKnotEntries = maxval(NURBS%NZetaKnotEntries) ! <- finding maximum value in this NPATCHES vector
           
           
-          allocate(XiKnotEntries(Maximum_NXiKnotEntries,Counters%NPatches), stat = IError)
-          allocate(EtaKnotEntries(Maximum_NEtaKnotEntries,Counters%NPatches), stat = IError)
-          allocate(ZetaKnotEntries(Maximum_NZetaKnotEntries,Counters%NPatches), stat = IError)
+          allocate(NURBS%XiKnotEntries(NURBS%Maximum_NXiKnotEntries,Counters%NPatches), stat = IError)
+          allocate(NURBS%EtaKnotEntries(NURBS%Maximum_NEtaKnotEntries,Counters%NPatches), stat = IError)
+          allocate(NURBS%ZetaKnotEntries(NURBS%Maximum_NZetaKnotEntries,Counters%NPatches), stat = IError)
           
           !------traction
           !allocate(XiKnotEntries_Traction(NXiKnotEntries_Traction), stat = IError)
@@ -1178,9 +1192,10 @@
           
           if (NDIM == 2) then 
           do IPatch = 1, Counters%NPatches
-              nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
-              nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
-              nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+              !NURBS%nel_NURBS(IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)) * (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
+              Counters%NEl(IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)) * (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
+              NURBS%nnp_NURBS(IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
+              NURBS%nen_NURBS(IPatch) = (NURBS%NXiKnotOrder(IPatch)+1) * (NURBS%NEtaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
           
               !nel_NURBS_VolLockSmooth(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)-NXiKnotOrder_VolLockSmooth(IPatch)) * (mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch)-NEtaKnotOrder_VolLockSmooth(IPatch)) !number of elements -> note 2D implementation = 2 elements in the example 
               !nnp_NURBS_VolLockSmooth(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth(IPatch) !number of global basis functions (global here refers to its global domain within the 'super' element)
@@ -1190,15 +1205,15 @@
           elseif (NDIM == 3) then 
           do IPatch = 1, Counters%NPatches
               ! actual material 
-              nel_NURBS(IPatch) = (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)) * &
-                  (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)) * &
-                  (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch))
+              Counters%NEl(IPatch) = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)) * & !NURBS%nel_NURBS
+                  (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)) * &
+                  (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NURBS%NZetaKnotOrder(IPatch))
                   !number of elements -> note 2D implementation = 2 elements in the example 
               
-              nnp_NURBS(IPatch) = nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)*oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) 
+              NURBS%nnp_NURBS(IPatch) = NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)*NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)*NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch) 
               !number of global basis functions (global here refers to its global domain within the 'super' element)
               
-              nen_NURBS(IPatch) = (NXiKnotOrder(IPatch)+1) * (NEtaKnotOrder(IPatch)+1) * (NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
+              NURBS%nen_NURBS(IPatch) = (NURBS%NXiKnotOrder(IPatch)+1) * (NURBS%NEtaKnotOrder(IPatch)+1) * (NURBS%NZetaKnotOrder(IPatch)+1) !number of local basis functions (local here refers to a knot span i.e. accross one single element)
               
               
               
@@ -1224,29 +1239,29 @@
           ! MULTIPATCH generlization aspect
                 ! I need to know the maximum number of entries in xi, eta, and zeta, so that I can assign
                 ! the size of XiKnotEntries, EtaKnotEntries, ZetaKnotEntries
-                Maximum_NControlPoints = maxval(NControlPoints) ! <- finding maximum value
+                NURBS%Maximum_NControlPoints = maxval(Counters%NodTot) !NURBS%NControlPoints) ! <- finding maximum value
     
-                Maximum_nel_NURBS = maxval(nel_NURBS)
-                Maximum_nnp_NURBS = maxval(nnp_NURBS)
-                Maximum_nen_NURBS = maxval(nen_NURBS)
+                NURBS%Maximum_nel_NURBS = maxval(Counters%NEl) !NURBS%nel_NURBS)
+                NURBS%Maximum_nnp_NURBS = maxval(NURBS%nnp_NURBS)
+                NURBS%Maximum_nen_NURBS = maxval(NURBS%nen_NURBS)
                 
                 
-                Maximum_nel_NURBS_Traction = maxval(nel_NURBS_Traction)
-                Maximum_nnp_NURBS_Traction = maxval(nnp_NURBS_Traction)
-                Maximum_nen_NURBS_Traction = maxval(nen_NURBS_Traction)
+                NURBS%Maximum_nel_NURBS_Traction = maxval(NURBS%nel_NURBS_Traction)
+                NURBS%Maximum_nnp_NURBS_Traction = maxval(NURBS%nnp_NURBS_Traction)
+                NURBS%Maximum_nen_NURBS_Traction = maxval(NURBS%nen_NURBS_Traction)
                 
                 
                 !Maximum_NFixities = maxval(NFixities)
-                Maximum_NElemMPPrescribedVelocity = maxval(NElemMPPrescribedVelocity) ! --> we need to use this to allocate the prescribed velocity array
-                Maximum_NNodePrescribedVelocity = maxval(NNodePrescribedVelocity)
+                NURBS%Maximum_NElemMPPrescribedVelocity = maxval(NURBS%NElemMPPrescribedVelocity) ! --> we need to use this to allocate the prescribed velocity array
+                NURBS%Maximum_NNodePrescribedVelocity = maxval(NURBS%NNodePrescribedVelocity)
                 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           ! these should probably be maximum_nnp_NURBS
-          allocate(INN(Maximum_nnp_NURBS, NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-          allocate(IEN(Maximum_nen_NURBS, Maximum_nel_NURBS, Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
-          INN = 0 !NURBS coordinate array (also called INC)
-          IEN = 0 !connectivity array
+          allocate(NURBS%INN(NURBS%Maximum_nnp_NURBS, NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+          allocate(ElementConnectivities(NURBS%Maximum_nen_NURBS, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+          NURBS%INN = 0 !NURBS coordinate array (also called INC)
+          ElementConnectivities = 0 !connectivity array
 
           
           
@@ -1256,29 +1271,29 @@
           
           
           ! It is a surface in a 3D simulation so we use NVECTOR-1
-          allocate(INN_Traction(Maximum_nnp_NURBS_Traction, & !(ILoadSystem, IPatch_Temporary) _Temporary
+          allocate(NURBS%INN_Traction(NURBS%Maximum_nnp_NURBS_Traction, & !(ILoadSystem, IPatch_Temporary) _Temporary
               NVECTOR-1, &
-              Maximum_NLoadSystems_Traction, &
+              NURBS%Maximum_NLoadSystems_Traction, &
               Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
                                     !(IPatch)              , Counters%NPatches 
-          INN_Traction = 0 !NURBS coordinate array (also called INC)
+          NURBS%INN_Traction = 0 !NURBS coordinate array (also called INC)
           
-          allocate(IEN_Traction(Maximum_nen_NURBS_Traction, & !(ILoadSystem_Temporary, IPatch_Temporary)
-              Maximum_nel_NURBS_Traction, & !(ILoadSystem_Temporary, IPatch_Temporary)
-              Maximum_NLoadSystems_Traction, &
+          allocate(NURBS%ElementConnectivities_Traction(NURBS%Maximum_nen_NURBS_Traction, & !(ILoadSystem_Temporary, IPatch_Temporary)
+              NURBS%Maximum_nel_NURBS_Traction, & !(ILoadSystem_Temporary, IPatch_Temporary)
+              NURBS%Maximum_NLoadSystems_Traction, &
               Counters%NPatches ), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
                                     !(IPatch)       (IPatch)          , Counters%NPatches  
-          IEN_Traction = 0 !connectivity array
+          NURBS%ElementConnectivities_Traction = 0 !connectivity array
           
           
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           ! these should probably be maximum_nnp_NURBS 
-          allocate(INN_VolLockSmooth(nnp_NURBS_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
-          allocate(IEN_VolLockSmooth(nen_NURBS_VolLockSmooth(IPatch_Temporary), nel_NURBS_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
-          INN_VolLockSmooth = 0 !NURBS coordinate array (also called INC)
-          IEN_VolLockSmooth = 0 !connectivity array
+          allocate(NURBS%INN_VolLockSmooth(NURBS%nnp_NURBS_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat=IError) ! INN has the size of number of control points(or global basis functions x NDIM )
+          allocate(NURBS%ElementConnectivities_VolLockSmooth(NURBS%nen_NURBS_VolLockSmooth(IPatch_Temporary), NURBS%nel_NURBS_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat=IError)  ! IEN has the size of number of local basis functions x NDIM
+          NURBS%INN_VolLockSmooth = 0 !NURBS coordinate array (also called INC)
+          NURBS%ElementConnectivities_VolLockSmooth = 0 !connectivity array
           
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1289,18 +1304,18 @@
                   
                 if (NDIM ==2) then 
                     
-                    do ILoadSystem = 1, NLoadSystems_Traction(IPatch) ! loop over load systems in each patch
+                    do ILoadSystem = 1, NURBS%NLoadSystems_Traction(IPatch) ! loop over load systems in each patch
                     
                         ! NEED SOME IF STATEMENTS HERE
                         
                         
                     !1D --> For LINE traction implementation
                     
-                        if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                        if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
                         
                         call Build_INC_IEN_Array_1D_Traction_XI(ILoadSystem, IPatch)
                     
-                        else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                        else if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
                             
                         call Build_INC_IEN_Array_1D_Traction_ETA(ILoadSystem, IPatch)
                         
@@ -1317,23 +1332,23 @@
                     
                 else if (NDIM ==3) then 
                     
-                    do ILoadSystem = 1, NLoadSystems_Traction(IPatch) ! loop over load systems in each patch
+                    do ILoadSystem = 1, NURBS%NLoadSystems_Traction(IPatch) ! loop over load systems in each patch
                     
                         ! NEED SOME IF STATEMENTS HERE
                         
                         !2D --> For SURFACE traction implementation 
                         
-                        if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
+                        if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 1) then 
                         
                     call Build_INC_IEN_Array_2D_Traction_XI_ETA(ILoadSystem, IPatch)
                     !2D --> For SURFACE traction implementation 
                     
-                    else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
+                    else if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 2) then 
                     
                     call Build_INC_IEN_Array_2D_Traction_XI_ZETA(ILoadSystem, IPatch)
                     
                     
-                    else if (NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then 
+                    else if (NURBS%NURBS_Traction_Dimension(ILoadSystem, IPatch) == 3) then 
                     
                     !2D --> For SURFACE traction implementation 
                     call Build_INC_IEN_Array_2D_Traction_ETA_ZETA(ILoadSystem, IPatch)
@@ -1370,25 +1385,25 @@
               !note that if NURBS, we need to back calculate how many elements we have from the knot vectors
               
               ! allocating allocatable arrays
-              allocate(NodalCoordinates(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalOriginalCoord(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalCoordinatesUpd(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(ControlPoint_Weights(Maximum_NControlPoints, Counters%NPatches), stat = IError) ! size equal to no of nodes
+              allocate(NodalCoordinates(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalOriginalCoord(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalCoordinatesUpd(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights(NURBS%Maximum_NControlPoints, Counters%NPatches), stat = IError) ! size equal to no of nodes
               NodalCoordinates = 0.0
               NodalOriginalCoord = 0.0
               NodalCoordinatesUpd = 0.0
               
               ! Volumetric locking smoothing 
-              allocate(NodalCoordinates_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(ControlPoint_Weights_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat = IError) ! size equal to no of nodes
+              allocate(NodalCoordinates_VolLockSmooth(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(ControlPoint_Weights_VolLockSmooth(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%NPatches), stat = IError) ! size equal to no of nodes
               NodalCoordinates_VolLockSmooth = 0.0
               ControlPoint_Weights_VolLockSmooth = 0.0
               
               ! NURBS Traction 
               !allocate(NodalCoordinates_Traction(NControlPoints_Traction(ILoadSystem_Temporary, IPatch_Temporary), NVECTOR, ILoadSystem_Temporary, IPatch_Temporary), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalCoordinates_Traction(Maximum_NControlPoints_Traction, NVECTOR, Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError ) !size equal to no of nodes, no of dimensions  ! (ILoadSystem_Temporary, IPatch_Temporary)
+              allocate(NodalCoordinates_Traction(NURBS%Maximum_NControlPoints_Traction, NVECTOR, NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError ) !size equal to no of nodes, no of dimensions  ! (ILoadSystem_Temporary, IPatch_Temporary)
               !allocate(ControlPoint_Weights_Traction(NControlPoints_Traction(ILoadSystem_Temporary, IPatch_Temporary), ILoadSystem_Temporary, IPatch_Temporary), stat = IError) ! size equal to no of nodes
-              allocate(ControlPoint_Weights_Traction(Maximum_NControlPoints_Traction, Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError ) ! size equal to no of nodes
+              allocate(ControlPoint_Weights_Traction(NURBS%Maximum_NControlPoints_Traction, NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches), stat = IError ) ! size equal to no of nodes
               !, Counters%NPatches , Counters%NPatches
               NodalCoordinates_Traction = 0.0
               ControlPoint_Weights_Traction = 0.0
@@ -1402,21 +1417,20 @@
               
               
               ! we assume ELEMENTNODES is the same for all patches
-              allocate(ElementConnectivities(ELEMENTNODES, Maximum_nel_NURBS, Counters%NPatches), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+              !allocate(ElementConnectivities(ELEMENTNODES, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError) !size equal to no of elements, no of dimensions ! -> NURBS implementation
+              !ElementConnectivities = 0
               
-              
-              ElementConnectivities = 0
               if (ELEMENTTYPE == TETRAOLD) then ! elementtype before v2018.2  
-                allocate(ElementConnectivities10Node(N_NODES_HOE, Maximum_nel_NURBS), stat = IError)
+                allocate(ElementConnectivities10Node(N_NODES_HOE, NURBS%Maximum_nel_NURBS), stat = IError)
                 ElementConnectivities10Node = 0
               end if  
               
-              allocate(NodalPrescibedDisp(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDisp(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
               !allocate(NodalPrescibedDisp_VolLockSmooth(NControlPoints_VolLockSmooth(IPatch_Temporary), NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
               
               
-              allocate(NodalPrescibedDispWater(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
-              allocate(NodalPrescibedDispGas(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispWater(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
+              allocate(NodalPrescibedDispGas(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError) !size equal to no of nodes, no of dimensions 
               
               NodalPrescibedDisp = 1.d10
               !NodalPrescibedDisp_VolLockSmooth = 1.d10
@@ -1425,29 +1439,33 @@
               
               
               ! Rank 1 index on ElementMaterialID is local element number
-              allocate (ElementMaterialID(Maximum_nel_NURBS, Counters%NPatches), stat = IError) !size equal to no of elements
+              allocate (ElementMaterialID(NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError) !size equal to no of elements
               
               
               ! calculate the total number of elements in the system of all patches
-              Sum_nel_NURBS = 0
+              !NURBS%Sum_nel_NURBS = 0
+              Counters%Sum_NEl = 0
               do ii = 1, Counters%NPatches
-                  Sum_nel_NURBS = Sum_nel_NURBS + nel_NURBS(ii)
+                  !NURBS%Sum_nel_NURBS = NURBS%Sum_nel_NURBS + Counters%NEl(ii) !NURBS%nel_NURBS(ii)
+                  Counters%Sum_NEl = Counters%Sum_NEl + Counters%NEl(ii) 
               end do 
 
               ! calculate the total number of nodes in the system of all patches
-              Sum_NControlPoints = 0
+              !NURBS%Sum_NControlPoints = 0
+              Counters%Sum_NodTot = 0
               do ii = 1, Counters%NPatches
-                  Sum_NControlPoints = Sum_NControlPoints + NControlPoints(ii)
+                  !NURBS%Sum_NControlPoints = NURBS%Sum_NControlPoints + Counters%NodTot(ii) !NURBS%NControlPoints(ii)
+                  Counters%Sum_NodTot = Counters%Sum_NodTot + Counters%NodTot(ii)  
               end do 
               
               ! allocating ActiveElement based on the total number of elements
-              allocate(IsActiveElement(Maximum_nel_NURBS,Counters%NPatches), stat = IError) !size equal to no of elements !Maximum_nel_NURBS
+              allocate(IsActiveElement(NURBS%Maximum_nel_NURBS,Counters%NPatches), stat = IError) !size equal to no of elements !Maximum_nel_NURBS
               
               ! Active node is based on the global numbering of control points excluding 
               ! I am moving the allocation of ActiveNode to after we read all the control points and we realise which ones are common
-              allocate(ActiveNode(Maximum_NControlPoints, Counters%NPatches), stat = IError) !size equal to no of nodes 
+              allocate(ActiveNode(NURBS%Maximum_NControlPoints, Counters%NPatches), stat = IError) !size equal to no of nodes 
               
-              allocate(HydraulicHeadLoadedElemID(Maximum_nel_NURBS), stat = IError) !size equal to no of elements
+              allocate(HydraulicHeadLoadedElemID(NURBS%Maximum_nel_NURBS), stat = IError) !size equal to no of elements
               ElementMaterialID = 0
               IsActiveElement = .false.
               ActiveNode = .false.
@@ -1457,15 +1475,15 @@
               ! this serves as a documentation so that we can easily know what is the 
               ! global control point index from inputting the local control point index and its corresponding patch number
               !allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(Counters%NPatches, Maximum_NControlPoints) )
-              allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(Maximum_NControlPoints , Counters%NPatches ))
+              allocate(Multipatch_Connecting_Local_To_Global_ControlPoints(NURBS%Maximum_NControlPoints , Counters%NPatches ))
 
               Multipatch_Connecting_Local_To_Global_ControlPoints = 0
           
               
               ! Finding maximum order 
-              Maximum_NXiKnotOrder = maxval(NXiKnotOrder)
-              Maximum_NEtaKnotOrder = maxval(NEtaKnotOrder)
-              Maximum_NZetaKnotOrder = maxval(NZetaKnotOrder)
+              NURBS%Maximum_NXiKnotOrder = maxval(NURBS%NXiKnotOrder)
+              NURBS%Maximum_NEtaKnotOrder = maxval(NURBS%NEtaKnotOrder)
+              NURBS%Maximum_NZetaKnotOrder = maxval(NURBS%NZetaKnotOrder)
           
           
         end subroutine InitialiseDimension
@@ -1590,7 +1608,6 @@
                     GeoParams%ContactMaterials(I,4), GeoParams%ContactProperties(I,7:8)
                 end do
             
-  
               !!! DATA FOR PRESCRIBED VELOCITY
               else if (trim(BName) == '$$PATCH_ID') then !--> multipatch generalized 
                   ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
@@ -1599,28 +1616,41 @@
                   read(FileUnit, *) IPatch
               
               else if (trim(BName)=='$$PRESCRIBED_MATERIAL_POINT_VELOCITY_VOLUME') then !prescribed velcoity is assigned
-                GeoParams%ApplyMPVelocityVolume=.true.
+                if (NURBS%NElemMPPrescribedVelocity(IPatch)>0) then
+                  GeoParams%ApplyMPVelocityVolume=.true.
                 call ReadPrescribedVelocityMaterialPoint(FileUnit, IPatch)
+                end if 
          
               else if (trim(BName)=='$$PRESCRIBED_MATERIAL_POINT_VELOCITY_SURFACE') then !prescribed velcoity is assigned
-                GeoParams%ApplyMPVelocitySurface=.true. ! turn switch on
+                if (NURBS%NElemMPPrescribedVelocity(IPatch)>0) then  
+                  GeoParams%ApplyMPVelocitySurface=.true. ! turn switch on
                 call ReadPrescribedVelocityMaterialPoint(FileUnit, IPatch)
+                end if 
                 
               else if (trim(BName)=='$$PRESCRIBED_NODAL_VELOCITY_VOLUME') then !prescribed velcoity is assigned
-                GeoParams%ApplyNodalVelocityVolume=.true.
+                  if (NURBS%NNodePrescribedVelocity(IPatch)>0) then 
+                  GeoParams%ApplyNodalVelocityVolume=.true.
                 call ReadPrescribedVelocityNode(FileUnit, IPatch)
+                  end if
                 
               else if (trim(BName)=='$$PRESCRIBED_NODAL_VELOCITY_SURFACE') then !prescribed velcoity is assigned
-                GeoParams%ApplyNodalVelocitySurface=.true.
+                if (NURBS%NNodePrescribedVelocity(IPatch)>0) then 
+                  GeoParams%ApplyNodalVelocitySurface=.true.
                 call ReadPrescribedVelocityNode(FileUnit, IPatch)
+                end if 
                 
               else if (trim(BName)=='$$PRESCRIBED_NODAL_VELOCITY_LINE') then !prescribed velcoity is assigned
+                  if (NURBS%NNodePrescribedVelocity(IPatch)>0) then 
                 GeoParams%ApplyNodalVelocityLine=.true.
                 call ReadPrescribedVelocityNode(FileUnit, IPatch)
+                  end if 
+                  
                 
               else if (trim(BName)=='$$PRESCRIBED_NODAL_VELOCITY_POINT') then !prescribed velcoity is assigned
+                  if (NURBS%NNodePrescribedVelocity(IPatch)>0) then 
                 GeoParams%ApplyNodalVelocityPoint=.true.
                 call ReadPrescribedVelocityNode(FileUnit, IPatch)
+                end if
 				
 		      !!! DATA FOR INITIAL VELOCITY ON MP
 			  !--> not multipatch generalized
@@ -1822,7 +1852,7 @@
                   read(FileUnit, *) IPatch 
                   
               else if (trim(BName)=='$$STARTDAMPING') then
-                do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+                do I = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements !
                   read(FileUnit,*,iostat=ios) DumR(1)
                   call Assert( ios == 0, messageIOS // trim(BName) )
                   if (DumR(1) > 0.0) GeoParams%ApplyLocalDampingElement = .true. 
@@ -1902,7 +1932,7 @@
           integer(INTEGER_TYPE) :: IError
 
           if (CalParams%ApplyExcavation) then
-            allocate(GeoParams%ExcavatedElements(Counters%NEl), stat = IError)
+            allocate(GeoParams%ExcavatedElements(Counters%Sum_NEl), stat = IError) !Counters%NEl !NURBS%Sum_nel_NURBS
           else
             allocate(GeoParams%ExcavatedElements(1), stat = IError)
           end if
@@ -2031,11 +2061,11 @@
           
           allocate( GeoParams%PrescribedVeloNElem(Counters%NPatches) )!, stat = IError )
           GeoParams%PrescribedVeloNElem = 0  
-          allocate( GeoParams%PrescribedVeloElemID(Maximum_NElemMPPrescribedVelocity, Counters%NPatches) )!, stat = IError) !, Counters%NPatches !maximum_nel_NURBS  
+          allocate( GeoParams%PrescribedVeloElemID(NURBS%Maximum_NElemMPPrescribedVelocity, Counters%NPatches) )!, stat = IError) !, Counters%NPatches !maximum_nel_NURBS  
           GeoParams%PrescribedVeloElemID = -1
-          allocate( GeoParams%PrescribedVeloElValue(Maximum_NElemMPPrescribedVelocity, NVECTOR, Counters%NPatches) )!, stat = IError) !, Counters%NPatches !maximum_nel_NURBS
+          allocate( GeoParams%PrescribedVeloElValue(NURBS%Maximum_NElemMPPrescribedVelocity, NVECTOR, Counters%NPatches) )!, stat = IError) !, Counters%NPatches !maximum_nel_NURBS
           GeoParams%PrescribedVeloElValue = 0.0
-          allocate( GeoParams%PrescribedVeloElDirection(Maximum_NElemMPPrescribedVelocity, NVECTOR, Counters%NPatches) )!, stat = IError) !, Counters%NPatches !maximum_nel_NURBS
+          allocate( GeoParams%PrescribedVeloElDirection(NURBS%Maximum_NElemMPPrescribedVelocity, NVECTOR, Counters%NPatches) )!, stat = IError) !, Counters%NPatches !maximum_nel_NURBS
           GeoParams%PrescribedVeloElDirection = 1
           
           ! commenting this out for this branch ------------------------------------
@@ -2137,11 +2167,11 @@
           CalParams%PrescribedVelo%NNodePrescribedVelo = 0 ! --> need multipatch generalization 
           
           !Prescribed velocity ---------> Node
-          allocate( CalParams%PrescribedVelo%NodePrescribedVelo(Maximum_NNodePrescribedVelocity, Counters%NPatches), stat = IError)
+          allocate( CalParams%PrescribedVelo%NodePrescribedVelo(NURBS%Maximum_NNodePrescribedVelocity, Counters%NPatches), stat = IError)
           CalParams%PrescribedVelo%NodePrescribedVelo = -1
-          allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityValue(Maximum_NNodePrescribedVelocity, NVECTOR, Counters%NPatches), stat = IError)
+          allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityValue(NURBS%Maximum_NNodePrescribedVelocity, NVECTOR, Counters%NPatches), stat = IError)
           CalParams%PrescribedVelo%NodalPrescribedVelocityValue = 0.0
-          allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(Maximum_NNodePrescribedVelocity, NVECTOR, Counters%NPatches), stat = IError)
+          allocate( CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(NURBS%Maximum_NNodePrescribedVelocity, NVECTOR, Counters%NPatches), stat = IError)
           CalParams%PrescribedVelo%NodalPrescribedVelocityDirection = 1
           
           
@@ -2176,7 +2206,7 @@
           real(REAL_TYPE), dimension(NVECTOR) :: DumR
           
           
-          GeoParams%PrescribedVeloNElem(IPatch) = NElemMPPrescribedVelocity(IPatch) !NNodePrescribedVelocity!DumI(1) !(PatchID)
+          GeoParams%PrescribedVeloNElem(IPatch) = NURBS%NElemMPPrescribedVelocity(IPatch) !NNodePrescribedVelocity!DumI(1) !(PatchID)
                 
           ! this was multipatch generalized for so that we can store the following for each patch
           do I = 1, GeoParams%PrescribedVeloNElem(IPatch) ! loop over number of prescribed velocity elements in a patch
@@ -2230,8 +2260,11 @@
           
           !call DestroyPrescribedNodalVeloData()   
           
-          read(FileUnit,*) DumI(1) 
-          CalParams%PrescribedVelo%NNodePrescribedVelo(IPatch) = DumI(1)
+          !read(FileUnit,*) DumI(1) 
+          !CalParams%PrescribedVelo%NNodePrescribedVelo(IPatch) = DumI(1)
+          
+          CalParams%PrescribedVelo%NNodePrescribedVelo(IPatch) = NURBS%NNodePrescribedVelocity(IPatch)
+          
                 
           ! commenting this out for this branch ------------------------------------
           !call InitialisePrescribedNodalVeloData(CalParams%PrescribedVelo%NNodePrescribedVelo)  ! --> I commented this out for a second

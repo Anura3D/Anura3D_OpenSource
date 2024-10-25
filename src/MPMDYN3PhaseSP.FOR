@@ -317,7 +317,7 @@
           !do IAEl = 1, Counters%NAEl                                      !loop over all elements
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
               
             IEl = ActiveElement(IAEl, IPatch)
             do IPart = 1, NPartEle(IEl,IPatch)                                 !loop over all particles in element
@@ -485,7 +485,7 @@
 
           !do IAEl = 1, Counters%NAEl                                      ! loop over all elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             
             do I = 1, NVECTOR
@@ -570,7 +570,7 @@
           !do IAElement = 1, Counters%NAEl     !loop over all elements
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
      
               NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
@@ -584,8 +584,8 @@
 
                 ! Determine B matrix of deformed element at the particle local position
                 call BMatrix(Particles(ParticleIndex)%LocPos, &
-                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
-                             NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
+                             ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl,  &
+                             Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch),  &
                              BMatrixDeformed, &
@@ -645,7 +645,7 @@
           !do IAElement = 1, Counters%NAEl     !loop over all elements
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
             IElement = ActiveElement(IAElement, IPatch)
      
@@ -658,8 +658,8 @@
 
                 ! Determine B matrix of deformed element at the particle local position
                 call BMatrix(Particles(ParticleIndex)%LocPos, &
-                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl,  &
-                             NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
+                             ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl,  &
+                             Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch),  &
                              BMatrixDeformed, &
@@ -716,7 +716,7 @@
           
           !do IAElement = 1, Counters%NAEl     !loop over all elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IElement = ActiveElement(IAElement, IPatch)
 
             NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
@@ -728,8 +728,8 @@
 
               ! Determine B matrix of deformed element at the particle local position
               call BMatrix(Particles(ParticleIndex)%LocPos, &
-                             ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl, &
-                             NControlPoints(IPatch), NVECTOR, & !Counters%NodTot
+                             ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl, &
+                             Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
                              NodalCoordinatesUpd(:,:,IPatch), &
                              BMatrixDeformed, &
@@ -791,7 +791,7 @@
 
           !do IAElement = 1, Counters%NAEl ! Loop over all elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAElement = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
            IElement = ActiveElement(IAElement, IPatch)
           
            PartGravity = 0.0
@@ -861,7 +861,7 @@
           !do IAEl = 1, Counters%NAEl                                      ! Loop over all elements
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                     
                     
             IEl = ActiveElement(IAEl, IPatch)
@@ -961,7 +961,7 @@
           !do IAEl = 1, Counters%NAEl
           
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
@@ -975,7 +975,7 @@
           
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 !//////////////////// External force calculation //////////////////////// 
           do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
@@ -1113,7 +1113,7 @@
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
@@ -1124,7 +1124,7 @@
 
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 
               ! Determine number of integration points inside element
@@ -1305,7 +1305,7 @@
           maxEl       = 1
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
              NEl = ActiveElement(IAEl, IPatch)
              maxEl = max(maxEl, NEl)
              maxParticle = max(maxParticle, NPartEle(NEl,IPatch_Temporary))
@@ -1324,7 +1324,7 @@
 
           !do IAEl = 1, Counters%NAEl
           do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
 !//////////////////// External force calculation //////////////////////// 
           do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element

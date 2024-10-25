@@ -209,7 +209,7 @@
           CheckRemovalParticles = 0
         
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             NVirtualParticles = NVirtualParticlesEle(IElement)
             ContainsBoundaryParticle = HasBoundaryParticle(IElement)
@@ -586,7 +586,7 @@
         
           ICounter = 1
           do IPatch = 1, Counters%NPatches
-          do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl
+          do ElementID = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over all elements belonging to holes
 
               do IParticle = 1, CalParams%NVirtualParticles
@@ -814,7 +814,7 @@
           integer(INTEGER_TYPE) :: IPatch
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do ElementID = 1, nel_NURBS(IPatch)!Counters%NEl
+          do ElementID = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over elements belonging to holes
               do IParticle = 1, NPartEle(ElementID,IPatch)
                 ParticleIndex = GetParticleIndexFunction(IParticle, ElementID, IPatch)

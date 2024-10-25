@@ -47,9 +47,16 @@
 
         type CounterType
           !integer(INTEGER_TYPE) :: &
-          integer(INTEGER_TYPE) ::            NEl = 0 ! Number of elements dimension(Counters%NPatches)
-          integer(INTEGER_TYPE) ::            NAEl = 0 ! Number of active elements
-          integer(INTEGER_TYPE) ::            NodTot = 0 ! Number of nodes
+          integer(INTEGER_TYPE), allocatable, dimension(:) ::            NEl ! = 0 ! Number of elements dimension(Counters%NPatches)
+          integer(INTEGER_TYPE) ::            Sum_NEl  = 0 ! Number of elements dimension(Counters%NPatches) !, allocatable, dimension(:)
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:) ::            NAEl ! = 0 ! Number of active elements
+          integer(INTEGER_TYPE) ::            Sum_NAEl ! = 0 ! Number of active elements !, allocatable, dimension(:)
+          
+          ! this needs to be generalized NodTot to replace NControlPoints_NURBS
+          integer(INTEGER_TYPE), allocatable, dimension(:) ::            NodTot ! = 0 ! Number of nodes
+          integer(INTEGER_TYPE) ::            Sum_NodTot = 0 ! Number of nodes
+          
           integer(INTEGER_TYPE) ::            N = 0 ! Number of degrees of freedom
           
           integer(INTEGER_TYPE) ::            N_VolLockSmooth = 0 ! Number of degrees of freedom
@@ -107,7 +114,8 @@
                                         NLoadedElementSidesGasMatPointsB, &
                                         SoilSurfaceNumberofSides, &
                                         PhreaticSurfaceNumberofSides, &
-                                        NumberOfMaterials)                                        
+                                        NumberOfMaterials, &
+                                        Maximum_NLoadSystems_Traction_Input)                                        
         !**********************************************************************
         !
         !    Function:  Assigns the provided values to the data of this module.
@@ -150,13 +158,15 @@
                                  SoilSurfaceNumberofSides, &
                                  PhreaticSurfaceNumberofSides
           
-          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesSolidNodes
+          integer(INTEGER_TYPE), intent(in) :: Maximum_NLoadSystems_Traction_Input
           
-          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterNodes
+          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction_Input, Counters%NPatches) :: NLoadedElementSidesSolidNodes !NURBS%Maximum_NLoadSystems_Traction
           
-          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesSolidMatPoints
+          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction_Input, Counters%NPatches) :: NLoadedElementSidesWaterNodes !NURBS%Maximum_NLoadSystems_Traction
           
-          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterMatPoints
+          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction_Input, Counters%NPatches) :: NLoadedElementSidesSolidMatPoints !NURBS%Maximum_NLoadSystems_Traction
+          
+          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction_Input, Counters%NPatches) :: NLoadedElementSidesWaterMatPoints !NURBS%Maximum_NLoadSystems_Traction
           
           !integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterMatPoints
           

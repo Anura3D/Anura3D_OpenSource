@@ -74,7 +74,7 @@
             
             if ( (CalParams%IStep >= IniExcavIStep) .and. (CalParams%IStep <= EndExcavIStep) ) then
                 do IPatch = 1, Counters%NPatches ! loop over patches
-                do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+                do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over all elements
                 Vol = GeoParams%ExcavatedElements(IElement) ! this matrix comes from GOM file
                 if (Vol == ExcavVolume) then
                   call RemoveParticlesFromExcavationElement(IElement)

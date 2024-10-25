@@ -419,7 +419,20 @@
 
            do IEntity = 1, Counters%nEntity
              do I = 1, Counters%N
-               TotalVelocitySoil(I, IEntity) = TotalVelocitySoil(I, IEntity) + AccelerationSoil(I, IEntity) * CalParams%TimeIncrement  ! solid
+                 
+                 ! FEM and Generalized Alpha Scheme 
+                 if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .AND. (CalParams%TimeStep /= 1) ) then 
+                     
+                     TotalVelocitySoil(I, IEntity) = TotalVelocitySoil(I, IEntity) + &
+                         ( CalParams%TimeIncrement * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*AccelerationSoil(I, IEntity) + &
+                         (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*AccelerationSoilGeneralizedAlpha(I, IEntity)) ) * PBoundary(I)
+                 
+                 else 
+                 
+                     TotalVelocitySoil(I, IEntity) = TotalVelocitySoil(I, IEntity) + AccelerationSoil(I, IEntity) * CalParams%TimeIncrement  ! solid
+                     
+                 end if 
+                 
                if (CalParams%NumberOfPhases==3) then
                  TotalVelocityGas (I, IEntity)= TotalVelocityGas(I, IEntity)+ AccelerationGas(I, IEntity) * CalParams%TimeIncrement
                end if
@@ -577,7 +590,7 @@
           if (IsULFEMComputation()) then
             call UpdateNodes(EntityUsed)
             do IPatch = 1, Counters%NPatches ! loop over patches
-            do I = 1, nel_NURBS(IPatch)!Counters%NEl
+            do I = 1, Counters%NEl(IPatch)!Counters%NEl
               call CoordLocalToGlobal(I, NodalCoordinatesUpd(:,:,IPatch), IPatch )
             end do ! elements
             end do ! patches
@@ -862,13 +875,13 @@
               
                
                ! 2- loop over control points of "other" patch
-               do IControlPoint_Other = 1, NControlPoints(IPatch) 
+               do IControlPoint_Other = 1, Counters%NodTot(IPatch) 
                    
                    GlobalID = Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_Other, IPatch)
                    
                
                    ! 3- loop over the control points of moving mesh 
-                   do IControlPoint_MovingMesh = 1, NControlPoints(MovingMeshPatchID) 
+                   do IControlPoint_MovingMesh = 1, Counters%NodTot(MovingMeshPatchID) 
                        
                    
                        if (Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_MovingMesh, MovingMeshPatchID) == GlobalID) then 
@@ -881,7 +894,7 @@
                    
                    
                    ! 3- loop over the control points of compressing mesh 
-                   do IControlPoint_MovingMesh = 1, NControlPoints(CompressingMeshPatchID) 
+                   do IControlPoint_MovingMesh = 1, Counters%NodTot(CompressingMeshPatchID) 
                        
                    
                        if (Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_MovingMesh, CompressingMeshPatchID) == GlobalID) then 
@@ -1163,7 +1176,7 @@
       !    CalParams%ComputationMethod == MPM_MIXED_MG22_NOINTERPOLATION_INTEGRATION_SPECIFIER) then 
       
       ! total number of elements
-      NumberOfElements = Counters%NEl
+      NumberOfElements = Counters%Sum_NEl
       
       
       
@@ -1174,7 +1187,7 @@
       
       ! PART A: finding the maximum counts of the materisl points in the subzones. 
       ! loop over active elements
-      do iElement = 1, nael_NURBS(IPatch_Temporary)!Counters%NAEl!NumberOfActiveElement
+      do iElement = 1, Counters%NAEl(IPatch_Temporary)!Counters%NAEl!NumberOfActiveElement
           
             ! initialize 
           NumberOfMPsInSubZone1 = 0 ! -1<xi<0, -1<eta<0
@@ -1249,7 +1262,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! PART B: find the indices of the material points in each element in each subzone
       ! loop over all the active elements
-      do iElement = 1, nael_NURBS(IPatch_Temporary)!Counters%NAEl!NumberOfActiveElement
+      do iElement = 1, Counters%NAEl(IPatch_Temporary)!Counters%NAEl!NumberOfActiveElement
 
           ! initialize the counter to 1
           MPCounter_subzone1 = 1
@@ -1417,7 +1430,7 @@
           if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity
             
               do IPatch = 1, Counters%NPatches ! loop over patches
-              do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
+              do INode = 1, Counters%NodTot(IPatch)!Counters%Nodtot ! loop over control points
                   
                   GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
                   
@@ -1624,7 +1637,7 @@
            if ( IsPrescribedVelocity .or. ( IsPrescribedSurfaceVelocity .and. (.not.IsMPMComputation()) ) ) then ! prescribedvelocity
 
             do IPatch = 1, Counters%NPatches ! loop over patches
-               do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
+               do INode = 1, Counters%NodTot(IPatch)!Counters%Nodtot ! loop over control points
                    
                    GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
                    
@@ -1649,7 +1662,7 @@
            end do
          end do        
          
-         call Norm(Counters%NodTot, NDOFL,  &
+         call Norm(Counters%Sum_NodTot, NDOFL,  &
                    TemporaryMappingVector, ReducedDof,  &
                    OutOfBalanceNormSolid)
      
@@ -1680,7 +1693,7 @@
          end do
         end if
     
-         call Norm(Counters%NodTot, NDOFL,  &
+         call Norm(Counters%Sum_NodTot, NDOFL,  &
                    TemporaryMappingVector, ReducedDof, &
                    ExternalLoadNormSolid)
      
@@ -1707,7 +1720,7 @@
            end do
          end do       
          
-         call Norm(Counters%NodTot, NDOFL,  &
+         call Norm(Counters%Sum_NodTot, NDOFL,  &
                    TemporaryMappingVector, ReducedDof,  &
                    OutOfBalanceNormWater)
      
@@ -1724,7 +1737,7 @@
            end do
          end do        
 
-         call Norm(Counters%NodTot, NDOFL,  &
+         call Norm(Counters%Sum_NodTot, NDOFL,  &
                    TemporaryMappingVector, ReducedDof, &
                    ExternalLoadNormWater)
      
@@ -1767,7 +1780,7 @@
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleIncrementalVelocity
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
-          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc, GeneralizedNodAcc
           
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
           !real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: ParticleShape_VolLockSmooth
@@ -1787,7 +1800,7 @@
 
           !do IAEl = 1, Counters%NAEl   ! Loop over all elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
                 
@@ -1801,6 +1814,8 @@
               
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = &
                   AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn) 
+              
+              GeneralizedNodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoilGeneralizedAlpha(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             
             end do
             
@@ -1823,11 +1838,25 @@
                   
                  do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! loop over element nodes
                       
-                  do I = 1, NVECTOR  
+                  do I = 1, NVECTOR   ! loop over each direction 
                     ! Particle accelerations
                     ParticleAcceleration(I) = ParticleAcceleration(I) + ( ParticleShape(INode) * NodAcc(I, INode, iEntity) )
-                    ! Particle x-velocity
-                    ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + ( Time * ParticleShape(INode) * NodAcc(I, INode, iEntity) )
+                    
+                    ! Particle velocity
+                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /=1) ) then 
+                    
+                        !Mapping the particle velocity using the generalized alpha time scheme
+                        ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
+                            ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
+                            (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
+                        
+                    else 
+                        
+                        ! Particle x-velocity
+                        ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + ( Time * ParticleShape(INode) * NodAcc(I, INode, iEntity) )
+                        
+                    end if 
+                    
                   end do 
                   
                 end do !Loop over nodes
@@ -1968,7 +1997,7 @@
         implicit none
         
         ! Hardcoded NControlPoints for the higher order mesh of patch 1
-        real(REAL_TYPE), dimension(NTENSOR, NControlPoints(1),Counters%nEntity), intent(out) :: WeightedStrainIncrementTensor_Numerator       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR, Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedStrainIncrementTensor_Numerator       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -1989,7 +2018,7 @@
        
           do IPatch = 1, Counters%NPatches ! Loop over patches
           
-              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
                   
                   ! the background grid should have the same exact active element discretization 
                   IEl = ActiveElement(IAEl, IPatch)
@@ -2002,7 +2031,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          IEN(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -2058,7 +2087,7 @@
         implicit none
         
         ! Hardcoded NControlPoints for the higher order mesh of patch 1
-        real(REAL_TYPE), dimension(NTENSOR, NControlPoints(1),Counters%nEntity), intent(out) :: WeightedStressIncrementTensor_Numerator       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR, Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedStressIncrementTensor_Numerator       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -2079,7 +2108,7 @@
        
           do IPatch = 1, Counters%NPatches ! Loop over patches
           
-              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
                   
                   ! the background grid should have the same exact active element discretization 
                   IEl = ActiveElement(IAEl, IPatch)
@@ -2092,7 +2121,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          IEN(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -2148,7 +2177,7 @@
        
         implicit none
         
-        real(REAL_TYPE), dimension(NTENSOR, NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedStrainIncrementTensor_Numerator       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR, NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedStrainIncrementTensor_Numerator       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -2169,7 +2198,7 @@
             
           do IPatch = 1, Counters%NPatches ! Loop over patches
           
-              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
                   
                   ! the background grid should have the same exact active element discretization 
                   IEl = ActiveElement(IAEl, IPatch)
@@ -2182,7 +2211,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES_VolLockSmooth) = &
-                          IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -2237,7 +2266,7 @@
        
         implicit none
         
-        real(REAL_TYPE), dimension(NTENSOR, NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedStressIncrementTensor_Numerator       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR, NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedStressIncrementTensor_Numerator       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -2258,7 +2287,7 @@
             
           do IPatch = 1, Counters%NPatches ! Loop over patches
           
-              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
                   
                   ! the background grid should have the same exact active element discretization 
                   IEl = ActiveElement(IAEl, IPatch)
@@ -2271,7 +2300,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES_VolLockSmooth) = &
-                          IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -2327,7 +2356,7 @@
         implicit none
         
         ! Hardcoded NControlPoints for the higher order mesh of patch 1
-        real(REAL_TYPE), dimension(NControlPoints(1),Counters%nEntity), intent(out) :: WeightedWP_Numerator       !CC added nEntity
+        real(REAL_TYPE), dimension(Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedWP_Numerator       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -2348,7 +2377,7 @@
        
           do IPatch = 1, Counters%NPatches ! Loop over patches
           
-              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
                   
                   ! the background grid should have the same exact active element discretization 
                   IEl = ActiveElement(IAEl, IPatch)
@@ -2361,7 +2390,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          IEN(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -2419,7 +2448,7 @@
         implicit none
         
         ! Hardcoded NControlPoints for the higher order mesh of patch 1
-        real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedWP_Numerator       !CC added nEntity
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedWP_Numerator       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -2440,7 +2469,7 @@
        
           do IPatch = 1, Counters%NPatches ! Loop over patches
           
-              do IAEl = 1, nael_NURBS(IPatch) ! Loop over all elements 
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
                   
                   ! the background grid should have the same exact active element discretization 
                   IEl = ActiveElement(IAEl, IPatch)
@@ -2453,7 +2482,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES_VolLockSmooth) = &
-                          IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -3122,7 +3151,7 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NTENSOR,NControlPoints(1),Counters%nEntity), intent(in) :: NodalStrainIncrement_VolLockSmooth       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR,Counters%NodTot(1),Counters%nEntity), intent(in) :: NodalStrainIncrement_VolLockSmooth       !CC added nEntity
           
           
         ! Local variables
@@ -3142,12 +3171,12 @@
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES) = &
-                        IEN(1:ELEMENTNODES, IEl, IPatch)
+                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                 
                 do I = 1, NTENSOR
               
@@ -3219,7 +3248,7 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NTENSOR,NControlPoints(1),Counters%nEntity), intent(in) :: NodalStressIncrement_VolLockSmooth       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR,Counters%NodTot(1),Counters%nEntity), intent(in) :: NodalStressIncrement_VolLockSmooth       !CC added nEntity
           
           
         ! Local variables
@@ -3239,12 +3268,12 @@
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES) = &
-                        IEN(1:ELEMENTNODES, IEl, IPatch)
+                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                 
                 do I = 1, NTENSOR
               
@@ -3320,7 +3349,7 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NTENSOR,NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: NodalStrainIncrement_VolLockSmooth       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR,NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: NodalStrainIncrement_VolLockSmooth       !CC added nEntity
           
           
         ! Local variables
@@ -3340,12 +3369,12 @@
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES_VolLockSmooth) = &
-                        IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
+                        NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
                 
                 do I = 1, NTENSOR
               
@@ -3419,7 +3448,7 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NTENSOR,NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: NodalStressIncrement_VolLockSmooth       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR,NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: NodalStressIncrement_VolLockSmooth       !CC added nEntity
           
           
         ! Local variables
@@ -3439,12 +3468,12 @@
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES_VolLockSmooth) = &
-                        IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
+                        NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
                 
                 do I = 1, NTENSOR
               
@@ -3517,7 +3546,7 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NControlPoints(1),Counters%nEntity), intent(in) :: NodalWP_VolLockSmooth       !CC added nEntity !NTENSOR,
+        real(REAL_TYPE), dimension(Counters%NodTot(1),Counters%nEntity), intent(in) :: NodalWP_VolLockSmooth       !CC added nEntity !NTENSOR,
           
           
         ! Local variables
@@ -3537,12 +3566,12 @@
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES) = &
-                        IEN(1:ELEMENTNODES, IEl, IPatch)
+                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                 
                 !do I = 1, NTENSOR
               
@@ -3622,7 +3651,7 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: NodalWP_VolLockSmooth       !CC added nEntity
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: NodalWP_VolLockSmooth       !CC added nEntity
           
           
         ! Local variables
@@ -3642,12 +3671,12 @@
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
           
-            do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES_VolLockSmooth) = &
-                        IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
+                        NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
                 
                 !do I = 1, NTENSOR
               
@@ -4589,7 +4618,22 @@
           
           do IDOF = 1, Counters%N       !Loop over all degrees of freedom
             do J = 1,Counters%nEntity   !loop over all entities
-              NodalIncDisplacement(IDOF,J) = NodalVelocities(IDOF,J) * CalParams%TimeIncrement
+                
+                if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .AND. (.not.IsMPMComputation()) .AND. (CalParams%TimeStep /= 1) ) then ! FEM with Generalized Alpha scheme 
+                    NodalIncDisplacement(IDOF,J) = & !NodalIncDisplacement(IDOF,J) + &
+                                             (NodalVelocities(IDOF,J)*CalParams%TimeIncrement) + &
+                                             ( (CalParams%TimeIncrement**2) * &
+                                             ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(IDOF,J) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(IDOF,J) ) ) 
+                else 
+
+                    NodalIncDisplacement(IDOF,J) = NodalVelocities(IDOF,J) * CalParams%TimeIncrement
+              
+              end if 
+              
+              
+              
+              
+              
             end do
           end do
                    
@@ -4710,7 +4754,7 @@
           KEWn = 0.0
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
           
@@ -4770,7 +4814,7 @@
           KEWn = 0.0
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
           
@@ -4829,7 +4873,7 @@
           ! Calculation of kinetic energy of the system
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over all nodes
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over all nodes
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
@@ -4962,7 +5006,7 @@
             ExternalLoadDueToVelocity = 0.0
           
             do IPatch = 1, Counters%NPatches ! loop over patches
-            do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
+            do INode = 1, Counters%NodTot(IPatch)!Counters%Nodtot ! loop over control points
                 
                 GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
                 
@@ -5056,7 +5100,7 @@
           ExternalLoadDueToVelocity = 0.0
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do INode = 1, NControlPoints(IPatch)!Counters%Nodtot ! loop over control points
+          do INode = 1, Counters%NodTot(IPatch)!Counters%Nodtot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
@@ -5146,7 +5190,7 @@
         
         integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: LocalNodes
         logical, dimension (ELEMENTBOUNDARYNODES) :: NodePair
-        logical, dimension (Counters%NEl, ELEMENTSIDES) :: HHElemSide
+        logical, dimension (Counters%Sum_NEl, ELEMENTSIDES) :: HHElemSide
         
         ! Multipatch variables 
         integer(INTEGER_TYPE) :: IPatch_Temporary
@@ -5154,16 +5198,16 @@
            
        ! initialization
         NumberOfSides = 0
-        allocate (HHElemID(Counters%NEl), stat = IError)
+        allocate (HHElemID(Counters%Sum_NEl), stat = IError)
         HHElemID = .false.
         
         HHElemSide = .false.
        
         do IPatch = 1, Counters%NPatches ! loop over patches
-        do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop all elements
+        do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop all elements
             if (IsActiveElement(IElement,IPatch)) then
                 do ISide =1,ELEMENTSIDES !loop over side nodes
-                    IsBoundarySide = BoundaryElementSurface(IElement,ISide,IsActiveElement(:,IPatch), Counters%NEl) !Give 1 if ISide is adiacent to inactive element
+                    IsBoundarySide = BoundaryElementSurface(IElement,ISide,IsActiveElement(:,IPatch), Counters%Sum_NEl) !Give 1 if ISide is adiacent to inactive element
                     if (IsBoundarySide==1) then !side is on a free surface
                         call DetermineSideNodes(ISide,LocalNodes) !Local ID (1, 2, 3...) of nodes at the boundary of ISide, TRI3,TRI6 = 2 nodes, TETRA = 3 nodes
                         do J=1,ELEMENTBOUNDARYNODES
@@ -5199,7 +5243,7 @@
       
         K = 1
         do IPatch = 1, Counters%NPatches ! loop over patches
-        do IElement = 1, nel_NURBS(IPatch)!Counters%NEl
+        do IElement = 1, Counters%NEl(IPatch)!Counters%NEl
             do ISide = 1,ELEMENTSIDES
                 if (HHElemSide(IElement,ISide)) then
                     call DetermineSideNodes(ISide,LocalNodes)
@@ -5372,7 +5416,7 @@
           
               !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
             do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                   IEl = ActiveElement(IAEl, IPatch)   
             
             do Int = 1, NPartEle(IEl,IPatch) ! Loop over all material points of the element
@@ -5455,7 +5499,7 @@
           
               !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
             do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
                   IEl = ActiveElement(IAEl, IPatch)   
             
             do Int = 1, NPartEle(IEl,IPatch) ! Loop over all material points of the element
@@ -5987,7 +6031,7 @@
           integer(INTEGER_TYPE) :: GlobalNodeID
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -6028,7 +6072,7 @@
           integer(INTEGER_TYPE) :: GlobalNodeID
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
@@ -6116,7 +6160,7 @@
 
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
               NElemPart = NPartEle(IEl,IPatch) 
               StressAverage = 0.0 ! Initialise average stress of element IEl
@@ -6274,7 +6318,7 @@
       if(.not.(NFORMULATION==1)) RETURN
 
       ! loop over active elements
-      do IAEl = 1, nael_NURBS(IPatch_Temporary)!Counters%NAEl
+      do IAEl = 1, Counters%NAEl(IPatch_Temporary)!Counters%NAEl
           
           ParticlesVolsTotalElement = 0.0
           MeanEffStressAverage = 0.0
@@ -6523,11 +6567,11 @@
      
          if(.not.(NFORMULATION==1)) RETURN
           
-         if (.not.IsMPMComputation()) RETURN ! if FEM no need for mapping...already one particle
+         !if (.not.IsMPMComputation()) RETURN ! if FEM no need for mapping...already one particle
          
           !do IAEl = 1, Counters%NAEl
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
               NElemPart = NPartEle(IEl,IPatch)
               AverageHPStateVariables         = 0.0
@@ -6695,7 +6739,7 @@
           integer(INTEGER_TYPE) :: IPatch
 
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl   ! Loop over all elements
+          do IEl = 1, Counters%NEl(IPatch)!Counters%NEl   ! Loop over all elements
               do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
                 
                 ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
@@ -6744,8 +6788,21 @@
          do IDOF = 1, Counters%N                                       !Loop over all degrees of freedom
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
                 if(LumpedMassDry(IDOF,J)/=0) then
-                    TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) *  &
+                    
+                    ! According to Tran and Solowski (2020), this time intergration to obtain velocity was done at the nodal level...
+                    ! However, in the FLIP approach, we do not do this! <-- why is it unstable 
+                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch== 1) .and. (CalParams%TimeStep /=1) ) then  
+                        
+                        TotalVelocitySoil(IDOF, J) = TotalVelocitySoil(IDOF, J) + &
+                         ( CalParams%TimeIncrement * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*AccelerationSoil(IDOF, J) + &
+                         (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*AccelerationSoilGeneralizedAlpha(IDOF, J)) ) * PBoundary(IDOF)
+                    else 
+                    
+                        TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) / LumpedMassDry(IDOF,J) ) *  &
                                                 PBoundary(IDOF)
+                    
+                    end if 
+                    
                 else
                     TotalVelocitySoil(IDOF,J) = 0.0
                 end if
@@ -6876,7 +6933,7 @@
         
         IPatch_Temporary = 1
         
-        do INode = 1, NControlPoints(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
@@ -6929,7 +6986,7 @@
         
         IPatch_Temporary = 1
         
-        do INode = 1, NControlPoints(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
@@ -6984,7 +7041,7 @@
         
         IPatch_Temporary = 1
         
-        do INode = 1, NControlPoints(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
@@ -7051,7 +7108,7 @@
         
         IPatch_Temporary = 1
         
-        do INode = 1, NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do INode = 1, NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
@@ -7114,7 +7171,7 @@
         
         IPatch_Temporary = 1
         
-        do INode = 1, NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do INode = 1, NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
@@ -7178,7 +7235,7 @@
         
         IPatch_Temporary = 1
         
-        do INode = 1, NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do INode = 1, NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
@@ -7615,7 +7672,7 @@
           !do IAEl = 1, Counters%NAEl ! loop over all active elements
               
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
               
             IEl = ActiveElement(IAEl, IPatch)
             NParticles = NPartEle(IEl,IPatch) 
@@ -7694,7 +7751,7 @@
 
           !do IAEl = 1, Counters%NAEl ! loop over all active elements
               do IPatch = 1, Counters%NPatches ! Loop over patches
-                do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
             IEl = ActiveElement(IAEl, IPatch)
             NParticles = NPartEle(IEl,IPatch)
             

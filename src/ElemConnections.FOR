@@ -275,7 +275,7 @@
           
           
           
-          do IEl = 1, nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) !NEl
+          do IEl = 1, NURBS%nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) !NEl
             !if (IsElm(IEl)) then ! Loop over all active elements
               
               Count = 0
@@ -687,7 +687,7 @@
         implicit none
 
           !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR, Counters%NPatches),  intent(in) :: InitialNodalCoord          
-          real(REAL_TYPE), dimension(Maximum_NControlPoints, NVECTOR, Counters%NPatches),  intent(in) :: InitialNodalCoord !Counters%NodTot
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches),  intent(in) :: InitialNodalCoord !Counters%NodTot
 
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
@@ -724,7 +724,7 @@
             !ICon = ElementConnectivities10Node ! element connectivities
           else
             !allocate(ICon(ELEMENTNODES, Counters%NEl))    
-            allocate(ICon(ELEMENTNODES, Maximum_nel_NURBS, Counters%NPatches))  
+            allocate(ICon(ELEMENTNODES, NURBS%Maximum_nel_NURBS, Counters%NPatches))  
 
             ICon = ElementConnectivities!(:,:,IPatch_Temporary) ! element connectivities  
           end if
@@ -788,19 +788,19 @@
           call DestroyAdjacencyArrays()
           
           ! bookmark for multipatch generalization
-          allocate( ElementCentrePoints(maximum_nel_NURBS, NVECTOR, Counters%NPatches), stat = IError ) ! let's keep this for global element numbering  !, Counters%NPatches
-          allocate( ElementSpace(maximum_nel_NURBS, Counters%NPatches), stat = IError )! let's keep this for global element numbering  !, Counters%NPatches !Counters%NEl
-          allocate( ElementLMin(maximum_nel_NURBS, Counters%NPatches), stat = IError ) ! let's keep this for global element numbering  !, Counters%NPatches !Counters%NEl
-          allocate( ElementStrain(maximum_nel_NURBS, NTENSOR, Counters%NPatches), stat = IError ) !Counters%NEl
-          allocate( EntityElements(Counters%NEntity, maximum_nel_NURBS, Counters%NPatches), stat = IError )  !Counters%NEl
-          allocate( MaterialElements(NLayers, maximum_nel_NURBS, Counters%NPatches), stat = IError ) !Counters%NEl
+          allocate( ElementCentrePoints(NURBS%maximum_nel_NURBS, NVECTOR, Counters%NPatches), stat = IError ) ! let's keep this for global element numbering  !, Counters%NPatches
+          allocate( ElementSpace(NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError )! let's keep this for global element numbering  !, Counters%NPatches !Counters%NEl
+          allocate( ElementLMin(NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError ) ! let's keep this for global element numbering  !, Counters%NPatches !Counters%NEl
+          allocate( ElementStrain(NURBS%maximum_nel_NURBS, NTENSOR, Counters%NPatches), stat = IError ) !Counters%NEl
+          allocate( EntityElements(Counters%NEntity, NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError )  !Counters%NEl
+          allocate( MaterialElements(NLayers, NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError ) !Counters%NEl
           !allocate( StrainSmooth(Counters%NodTot, 2, Counters%NPatches), stat = IError )
-          allocate( StrainSmooth(Maximum_NControlPoints, 2, Counters%NPatches), stat = IError )
+          allocate( StrainSmooth(NURBS%Maximum_NControlPoints, 2, Counters%NPatches), stat = IError )
           !allocate( LiquidPressureSmooth(Counters%NodTot, 2, Counters%NPatches), stat = IError )
-          allocate( LiquidPressureSmooth(Maximum_NControlPoints, 2, Counters%NPatches), stat = IError )
-          allocate( ElementVector(maximum_nel_NURBS, NVECTOR, Counters%NPatches), stat = IError ) !Counters%NEl
-          allocate( ElementMatrix(maximum_nel_NURBS, NVECTOR * NVECTOR, Counters%NPatches), stat = IError ) !Counters%NEl
-          allocate( ElementAdjacencies(maximum_nel_NURBS, ELEMENTSIDES, Counters%NPatches), stat = IError ) ! rank 3 for multipatches !Counters%NEl
+          allocate( LiquidPressureSmooth(NURBS%Maximum_NControlPoints, 2, Counters%NPatches), stat = IError )
+          allocate( ElementVector(NURBS%maximum_nel_NURBS, NVECTOR, Counters%NPatches), stat = IError ) !Counters%NEl
+          allocate( ElementMatrix(NURBS%maximum_nel_NURBS, NVECTOR * NVECTOR, Counters%NPatches), stat = IError ) !Counters%NEl
+          allocate( ElementAdjacencies(NURBS%maximum_nel_NURBS, ELEMENTSIDES, Counters%NPatches), stat = IError ) ! rank 3 for multipatches !Counters%NEl
           !allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
           !allocate( ElementsPerNode(Counters%NodTot), stat = IError )
           
@@ -811,8 +811,8 @@
           
           if (NDIM ==2) then 
           
-          NumberOfNodesParameterSpace_Xi = NXiKnotEntries(IPatch_Temporary) - (2*NXiKnotOrder(IPatch_Temporary))!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
-          NumberOfNodesParameterSpace_Eta = NEtaKnotEntries(IPatch_Temporary) - (2*NEtaKnotOrder(IPatch_Temporary))!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
+          NumberOfNodesParameterSpace_Xi = NURBS%NXiKnotEntries(IPatch_Temporary) - (2*NURBS%NXiKnotOrder(IPatch_Temporary))!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+          NumberOfNodesParameterSpace_Eta = NURBS%NEtaKnotEntries(IPatch_Temporary) - (2*NURBS%NEtaKnotOrder(IPatch_Temporary))!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
             
               
               
@@ -825,33 +825,33 @@
 
 
           allocate( NodeElementOffsets( &
-              ( ((nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)+1))*&
-              ((mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)+1))*&
-              ((oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)+1))) + 1, Counters%NPatches), stat = IError )
+              ( ((NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NURBS%NXiKnotOrder(IPatch_Temporary)+1))*&
+              ((NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NURBS%NEtaKnotOrder(IPatch_Temporary)+1))*&
+              ((NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NURBS%NZetaKnotOrder(IPatch_Temporary)+1))) + 1, Counters%NPatches), stat = IError )
 
           
           !allocate( ElementsPerNode( (Maximum_NXiKnotEntriesUNIQUE)*&
           !    (Maximum_NEtaKnotEntriesUNIQUE)*&
           !    (Maximum_NZetaKnotEntriesUNIQUE), Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
           
-          allocate( ElementsPerNode( (nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NXiKnotOrder(IPatch_Temporary)+1)*&
-                                     (mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NEtaKnotOrder(IPatch_Temporary)+1)*&
-                                    (oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NZetaKnotOrder(IPatch_Temporary)+1), &
+          allocate( ElementsPerNode( (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NURBS%NXiKnotOrder(IPatch_Temporary)+1)*&
+                                     (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NURBS%NEtaKnotOrder(IPatch_Temporary)+1)*&
+                                    (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NURBS%NZetaKnotOrder(IPatch_Temporary)+1), &
                                     Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
               
               
           end if 
           
-          allocate( ElementElementOffsets( maximum_nel_NURBS + 1, Counters%NPatches), stat = IError ) 
-          allocate( ElementsPerElement( maximum_nel_NURBS, Counters%NPatches), stat = IError ) 
+          allocate( ElementElementOffsets( NURBS%maximum_nel_NURBS + 1, Counters%NPatches), stat = IError ) 
+          allocate( ElementsPerElement( NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError ) 
           
-          allocate( NodeNodeOffsets(Maximum_NControlPoints + 1, Counters%NPatches), stat = IError )
+          allocate( NodeNodeOffsets(NURBS%Maximum_NControlPoints + 1, Counters%NPatches), stat = IError )
 
-          allocate( NodesPerNode(Maximum_NControlPoints, Counters%NPatches), stat = IError )
+          allocate( NodesPerNode(NURBS%Maximum_NControlPoints, Counters%NPatches), stat = IError )
 
-          allocate( IsElementCornerNode(Maximum_NControlPoints, Counters%NPatches), stat = IError )
+          allocate( IsElementCornerNode(NURBS%Maximum_NControlPoints, Counters%NPatches), stat = IError )
 
-          allocate( NodeNormals(Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError )          
+          allocate( NodeNormals(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError )          
 
           allocate( BoundingBoxMin(NVECTOR), BoundingBoxMax(NVECTOR), stat = IError )
           BoundingBoxMin = 0.0
@@ -980,19 +980,19 @@
 
           ! Initialise resulting array
           if (.not.allocated(ElementAdjacencies) ) then
-            allocate(ElementAdjacencies(Maximum_nel_NURBS, ELEMENTSIDES, Counters%NPatches), stat = IError) !Counters%NEl
+            allocate(ElementAdjacencies(NURBS%Maximum_nel_NURBS, ELEMENTSIDES, Counters%NPatches), stat = IError) !Counters%NEl
           end if
           ElementAdjacencies = -1
           
           do IPatch = 1, Counters%NPatches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             do ISide = 1, ELEMENTSIDES ! loop over all sides of the element
               if ((ELEMENTTYPE == TETRAOLD)) then ! only 3D, in sprint#2 add 2D functionality
-                ElementAdjacencies(IElement, ISide, IPatch) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, nel_NURBS(IPatch), ElementConnectivities10Node, IPatch)
+                ElementAdjacencies(IElement, ISide, IPatch) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, Counters%NEl(IPatch), ElementConnectivities10Node, IPatch)
               !Counters%NEl
               else if ((ELEMENTTYPE == HEXA_NURBS)) then               
                   ! HARDCODED --> 8 nodes in a knot span "tessalation" mesh 
-                  ElementAdjacencies(IElement, ISide, IPatch) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, nel_NURBS(IPatch), KnotBezierMeshConnectivity(:,:, IPatch), IPatch) !KnotBezierMesh
+                  ElementAdjacencies(IElement, ISide, IPatch) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, Counters%NEl(IPatch), KnotBezierMeshConnectivity(:,:, IPatch), IPatch) !KnotBezierMesh
                   !5*4
                   !Counters%NEl
               
@@ -1295,7 +1295,7 @@
           
           IsElementCornerNode = .false.
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
               IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch), IPatch) = .true. 
               !not sure why this is relevant since it is looping accross all nodes 
@@ -1344,7 +1344,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID, ElmNodeID, NElements, ElementID
           integer(INTEGER_TYPE) :: LowestNodeID, HighestNodeID
-          integer(INTEGER_TYPE), dimension(Maximum_NControlPoints) :: TempNodes !Counters%NodTot
+          integer(INTEGER_TYPE), dimension(NURBS%Maximum_NControlPoints) :: TempNodes !Counters%NodTot
           
           ! Multipatch variables
           integer(INTEGER_TYPE) :: IPatch
@@ -1353,11 +1353,11 @@
           
           NodesPerNode = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+          do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
               !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
             if (IsElementCornerNode(NodeID, IPatch)) then
               TempNodes = 0
-              LowestNodeID = NControlPoints(IPatch)!Counters%NodTot
+              LowestNodeID = Counters%NodTot(IPatch)!Counters%NodTot
               HighestNodeID = 0
               NElements = GetNElmOfNode(NodeID, IPatch)
               do IElement = 1, NElements
@@ -1384,7 +1384,7 @@
           
           NOccurences = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do INode = 1, NControlPoints(IPatch)!Counters%NodTot ! Loop over all entries of NodesPerNode
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot ! Loop over all entries of NodesPerNode
               !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
             NOccurences(IPatch) = NOccurences(IPatch) + NodesPerNode(INode, IPatch)
           end do ! loop over control points
@@ -1411,7 +1411,7 @@
           
           NodeNodeOffsets = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
             NodeNodeOffsets(I+1, IPatch) = NodeNodeOffsets(I, IPatch) + NodesPerNode(I, IPatch)
           end do ! loop over control points
@@ -1435,7 +1435,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID, ElmNodeID, NElements, ElementID, IError
           integer(INTEGER_TYPE) :: LowestNodeID, HighestNodeID, Index
-          integer(INTEGER_TYPE), dimension(Counters%NodTot) :: TempNodes
+          integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot) :: TempNodes
 
           ! Multipatch variables 
           !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
@@ -1454,13 +1454,13 @@
           
           NodesPerNode = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do NodeID = 1, NControlPoints(IPatch)!Counters%NodTot
+          do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
               
             if (IsElementCornerNode(NodeID, IPatch)) then
               TempNodes = 0
-              LowestNodeID = NControlPoints(IPatch)!Counters%NodTot
+              LowestNodeID = Counters%NodTot(IPatch)!Counters%NodTot
               HighestNodeID = 0
               NElements = GetNElmOfNode(NodeID, IPatch)
               do IElement = 1, NElements
@@ -1507,7 +1507,7 @@
           integer(INTEGER_TYPE) :: GlobalNodeID
         
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do INode = 1, NControlPoints(IPatch)!Counters%NodTot
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot
               
               !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
               
@@ -1540,7 +1540,7 @@
         
           ElementsPerNode = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             if (ELEMENTTYPE == TETRAOLD) then
             do INode = 1, N_NODES_HOE ! loop over all nodes of the element
               NodeID = ElementConnectivities10Node(INode, IElement)
@@ -1582,7 +1582,7 @@
           do IPatch = 1, Counters%NPatches ! loop over patches
           if (NDIM == 2) then 
           
-              do INode = 1, (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)+1)*(mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)+1)
+              do INode = 1, (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)+1)*(NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)+1)
                   
                   !(NXiKnotEntries(IPatch)-(2*NXiKnotOrder(IPatch)))*(NEtaKnotEntries(IPatch)-(2*NEtaKnotOrder(IPatch)))!(NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
                   NOccurences(IPatch) = NOccurences(IPatch) + ElementsPerNode(INode,IPatch) ! --> this is not referring to control points but element intersections...
@@ -1590,7 +1590,7 @@
               
           else if (NDIM == 3) then 
               
-              do INode = 1, (nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NXiKnotOrder(IPatch)+1)*(mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NEtaKnotOrder(IPatch)+1)*(oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NZetaKnotOrder(IPatch)+1)
+              do INode = 1, (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)+1)*(NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)+1)*(NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NURBS%NZetaKnotOrder(IPatch)+1)
                   
                   !(NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))*(NZetaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
                   NOccurences(IPatch) = NOccurences(IPatch) + ElementsPerNode(INode,IPatch) ! --> this is not referring to control points but element intersections...
@@ -1627,7 +1627,7 @@
           
           if (NDIM == 2) then 
           do IPatch = 1, Counters%NPatches
-          do I = 1, (NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch)))*(NEtaKnotEntries(IPatch) - (2*NEtaKnotOrder(IPatch)))!( (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch)) ) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+          do I = 1, (NURBS%NXiKnotEntries(IPatch) - (2*NURBS%NXiKnotOrder(IPatch)))*(NURBS%NEtaKnotEntries(IPatch) - (2*NURBS%NEtaKnotOrder(IPatch)))!( (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch)) ) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1, IPatch) = NodeElementOffsets(I, IPatch) + ElementsPerNode(I,IPatch)
           end do
           end do              
@@ -1636,7 +1636,7 @@
           else if (NDIM == 3) then 
               
           do IPatch = 1, Counters%NPatches
-          do I = 1, ((NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))*(NZetaKnotEntriesUNIQUE(IPatch))) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+          do I = 1, ((NURBS%NXiKnotEntriesUNIQUE(IPatch))*(NURBS%NEtaKnotEntriesUNIQUE(IPatch))*(NURBS%NZetaKnotEntriesUNIQUE(IPatch))) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
             NodeElementOffsets(I+1, IPatch) = NodeElementOffsets(I, IPatch) + ElementsPerNode(I,IPatch)
           end do
           end do
@@ -1679,7 +1679,7 @@
           
           ElementsPerNode = 0
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+          do IElement = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             if (ELEMENTTYPE == TETRAOLD) then
             do INode = 1, N_NODES_HOE ! loop over all nodes of the element
               NodeID = ElementConnectivities10Node(INode, IElement)
@@ -1737,7 +1737,7 @@
               
           
           do IPatch = 1, Counters%NPatches
-          do INode = 1, (NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch)))*(NEtaKnotEntries(IPatch) - (2*NEtaKnotOrder(IPatch)))!Counters%NodTot ! loop over all element nodes of the system
+          do INode = 1, (NURBS%NXiKnotEntries(IPatch) - (2*NURBS%NXiKnotOrder(IPatch)))*(NURBS%NEtaKnotEntries(IPatch) - (2*NURBS%NEtaKnotOrder(IPatch)))!Counters%NodTot ! loop over all element nodes of the system
             !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
             !HARDCODED to remove the below subroutine 
             call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode, IPatch) + 1, IPatch),  ElementsPerNode(INode,IPatch) ) ! I removed the + 1 but let's see how this will work out...
@@ -1755,7 +1755,7 @@
           
           
           do IPatch = 1, Counters%NPatches
-          do INode = 1, (NXiKnotEntries(IPatch) - (2*NXiKnotOrder(IPatch)))     * (NEtaKnotEntries(IPatch) - (2*NEtaKnotOrder(IPatch)))   * (NZetaKnotEntries(IPatch) - (2*NZetaKnotOrder(IPatch)))!Counters%NodTot ! loop over all element nodes of the system
+          do INode = 1, (NURBS%NXiKnotEntries(IPatch) - (2*NURBS%NXiKnotOrder(IPatch)))     * (NURBS%NEtaKnotEntries(IPatch) - (2*NURBS%NEtaKnotOrder(IPatch)))   * (NURBS%NZetaKnotEntries(IPatch) - (2*NURBS%NZetaKnotOrder(IPatch)))!Counters%NodTot ! loop over all element nodes of the system
             !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
             !HARDCODED to remove the below subroutine 
             call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode, IPatch) + 1, IPatch),  ElementsPerNode(INode,IPatch) ) ! I removed the + 1 but let's see how this will work out...
@@ -1814,7 +1814,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, ElementCounter, INode, NodeID
           integer(INTEGER_TYPE) :: IAdjacent, AdjacentElementID
-          integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements !, Counters%NPatches
+          integer(INTEGER_TYPE), dimension(Counters%Sum_NEl) :: CheckElements !, Counters%NPatches !Counters%NEl
           
           ! Multipatch variables 
        !   integer(INTEGER_TYPE), intent(in) :: IPatch_Temporary
@@ -1824,7 +1824,7 @@
           ElementElementOffsets = 0
           
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
           
             CheckElements = 0
             ElementCounter = 0
@@ -1897,13 +1897,13 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, ElementCounter, INode, NodeID
           integer(INTEGER_TYPE) :: IAdjacent, AdjacentElementID, Index
-          integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements !, Counters%NPatches
+          integer(INTEGER_TYPE), dimension(Counters%Sum_NEl) :: CheckElements !, Counters%NPatches !Counters%NEl
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch
 
           do IPatch = 1, Counters%NPatches ! Loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
           
             CheckElements = 0
             ElementCounter = 0
@@ -1969,7 +1969,7 @@
           integer(INTEGER_TYPE) :: IPatch
           
           do IPatch = 1, Counters%NPatches ! Loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               ! below need to be generalized for multiple patches
             call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch) + 1, IPatch), ElementsPerElement(IElement, IPatch) )
           end do ! loop over elements
@@ -2332,7 +2332,7 @@
           Minimum = 1.E30
           Maximum = -1.E30
           do IPatch = 1, Counters%NPatches ! loop over patches
-          do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop nodes of all elements
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop nodes of all elements
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
             call CheckMinMax( NodeCoord(I, :, IPatch), Minimum, Maximum )
           end do ! loop over control points 
@@ -2380,7 +2380,7 @@
           zeta_tilde = 0.0 ! center of the element 
 
           do IPatch = 1, Counters%NPatches ! Loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop all elements ! nel_NURBS can also be used in this context 
+          do IElement = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop all elements ! nel_NURBS can also be used in this context 
           
               ! here we are looping accross element coordinates but we need to loop accross NURBS coordinates 
               
@@ -2389,26 +2389,26 @@
                 !do ii = 1, nn_NURBS_NumberOfUnivariateXiKnots
                 !    do jj = 1, mm_NURBS_NumberOfUnivariateEtaKnots
                         
-              ni = INN(IEN(1, IElement,IPatch),1,IPatch) !nen_NURBS
-              nj = INN(IEN(1, IElement,IPatch),2,IPatch) !nen_NURBS
+              ni = NURBS%INN(ElementConnectivities(1, IElement,IPatch),1,IPatch) !nen_NURBS
+              nj = NURBS%INN(ElementConnectivities(1, IElement,IPatch),2,IPatch) !nen_NURBS
               
               if (NDIM == 3) then 
-                  nk = INN(IEN(1, IElement,IPatch),3,IPatch) !nen_NURBS
+                  nk = NURBS%INN(ElementConnectivities(1, IElement,IPatch),3,IPatch) !nen_NURBS
               end if 
               
                 !NodeID = 
               
               
-              Xi_ParametricDomain =  ( (XiKnotEntries(ni+1,IPatch) - XiKnotEntries(ni,IPatch) ) * xi_tilde &
-                                    + (XiKnotEntries(ni+1,IPatch) + XiKnotEntries(ni,IPatch)) ) * 0.5; 
+              Xi_ParametricDomain =  ( (NURBS%XiKnotEntries(ni+1,IPatch) - NURBS%XiKnotEntries(ni,IPatch) ) * xi_tilde &
+                                    + (NURBS%XiKnotEntries(ni+1,IPatch) + NURBS%XiKnotEntries(ni,IPatch)) ) * 0.5; 
             
             
-              Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1,IPatch) - EtaKnotEntries(nj,IPatch) ) * eta_tilde &
-                                    + (EtaKnotEntries(nj+1,IPatch) + EtaKnotEntries(nj,IPatch)) ) * 0.5; 
+              Eta_ParametricDomain =  ( (NURBS%EtaKnotEntries(nj+1,IPatch) - NURBS%EtaKnotEntries(nj,IPatch) ) * eta_tilde &
+                                    + (NURBS%EtaKnotEntries(nj+1,IPatch) + NURBS%EtaKnotEntries(nj,IPatch)) ) * 0.5; 
             
               if (NDIM==3) then 
-              Zeta_ParametricDomain =  ( (ZetaKnotEntries(nk+1,IPatch) - ZetaKnotEntries(nk,IPatch) ) * zeta_tilde &
-                                    + (ZetaKnotEntries(nk+1,IPatch) + ZetaKnotEntries(nk,IPatch)) ) * 0.5; 
+              Zeta_ParametricDomain =  ( (NURBS%ZetaKnotEntries(nk+1,IPatch) - NURBS%ZetaKnotEntries(nk,IPatch) ) * zeta_tilde &
+                                    + (NURBS%ZetaKnotEntries(nk+1,IPatch) + NURBS%ZetaKnotEntries(nk,IPatch)) ) * 0.5; 
               end if 
               
               
@@ -2498,7 +2498,7 @@
                   
           ElementSpace = 0.0
           do IPatch = 1, Counters%NPatches ! Loop over patches
-          do IElement = 1, nel_NURBS(IPatch)!Counters%NEl ! loop nodes of all elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop nodes of all elements
             
             if (ELEMENTTYPE == TETRAOLD) then
 
@@ -2542,7 +2542,7 @@
                 !    IPatch) !update Jacob
                 
                 call DetJacob(HS, dHS, &
-                    PosGP, nel_NURBS(IPatch), NControlPoints(IPatch), NVECTOR, &
+                    PosGP, Counters%NEl(IPatch), Counters%NodTot(IPatch), NVECTOR, &
                     IElement, ElementConnectivities(:,:,IPatch), NodeCoord(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                     dxi_dx, dtildexi_dxi, &
                     IPatch) !update Jacob
@@ -2596,7 +2596,7 @@
           EleMat = 0.0
 
           do IPatch = 1, Counters%NPatches ! Loop over patches
-          do IEl = 1, nel_NURBS(IPatch)!Counters%NEl   ! loop over all elements
+          do IEl = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl   ! loop over all elements
               
             do INode = 1, ELEMENTNODES
               NodeID(INode) = ElementConnectivities(INode, IEl, IPatch)    ! Global node ID
@@ -3211,7 +3211,7 @@
                   else 
                       
                   call GetLocalCoordinates_2D(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
                   
                   end if 
                   
@@ -3232,7 +3232,7 @@
                   else 
                                         
                   call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
                   
                   end if
               
@@ -3536,13 +3536,13 @@
           !NEl = nel_NURBS(IPatch)!Counters%NEl ! number of elements
           
           !allocate(NodeCoord(NodTot, NDIM), Lmintry(NEl))
-          allocate( NodeCoord(Maximum_NControlPoints, NDIM, Counters%NPatches), Lmintry(Maximum_nel_NURBS) )
+          allocate( NodeCoord(NURBS%Maximum_NControlPoints, NDIM, Counters%NPatches), Lmintry(NURBS%Maximum_nel_NURBS) )
 
           NodeCoord = NodalCoordinatesUpd!(:,:,IPatch_Temporary) ! global nodal coordinates
           Lmin = 0.0
           ElementLMin = 0.0
          do IPatch = 1, Counters%NPatches
-          do IElement = 1, nel_NURBS(IPatch) ! loop over elements
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch) ! loop over elements
             call GetMinAltitude(IElement, Lmin, NodeCoord(:,:,IPatch), IPatch)
             ElementLMin(IElement,IPatch) = Lmin
           end do
@@ -4055,6 +4055,8 @@
         
           Lmin = d_min
           
+          !Lmin = 0.1 !--> hardcoded
+          
         end subroutine
         
         
@@ -4070,7 +4072,7 @@
     !
     !********************************************************************************
     implicit none
-    logical, dimension(Counters%NEl) :: IsReactionElm
+    logical, dimension(Counters%Sum_nel) :: IsReactionElm !Counters%NEl
     integer(INTEGER_TYPE) :: Inode, NElemNod, J, IEle, NReactionElem, Ierror, cont
     
     
@@ -4080,7 +4082,7 @@
     NReactionElem = 0
     
     do IPatch = 1, Counters%NPatches ! loop over patches
-    do INode = 1, Counters%NodTot ! loop over control points
+    do INode = 1, Counters%Sum_NodTot ! loop over control points
       if (IsReactionNode(INode)) then
         NElemNod = GetNElmOfNode(INode, IPatch)
         do J=1,NElemNod
@@ -4100,7 +4102,7 @@
      
      cont = 0
      do IPatch = 1, Counters%NPatches ! Loop over patches
-    do IEle=1,nel_NURBS(IPatch)!Counters%NEl
+    do IEle=1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl
       if(IsReactionElm(IEle))then
         cont = cont + 1
         ConsideredElemReaction(cont) = IEle

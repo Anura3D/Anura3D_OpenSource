@@ -320,7 +320,7 @@
           if ( (NBytes / 8 / IDim)==NodTot) then
 
               do IPatch = 1, Counters%NPatches
-                  do I = 1, NControlPoints(IPatch) !NodTot
+                  do I = 1, Counters%NodTot(IPatch) !NodTot
               
                       read(FileUnit) (NodeCoord(I, J, IPatch), J = 1, IDim)
             
@@ -1247,13 +1247,13 @@
 
           NVals = 1
 
-          if (( (NBytes ) / NVals / 8)==(Counters%NParticles + Counters%NEl)) then !- (4*Counters%NPatches)
+          if (( (NBytes ) / NVals / 8)==(Counters%NParticles + Counters%Sum_NEl)) then !- (4*Counters%NPatches)
             do I = 1, Counters%NParticles
               read(FileUnit) Particles(I)%DBulkViscousPressure
             end do
             do IPatch = 1, Counters%NPatches! loop over patches
             !read(FileUnit) PatchID
-            do I = 1, nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+            do I = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               read(FileUnit) RateVolStrain(I)
             end do ! loop over elements
             end do ! loop over patches
@@ -1390,10 +1390,10 @@
           !read(FileUnit) (IPatch)  
           
           do IPatch = 1, Counters%NPatches
-          if ( ((NBytes) / 4)==nel_NURBS(IPatch)) then !-4
+          if ( ((NBytes) / 4)==Counters%NEl(IPatch)) then !-4 !NURBS%nel_NURBS(IPatch)
             
             
-            read(FileUnit) (NPartEle(I, IPatch), I = 1, NEl_NURBS(IPatch))
+            read(FileUnit) (NPartEle(I, IPatch), I = 1, Counters%NEl(IPatch)) !NURBS%NEl_NURBS
           
             BlockCheck = BlockCheck + 1
             
@@ -1519,9 +1519,9 @@
           !read(FileUnit) IPatch  
           
         do IPatch = 1, Counters%NPatches
-          if ( ((NBytes) / 4)==nel_NURBS(IPatch)) then !-4 ! remove 4 byts associated with patch number writing
+          if ( ((NBytes) / 4)==Counters%NEl(IPatch)) then !-4 ! remove 4 byts associated with patch number writing !NURBS%nel_NURBS(IPatch)
             
-            read(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
+            read(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, Counters%NEl(IPatch))!Counters%NEl) !nel_NURBS(IPatch)
             
             BlockCheck = BlockCheck + 1
             
@@ -1841,12 +1841,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, NVals, J, IPatch, IElement, IParticle
 
-          NVals = Maximum_nel_NURBS * Counters%NPatches
+          NVals = NURBS%Maximum_nel_NURBS * Counters%NPatches
 
           if ( (NBytes / NVals / 4)==Counters%NParticles) then
           
             do IPatch = 1, Counters%NPatches
-                do IElement = 1, Maximum_nel_NURBS
+                do IElement = 1, NURBS%Maximum_nel_NURBS
 
                     do IParticle = 1, Counters%NParticles 
                         
@@ -2422,9 +2422,9 @@
           !read(FileUnit) IPatch
           
           do IPatch = 1, Counters%NPatches
-          if ( ((NBytes) / 4)==nel_NURBS(IPatch)) then !-4
+          if ( ((NBytes) / 4)==Counters%NEl(IPatch) ) then !-4 !NURBS%nel_NURBS(IPatch)
            
-            read(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
+            read(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, Counters%NEl(IPatch))!Counters%NEl) !NURBS%nel_NURBS(IPatch)
             
             BlockCheck = BlockCheck + 1
             
