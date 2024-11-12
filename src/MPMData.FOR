@@ -799,6 +799,43 @@
           end if
         
         end function NumberOfIntegrationPoints
+        
+        
+        
+        
+        
+        integer(INTEGER_TYPE) function NumberOfIntegrationPoints_ImplicitIter(IElement)
+        !**********************************************************************
+        !
+        !    Function: Returns the number of particles in element IElement if the element is 
+        !              partially filled and the number of Gauss points per element if the 
+        !              element is fully filled.
+        !
+        !     IElement : ID of the considered element
+        !
+        ! O   NumberOfIntegrationPoints : Number of Gauss points or particles
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+     
+        implicit none
+        
+          integer(INTEGER_TYPE) :: IElement
+        
+          if (IsParticleIntegration(IElement) ) then ! Partially filled element
+            NumberOfIntegrationPoints_ImplicitIter = NPartEle_ImplicitIter(IElement) ! Number of particles in IElement
+          else ! Fully filled element
+            NumberOfIntegrationPoints_ImplicitIter = ELEMENTGAUSSPOINTS ! Number of Gauss points in element
+          end if
+        
+        end function NumberOfIntegrationPoints_ImplicitIter
+        
+        
+        
+        
+        
+        
 
 
         subroutine SetEleParticles(IElement, IParticle, ParticleIndex)

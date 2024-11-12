@@ -1937,11 +1937,13 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
         
             do Int = 1, NElemPart
               
               IntGlo = GetParticleIndex_ImplicitIter(Int, IEl)!GetParticleIndex(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl)
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo, :, :))
+              
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
@@ -2101,11 +2103,13 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
         
             do Int = 1, NElemPart
               
               IntGlo = GetParticleIndex_ImplicitIter(Int, IEl) !GetParticleIndex(Int, IEl)!GetParticleIndex_DirDeriv_ImplicitIter(Int, IEl)
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo, :, :))
+              
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
@@ -2266,11 +2270,13 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
         
             do Int = 1, NElemPart
               
               IntGlo = GetParticleIndex(Int, IEl)
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo, :, :))
+              
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &

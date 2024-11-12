@@ -155,13 +155,15 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
               
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl)
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo, :, :)) ! get the B-matrix once per element
+              
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
@@ -339,13 +341,14 @@
               end if
             end do
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl)
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo, :, :)) ! get the B-matrix once per element
               
               if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
                 ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
@@ -702,11 +705,13 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
         
             do Int = 1, NElemPart
               
               IntGlo = GetParticleIndex(Int, IEl)
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:))
+              
               MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &

@@ -125,7 +125,7 @@
             call GetNodalVelocityFromNodalMomentum_ImplicitIter(Momentum, LumpedMassDry, TotalVelocitySoil)
             
             ! SUBROUTINE #4: Compute IntLoad based on the initial stress of the MPs SigmaEffArray. 
-            call GetNodalIntForcesBefore_ImplicitIter(IntLoad, SigmaEffArray) 
+            call GetNodalIntForcesBefore_ImplicitIter(IntLoad, SigmaEffArray)  ! QUESTION: Should this be SigmaEff0Array?
             
             ! SUBROUTINE #5: Compute newly introduced traction forces, ExtLoad_ImplicitIter, and gravity forces, GravityLoad_ImplicitIter.
             !                These newly introduced external forces can be triggering mechanism.
@@ -207,7 +207,7 @@
             ! SUBROUTINE #18: Check error tolerance is below  
             if (ImplicitResidualMagnitude_ImplicitIter < CalParams%ImplicitIntegration%NewtonErrorThreshold) then 
                 !... we reached the solution
-                CalParams%ImplicitIntegration%IsEnterGMRES = .false. 
+                 CalParams%ImplicitIntegration%IsEnterGMRES = .false. 
                 EXIT
             else 
                 CalParams%ImplicitIntegration%IsEnterGMRES = .true.
@@ -875,8 +875,8 @@
         real(REAL_TYPE), dimension(Counters%N), intent(inout) :: TotalVelocitySoil_ImplicitIter
             
         ! this first precition can be modified depending on what we are trying to do
-        TotalVelocitySoil_ImplicitIter = 1*TotalVelocitySoil ! hardcoded increase by 20 percent
-        
+        TotalVelocitySoil_ImplicitIter = TotalVelocitySoil ! hardcoded increase by 20 percent !1*
+                                                           ! assume future velocity equal to previous velocity
         end subroutine GetFirstGuessOfVelocity_ImplicitIter
         
         
@@ -1682,7 +1682,7 @@
             IEl = ActiveElement_ImplicitIter(IAEl) !ActiveElement_ImplicitIter(IAEl)
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
-            NElemPart = NumberOfIntegrationPoints(IEl) 
+            NElemPart = NumberOfIntegrationPoints_ImplicitIter(IEl) 
      
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element

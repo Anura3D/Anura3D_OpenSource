@@ -37,7 +37,7 @@
       !
       !**********************************************************************
       
-      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN)
+      subroutine FormB3(Int, IEl, ICon, Co, B, Det, WtN, DShapeValuesArray)
 !********************************************************************
 !
 !    Function:  
@@ -61,6 +61,7 @@
       
       integer(INTEGER_TYPE) :: Int, IEl, ICon(ELEMENTNODES, Counters%NEL) 
       real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN
+      real(REAL_TYPE), intent(in) :: DShapeValuesArray(ELEMENTNODES, NVECTOR)
       ! local variables
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: RJAC(NDIM, NDIM), RJAC1(NDIM, NDIM), DET1, H
@@ -70,7 +71,8 @@
         NN = ICon(K, IEl)
         do I = 1, NDIM
           do J = 1, NDIM
-            RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
+            !RJac(I,J) = RJac(I,J) + GPShapeFunctionDerivative(Int,K,I) * Co(NN,J)
+              RJac(I,J) = RJac(I,J) + DShapeValuesArray(K,I) * Co(NN,J)
           end do
         end do
       end do
@@ -94,7 +96,8 @@
         do I = 1, NDIM
           H = 0.0
           do J = 1, NDIM
-            H = H + RJac1(I,J) * GPShapeFunctionDerivative(Int,K,J)
+            !H = H + RJac1(I,J) * GPShapeFunctionDerivative(Int,K,J)
+            H = H + RJac1(I,J) * DShapeValuesArray(K,J) 
           end do
           B(I,K) = H
         end do

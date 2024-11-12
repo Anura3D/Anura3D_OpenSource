@@ -785,7 +785,8 @@
       ElementStiffnessMatrix = 0.0
       ElementStiffnessVector = 0.0
 
-      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight)
+      ! 1 is hardcoded here
+      call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray(1,:,:))
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -1547,11 +1548,12 @@
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight)
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight)
 
             do Int = 1, 1 !mixed
               
               IntGlo = GetParticleIndex(Int, IEl)
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray(IntGlo,:,:))
               
               call GetMaterialData(IntGlo, ISet, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens)
 
@@ -1693,10 +1695,13 @@
         do IActiveElement = 1, Counters%NAEl
           ElementID = ActiveElement(IActiveElement)
           NElemPart = NPartEle(IActiveElement)
-          call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight)
+          !call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight)
           do IParticle = 1, NElemPart
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)
+            
+            call FormB3(1, ElementID, ElementConnectivities, NodalCoordinates, B, Det, Weight, DShapeValuesArray(ParticleIndex,:,:))
+            
             DU = 0.0
             do INode = 1, ELEMENTNODES  
               NodeID = ElementConnectivities(INode, IActiveElement)

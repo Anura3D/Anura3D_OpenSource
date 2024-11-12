@@ -1284,13 +1284,14 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+              !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
                 
                 ! Determine global ID of integration point 
                 IntGlo = GetParticleIndex(Int, IEl)
+                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
               
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl) ) then
@@ -1398,13 +1399,14 @@
                   end if
                 end do
                 
-                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+                !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
                   IntGlo = GetParticleIndex(Int, IEl)
+                  call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1499,13 +1501,14 @@
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
-                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+                !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
                   IntGlo = GetParticleIndex(Int, IEl)
+                  call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1692,13 +1695,14 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+              !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                 ! Determine global ID of integration point 
                 IntGlo = GetParticleIndex(Int, IEl)
+                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
               
                 if (IsParticleIntegration(IEl) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
@@ -1767,13 +1771,14 @@
                   end if
                 end do
               
-                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+                !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
                   IntGlo = GetParticleIndex(Int, IEl)
+                  call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:))
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -1839,13 +1844,14 @@
                   NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
                 end if
               
-                call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+                !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
                 !------------------------------------ INTEGRATION POINT LOOP --------------------------------
                 do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
                   ! Determine global ID of integration point 
                   IntGlo = GetParticleIndex(Int, IEl)
+                  call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -2217,13 +2223,14 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
               
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
 
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl)
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
               
                PartPorosity = Particles(ParticleIndex)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -2324,13 +2331,14 @@
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
 
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
 
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
 
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl)
+              call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo,:,:)) ! get the B-matrix once per element
               
               PartPorosity = Particles(IntGlo)%Porosity
                if (CalParams%ApplyPartialSaturation) then
