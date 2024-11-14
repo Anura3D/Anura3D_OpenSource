@@ -543,15 +543,15 @@
           GravityLD = 0.0
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
-          do IAEl = 1, Counters%NAEl_ImplicitIter
-            IEl = ActiveElement_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl!_ImplicitIter
+            IEl = ActiveElement(IAEl) !_ImplicitIter
                
-            do IPart = 1, NPartEle_ImplicitIter(IEl)
-              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl) 
+            do IPart = 1, NPartEle(IEl) !_ImplicitIter
+              ParticleIndex = GetParticleIndex(IPart, IEl)  !_ImplicitIter
               PartLoad = 0.0
               PartGravity = 0.0
               if (CalParams%ApplyContactAlgorithm) then
-                iEntity = EntityIDArray_ImplicitIter(ParticleIndex) 
+                iEntity = EntityIDArray(ParticleIndex)  !_ImplicitIter
               else
                 iEntity = 1
               endif  
@@ -562,7 +562,7 @@
 
                 if (IsLoadOnMP) then 
                   do IloadSystem=1, Counters%NSoilLoadSystems
-                    PartLoad = ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
+                    PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem) !_ImplicitIter
                     do I = 1, NVECTOR
                       ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
                     end do
@@ -570,9 +570,9 @@
                 end if
 
                 if (CalParams%ApplySubmergedCalculation) then
-                  PartGravity = ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
+                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed !_ImplicitIter
                 else
-                  PartGravity = ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
+                  PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody !_ImplicitIter
                 end if
      
                 do I = 1, NVECTOR

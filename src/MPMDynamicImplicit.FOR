@@ -151,29 +151,31 @@
             !                (the water pressure and the gass pressure are updated - mass balance equations are solved). 
             call MPMDYNGetSig_ImplicitIter()
            
-            ! SUBROUTINE #10: Update the weight of the point, Particles(IntGlo)%IntegrationWeight_ImplicitIter, in the physical space based 
-            !                 on the volumetric strain.  
-            call DynUpdateParticleWeights_ImplicitIter()
+            !! SUBROUTINE #10: Update the weight of the point, Particles(IntGlo)%IntegrationWeight_ImplicitIter, in the physical space based 
+            !!                 on the volumetric strain.  
+            !call DynUpdateParticleWeights_ImplicitIter()
             
-            ! SUBROUTINE #11: Update the particle position, GlobPosArray_ImplicitIter, local positions, Particles(IParticle)%LocPos_ImplicitIter, 
-            !                 and shape functions, ShapeValuesArray_ImplicitIter. 
-            call UpdateParticlePos_ImplicitIter()
-           
-            ! SUBROUTINE #12: Update particle housekeeping information.   
-            call UpdateParticleHouseKeeping_ImplicitIter() !-> uses EleParticles to updated the rest of the housekeeping parameters
-            call SetActiveElement_ImplicitIter()
-            call SetParticleIndex_ImplicitIter()
-            call CheckFillingOfElements()
-            call SetUpEntityElements_ImplicitIter()
-            call SetUpMaterialElements_ImplicitIter()
+            
+            ! I am commenting this so that we can do Newton loop in the Lagrangian Phase 
+            !! SUBROUTINE #11: Update the particle position, GlobPosArray_ImplicitIter, local positions, Particles(IParticle)%LocPos_ImplicitIter, 
+            !!                 and shape functions, ShapeValuesArray_ImplicitIter. 
+            !call UpdateParticlePos_ImplicitIter()
+            !
+            !! SUBROUTINE #12: Update particle housekeeping information.   
+            !call UpdateParticleHouseKeeping_ImplicitIter() !-> uses EleParticles to updated the rest of the housekeeping parameters
+            !call SetActiveElement_ImplicitIter()
+            !call SetParticleIndex_ImplicitIter()
+            !call CheckFillingOfElements()
+            !call SetUpEntityElements_ImplicitIter()
+            !call SetUpMaterialElements_ImplicitIter()
            
             ! SUBROUTINE #13: Compute new internal force, IntLoad_ImplicitIter, based on the newly computed stress SigmaEffArray_ImplicitIter
             call GetNodalIntForcesAfter_ImplicitIter(IntLoad_ImplicitIter, SigmaEffArray_ImplicitIter)  
             
             ! SUBROUTINE #: Map mass to the nodes after updating the position of the MPs using ShapeValuesArray_ImplicitIter
-            call MapMassMP2Nodes_ImplicitIter(LumpedMassDry_ImplicitIter)
+            !call MapMassMP2Nodes_ImplicitIter(LumpedMassDry_ImplicitIter) --> let's keep the mass constant
             
-            call GetNodalExternalForces_ImplicitIter(ExtLoad_ImplicitIter, GravityLoad_ImplicitIter)
+            call GetNodalExternalForces(ExtLoad_ImplicitIter, GravityLoad_ImplicitIter) !_ImplicitIter
            
             ! SUBROUTINE #14: Compute internal force, IntLoad_ImplicitIter, based on prescribe velocity at the nodes. 
             !                 This step affects IntLoad_ImplicitIter. 
@@ -183,7 +185,7 @@
             
             
             ! SUBROUTINE #15: Calculate the implicit residual based on the momentum balance equation. 
-            call GetImplicitResidualEquation_SK04(LumpedMassDry_ImplicitIter, LumpedMassDry_ImplicitIter, &  !LumpedMassDry_ImplicitIter, LumpedMassDry, &  
+            call GetImplicitResidualEquation_SK04_NoMassUpdate( LumpedMassDry, & !LumpedMassDry_ImplicitIter, LumpedMassDry_ImplicitIter, &  !LumpedMassDry_ImplicitIter, LumpedMassDry, &  
                                                         ExtLoad_ImplicitIter, ExtLoad, & 
                                                     GravityLoad_ImplicitIter, GravityLoad, &  
                                                         IntLoad_ImplicitIter, IntLoad, & 
@@ -238,7 +240,25 @@
             ! SUBROUTINE #23: Increase particle strain, Particles()%Eps, by the implicit strain  increment, Particle%EpsStep_ImplicitIter. 
             call IncreaseParticleStrains_ImplicitIter()
             
-            !call UpdateParticlePos_ImplicitIter()
+            ! --> I returned this here because I am not updating this in each step.
+            !     Rather, I am updating it at the end of the lagrangian phase
+            call UpdateParticlePos_ImplicitIter()
+            
+            ! I moved this here
+            ! SUBROUTINE #10: Update the weight of the point, Particles(IntGlo)%IntegrationWeight_ImplicitIter, in the physical space based 
+            !                 on the volumetric strain.  
+            call DynUpdateParticleWeights_ImplicitIter()
+            
+            ! --> added this code here because we need to update house keeping
+            ! SUBROUTINE #12: Update particle housekeeping information.   
+            call UpdateParticleHouseKeeping_ImplicitIter() !-> uses EleParticles to updated the rest of the housekeeping parameters
+            call SetActiveElement_ImplicitIter()
+            call SetParticleIndex_ImplicitIter()
+            call CheckFillingOfElements()
+            call SetUpEntityElements_ImplicitIter()
+            call SetUpMaterialElements_ImplicitIter()
+            
+            
             
             ! SUBROUTINE #24: Transfer variables from ImplicitIter to regular variables. This is important if 0<mu<1 and 
             !                  for VTK outputs. 
@@ -323,6 +343,7 @@
             ShapeValuesArray = ShapeValuesArray_ImplicitIter
             DShapeValuesArray = DShapeValuesArray_ImplicitIter
             
+            ! I commented below because we need to update the variables in a different subroutine
             NPartEle = NPartEle_ImplicitIter
             EleParticlesHelp = EleParticlesHelp_ImplicitIter
             IsActiveElement = IsActiveElement_ImplicitIter
@@ -331,7 +352,7 @@
             GetParticleIndex = GetParticleIndex_ImplicitIter
             EntityElements = EntityElements_ImplicitIter
             MaterialElements = MaterialElements_ImplicitIter
-            
+            !
             Counters%NAEl = Counters%NAEl_ImplicitIter
             TotalVelocitySoil = TotalVelocitySoil_ImplicitIter
             
@@ -2180,72 +2201,72 @@ implicit none
         
         !----------------------------------------------------------------------------------------------------
         
+        ! COMMENTED THIS
         
-        
-        subroutine DynUpdateParticleWeights_DirDeriv_ImplicitIter()!( ShapeValuesArray, ActiveElement, NPartEle )
-        !**********************************************************************
+        !subroutine DynUpdateParticleWeights_DirDeriv_ImplicitIter()!( ShapeValuesArray, ActiveElement, NPartEle )
+        !!**********************************************************************
+        !!
+        !!    Function:  Update the weights of the material points.
+        !! 
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Update the weights of the material points.
+        !implicit none
+        !
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: I, IAEl, IEl, Int, IntGlo, MaterialID, J
+        !  integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
+        !  real(REAL_TYPE) :: VolumetricStrain, ConstDensitySolid, ConstDensityLiquid
+        !  real(REAL_TYPE) :: LiquidPressure, Density, ConcRatioSolid
+        !  real(REAL_TYPE) :: RatioDensity
+        !  real(REAL_TYPE), dimension(ELEMENTNODES) :: ElementNodalDensity, ElementNodalConcRatio
+        !  real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+        !  logical :: PressureGreaterThreshold, PressureLowerThreshold, FullyFilled, FreeSurface 
+        !  logical :: UpdDensityLiquid
+        !
+        !  ! implicit scheme - shape values array inout 
+        !  !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
+        !  !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
+        !  !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
+        !  
+        !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !  !! 1-layer formulation or 2-layer form with 1 Phase
+        !  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !  if((NFORMULATION==1).or. &
+        !       ((NFORMULATION==2).and.(CalParams%NumberOfPhases==1))) then
+        !                        
+        !  do IAEl = 1, Counters%NAEl!_ImplicitIter!Counters%NAEl_ImplicitIter!_ImplicitIter ! Loop over all active elements for computation of stresses !_ImplicitIter
+        !    IEl = ActiveElement(IAEl)!ActiveElement_ImplicitIter(IAEl)!_ImplicitIter(IAEl)    !_ImplicitIter
+        !    
+        !    do Int = 1, NPartEle(IEl)!NPartEle_ImplicitIter(IEl)!_ImplicitIter(IEl) ! Loop over all material points of the element !_ImplicitIter
+        !        
+        !      ! Determine global ID of Material Point 
+        !      IntGlo = GetParticleIndex(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl)!_ImplicitIter(Int, IEl) !_ImplicitIter
+        !      
+        !      ! we need to keep track of this...
+        !      !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
+        !      !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
+        !
+        !      
+        !      ! Determine volumetric strain of Material Point 
+        !      VolumetricStrain = 0.0
+        !      do I = 1, NVECTOR ! for 2D and 3D all three components have to be taken into account as eps_tt in axisymmetric \=0
+        !         VolumetricStrain = VolumetricStrain + GetEpsStepI_DirDeriv_ImplicitIter(Particles(IntGlo),I)
+        !      end do
+        !  
+        !     
+        !      ! for SOLID or MIXTURE Material Point               
+        !      !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight_Local * (1.0 + VolumetricStrain)
+        !      ! we calculate the dir deriv based on the previous result so the %Integration Weight does not need updating
+        !      Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter = Particles(IntGlo)%IntegrationWeight_ImplicitIter  * (1.0 + VolumetricStrain)!_ImplicitIter 
+        !    
+        !     end do !loop over material points
+        !    end do ! loop over elements
+        !    
+        !  end if ! 1-layer formulation or 2-layer form with 1 Phase
+        !  
         ! 
-        !
-        !**********************************************************************
- 
-        implicit none
-        
-          ! Local variables
-          integer(INTEGER_TYPE) :: I, IAEl, IEl, Int, IntGlo, MaterialID, J
-          integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
-          real(REAL_TYPE) :: VolumetricStrain, ConstDensitySolid, ConstDensityLiquid
-          real(REAL_TYPE) :: LiquidPressure, Density, ConcRatioSolid
-          real(REAL_TYPE) :: RatioDensity
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: ElementNodalDensity, ElementNodalConcRatio
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
-          logical :: PressureGreaterThreshold, PressureLowerThreshold, FullyFilled, FreeSurface 
-          logical :: UpdDensityLiquid
-        
-          ! implicit scheme - shape values array inout 
-          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray 
-          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: ActiveElement
-          !integer(INTEGER_TYPE), dimension(Counters%NEl), intent(in) :: NPartEle
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !! 1-layer formulation or 2-layer form with 1 Phase
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          if((NFORMULATION==1).or. &
-               ((NFORMULATION==2).and.(CalParams%NumberOfPhases==1))) then
-                                
-          do IAEl = 1, Counters%NAEl_ImplicitIter!_ImplicitIter!Counters%NAEl_ImplicitIter!_ImplicitIter ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement_ImplicitIter(IAEl)!ActiveElement_ImplicitIter(IAEl)!_ImplicitIter(IAEl)   
-            
-            do Int = 1, NPartEle_ImplicitIter(IEl)!NPartEle_ImplicitIter(IEl)!_ImplicitIter(IEl) ! Loop over all material points of the element
-                
-              ! Determine global ID of Material Point 
-              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl)!_ImplicitIter(Int, IEl)
-              
-              ! we need to keep track of this...
-              !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
-              !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight
-
-              
-              ! Determine volumetric strain of Material Point 
-              VolumetricStrain = 0.0
-              do I = 1, NVECTOR ! for 2D and 3D all three components have to be taken into account as eps_tt in axisymmetric \=0
-                 VolumetricStrain = VolumetricStrain + GetEpsStepI_DirDeriv_ImplicitIter(Particles(IntGlo),I)
-              end do
-          
-             
-              ! for SOLID or MIXTURE Material Point               
-              !Particles(IntGlo)%IntegrationWeight_Local = Particles(IntGlo)%IntegrationWeight_Local * (1.0 + VolumetricStrain)
-              ! we calculate the dir deriv based on the previous result so the %Integration Weight does not need updating
-              Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter = Particles(IntGlo)%IntegrationWeight_ImplicitIter * (1.0 + VolumetricStrain)!_ImplicitIter
-            
-             end do !loop over material points
-            end do ! loop over elements
-            
-          end if ! 1-layer formulation or 2-layer form with 1 Phase
-          
-         
-        end subroutine DynUpdateParticleWeights_DirDeriv_ImplicitIter
+        !end subroutine DynUpdateParticleWeights_DirDeriv_ImplicitIter
         
         
         
@@ -2317,6 +2338,75 @@ implicit none
                                                           
         !------------------------------------------------------------------------------------ 
         !------------------------------------------------------------------------------------  
+                                                          
+                                                          
+        !----------------------------------------------------------------------------------------------------
+        ! SUBROUTINE #18 - BOOKMARK
+        
+        subroutine GetImplicitResidualEquation_SK04_NoMassUpdate(LumpedMassDry, &  !LumpedMassDry_NPlus1, 
+                                                            ExtLoad_NPlus1, ExtLoad, & 
+                                                        GravityLoad_NPlus1, GravityLoad, &  
+                                                            IntLoad_NPlus1, IntLoad, & 
+                                                  TotalVelocitySoil_NPlus1, TotalVelocitySoil, &
+                                                          ImplicitResidual) !ImplicitGaugeParameter, &
+          !------------------------------------------------------
+          ! purpose: implicit residual function
+          
+         implicit none 
+         
+         ! mass --> input 
+         !real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry_NPlus1 
+         real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: LumpedMassDry
+         
+          ! internal force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad_NPlus1
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: ExtLoad
+          
+          ! external force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad_NPlus1
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: IntLoad
+          
+          ! gravity force --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad_NPlus1
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: GravityLoad
+          
+          ! NPlus1 velocity --> input 
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: TotalVelocitySoil_NPlus1
+          real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: TotalVelocitySoil
+          
+          ! N velocity --> input 
+          !real(REAL_TYPE), intent(in), dimension(Counters%N, Counters%nEntity) :: TotalVelocitySoil
+          
+		  ! residual --> output 
+		  real(REAL_TYPE), intent(out), dimension(Counters%N, Counters%nEntity) :: ImplicitResidual
+          
+          !real(REAL_TYPE), intent(in) :: ImplicitGaugeParameter
+          
+          ! local terms 
+          integer(INTEGER_TYPE) :: IDof
+          integer(INTEGER_TYPE) :: iEntity
+		  
+          !iEntity_Temporary =1
+          
+         do IEntity = 1, Counters%nEntity ! IEntity loop
+         
+             do IDof = 1, Counters%N ! IDof loop 
+             
+                 ImplicitResidual(IDof, IEntity) = ( (LumpedMassDry(IDof,IEntity) * TotalVelocitySoil_NPlus1(IDof,IEntity)) + & !_NPlus1
+                                               - (LumpedMassDry(IDof,IEntity) * TotalVelocitySoil(IDof,IEntity)) + &
+                                               - (CalParams%TimeIncrement * CalParams%ImplicitIntegration%ImplicitGaugeParameter * &
+                                                   (ExtLoad_NPlus1(IDof,IEntity) + GravityLoad_NPlus1(IDof,IEntity) - IntLoad_NPlus1(IDof,IEntity)) ) + &
+                                               - (CalParams%TimeIncrement * (1-CalParams%ImplicitIntegration%ImplicitGaugeParameter) * &
+                                                   (ExtLoad(IDof,IEntity) + GravityLoad(IDof,IEntity) - IntLoad(IDof,IEntity)) ) ) * PBoundary(IDof)!, IEntity)
+         
+             end do ! IDof loop 
+         end do ! IEntity loop 
+         
+         
+
+            end subroutine GetImplicitResidualEquation_SK04_NoMassUpdate
+                                                          
+                                                          
                                                 
         !----------------------------------------------------------------------------------------------------
         !----------------------------------------------------------------------------------------------------
@@ -2491,35 +2581,35 @@ implicit none
                                 !MaterialIDArray_N, NPartEle_N, ESMStatevArray_N) !NAEl
               
               ! SUBROUTINE #4:
-              call DynUpdateParticleWeights_DirDeriv_ImplicitIter() !DynUpdateParticleWeightsImplicit() !ShapeValuesArray_N, ActiveElement_N, NPartEle_N )
+              !call DynUpdateParticleWeights_DirDeriv_ImplicitIter() !DynUpdateParticleWeightsImplicit() !ShapeValuesArray_N, ActiveElement_N, NPartEle_N )
               
               ! SUBROUTINE #
-              call UpdateParticlePos_DirDeriv_ImplicitIter()
+              !call UpdateParticlePos_DirDeriv_ImplicitIter() --> holding off to not update positions
               
-              ! SUBROUTINE #5:
-              call UpdateParticleHouseKeeping_DirDeriv_ImplicitIter()!NPartEle_N, EleParticlesHelp_N, IsActiveElement_N, EleParticles_N) 
-              ! --> we update NAEl_ImplicitIter
-              call SetActiveElement_DirDeriv_ImplicitIter()!ActiveElement_N, ActiveNode_N, IsActiveElement_N)
-              call SetParticleIndex_DirDeriv_ImplicitIter()!(ActiveElement_N,NPartEle_N, EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
-              call CheckFillingOfElements()!(ActiveElement_N, MaterialIDArray_N, NPartEle_N)     !NPartEle, EleParticlesHelp, IsActiveElement)
-              call SetUpEntityElements_DirDeriv_ImplicitIter()!ActiveElement_N, NPartEle_N, GetParticleIndex_N)
-              call SetUpMaterialElements_DirDeriv_ImplicitIter()!(ActiveElement_N, MaterialIDArray_N, NPartEle_N) !--> why are we even doing this???
+              ! SUBROUTINE #5: --> holding off to not update positions and do not update mass
+              !call UpdateParticleHouseKeeping_DirDeriv_ImplicitIter()!NPartEle_N, EleParticlesHelp_N, IsActiveElement_N, EleParticles_N) 
+              !! --> we update NAEl_ImplicitIter
+              !call SetActiveElement_DirDeriv_ImplicitIter()!ActiveElement_N, ActiveNode_N, IsActiveElement_N)
+              !call SetParticleIndex_DirDeriv_ImplicitIter()!(ActiveElement_N,NPartEle_N, EleParticlesHelp_N, EleParticles_N, GetParticleIndex_N)
+              !call CheckFillingOfElements()!(ActiveElement_N, MaterialIDArray_N, NPartEle_N)     !NPartEle, EleParticlesHelp, IsActiveElement)
+              !call SetUpEntityElements_DirDeriv_ImplicitIter()!ActiveElement_N, NPartEle_N, GetParticleIndex_N)
+              !call SetUpMaterialElements_DirDeriv_ImplicitIter()!(ActiveElement_N, MaterialIDArray_N, NPartEle_N) !--> why are we even doing this???
               
               ! SUBROUTINE #12:
               call GetNodalIntForcesAfter_DirDeriv_ImplicitIter(IntLoad_DirDeriv_ImplicitIter, SigmaEffArray_DirDeriv_ImplicitIter)  
               !call CalculateIntAndExtWorks_DirDeriv_ImplicitIter(IncrementalDisplacementWater)!, IntLoad, IntLoad_NPlus1, SigmaEffArray_N)
               
               ! SUBROUTINE #14
-              call MapMassMP2Nodes_DirDeriv_ImplicitIter(LumpedMassDry_DirDeriv_ImplicitIter)!, ShapeValuesArray_NPlus1, ActiveElement_N)
+              !call MapMassMP2Nodes_DirDeriv_ImplicitIter(LumpedMassDry_DirDeriv_ImplicitIter)!, ShapeValuesArray_NPlus1, ActiveElement_N)
               
               ! SUBROUTINE #13:
-              call GetNodalExternalForces_DirDeriv_ImplicitIter(ExtLoad_DirDeriv_ImplicitIter, GravityLoad_DirDeriv_ImplicitIter)!, ActiveElement_N) ShapeValuesArray_NPlus1
+              call GetNodalExternalForces(ExtLoad_DirDeriv_ImplicitIter, GravityLoad_DirDeriv_ImplicitIter)!, ActiveElement_N) ShapeValuesArray_NPlus1 !_DirDeriv_ImplicitIter
               
               call ApplyMPPrescribedVelocity_IntLoad(IntLoad_DirDeriv_ImplicitIter)
               call ApplyNodalPrescribedVelocity_IntLoad(IntLoad_DirDeriv_ImplicitIter)
               
               
-              call GetImplicitResidualEquation_SK04(LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry_DirDeriv_ImplicitIter, &!LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry_DirDeriv_ImplicitIter, & !input !LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input 
+              call GetImplicitResidualEquation_SK04_NoMassUpdate(      LumpedMassDry, &!LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry_DirDeriv_ImplicitIter        LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry_DirDeriv_ImplicitIter, & !input !LumpedMassDry_DirDeriv_ImplicitIter, LumpedMassDry, & !input 
                                                           ExtLoad_DirDeriv_ImplicitIter, ExtLoad, &  !input
                                                       GravityLoad_DirDeriv_ImplicitIter, GravityLoad, &  !input
                                                           IntLoad_DirDeriv_ImplicitIter, IntLoad, &  !input

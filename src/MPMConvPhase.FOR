@@ -2198,7 +2198,7 @@
           real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
 
            do IAElement = 1, Counters%NAEl_ImplicitIter
-             IElement = ActiveElement_ImplicitIter(IAElement)
+             IElement = ActiveElement(IAElement) !_ImplicitIter
                 do IParticle = 1, NPartEle_ImplicitIter(IElement) ! Loop over particles in IElement
                   ParticleIndex = GetParticleIndex_ImplicitIter(IParticle, IElement)
                   

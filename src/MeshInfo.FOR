@@ -449,11 +449,11 @@
               allocate(ActiveNode_ImplicitIter(NNodes), stat = IError) ! - Implicit bookmark
               ActiveNode_ImplicitIter = .false. ! - Implicit bookmark
                
-              allocate(IsActiveElement_DirDeriv_ImplicitIter(NElements), stat = IError) ! - Implicit bookmark
-              IsActiveElement_ImplicitIter = .false.  ! - Implicit bookmark
-              
-              allocate(ActiveNode_DirDeriv_ImplicitIter(NNodes), stat = IError) ! - Implicit bookmark
-              ActiveNode_ImplicitIter = .false. ! - Implicit bookmark
+              !allocate(IsActiveElement_DirDeriv_ImplicitIter(NElements), stat = IError) ! - Implicit bookmark
+              !IsActiveElement_ImplicitIter = .false.  ! - Implicit bookmark
+              !
+              !allocate(ActiveNode_DirDeriv_ImplicitIter(NNodes), stat = IError) ! - Implicit bookmark
+              !ActiveNode_ImplicitIter = .false. ! - Implicit bookmark
               !--------------------------------------------------------------------------------------
 
             else if (trim(BName) == '$$STARTNODES') then

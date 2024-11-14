@@ -2092,13 +2092,13 @@
           !Reactions = 0.0
           !BulkViscousLD = 0.0
 
-          do IAEl = 1, Counters%NAEl_ImplicitIter !Counters%NAEl!_DirDeriv_ImplicitIter
-           IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)!ActiveElement(IAEl)!ActiveElement_DirDeriv_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl!_ImplicitIter !Counters%NAEl!_DirDeriv_ImplicitIter
+           IEl = ActiveElement(IAEl)!ActiveElement(IAEl)!ActiveElement_DirDeriv_ImplicitIter(IAEl) !_DirDeriv_ImplicitIter
 
            if(NFORMULATION==1) then
                
             if (IsParticleIntegration(IEl) ) then
-              NElemPart = NPartEle_ImplicitIter(IEl) !NPartEle(IEl)!NPartEle_DirDeriv_ImplicitIter(IEl)
+              NElemPart = NPartEle(IEl)!_ImplicitIter(IEl) !NPartEle(IEl)!NPartEle_DirDeriv_ImplicitIter(IEl)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
@@ -2107,7 +2107,7 @@
         
             do Int = 1, NElemPart
               
-              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl) !GetParticleIndex(Int, IEl)!GetParticleIndex_DirDeriv_ImplicitIter(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl)!_ImplicitIter(Int, IEl) !GetParticleIndex(Int, IEl)!GetParticleIndex_DirDeriv_ImplicitIter(Int, IEl)
               call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo, :, :))
               
               MaterialIndex = MaterialIDArray(IntGlo)
@@ -2124,7 +2124,7 @@
                 !  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                 !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 !end if
-                WTN = Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter!Particles(IntGlo)%IntegrationWeight!Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter ! updated weight
+                WTN = Particles(IntGlo)%IntegrationWeight!_DirDeriv_ImplicitIter!Particles(IntGlo)%IntegrationWeight!Particles(IntGlo)%IntegrationWeight_DirDeriv_ImplicitIter ! updated weight
               else
                 !if ( ISAXISYMMETRIC ) then
                 !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
