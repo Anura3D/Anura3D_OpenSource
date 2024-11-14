@@ -1002,7 +1002,7 @@
         ! Implemented in the frame of the MPM project.
         !
         !**********************************************************************
-
+       
         implicit none
         
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum       !CC added nEntity
@@ -1026,9 +1026,9 @@
           Momentum = 0.0 
           Time = CalParams%TimeIncrement
           NoEn = Counters%nEntity
-
-          do IAEl = 1, Counters%NAEl_ImplicitIter   ! Loop over all elements
-            IEl = ActiveElement_ImplicitIter(IAEl)
+       
+          do IAEl = 1, Counters%NAEl !_ImplicitIter   ! Loop over all elements
+            IEl = ActiveElement(IAEl) !_ImplicitIter
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               !NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
@@ -1036,13 +1036,13 @@
               NodVelo_Previous(I, 1:ELEMENTNODES, 1:Counters%nEntity) = TotalVelocitySoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
-            do IPart = 1, NPartEle_ImplicitIter(IEl)   ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element !_ImplicitIter
+              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID !_ImplicitIter
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  !ParticleVelocity = VelocityArray(ParticleIndex,:)
                  ParticleVelocity = 0.0
                  PartilceMass = MassArray(ParticleIndex)
-                 ParticleShape = ShapeValuesArray_ImplicitIter(ParticleIndex,:)
+                 ParticleShape = ShapeValuesArray(ParticleIndex,:) !_ImplicitIter
                  ParticleIncrementalVelocity = 0.0
                  ParticleAcceleration = 0.0
                  if (CalParams%ApplyContactAlgorithm) then
@@ -1067,11 +1067,11 @@
                 end do !Loop over nodes
                
                 ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity
-
+       
                 !do I = 1, NVECTOR ! nodal i-momentum
                 !  Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( PartilceMass * ParticleShape * ParticleVelocity(I) )
                 !end do     
-
+       
                 VelocityArray(ParticleIndex,:) = ParticleVelocity
                 AccelerationArray(ParticleIndex,:) =  ParticleAcceleration
                  
@@ -1086,8 +1086,8 @@
           
           
           
-          do IAEl = 1, Counters%NAEl_ImplicitIter   ! Loop over all elements
-            IEl = ActiveElement_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl!_ImplicitIter   ! Loop over all elements
+            IEl = ActiveElement(IAEl) !_ImplicitIter
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               !NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
@@ -1095,13 +1095,13 @@
               !NodVelo_Previous(I, 1:ELEMENTNODES, 1:Counters%nEntity) = TotalVelocitySoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
           
-            do IPart = 1, NPartEle_ImplicitIter(IEl)   ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element !_ImplicitIter
+              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID !_ImplicitIter
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                   
                   do I = 1, NVECTOR ! nodal i-momentum
                       Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + &
-                          ( MassArray(ParticleIndex) * ShapeValuesArray_ImplicitIter(ParticleIndex,I) * VelocityArray(ParticleIndex,I) )
+                          ( MassArray(ParticleIndex) * ShapeValuesArray(ParticleIndex,I) * VelocityArray(ParticleIndex,I) ) !_ImplicitIter
                   end do     
                   
               end if 
@@ -1926,13 +1926,13 @@
           !Reactions = 0.0
           !BulkViscousLD = 0.0
 
-          do IAEl = 1, Counters%NAEl_ImplicitIter!Counters%NAEl!_ImplicitIter!Counters%NAEl_ImplicitIter
-           IEl = ActiveElement_ImplicitIter(IAEl)!ActiveElement(IAEl)!ActiveElement_ImplicitIter(IAEl)
+          do IAEl = 1, Counters%NAEl!_ImplicitIter!Counters%NAEl!_ImplicitIter!Counters%NAEl_ImplicitIter
+           IEl = ActiveElement(IAEl)!ActiveElement(IAEl)!ActiveElement_ImplicitIter(IAEl) !_ImplicitIter
 
            if(NFORMULATION==1) then
                
-            if (IsParticleIntegration(IEl) ) then
-              NElemPart = NPartEle_ImplicitIter(IEl)!NPartEle(IEl)!NPartEle_ImplicitIter(IEl)
+            if (IsParticleIntegration(IEl) ) then 
+              NElemPart = NPartEle(IEl)!NPartEle(IEl)!NPartEle_ImplicitIter(IEl) !_ImplicitIter
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
@@ -1941,7 +1941,7 @@
         
             do Int = 1, NElemPart
               
-              IntGlo = GetParticleIndex_ImplicitIter(Int, IEl)!GetParticleIndex(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl)
+              IntGlo = GetParticleIndex(Int, IEl)!GetParticleIndex(Int, IEl) !GetParticleIndex_ImplicitIter(Int, IEl) !_ImplicitIter
               call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray(IntGlo, :, :))
               
               MaterialIndex = MaterialIDArray(IntGlo)
@@ -1958,7 +1958,7 @@
                 !  Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                 !  ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 !end if
-                WTN = Particles(IntGlo)%IntegrationWeight_ImplicitIter !Particles(IntGlo)%IntegrationWeight!_ImplicitIter!Particles(IntGlo)%IntegrationWeight_ImplicitIter ! updated weight
+                WTN = Particles(IntGlo)%IntegrationWeight!_ImplicitIter !Particles(IntGlo)%IntegrationWeight!_ImplicitIter!Particles(IntGlo)%IntegrationWeight_ImplicitIter ! updated weight
               else
                 !if ( ISAXISYMMETRIC ) then
                 !  Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)

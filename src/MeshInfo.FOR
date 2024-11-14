@@ -145,15 +145,15 @@
         integer(INTEGER_TYPE), dimension(:), allocatable :: ReducedDofQuasiStatic ! The global storage of degree of freedom in ux,uy,uz,p
         logical, dimension(:), allocatable :: IsActiveElement ! Element switch, 1:Active element and 0:Inactive element
         !--------------------------------------------------------------------------------------
-        logical, dimension(:), allocatable :: IsActiveElement_ImplicitIter ! Element switch, 1:Active element and 0:Inactive element
-        logical, dimension(:), allocatable :: IsActiveElement_DirDeriv_ImplicitIter ! Element switch, 1:Active element and 0:Inactive element
+        !logical, dimension(:), allocatable :: IsActiveElement_ImplicitIter ! Element switch, 1:Active element and 0:Inactive element
+        !logical, dimension(:), allocatable :: IsActiveElement_DirDeriv_ImplicitIter ! Element switch, 1:Active element and 0:Inactive element
         !--------------------------------------------------------------------------------------
         real(REAL_TYPE), dimension(:), allocatable :: NodalDensity 
         real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
         logical, dimension(:), allocatable :: ActiveNode
         !--------------------------------------------------------------------------------------
-        logical, dimension(:), allocatable :: ActiveNode_ImplicitIter
-        logical, dimension(:), allocatable :: ActiveNode_DirDeriv_ImplicitIter
+        !logical, dimension(:), allocatable :: ActiveNode_ImplicitIter
+        !logical, dimension(:), allocatable :: ActiveNode_DirDeriv_ImplicitIter
         !--------------------------------------------------------------------------------------
         logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
         
@@ -185,8 +185,8 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
         !--------------------------------------------------------------------------------------
-        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_ImplicitIter ! Lumped mass vector of dry soil
-        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_DirDeriv_ImplicitIter ! Lumped mass vector of dry soil
+        !real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_ImplicitIter ! Lumped mass vector of dry soil
+        !real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_DirDeriv_ImplicitIter ! Lumped mass vector of dry soil
         !--------------------------------------------------------------------------------------
 
         real(REAL_TYPE), dimension(:, :), &
@@ -232,8 +232,8 @@
         integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement ! ID of the active elements
         
         !--------------------------------------------------------------------------------------
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement_ImplicitIter ! ID of the active elements
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement_DirDeriv_ImplicitIter ! ID of the active elements
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement_ImplicitIter ! ID of the active elements
+        !integer(INTEGER_TYPE), dimension(:), allocatable :: ActiveElement_DirDeriv_ImplicitIter ! ID of the active elements
         !--------------------------------------------------------------------------------------
         
         real(REAL_TYPE), dimension(:), &
@@ -299,8 +299,8 @@
         !> stores material points indeces
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex
         !------------------------------------------------------------------------------
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex_ImplicitIter
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex_DirDeriv_ImplicitIter
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex_ImplicitIter
+        !integer(INTEGER_TYPE), dimension(:, :), allocatable :: GetParticleIndex_DirDeriv_ImplicitIter
         !------------------------------------------------------------------------------
 
         !> stores determinant of elements
@@ -443,11 +443,11 @@
               HydraulicHeadLoadedElemID = .false.
                 
               !--------------------------------------------------------------------------------------
-              allocate(IsActiveElement_ImplicitIter(NElements), stat = IError) ! - Implicit bookmark
-              IsActiveElement_ImplicitIter = .false.  ! - Implicit bookmark
-              
-              allocate(ActiveNode_ImplicitIter(NNodes), stat = IError) ! - Implicit bookmark
-              ActiveNode_ImplicitIter = .false. ! - Implicit bookmark
+              !allocate(IsActiveElement_ImplicitIter(NElements), stat = IError) ! - Implicit bookmark
+              !IsActiveElement_ImplicitIter = .false.  ! - Implicit bookmark
+              !
+              !allocate(ActiveNode_ImplicitIter(NNodes), stat = IError) ! - Implicit bookmark
+              !ActiveNode_ImplicitIter = .false. ! - Implicit bookmark
                
               !allocate(IsActiveElement_DirDeriv_ImplicitIter(NElements), stat = IError) ! - Implicit bookmark
               !IsActiveElement_ImplicitIter = .false.  ! - Implicit bookmark
@@ -1345,9 +1345,9 @@
             deallocate(IsActiveElement, stat = IError)
           end if
           !----------------------------------------------------------------------------------------
-          if (allocated(IsActiveElement_ImplicitIter)) then
-            deallocate(IsActiveElement_ImplicitIter, stat = IError)
-          end if
+          !if (allocated(IsActiveElement_ImplicitIter)) then
+          !  deallocate(IsActiveElement_ImplicitIter, stat = IError)
+          !end if
           !----------------------------------------------------------------------------------------
           if (allocated(NodalDensity)) then
             deallocate(NodalDensity, stat = IError)
@@ -1361,9 +1361,9 @@
             deallocate(ActiveNode, stat = IError)
           end if
           !----------------------------------------------------------------------------------------
-          if (allocated(ActiveNode_ImplicitIter)) then
-            deallocate(ActiveNode_ImplicitIter, stat = IError)
-          end if
+          !if (allocated(ActiveNode_ImplicitIter)) then
+          !  deallocate(ActiveNode_ImplicitIter, stat = IError)
+          !end if
           !----------------------------------------------------------------------------------------
           if (allocated(PBoundary)) then
             deallocate(PBoundary, stat = IError)
@@ -1464,12 +1464,12 @@
             deallocate(LumpedMassDry, stat = IError)
           end if
           !--------------------------------------------------------------------------------------
-          if (allocated(LumpedMassDry_ImplicitIter)) then
-            deallocate(LumpedMassDry_ImplicitIter, stat = IError)
-          end if
-          if (allocated(LumpedMassDry_DirDeriv_ImplicitIter)) then
-            deallocate(LumpedMassDry_ImplicitIter, stat = IError)
-          end if
+          !if (allocated(LumpedMassDry_ImplicitIter)) then
+          !  deallocate(LumpedMassDry_ImplicitIter, stat = IError)
+          !end if
+          !if (allocated(LumpedMassDry_DirDeriv_ImplicitIter)) then
+          !  deallocate(LumpedMassDry_ImplicitIter, stat = IError)
+          !end if
           !-------------------------------------------------------------------------------------
 
           if (allocated(TotalDisplacementSoil)) then
@@ -1534,13 +1534,13 @@
           !  deallocate(RateofMomentum_ImplicitIter, stat = IError)
           !end if
 
-          if (allocated(ActiveElement_ImplicitIter)) then
-            deallocate(ActiveElement_ImplicitIter, stat = IError)
-          end if
-          
-          if (allocated(ActiveElement_DirDeriv_ImplicitIter)) then
-            deallocate(ActiveElement_ImplicitIter, stat = IError)
-          end if
+          !if (allocated(ActiveElement_ImplicitIter)) then
+          !  deallocate(ActiveElement_ImplicitIter, stat = IError)
+          !end if
+          !
+          !if (allocated(ActiveElement_DirDeriv_ImplicitIter)) then
+          !  deallocate(ActiveElement_ImplicitIter, stat = IError)
+          !end if
           !---------------------------------------------------------------------------------
 
           if (allocated(ElementDeterminant)) then
@@ -1736,29 +1736,29 @@
         !-------------------------------------------------------------------------
         
         
-        subroutine DetermineActiveNodes_ImplicitIter()
-        !**********************************************************************
+        !subroutine DetermineActiveNodes_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!    Function:  Determine which nodes belong to an active element
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Determine which nodes belong to an active element
+        !implicit none
         !
-        !**********************************************************************
-        
-        implicit none
-        
-          ! Local variables
-          integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
-          
-          ActiveNode_ImplicitIter = .false.
-          
-          do IActiveElement = 1, Counters%NAEl_ImplicitIter
-            ElementID = ActiveElement_ImplicitIter(IActiveElement)
-            do INode = 1, ELEMENTNODES ! loop on element nodes
-              NodeID = ElementConnectivities(INode, ElementID)
-              ActiveNode_ImplicitIter(NodeID) = .true.
-            end do
-          end do
-        
-        end subroutine DetermineActiveNodes_ImplicitIter
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
+        !  
+        !  ActiveNode_ImplicitIter = .false.
+        !  
+        !  do IActiveElement = 1, Counters%NAEl_ImplicitIter
+        !    ElementID = ActiveElement_ImplicitIter(IActiveElement)
+        !    do INode = 1, ELEMENTNODES ! loop on element nodes
+        !      NodeID = ElementConnectivities(INode, ElementID)
+        !      ActiveNode_ImplicitIter(NodeID) = .true.
+        !    end do
+        !  end do
+        !
+        !end subroutine DetermineActiveNodes_ImplicitIter
         
         
         
@@ -1769,29 +1769,29 @@
         !-------------------------------------------------------------------------
         
         
-        subroutine DetermineActiveNodes_DirDeriv_ImplicitIter()
-        !**********************************************************************
+        !subroutine DetermineActiveNodes_DirDeriv_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!    Function:  Determine which nodes belong to an active element
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Determine which nodes belong to an active element
+        !implicit none
         !
-        !**********************************************************************
-        
-        implicit none
-        
-          ! Local variables
-          integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
-          
-          ActiveNode_DirDeriv_ImplicitIter = .false.
-          
-          do IActiveElement = 1, Counters%NAEl_DirDeriv_ImplicitIter
-            ElementID = ActiveElement_DirDeriv_ImplicitIter(IActiveElement)
-            do INode = 1, ELEMENTNODES ! loop on element nodes
-              NodeID = ElementConnectivities(INode, ElementID)
-              ActiveNode_DirDeriv_ImplicitIter(NodeID) = .true.
-            end do
-          end do
-        
-        end subroutine DetermineActiveNodes_DirDeriv_ImplicitIter
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: IActiveElement, ElementID, INode, NodeID
+        !  
+        !  ActiveNode_DirDeriv_ImplicitIter = .false.
+        !  
+        !  do IActiveElement = 1, Counters%NAEl_DirDeriv_ImplicitIter
+        !    ElementID = ActiveElement_DirDeriv_ImplicitIter(IActiveElement)
+        !    do INode = 1, ELEMENTNODES ! loop on element nodes
+        !      NodeID = ElementConnectivities(INode, ElementID)
+        !      ActiveNode_DirDeriv_ImplicitIter(NodeID) = .true.
+        !    end do
+        !  end do
+        !
+        !end subroutine DetermineActiveNodes_DirDeriv_ImplicitIter
         
         
         
@@ -2381,11 +2381,11 @@
           LumpedMassDry = 0.0
           
           !--------------------------------------------------------------------------------------
-          allocate(LumpedMassDry_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
-          LumpedMassDry_ImplicitIter = 0.0
-          
-          allocate(LumpedMassDry_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
-          LumpedMassDry_DirDeriv_ImplicitIter = 0.0
+          !allocate(LumpedMassDry_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          !LumpedMassDry_ImplicitIter = 0.0
+          !
+          !allocate(LumpedMassDry_DirDeriv_ImplicitIter(Counters%N, Counters%NEntity), stat = IError)
+          !LumpedMassDry_DirDeriv_ImplicitIter = 0.0
           !--------------------------------------------------------------------------------------
 
           allocate(TotalDisplacementSoil(Counters%N), stat = IError)

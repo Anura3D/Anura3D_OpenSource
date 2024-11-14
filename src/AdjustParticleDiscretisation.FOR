@@ -335,12 +335,12 @@
           deallocate(UStepArray, stat = IError)
           deallocate(ShapeValuesArray, stat = IError)
           !-----------------------------------------------------------------
-          deallocate(ShapeValuesArray_ImplicitIter, stat = IError)
+          !deallocate(ShapeValuesArray_ImplicitIter, stat = IError)
           !-----------------------------------------------------------------
           deallocate(UPhaseArray, stat = IError)
           deallocate(GlobPosArray, stat = IError)
           !-----------------------------------------------------------------
-          deallocate(GlobPosArray_ImplicitIter, stat = IError)
+          !deallocate(GlobPosArray_ImplicitIter, stat = IError)
           !-----------------------------------------------------------------
           deallocate(VelocityArray, stat = IError)
           deallocate(SigmaEffArray, stat = IError)
@@ -350,7 +350,7 @@
           !-----------------------------------------------------------------
           deallocate(DShapeValuesArray, stat = IError)
           !-----------------------------------------------------------------
-          deallocate(DShapeValuesArray_ImplicitIter, stat = IError)
+          !deallocate(DShapeValuesArray_ImplicitIter, stat = IError)
           !-----------------------------------------------------------------
           deallocate(VelocityWaterArray, stat = IError)
           deallocate(VelocityGasArray, stat = IError)
@@ -384,12 +384,12 @@
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
           !-----------------------------------------------------------------------------
-          allocate(ShapeValuesArray_ImplicitIter(Counters%NParticles,ELEMENTNODES), stat = IError)
+          !allocate(ShapeValuesArray_ImplicitIter(Counters%NParticles,ELEMENTNODES), stat = IError)
           !-----------------------------------------------------------------------------
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
           !-----------------------------------------------------------------------------
-          allocate(GlobPosArray_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
+          !allocate(GlobPosArray_ImplicitIter(Counters%NParticles,NVECTOR), stat = IError)
           !-----------------------------------------------------------------------------
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
@@ -399,7 +399,7 @@
           !-----------------------------------------------------------------------------
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
           !-----------------------------------------------------------------------------
-          allocate(DShapeValuesArray_ImplicitIter(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+          !allocate(DShapeValuesArray_ImplicitIter(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
           !-----------------------------------------------------------------------------
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -439,7 +439,7 @@
               SigmaEff0Array(NewParticleIndex,:) = TempSigmaEff0Array(I,:)
               DShapeValuesArray(NewParticleIndex,:,:) = TempDShapeValuesArray(I,:,:)
               !--------------------------------------------------------------------
-              DShapeValuesArray_ImplicitIter(NewParticleIndex,:,:) = TempDShapeValuesArray(I,:,:)
+              !DShapeValuesArray_ImplicitIter(NewParticleIndex,:,:) = TempDShapeValuesArray(I,:,:)
               !--------------------------------------------------------------------
               VelocityWaterArray(NewParticleIndex,:) = TempVelocityWaterArray(I,:)
               VelocityGasArray(NewParticleIndex,:) = TempVelocityGasArray(I,:)

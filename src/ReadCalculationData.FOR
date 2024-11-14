@@ -726,7 +726,7 @@
         
         CalParams%ImplicitIntegration%ImplicitGaugeParameter = 1!1--> FULLY IMPLICIT, 0--> FULLY EXPLICIT
         CalParams%ImplicitIntegration%IsEnterGMRES = .false.
-        CalParams%ImplicitIntegration%MaxGMRESIterations = 20!10 !20 !10000
+        CalParams%ImplicitIntegration%MaxGMRESIterations = 20!50!20!10 !20 !10000
         CalParams%ImplicitIntegration%MaxNewtonIterations = 100000000000
         CalParams%ImplicitIntegration%HH_DirDerivParameter_SK04 = 1e-5 !1e-5
         CalParams%ImplicitIntegration%GMRESErrorThreshold = 1e-10

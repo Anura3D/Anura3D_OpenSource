@@ -87,8 +87,8 @@
           !> Local 'volume' occupied by the particle (changes during simulation due to extension/compression of material)
           real(REAL_TYPE) :: IntegrationWeight = -1 ! Particle volume
           !------------------------------------------------------------------------------
-          real(REAL_TYPE) :: IntegrationWeight_ImplicitIter = -1 ! Particle volume
-          real(REAL_TYPE) :: IntegrationWeight_DirDeriv_ImplicitIter = -1
+          !real(REAL_TYPE) :: IntegrationWeight_ImplicitIter = -1 ! Particle volume
+          !real(REAL_TYPE) :: IntegrationWeight_DirDeriv_ImplicitIter = -1
           !------------------------------------------------------------------------------
           real(REAL_TYPE) :: ShearModulus = 0.0 ! Shear modulus of the particle
           real(REAL_TYPE) :: CohesionCosPhi = 0.0 ! Cohesion of the particle multiplied by Cos Phi (friction angle)
@@ -140,8 +140,8 @@
           ! Location
           real(REAL_TYPE), dimension(vsize) :: LocPos != 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
           !-------------------------------------------------------------------------------------------------------
-          real(REAL_TYPE), dimension(vsize) :: LocPos_ImplicitIter != 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
-          real(REAL_TYPE), dimension(vsize) :: LocPos_DirDeriv_ImplicitIter != 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
+          !real(REAL_TYPE), dimension(vsize) :: LocPos_ImplicitIter != 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
+          !real(REAL_TYPE), dimension(vsize) :: LocPos_DirDeriv_ImplicitIter != 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
           !-------------------------------------------------------------------------------------------------------
           logical :: IsBoundaryParticle = .false. ! True, if the particle is located on the boundary of the material body
       
@@ -347,7 +347,7 @@
           ! Location
           Particle%LocPos = 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
           !--------------------------------------------------------------------------------------------------------
-          Particle%LocPos_ImplicitIter = 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
+          !Particle%LocPos_ImplicitIter = 0.0 ! Local particle position xi = LocPos(1), eta = LocPos(2), zeta = LocPos(3)
           !--------------------------------------------------------------------------------------------------------
           Particle%IsBoundaryParticle = .false. ! True, if the particle is located on the boundary of the material body
       
@@ -373,7 +373,7 @@
           
           
           !-----------------------------------------------------------------------------------------
-          Particle%EpsStep_ImplicitIter = 0.0
+          !Particle%EpsStep_ImplicitIter = 0.0
           !-----------------------------------------------------------------------------------------
 
 
@@ -1610,7 +1610,7 @@
     
     
     
-    subroutine IncreaseEps_ImplicitIter(Particle, EpsStep)
+    subroutine IncreaseEps_ImplicitIter(Particle)!, EpsStep)
         !**********************************************************************
         !
         !    Function:  Adds EpsStep to Eps of Particle.
@@ -1625,7 +1625,7 @@
         implicit none
 
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
-          real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+          !real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
           
           !real(REAL_TYPE), dimension(NTENSOR) :: EpsBefore
 

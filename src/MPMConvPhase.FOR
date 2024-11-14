@@ -571,262 +571,262 @@
         !-----------------------------------------------------------------------------------
         
         
-        subroutine UpdateParticlePos_ImplicitIter()
-        !**********************************************************************
+        !subroutine UpdateParticlePos_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!    Function:  Updates the location of particles. Connected to this task are:
+        !!
+        !!               - calculate particle displacements from nodal displacements
+        !!               - calculate new particle global position
+        !!               - determine into which elements the particles moved
+        !!               - calculate new particle local position
+        !!               - update particle shape values
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Updates the location of particles. Connected to this task are:
+        !implicit none
         !
-        !               - calculate particle displacements from nodal displacements
-        !               - calculate new particle global position
-        !               - determine into which elements the particles moved
-        !               - calculate new particle local position
-        !               - update particle shape values
+        !  integer(INTEGER_TYPE) :: I, IParticle, ElementID, NewElementID
+        !  real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
+        !  logical :: Success, IsInside
+        !  real(REAL_TYPE) :: diff, sumLocPos
         !
-        ! Implemented in the frame of the MPM project.
+        !   do IParticle = 1, Counters%NParticles ! Loop over particles
         !
-        !**********************************************************************
-
-        implicit none
-
-          integer(INTEGER_TYPE) :: I, IParticle, ElementID, NewElementID
-          real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
-          logical :: Success, IsInside
-          real(REAL_TYPE) :: diff, sumLocPos
-
-           do IParticle = 1, Counters%NParticles ! Loop over particles
-
-            ElementID = ElementIDArray(IParticle)
-
-            ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements_ImplicitIter(IParticle, ElementID)
-
-            GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
-
-            ! Calculate new particle global positions
-            GlobPosArray_ImplicitIter(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
-
-           if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
-             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
-                 GlobPosArray(IParticle,1) = GlopPos0(1)
-                 GlobPosArray(IParticle,3) = GlopPos0(3)
-             end if
-             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
-                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
-             end if
-           end if ! ApplyFixParticlesK0
-
-          IsInside = IsInBoundingBox(GlobPosArray_ImplicitIter(IParticle,:))
-          ! Check whether particle moved outside the mesh
-          if (.not.IsInside ) then
-             if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
-                            ' from element '// trim(String(ElementID)) // ' lies '// &
-                            'outside the mesh. '// &
-                            'X, Y, Z ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2))) // trim(String(GlobPosArray(IParticle,3))) )
-             if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
-                            ' from element '// trim(String(ElementID)) // ' lies '// &
-                            'outside the mesh. '// &
-                            'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
-          end if
-          
-            ! Determine new local particle position from global position
-            call DetermineLocPosIterative_ImplicitIter(IParticle, &
-                                 ElementID, GlopPos0, &
-                                 Particles(IParticle)%LocPos, &
-                                 NewElementID, LocPos, Success)
-        
-            ! Correct if local particle position is outside element due to rounding
-            !if (LocPos(1)<0.0) then
-            !    LocPos(1) = 0.0
-            !    
-            !    if (CalParams%OutputDebugData) then
-            !      call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-            !                                                    trim(String(NewElementID)) //' '// &
-            !                                                    trim(String(LocPos(1))))
-            !    end if
-            !end if
-            !
-            !if (LocPos(2)<0.0) then
-            !    LocPos(2) = 0.0
-            !    
-            !    if (CalParams%OutputDebugData) then
-            !      call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-            !                                                    trim(String(NewElementID)) //' '// &
-            !                                                    trim(String(LocPos(2))))
-            !    end if
-            !end if
-            !
-            !if (NDIM == 3) then ! only for 3D case
-            !  if (LocPos(3)<0.0) then
-            !    LocPos(3) = 0.0
-            !    
-            !    if (CalParams%OutputDebugData) then
-            !      call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-            !                                                    trim(String(NewElementID)) //' '// &
-            !                                                    trim(String(LocPos(3))))
-            !    end if
-            !  end if  
-            !end if
- 
-           !sumLocPos = 0.0
-           !do I = 1, NVECTOR
-           !  sumLocPos = sumLocPos + LocPos(I)
-           !end do
-           !
-           !if (sumLocPos > 1.0) then
-           !  diff = sumLocPos - 1.0
-           !  do I = 1, NVECTOR
-           !    LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
-           !  end do
-           !end if
-            
-            ! Update Particle%LocPos, Particle%ElementID and EleParticles array
-            if (Success) then
-              Particles(IParticle)%LocPos_ImplicitIter = LocPos
-              call SetParticleElementID_ImplicitIter(IParticle, IParticle, NewElementID) !--> updtes EleParticles
-
-            else ! Error in determining the new location of the particle
-              call GiveError('  Error in determining the local ' // &
-                             'coordinate of particle '// trim(String(IParticle)) // &
-                             ' in element '// trim(String(NewElementID)))
-            end if
-
-            ! Calculate new particle shape function values
-            call SetParticleShapeFunctionData_ImplicitIter(Particles(IParticle), IParticle)
-
-          end do
-
-        end subroutine UpdateParticlePos_ImplicitIter
+        !    ElementID = ElementIDArray(IParticle)
+        !
+        !    ! Calculate particle displacements from nodal displacements
+        !    call CalcParticleDisplacements(IParticle, ElementID) !
+        !
+        !    GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
+        !
+        !    ! Calculate new particle global positions
+        !    GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:) !_ImplicitIter
+        !
+        !   if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
+        !     if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
+        !         GlobPosArray(IParticle,1) = GlopPos0(1)
+        !         GlobPosArray(IParticle,3) = GlopPos0(3)
+        !     end if
+        !     if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
+        !        GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
+        !     end if
+        !   end if ! ApplyFixParticlesK0
+        !
+        !  IsInside = IsInBoundingBox(GlobPosArray_ImplicitIter(IParticle,:))
+        !  ! Check whether particle moved outside the mesh
+        !  if (.not.IsInside ) then
+        !     if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
+        !                    ' from element '// trim(String(ElementID)) // ' lies '// &
+        !                    'outside the mesh. '// &
+        !                    'X, Y, Z ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2))) // trim(String(GlobPosArray(IParticle,3))) )
+        !     if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
+        !                    ' from element '// trim(String(ElementID)) // ' lies '// &
+        !                    'outside the mesh. '// &
+        !                    'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
+        !  end if
+        !  
+        !    ! Determine new local particle position from global position
+        !    call DetermineLocPosIterative_ImplicitIter(IParticle, &
+        !                         ElementID, GlopPos0, &
+        !                         Particles(IParticle)%LocPos, &
+        !                         NewElementID, LocPos, Success)
+        !
+        !    ! Correct if local particle position is outside element due to rounding
+        !    !if (LocPos(1)<0.0) then
+        !    !    LocPos(1) = 0.0
+        !    !    
+        !    !    if (CalParams%OutputDebugData) then
+        !    !      call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+        !    !                                                    trim(String(NewElementID)) //' '// &
+        !    !                                                    trim(String(LocPos(1))))
+        !    !    end if
+        !    !end if
+        !    !
+        !    !if (LocPos(2)<0.0) then
+        !    !    LocPos(2) = 0.0
+        !    !    
+        !    !    if (CalParams%OutputDebugData) then
+        !    !      call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+        !    !                                                    trim(String(NewElementID)) //' '// &
+        !    !                                                    trim(String(LocPos(2))))
+        !    !    end if
+        !    !end if
+        !    !
+        !    !if (NDIM == 3) then ! only for 3D case
+        !    !  if (LocPos(3)<0.0) then
+        !    !    LocPos(3) = 0.0
+        !    !    
+        !    !    if (CalParams%OutputDebugData) then
+        !    !      call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+        !    !                                                    trim(String(NewElementID)) //' '// &
+        !    !                                                    trim(String(LocPos(3))))
+        !    !    end if
+        !    !  end if  
+        !    !end if
+        !
+        !   !sumLocPos = 0.0
+        !   !do I = 1, NVECTOR
+        !   !  sumLocPos = sumLocPos + LocPos(I)
+        !   !end do
+        !   !
+        !   !if (sumLocPos > 1.0) then
+        !   !  diff = sumLocPos - 1.0
+        !   !  do I = 1, NVECTOR
+        !   !    LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+        !   !  end do
+        !   !end if
+        !    
+        !    ! Update Particle%LocPos, Particle%ElementID and EleParticles array
+        !    if (Success) then
+        !      Particles(IParticle)%LocPos = LocPos !_ImplicitIter
+        !      call SetParticleElementID(IParticle, IParticle, NewElementID) !--> updtes EleParticles !_ImplicitIter
+        !
+        !    else ! Error in determining the new location of the particle
+        !      call GiveError('  Error in determining the local ' // &
+        !                     'coordinate of particle '// trim(String(IParticle)) // &
+        !                     ' in element '// trim(String(NewElementID)))
+        !    end if
+        !
+        !    ! Calculate new particle shape function values
+        !    call SetParticleShapeFunctionData(Particles(IParticle), IParticle) !_ImplicitIter
+        !
+        !  end do
+        !
+        !end subroutine UpdateParticlePos_ImplicitIter
         
         
         !-----------------------------------------------------------------------------------
         !-----------------------------------------------------------------------------------
         
         
-        subroutine UpdateParticlePos_DirDeriv_ImplicitIter()
-        !**********************************************************************
+        !subroutine UpdateParticlePos_DirDeriv_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!    Function:  Updates the location of particles. Connected to this task are:
+        !!
+        !!               - calculate particle displacements from nodal displacements
+        !!               - calculate new particle global position
+        !!               - determine into which elements the particles moved
+        !!               - calculate new particle local position
+        !!               - update particle shape values
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Updates the location of particles. Connected to this task are:
+        !implicit none
         !
-        !               - calculate particle displacements from nodal displacements
-        !               - calculate new particle global position
-        !               - determine into which elements the particles moved
-        !               - calculate new particle local position
-        !               - update particle shape values
+        !  integer(INTEGER_TYPE) :: I, IParticle, ElementID, NewElementID
+        !  real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
+        !  logical :: Success, IsInside
+        !  real(REAL_TYPE) :: diff, sumLocPos
         !
-        ! Implemented in the frame of the MPM project.
+        !   do IParticle = 1, Counters%NParticles ! Loop over particles
         !
-        !**********************************************************************
-
-        implicit none
-
-          integer(INTEGER_TYPE) :: I, IParticle, ElementID, NewElementID
-          real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
-          logical :: Success, IsInside
-          real(REAL_TYPE) :: diff, sumLocPos
-
-           do IParticle = 1, Counters%NParticles ! Loop over particles
-
-            ElementID = ElementIDArray(IParticle)
-
-            ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements_DirDeriv_ImplicitIter(IParticle, ElementID)
-
-            GlopPos0 =  GlobPosArray_ImplicitIter(IParticle,:)  ! store the initial global position of the particle
-
-            ! Calculate new particle global positions
-            GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) = GlobPosArray_ImplicitIter(IParticle,:) + UStepArray(IParticle,:)
-
-           if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
-             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
-                 GlobPosArray(IParticle,1) = GlopPos0(1)
-                 GlobPosArray(IParticle,3) = GlopPos0(3)
-             end if
-             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
-                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
-             end if
-           end if ! ApplyFixParticlesK0
-
-          IsInside = IsInBoundingBox( GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) )
-          ! Check whether particle moved outside the mesh
-          if (.not.IsInside ) then
-             if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
-                            ' from element '// trim(String(ElementID)) // ' lies '// &
-                            'outside the mesh. '// &
-                            'X, Y, Z ='// trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,1))) // trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,2))) // trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,3))) )
-             if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
-                            ' from element '// trim(String(ElementID)) // ' lies '// &
-                            'outside the mesh. '// &
-                            'X, Y ='// trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,1))) // trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,2)))  )
-          end if
-          
-            ! Determine new local particle position from global position
-            call DetermineLocPosIterative_DirDeriv_ImplicitIter(IParticle, &
-                                 ElementID, GlopPos0, &
-                                 Particles(IParticle)%LocPos_ImplicitIter, & !Particles(IParticle)%LocPos_ImplicitIter
-                                 NewElementID, LocPos, Success)
-        
-            ! Correct if local particle position is outside element due to rounding
-           ! if (LocPos(1)<0.0) then
-           !     LocPos(1) = 0.0
-           !     
-           !     if (CalParams%OutputDebugData) then
-           !       call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-           !                                                     trim(String(NewElementID)) //' '// &
-           !                                                     trim(String(LocPos(1))))
-           !     end if
-           ! end if
-           ! 
-           ! if (LocPos(2)<0.0) then
-           !     LocPos(2) = 0.0
-           !     
-           !     if (CalParams%OutputDebugData) then
-           !       call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-           !                                                     trim(String(NewElementID)) //' '// &
-           !                                                     trim(String(LocPos(2))))
-           !     end if
-           ! end if
-           ! 
-           ! if (NDIM == 3) then ! only for 3D case
-           !   if (LocPos(3)<0.0) then
-           !     LocPos(3) = 0.0
-           !     
-           !     if (CalParams%OutputDebugData) then
-           !       call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-           !                                                     trim(String(NewElementID)) //' '// &
-           !                                                     trim(String(LocPos(3))))
-           !     end if
-           !   end if  
-           ! end if
-           !
-           !sumLocPos = 0.0
-           !do I = 1, NVECTOR
-           !  sumLocPos = sumLocPos + LocPos(I)
-           !end do
-           !
-           !if (sumLocPos > 1.0) then
-           !  diff = sumLocPos - 1.0
-           !  do I = 1, NVECTOR
-           !    LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
-           !  end do
-           !end if
-            
-            ! Update Particle%LocPos, Particle%ElementID and EleParticles array
-            if (Success) then
-              Particles(IParticle)%LocPos_DirDeriv_ImplicitIter = LocPos
-              call SetParticleElementID_DirDeriv_ImplicitIter(IParticle, IParticle, NewElementID) !--> updtes EleParticles
-
-            else ! Error in determining the new location of the particle
-              call GiveError('  Error in determining the local ' // &
-                             'coordinate of particle '// trim(String(IParticle)) // &
-                             ' in element '// trim(String(NewElementID)))
-            end if
-
-            ! Calculate new particle shape function values
-            call SetParticleShapeFunctionData_DirDeriv_ImplicitIter(Particles(IParticle), IParticle)
-
-          end do
-
-        end subroutine UpdateParticlePos_DirDeriv_ImplicitIter
+        !    ElementID = ElementIDArray(IParticle)
+        !
+        !    ! Calculate particle displacements from nodal displacements
+        !    call CalcParticleDisplacements_DirDeriv_ImplicitIter(IParticle, ElementID)
+        !
+        !    GlopPos0 =  GlobPosArray_ImplicitIter(IParticle,:)  ! store the initial global position of the particle
+        !
+        !    ! Calculate new particle global positions
+        !    GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:) !_ImplicitIter
+        !
+        !   if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
+        !     if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
+        !         GlobPosArray(IParticle,1) = GlopPos0(1)
+        !         GlobPosArray(IParticle,3) = GlopPos0(3)
+        !     end if
+        !     if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
+        !        GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
+        !     end if
+        !   end if ! ApplyFixParticlesK0
+        !
+        !  IsInside = IsInBoundingBox( GlobPosArray_DirDeriv_ImplicitIter(IParticle,:) )
+        !  ! Check whether particle moved outside the mesh
+        !  if (.not.IsInside ) then
+        !     if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
+        !                    ' from element '// trim(String(ElementID)) // ' lies '// &
+        !                    'outside the mesh. '// &
+        !                    'X, Y, Z ='// trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,1))) // trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,2))) // trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,3))) )
+        !     if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
+        !                    ' from element '// trim(String(ElementID)) // ' lies '// &
+        !                    'outside the mesh. '// &
+        !                    'X, Y ='// trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,1))) // trim(String(GlobPosArray_DirDeriv_ImplicitIter(IParticle,2)))  )
+        !  end if
+        !  
+        !    ! Determine new local particle position from global position
+        !    call DetermineLocPosIterative_DirDeriv_ImplicitIter(IParticle, &
+        !                         ElementID, GlopPos0, &
+        !                         Particles(IParticle)%LocPos_ImplicitIter, & !Particles(IParticle)%LocPos_ImplicitIter
+        !                         NewElementID, LocPos, Success)
+        !
+        !    ! Correct if local particle position is outside element due to rounding
+        !   ! if (LocPos(1)<0.0) then
+        !   !     LocPos(1) = 0.0
+        !   !     
+        !   !     if (CalParams%OutputDebugData) then
+        !   !       call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+        !   !                                                     trim(String(NewElementID)) //' '// &
+        !   !                                                     trim(String(LocPos(1))))
+        !   !     end if
+        !   ! end if
+        !   ! 
+        !   ! if (LocPos(2)<0.0) then
+        !   !     LocPos(2) = 0.0
+        !   !     
+        !   !     if (CalParams%OutputDebugData) then
+        !   !       call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+        !   !                                                     trim(String(NewElementID)) //' '// &
+        !   !                                                     trim(String(LocPos(2))))
+        !   !     end if
+        !   ! end if
+        !   ! 
+        !   ! if (NDIM == 3) then ! only for 3D case
+        !   !   if (LocPos(3)<0.0) then
+        !   !     LocPos(3) = 0.0
+        !   !     
+        !   !     if (CalParams%OutputDebugData) then
+        !   !       call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+        !   !                                                     trim(String(NewElementID)) //' '// &
+        !   !                                                     trim(String(LocPos(3))))
+        !   !     end if
+        !   !   end if  
+        !   ! end if
+        !   !
+        !   !sumLocPos = 0.0
+        !   !do I = 1, NVECTOR
+        !   !  sumLocPos = sumLocPos + LocPos(I)
+        !   !end do
+        !   !
+        !   !if (sumLocPos > 1.0) then
+        !   !  diff = sumLocPos - 1.0
+        !   !  do I = 1, NVECTOR
+        !   !    LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+        !   !  end do
+        !   !end if
+        !    
+        !    ! Update Particle%LocPos, Particle%ElementID and EleParticles array
+        !    if (Success) then
+        !      Particles(IParticle)%LocPos_DirDeriv_ImplicitIter = LocPos
+        !      call SetParticleElementID_DirDeriv_ImplicitIter(IParticle, IParticle, NewElementID) !--> updtes EleParticles
+        !
+        !    else ! Error in determining the new location of the particle
+        !      call GiveError('  Error in determining the local ' // &
+        !                     'coordinate of particle '// trim(String(IParticle)) // &
+        !                     ' in element '// trim(String(NewElementID)))
+        !    end if
+        !
+        !    ! Calculate new particle shape function values
+        !    call SetParticleShapeFunctionData_DirDeriv_ImplicitIter(Particles(IParticle), IParticle)
+        !
+        !  end do
+        !
+        !end subroutine UpdateParticlePos_DirDeriv_ImplicitIter
         
         
         !-----------------------------------------------------------------------------------
@@ -872,7 +872,7 @@
                     DofID = ReducedDof(NodeID) + IDof
                       ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
                                                    ShapeValuesArray(ParticleIndex,INode) * &
-                                                   IncrementalDisplacementSoil(DofID,iEntity)
+                                                   IncrementalDisplacementSoil_ImplicitIter(DofID,iEntity)
                   enddo
                 enddo
               else
@@ -920,88 +920,88 @@
         !-----------------------------------------------------------------------------------
         
         
-        subroutine CalcParticleDisplacements_DirDeriv_ImplicitIter(ParticleIndex, ElementID)
-        !**********************************************************************
+        !subroutine CalcParticleDisplacements_DirDeriv_ImplicitIter(ParticleIndex, ElementID)
+        !!**********************************************************************
+        !!
+        !!    Function:  Calculate particle displacements from nodal displacements
+        !!               for particle at ParticleIndex in Particles array
+        !!
+        !!     ParticleIndex : Index of the considered particle in the particle house-keeping arrays
+        !!     ElementID : ID of the element the particle is located in
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Calculate particle displacements from nodal displacements
-        !               for particle at ParticleIndex in Particles array
+        !implicit none
         !
-        !     ParticleIndex : Index of the considered particle in the particle house-keeping arrays
-        !     ElementID : ID of the element the particle is located in
+        !  integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
         !
-        ! Implemented in the frame of the MPM project.
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: IDof, INode, iEntity
+        !  integer(INTEGER_TYPE) :: NodeID, DofID
+        !  real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
         !
-        !**********************************************************************
-
-        implicit none
-
-          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: IDof, INode, iEntity
-          integer(INTEGER_TYPE) :: NodeID, DofID
-          real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
-
-            !!get particle entity ID
-            if (CalParams%ApplyContactAlgorithm) then
-              iEntity = EntityIDArray(ParticleIndex) 
-            else
-              iEntity = 1
-            end if
-
-            ParticleDisplacement = 0.0
-
-            if ((NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then
-              if (.not.CalParams%SkipConvection) then
-                do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID))
-                    DofID = ReducedDof(NodeID) + IDof
-                      ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
-                                                   ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * &
-                                                   IncrementalDisplacementSoil_DirDeriv_ImplicitIter(DofID,iEntity)
-                  enddo
-                enddo
-              else
-                do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID))
-                    DofID = ReducedDof(NodeID) + IDof
-                    ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
-                                                 ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * &
-                                                 AccumulatedIncDisplacementSoil(DofID,iEntity)
-                  enddo
-                enddo
-              endif
-            endif
-
-            if ((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid).and. &
-                         (.not.(NFORMULATION==1))) then !Material Point LIQUID
-              do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                  NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
-                  DofID = ReducedDof(NodeID) + IDof
-                    
-                  ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
-                                               ShapeValuesArray_ImplicitIter(ParticleIndex,INode) *  &
-                                               IncrementalDisplacementWater(DofID,iEntity)
-                end do
-              end do
-           end if
-
-            ! Incremental particle displacement
-            UStepArray(ParticleIndex,:) = ParticleDisplacement
-            
-            ! I commented these for now as we need to find the converged impicit solution 
-            ! and then add it to UArray
-            
-            ! Phase particle displacement
-            !UPhaseArray(ParticleIndex,:) = UPhaseArray(ParticleIndex,:) + ParticleDisplacement
-            !
-            !! Total particle displacement
-            !UArray(ParticleIndex,:) =  UArray(ParticleIndex,:) + ParticleDisplacement
-            
-        end subroutine CalcParticleDisplacements_DirDeriv_ImplicitIter
+        !    !!get particle entity ID
+        !    if (CalParams%ApplyContactAlgorithm) then
+        !      iEntity = EntityIDArray(ParticleIndex) 
+        !    else
+        !      iEntity = 1
+        !    end if
+        !
+        !    ParticleDisplacement = 0.0
+        !
+        !    if ((NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then
+        !      if (.not.CalParams%SkipConvection) then
+        !        do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+        !          do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+        !            NodeID = iabs(ElementConnectivities(INode, ElementID))
+        !            DofID = ReducedDof(NodeID) + IDof
+        !              ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+        !                                           ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * &
+        !                                           IncrementalDisplacementSoil_DirDeriv_ImplicitIter(DofID,iEntity)
+        !          enddo
+        !        enddo
+        !      else
+        !        do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+        !          do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+        !            NodeID = iabs(ElementConnectivities(INode, ElementID))
+        !            DofID = ReducedDof(NodeID) + IDof
+        !            ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+        !                                         ShapeValuesArray_ImplicitIter(ParticleIndex,INode) * &
+        !                                         AccumulatedIncDisplacementSoil(DofID,iEntity)
+        !          enddo
+        !        enddo
+        !      endif
+        !    endif
+        !
+        !    if ((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid).and. &
+        !                 (.not.(NFORMULATION==1))) then !Material Point LIQUID
+        !      do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
+        !        do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
+        !          NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+        !          DofID = ReducedDof(NodeID) + IDof
+        !            
+        !          ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
+        !                                       ShapeValuesArray_ImplicitIter(ParticleIndex,INode) *  &
+        !                                       IncrementalDisplacementWater(DofID,iEntity)
+        !        end do
+        !      end do
+        !   end if
+        !
+        !    ! Incremental particle displacement
+        !    UStepArray(ParticleIndex,:) = ParticleDisplacement
+        !    
+        !    ! I commented these for now as we need to find the converged impicit solution 
+        !    ! and then add it to UArray
+        !    
+        !    ! Phase particle displacement
+        !    !UPhaseArray(ParticleIndex,:) = UPhaseArray(ParticleIndex,:) + ParticleDisplacement
+        !    !
+        !    !! Total particle displacement
+        !    !UArray(ParticleIndex,:) =  UArray(ParticleIndex,:) + ParticleDisplacement
+        !    
+        !end subroutine CalcParticleDisplacements_DirDeriv_ImplicitIter
         
         
         
@@ -1238,7 +1238,7 @@
           Success = .true.
             
           ! Try determining the local particle coordinates from the global ones
-          call GetLocalCoordinates(GlobPosArray_ImplicitIter(ParticleID,:), &
+          call GetLocalCoordinates(GlobPosArray(ParticleID,:), & !_ImplicitIter
                                    OldElementID, &
                                    ELEMENTNODES, Counters%NEl,  &
                                    Counters%NodTot, NDIM, &
@@ -1248,7 +1248,7 @@
                                    OutsideElement, Success)
            if (OutsideElement) then ! Particle moved to another element
            ! Determine new element and new local position of the particle
-            call DetermineGlobPosElement(GlobPosArray_ImplicitIter(ParticleID,:), &
+            call DetermineGlobPosElement(GlobPosArray(ParticleID,:), & !_ImplicitIter
                                          OldElementID, &
                                          ELEMENTNODES,  &
                                          Counters%NEl,  &
@@ -1273,7 +1273,7 @@
               if (.not.Fixed) then
                 call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
                                ' in element '  // trim(String(OldElementID)) // &
-                               ' at position ' // trim(String(GlobPosArray_ImplicitIter(ParticleID,:),1,NVECTOR)) // &
+                               ' at position ' // trim(String(GlobPosArray(ParticleID,:),1,NVECTOR)) // &
                                ' in time step '// trim(String(CalParams%TimeStep)) )
               end if
             end if
@@ -1286,94 +1286,94 @@
                        
         !-------------------------------------------------------------------------------------               
         !-------------------------------------------------------------------------------------
-        subroutine DetermineLocPosIterative_DirDeriv_ImplicitIter(ParticleID, OldElementID, GlobPos0, &
-                       OldLocPos, NewElementID, NewLocPos, Success)
-        !**********************************************************************
+        !subroutine DetermineLocPosIterative_DirDeriv_ImplicitIter(ParticleID, OldElementID, GlobPos0, &
+        !               OldLocPos, NewElementID, NewLocPos, Success)
+        !!**********************************************************************
+        !!
+        !!    Function:  Determine local coordinates and, eventually, the
+        !!               element, that belong to GlobPos.
+        !!
+        !!               Two recursive algorithms have been implemented:
+        !!               Version 1 checks whether GlobPos lies inside elements surrounding one of the
+        !!               corner nodes of NewElementID. If no element contains GlobPos the element
+        !!               whose centrepoint is closest to GlobPos is checked ... .
+        !!               Version 2 checks whether GlobPos lies inside NewElementID. If not, the element
+        !!               adjacent to the side, through which GlobPos has left NewElementID is checked ... .
+        !!               NOTE: Using Version 2 does not require to check whether GlobPos lies inside the
+        !!               original element of the considered particle!
+        !!               Version 2 seems to be faster as less elements are checked. Does it always work?
+        !!
+        !!     ParticleID : ID of the particle which moved to another element
+        !!     OldElementID : Current ID of the element the particle was located in
+        !!     OldLocPos : Current local position of the particle
+        !!
+        !! O   NewElementID : ID of the element, the particle moved into
+        !! O   NewLocPos : New local coordinates of the particle with GlobPos
+        !! O   Success : True, if the local coordinate and element could be determined
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Determine local coordinates and, eventually, the
-        !               element, that belong to GlobPos.
+        !implicit none
         !
-        !               Two recursive algorithms have been implemented:
-        !               Version 1 checks whether GlobPos lies inside elements surrounding one of the
-        !               corner nodes of NewElementID. If no element contains GlobPos the element
-        !               whose centrepoint is closest to GlobPos is checked ... .
-        !               Version 2 checks whether GlobPos lies inside NewElementID. If not, the element
-        !               adjacent to the side, through which GlobPos has left NewElementID is checked ... .
-        !               NOTE: Using Version 2 does not require to check whether GlobPos lies inside the
-        !               original element of the considered particle!
-        !               Version 2 seems to be faster as less elements are checked. Does it always work?
+        !  integer(INTEGER_TYPE), intent(in) :: ParticleID
+        !  integer(INTEGER_TYPE), intent(in) :: OldElementID
+        !  real(REAL_TYPE), dimension(:), intent(in) :: OldLocPos
+        !  real(REAL_TYPE), dimension(:), intent(in) :: GlobPos0
+        !  integer(INTEGER_TYPE), intent(out) :: NewElementID
+        !  real(REAL_TYPE), dimension(NVECTOR), intent(out) :: NewLocPos
+        !  logical, intent(out) :: Success
+        !  ! Local variables
+        !  logical :: OutsideElement, Fixed
+        !  
+        !  NewElementID = OldElementID
+        !  NewLocPos = OldLocPos
+        !  Success = .true.
+        !    
+        !  ! Try determining the local particle coordinates from the global ones
+        !  call GetLocalCoordinates(GlobPosArray_DirDeriv_ImplicitIter(ParticleID,:), &
+        !                           OldElementID, &
+        !                           ELEMENTNODES, Counters%NEl,  &
+        !                           Counters%NodTot, NDIM, &
+        !                           NodalCoordinates, &
+        !                           ElementConnectivities, &
+        !                           NewLocPos, &
+        !                           OutsideElement, Success)
+        !   if (OutsideElement) then ! Particle moved to another element
+        !   ! Determine new element and new local position of the particle
+        !    call DetermineGlobPosElement(GlobPosArray_DirDeriv_ImplicitIter(ParticleID,:), &
+        !                                 OldElementID, &
+        !                                 ELEMENTNODES,  &
+        !                                 Counters%NEl,  &
+        !                                 Counters%NodTot,  &
+        !                                 NDIM, &
+        !                                 NodalCoordinates,  &
+        !                                 ElementConnectivities, &
+        !                                 NewElementID, &
+        !                                 NewLocPos, &
+        !                                 Success)
+        !    if (Success) then
+        !      if (CalParams%OutputDebugData) then
+        !      call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+        !                          ' moved from '  // trim(String(OldElementID))      // &
+        !                          ' to '          // trim(String(NewElementID))      // &
+        !                          ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+        !                          'TimeStep '     // trim(String(Calparams%Timestep))  )
+        !      end if
+        !    else ! New element could not be found
+        !      Fixed = .false.
         !
-        !     ParticleID : ID of the particle which moved to another element
-        !     OldElementID : Current ID of the element the particle was located in
-        !     OldLocPos : Current local position of the particle
+        !      if (.not.Fixed) then
+        !        call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
+        !                       ' in element '  // trim(String(OldElementID)) // &
+        !                       ' at position ' // trim(String(GlobPosArray(ParticleID,:),1,NVECTOR)) // & !_ImplicitIter
+        !                       ' in time step '// trim(String(CalParams%TimeStep)) )
+        !      end if
+        !    end if
+        !  end if
         !
-        ! O   NewElementID : ID of the element, the particle moved into
-        ! O   NewLocPos : New local coordinates of the particle with GlobPos
-        ! O   Success : True, if the local coordinate and element could be determined
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-
-          integer(INTEGER_TYPE), intent(in) :: ParticleID
-          integer(INTEGER_TYPE), intent(in) :: OldElementID
-          real(REAL_TYPE), dimension(:), intent(in) :: OldLocPos
-          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos0
-          integer(INTEGER_TYPE), intent(out) :: NewElementID
-          real(REAL_TYPE), dimension(NVECTOR), intent(out) :: NewLocPos
-          logical, intent(out) :: Success
-          ! Local variables
-          logical :: OutsideElement, Fixed
-          
-          NewElementID = OldElementID
-          NewLocPos = OldLocPos
-          Success = .true.
-            
-          ! Try determining the local particle coordinates from the global ones
-          call GetLocalCoordinates(GlobPosArray_DirDeriv_ImplicitIter(ParticleID,:), &
-                                   OldElementID, &
-                                   ELEMENTNODES, Counters%NEl,  &
-                                   Counters%NodTot, NDIM, &
-                                   NodalCoordinates, &
-                                   ElementConnectivities, &
-                                   NewLocPos, &
-                                   OutsideElement, Success)
-           if (OutsideElement) then ! Particle moved to another element
-           ! Determine new element and new local position of the particle
-            call DetermineGlobPosElement(GlobPosArray_DirDeriv_ImplicitIter(ParticleID,:), &
-                                         OldElementID, &
-                                         ELEMENTNODES,  &
-                                         Counters%NEl,  &
-                                         Counters%NodTot,  &
-                                         NDIM, &
-                                         NodalCoordinates,  &
-                                         ElementConnectivities, &
-                                         NewElementID, &
-                                         NewLocPos, &
-                                         Success)
-            if (Success) then
-              if (CalParams%OutputDebugData) then
-              call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
-                                  ' moved from '  // trim(String(OldElementID))      // &
-                                  ' to '          // trim(String(NewElementID))      // &
-                                  ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
-                                  'TimeStep '     // trim(String(Calparams%Timestep))  )
-              end if
-            else ! New element could not be found
-              Fixed = .false.
-
-              if (.not.Fixed) then
-                call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
-                               ' in element '  // trim(String(OldElementID)) // &
-                               ' at position ' // trim(String(GlobPosArray_ImplicitIter(ParticleID,:),1,NVECTOR)) // &
-                               ' in time step '// trim(String(CalParams%TimeStep)) )
-              end if
-            end if
-          end if
-
-        end subroutine DetermineLocPosIterative_DirDeriv_ImplicitIter               
+        !end subroutine DetermineLocPosIterative_DirDeriv_ImplicitIter               
                        
                        
                        
@@ -1429,99 +1429,99 @@
         
         !------------------------------------------------------------------------------
         
-        subroutine UpdateParticleHouseKeeping_ImplicitIter()
-        !**********************************************************************
+        !subroutine UpdateParticleHouseKeeping_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!    Function:  Update the particle house-keeping lists (particle-element assignment)
+        !!               and element switches (activation of newly filled and deactivation of 
+        !!               empty element).
+        !!               NOTE: EleParticles and Particle%ElementID are already updated!!
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Update the particle house-keeping lists (particle-element assignment)
-        !               and element switches (activation of newly filled and deactivation of 
-        !               empty element).
-        !               NOTE: EleParticles and Particle%ElementID are already updated!!
+        !implicit none
         !
-        ! Implemented in the frame of the MPM project.
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
         !
-        !**********************************************************************
-        
-        implicit none
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
-
-          NPartEle_ImplicitIter = 0
-          call IHpSortKind8(EleParticles_ImplicitIter, Counters%NParticles)
-          ! Count the particles in element, update NPartEle
-          do IParticle = 1, Counters%NParticles ! Loop over all particles
-            IElement = GetElementIDFromList_ImplicitIter(IParticle) ! Determine the element that IParticle is located in ! --> uses EleParticles to update rest of parameters
-            NPartEle_ImplicitIter(IElement) = NPartEle_ImplicitIter(IElement) + 1 ! Increase the particle counter for IElement
-          end do
-
-
-          ! Update the helper array and element switches
-          FirstParticle = 1
-          counters%NAEl_ImplicitIter = 0
-          do IElement = 1, Counters%NEl ! Loop over all elements
-            if (NPartEle_ImplicitIter(IElement)==0) then ! Empty element
-              EleParticlesHelp_ImplicitIter(IElement) = -1
-
-              IsActiveElement_ImplicitIter(IElement) = .false. ! Switch off the element
-            else  ! Element contains particles
-              counters%NAEl_ImplicitIter = counters%NAEl_ImplicitIter + 1
-              EleParticlesHelp_ImplicitIter(IElement) = FirstParticle
-              FirstParticle = FirstParticle + NPartEle_ImplicitIter(IElement)
-
-              IsActiveElement_ImplicitIter(IElement) = .true. ! Switch on the element
-            end if
-          end do
-
-        end subroutine UpdateParticleHouseKeeping_ImplicitIter
-        
-        !------------------------------------------------------------------------------
+        !  NPartEle_ImplicitIter = 0
+        !  call IHpSortKind8(EleParticles_ImplicitIter, Counters%NParticles)
+        !  ! Count the particles in element, update NPartEle
+        !  do IParticle = 1, Counters%NParticles ! Loop over all particles
+        !    IElement = GetElementIDFromList_ImplicitIter(IParticle) ! Determine the element that IParticle is located in ! --> uses EleParticles to update rest of parameters
+        !    NPartEle_ImplicitIter(IElement) = NPartEle_ImplicitIter(IElement) + 1 ! Increase the particle counter for IElement
+        !  end do
+        !
+        !
+        !  ! Update the helper array and element switches
+        !  FirstParticle = 1
+        !  counters%NAEl_ImplicitIter = 0
+        !  do IElement = 1, Counters%NEl ! Loop over all elements
+        !    if (NPartEle_ImplicitIter(IElement)==0) then ! Empty element
+        !      EleParticlesHelp_ImplicitIter(IElement) = -1
+        !
+        !      IsActiveElement_ImplicitIter(IElement) = .false. ! Switch off the element
+        !    else  ! Element contains particles
+        !      counters%NAEl_ImplicitIter = counters%NAEl_ImplicitIter + 1
+        !      EleParticlesHelp_ImplicitIter(IElement) = FirstParticle
+        !      FirstParticle = FirstParticle + NPartEle_ImplicitIter(IElement)
+        !
+        !      IsActiveElement_ImplicitIter(IElement) = .true. ! Switch on the element
+        !    end if
+        !  end do
+        !
+        !end subroutine UpdateParticleHouseKeeping_ImplicitIter
         
         !------------------------------------------------------------------------------
         
-        subroutine UpdateParticleHouseKeeping_DirDeriv_ImplicitIter()
-        !**********************************************************************
-        !
-        !    Function:  Update the particle house-keeping lists (particle-element assignment)
-        !               and element switches (activation of newly filled and deactivation of 
-        !               empty element).
-        !               NOTE: EleParticles and Particle%ElementID are already updated!!
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
+        !------------------------------------------------------------------------------
         
-        implicit none
-
-          ! Local variables
-          integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
-
-          NPartEle_DirDeriv_ImplicitIter = 0
-          call IHpSortKind8(EleParticles_DirDeriv_ImplicitIter, Counters%NParticles)
-          ! Count the particles in element, update NPartEle
-          do IParticle = 1, Counters%NParticles ! Loop over all particles
-            IElement = GetElementIDFromList_DirDeriv_ImplicitIter(IParticle) ! Determine the element that IParticle is located in ! --> uses EleParticles to update rest of parameters
-            NPartEle_DirDeriv_ImplicitIter(IElement) = NPartEle_DirDeriv_ImplicitIter(IElement) + 1 ! Increase the particle counter for IElement
-          end do
-
-
-          ! Update the helper array and element switches
-          FirstParticle = 1
-          counters%NAEl_DirDeriv_ImplicitIter = 0
-          do IElement = 1, Counters%NEl ! Loop over all elements
-            if (NPartEle_DirDeriv_ImplicitIter(IElement)==0) then ! Empty element
-              EleParticlesHelp_DirDeriv_ImplicitIter(IElement) = -1
-              IsActiveElement_DirDeriv_ImplicitIter(IElement) = .false. ! Switch off the element
-            
-            else  ! Element contains particles
-              counters%NAEl_DirDeriv_ImplicitIter = counters%NAEl_DirDeriv_ImplicitIter + 1
-              EleParticlesHelp_DirDeriv_ImplicitIter(IElement) = FirstParticle
-              FirstParticle = FirstParticle + NPartEle_DirDeriv_ImplicitIter(IElement)
-              IsActiveElement_DirDeriv_ImplicitIter(IElement) = .true. ! Switch on the element
-            
-            end if
-          end do
-
-        end subroutine UpdateParticleHouseKeeping_DirDeriv_ImplicitIter
+        !subroutine UpdateParticleHouseKeeping_DirDeriv_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!    Function:  Update the particle house-keeping lists (particle-element assignment)
+        !!               and element switches (activation of newly filled and deactivation of 
+        !!               empty element).
+        !!               NOTE: EleParticles and Particle%ElementID are already updated!!
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
+        !
+        !  NPartEle_DirDeriv_ImplicitIter = 0
+        !  call IHpSortKind8(EleParticles_DirDeriv_ImplicitIter, Counters%NParticles)
+        !  ! Count the particles in element, update NPartEle
+        !  do IParticle = 1, Counters%NParticles ! Loop over all particles
+        !    IElement = GetElementIDFromList_DirDeriv_ImplicitIter(IParticle) ! Determine the element that IParticle is located in ! --> uses EleParticles to update rest of parameters
+        !    NPartEle_DirDeriv_ImplicitIter(IElement) = NPartEle_DirDeriv_ImplicitIter(IElement) + 1 ! Increase the particle counter for IElement
+        !  end do
+        !
+        !
+        !  ! Update the helper array and element switches
+        !  FirstParticle = 1
+        !  counters%NAEl_DirDeriv_ImplicitIter = 0
+        !  do IElement = 1, Counters%NEl ! Loop over all elements
+        !    if (NPartEle_DirDeriv_ImplicitIter(IElement)==0) then ! Empty element
+        !      EleParticlesHelp_DirDeriv_ImplicitIter(IElement) = -1
+        !      IsActiveElement_DirDeriv_ImplicitIter(IElement) = .false. ! Switch off the element
+        !    
+        !    else  ! Element contains particles
+        !      counters%NAEl_DirDeriv_ImplicitIter = counters%NAEl_DirDeriv_ImplicitIter + 1
+        !      EleParticlesHelp_DirDeriv_ImplicitIter(IElement) = FirstParticle
+        !      FirstParticle = FirstParticle + NPartEle_DirDeriv_ImplicitIter(IElement)
+        !      IsActiveElement_DirDeriv_ImplicitIter(IElement) = .true. ! Switch on the element
+        !    
+        !    end if
+        !  end do
+        !
+        !end subroutine UpdateParticleHouseKeeping_DirDeriv_ImplicitIter
         
         !------------------------------------------------------------------------------
        
@@ -1557,31 +1557,31 @@
         !--------------------------------------------------------------------------------
         
         
-        subroutine SetUpEntityElements_ImplicitIter()
-        !**********************************************************************
+        !subroutine SetUpEntityElements_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!  Function : For each entity a list of the elements containing particles belonging to this entity
+        !!
+        !!**********************************************************************
         !
-        !  Function : For each entity a list of the elements containing particles belonging to this entity
+        !implicit none
         !
-        !**********************************************************************
-        
-        implicit none
-        
-          ! local variables
-          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
-         
-          EntityElements = 0      !reset
-
-          do IAEl = 1,Counters%NAEl_ImplicitIter                                      !loop through all elements
-            IEl = ActiveElement_ImplicitIter(IAEl)
-            NElemPart = NPartEle_ImplicitIter(IEl)
-            do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl)         !Get the particle ID
-              IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
-              EntityElements_ImplicitIter(IEntity,IEl) = 1
-            end do
-          end do
-         
-        end subroutine SetUpEntityElements_ImplicitIter
+        !  ! local variables
+        !  integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
+        ! 
+        !  EntityElements = 0      !reset
+        !
+        !  do IAEl = 1,Counters%NAEl_ImplicitIter                                      !loop through all elements
+        !    IEl = ActiveElement_ImplicitIter(IAEl)
+        !    NElemPart = NPartEle_ImplicitIter(IEl)
+        !    do IPart= 1, NElemPart                                 !loop through particles in element
+        !      ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl)         !Get the particle ID
+        !      IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
+        !      EntityElements_ImplicitIter(IEntity,IEl) = 1
+        !    end do
+        !  end do
+        ! 
+        !end subroutine SetUpEntityElements_ImplicitIter
         
         
         
@@ -1590,31 +1590,31 @@
         !--------------------------------------------------------------------------------
         
         
-        subroutine SetUpEntityElements_DirDeriv_ImplicitIter()
-        !**********************************************************************
+        !subroutine SetUpEntityElements_DirDeriv_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!  Function : For each entity a list of the elements containing particles belonging to this entity
+        !!
+        !!**********************************************************************
         !
-        !  Function : For each entity a list of the elements containing particles belonging to this entity
+        !implicit none
         !
-        !**********************************************************************
-        
-        implicit none
-        
-          ! local variables
-          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
-         
-          EntityElements = 0      !reset
-
-          do IAEl = 1,Counters%NAEl_DirDeriv_ImplicitIter                                      !loop through all elements
-            IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
-            NElemPart = NPartEle_DirDeriv_ImplicitIter(IEl)
-            do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl)         !Get the particle ID
-              IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
-              EntityElements_DirDeriv_ImplicitIter(IEntity,IEl) = 1
-            end do
-          end do
-         
-        end subroutine SetUpEntityElements_DirDeriv_ImplicitIter
+        !  ! local variables
+        !  integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
+        ! 
+        !  EntityElements = 0      !reset
+        !
+        !  do IAEl = 1,Counters%NAEl_DirDeriv_ImplicitIter                                      !loop through all elements
+        !    IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
+        !    NElemPart = NPartEle_DirDeriv_ImplicitIter(IEl)
+        !    do IPart= 1, NElemPart                                 !loop through particles in element
+        !      ParticleIndex = GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl)         !Get the particle ID
+        !      IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
+        !      EntityElements_DirDeriv_ImplicitIter(IEntity,IEl) = 1
+        !    end do
+        !  end do
+        ! 
+        !end subroutine SetUpEntityElements_DirDeriv_ImplicitIter
         
         
         
@@ -1652,63 +1652,63 @@
         !--------------------------------------------------------------------------------
         
         
-        subroutine SetUpMaterialElements_ImplicitIter()
-        !**********************************************************************
+        !subroutine SetUpMaterialElements_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!  Function : For each material ID a list of the elements containing particles belonging to this material ID
+        !!
+        !!**********************************************************************
         !
-        !  Function : For each material ID a list of the elements containing particles belonging to this material ID
+        !implicit none
         !
-        !**********************************************************************
-        
-        implicit none
-        
-          ! local variables
-          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
-         
-          MaterialElements = 0      !reset
-          
-                
-          do IAEl = 1,Counters%NAEl_ImplicitIter                                      !loop through all elements
-            IEl = ActiveElement_ImplicitIter(IAEl)
-            NElemPart = NPartEle_ImplicitIter(IEl)
-            do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl)        ! Get the particle ID
-              MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
-              MaterialElements_ImplicitIter(MaterialID,IEl) = 1
-            end do
-          end do
-                  
-        end subroutine SetUpMaterialElements_ImplicitIter
+        !  ! local variables
+        !  integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
+        ! 
+        !  MaterialElements = 0      !reset
+        !  
+        !        
+        !  do IAEl = 1,Counters%NAEl_ImplicitIter                                      !loop through all elements
+        !    IEl = ActiveElement_ImplicitIter(IAEl)
+        !    NElemPart = NPartEle_ImplicitIter(IEl)
+        !    do IPart= 1, NElemPart                                 !loop through particles in element
+        !      ParticleIndex = GetParticleIndex_ImplicitIter(IPart, IEl)        ! Get the particle ID
+        !      MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
+        !      MaterialElements_ImplicitIter(MaterialID,IEl) = 1
+        !    end do
+        !  end do
+        !          
+        !end subroutine SetUpMaterialElements_ImplicitIter
         
         !--------------------------------------------------------------------------------------
         !--------------------------------------------------------------------------------
         
         
-        subroutine SetUpMaterialElements_DirDeriv_ImplicitIter()
-        !**********************************************************************
+        !subroutine SetUpMaterialElements_DirDeriv_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!  Function : For each material ID a list of the elements containing particles belonging to this material ID
+        !!
+        !!**********************************************************************
         !
-        !  Function : For each material ID a list of the elements containing particles belonging to this material ID
+        !implicit none
         !
-        !**********************************************************************
-        
-        implicit none
-        
-          ! local variables
-          integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
-         
-          MaterialElements = 0      !reset
-          
-                
-          do IAEl = 1,Counters%NAEl_DirDeriv_ImplicitIter                                      !loop through all elements
-            IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
-            NElemPart = NPartEle_DirDeriv_ImplicitIter(IEl)
-            do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl)        ! Get the particle ID
-              MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
-              MaterialElements_DirDeriv_ImplicitIter(MaterialID,IEl) = 1
-            end do
-          end do
-                  
-        end subroutine SetUpMaterialElements_DirDeriv_ImplicitIter
+        !  ! local variables
+        !  integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
+        ! 
+        !  MaterialElements = 0      !reset
+        !  
+        !        
+        !  do IAEl = 1,Counters%NAEl_DirDeriv_ImplicitIter                                      !loop through all elements
+        !    IEl = ActiveElement_DirDeriv_ImplicitIter(IAEl)
+        !    NElemPart = NPartEle_DirDeriv_ImplicitIter(IEl)
+        !    do IPart= 1, NElemPart                                 !loop through particles in element
+        !      ParticleIndex = GetParticleIndex_DirDeriv_ImplicitIter(IPart, IEl)        ! Get the particle ID
+        !      MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
+        !      MaterialElements_DirDeriv_ImplicitIter(MaterialID,IEl) = 1
+        !    end do
+        !  end do
+        !          
+        !end subroutine SetUpMaterialElements_DirDeriv_ImplicitIter
         
         !--------------------------------------------------------------------------------------
 
@@ -1746,71 +1746,71 @@
         
         !-----------------------------------------------------------------------
         
-        subroutine SetActiveElement_ImplicitIter()
-        !**********************************************************************
+        !subroutine SetActiveElement_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!  Function : To set the active elements
+        !!
+        !!  ActiveElement: Active element vector
+        !!
+        !!**********************************************************************
+        !implicit none
         !
-        !  Function : To set the active elements
+        !  integer(INTEGER_TYPE) :: IAEl, IEl, IError
         !
-        !  ActiveElement: Active element vector
+        !  if (allocated(ActiveElement_ImplicitIter) ) then
+        !    deallocate(ActiveElement_ImplicitIter, stat = IError)
+        !  end if
+        !  
+        !  allocate(ActiveElement_ImplicitIter(counters%NAEl_ImplicitIter), stat = IError)
+        !  ActiveElement_ImplicitIter = 0
         !
-        !**********************************************************************
-        implicit none
-        
-          integer(INTEGER_TYPE) :: IAEl, IEl, IError
-        
-          if (allocated(ActiveElement_ImplicitIter) ) then
-            deallocate(ActiveElement_ImplicitIter, stat = IError)
-          end if
-          
-          allocate(ActiveElement_ImplicitIter(counters%NAEl_ImplicitIter), stat = IError)
-          ActiveElement_ImplicitIter = 0
-
-          IAEl = 0
-          do IEl=1, counters%NEl
-            if (IsActiveElement_ImplicitIter(IEl)) then ! Active elements
-              IAEl = IAEl + 1
-              ActiveElement_ImplicitIter(IAEl) = IEl
-            end if
-          end do
- 
-          call DetermineActiveNodes_ImplicitIter()
-          
-        end subroutine SetActiveElement_ImplicitIter
+        !  IAEl = 0
+        !  do IEl=1, counters%NEl
+        !    if (IsActiveElement_ImplicitIter(IEl)) then ! Active elements
+        !      IAEl = IAEl + 1
+        !      ActiveElement_ImplicitIter(IAEl) = IEl
+        !    end if
+        !  end do
+        !
+        !  call DetermineActiveNodes_ImplicitIter()
+        !  
+        !end subroutine SetActiveElement_ImplicitIter
         
         !-----------------------------------------------------------------------
         
         !-----------------------------------------------------------------------
         
-        subroutine SetActiveElement_DirDeriv_ImplicitIter()
-        !**********************************************************************
+        !subroutine SetActiveElement_DirDeriv_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!  Function : To set the active elements
+        !!
+        !!  ActiveElement: Active element vector
+        !!
+        !!**********************************************************************
+        !implicit none
         !
-        !  Function : To set the active elements
+        !  integer(INTEGER_TYPE) :: IAEl, IEl, IError
         !
-        !  ActiveElement: Active element vector
+        !  if (allocated(ActiveElement_DirDeriv_ImplicitIter) ) then
+        !    deallocate(ActiveElement_DirDeriv_ImplicitIter, stat = IError)
+        !  end if
+        !  
+        !  allocate(ActiveElement_DirDeriv_ImplicitIter(counters%NAEl_DirDeriv_ImplicitIter), stat = IError)
+        !  ActiveElement_DirDeriv_ImplicitIter = 0
         !
-        !**********************************************************************
-        implicit none
-        
-          integer(INTEGER_TYPE) :: IAEl, IEl, IError
-        
-          if (allocated(ActiveElement_DirDeriv_ImplicitIter) ) then
-            deallocate(ActiveElement_DirDeriv_ImplicitIter, stat = IError)
-          end if
-          
-          allocate(ActiveElement_DirDeriv_ImplicitIter(counters%NAEl_DirDeriv_ImplicitIter), stat = IError)
-          ActiveElement_DirDeriv_ImplicitIter = 0
-
-          IAEl = 0
-          do IEl=1, counters%NEl
-            if (IsActiveElement_DirDeriv_ImplicitIter(IEl)) then ! Active elements
-              IAEl = IAEl + 1
-              ActiveElement_DirDeriv_ImplicitIter(IAEl) = IEl
-            end if
-          end do
- 
-          call DetermineActiveNodes_DirDeriv_ImplicitIter()
-          
-        end subroutine SetActiveElement_DirDeriv_ImplicitIter
+        !  IAEl = 0
+        !  do IEl=1, counters%NEl
+        !    if (IsActiveElement_DirDeriv_ImplicitIter(IEl)) then ! Active elements
+        !      IAEl = IAEl + 1
+        !      ActiveElement_DirDeriv_ImplicitIter(IAEl) = IEl
+        !    end if
+        !  end do
+        !
+        !  call DetermineActiveNodes_DirDeriv_ImplicitIter()
+        !  
+        !end subroutine SetActiveElement_DirDeriv_ImplicitIter
         
         !-----------------------------------------------------------------------
 
@@ -2180,41 +2180,41 @@
         
         !----------------------------------------------------------------------------------------
         
-        subroutine SetInitialParticleStressForNextLoadStep_ImplicitIter()
-        !**********************************************************************
+        !subroutine SetInitialParticleStressForNextLoadStep_ImplicitIter()
+        !!**********************************************************************
+        !!
+        !!    Function:  Stores particle stresses, water pressures and gas pressures
+        !!               determined in the Convective Phase
+        !!               as the initial stresses/pressures of the next load step.
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Stores particle stresses, water pressures and gas pressures
-        !               determined in the Convective Phase
-        !               as the initial stresses/pressures of the next load step.
+        !implicit none
         !
-        ! Implemented in the frame of the MPM project.
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: IAElement, IElement, IParticle, ParticleIndex
+        !  real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
         !
-        !**********************************************************************
-
-        implicit none
-        
-          ! Local variables
-          integer(INTEGER_TYPE) :: IAElement, IElement, IParticle, ParticleIndex
-          real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
-
-           do IAElement = 1, Counters%NAEl_ImplicitIter
-             IElement = ActiveElement(IAElement) !_ImplicitIter
-                do IParticle = 1, NPartEle_ImplicitIter(IElement) ! Loop over particles in IElement
-                  ParticleIndex = GetParticleIndex_ImplicitIter(IParticle, IElement)
-                  
-                  SigmaEffStep = SigmaEffArray_ImplicitIter(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:) 
-                  call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
-                  
-                  SigmaEff = SigmaEffArray_ImplicitIter(ParticleIndex,:)
-                  !SigmaEff0Array(ParticleIndex,:) = SigmaEff ! --> I commented this for now
-                  
-                  Particles(ParticleIndex)%WaterPressure0 = Particles(ParticleIndex)%WaterPressure
-                  Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
-                  
-                end do
-          end do
-     
-        end subroutine SetInitialParticleStressForNextLoadStep_ImplicitIter
+        !   do IAElement = 1, Counters%NAEl_ImplicitIter
+        !     IElement = ActiveElement(IAElement) !_ImplicitIter
+        !        do IParticle = 1, NPartEle_ImplicitIter(IElement) ! Loop over particles in IElement
+        !          ParticleIndex = GetParticleIndex_ImplicitIter(IParticle, IElement)
+        !          
+        !          SigmaEffStep = SigmaEffArray_ImplicitIter(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:) 
+        !          call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
+        !          
+        !          SigmaEff = SigmaEffArray_ImplicitIter(ParticleIndex,:)
+        !          !SigmaEff0Array(ParticleIndex,:) = SigmaEff ! --> I commented this for now
+        !          
+        !          Particles(ParticleIndex)%WaterPressure0 = Particles(ParticleIndex)%WaterPressure
+        !          Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
+        !          
+        !        end do
+        !  end do
+        !
+        !end subroutine SetInitialParticleStressForNextLoadStep_ImplicitIter
         
         
         !----------------------------------------------------------------------------------------
