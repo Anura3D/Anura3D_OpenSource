@@ -227,6 +227,7 @@
                     end if
                   end do ! loop over control points 
                   end do ! loop over patches
+                  
                   do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
                   do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
                       
@@ -507,11 +508,11 @@
                   + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
 
               !Determine interpolated density
-              call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
+              !call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
 
-              call CheckComputeUpdatedPressure(ParticleID,IElement,LiquidPressure,DoComputeUpdatedPressure)
+              !call CheckComputeUpdatedPressure(ParticleID,IElement,LiquidPressure,DoComputeUpdatedPressure)
 
-              if(DoComputeUpdatedPressure) then
+              !if(DoComputeUpdatedPressure) then
 
                   LiquidPressureIncrement = MatParams(MaterialIndex)%BulkModulusLiquid  * VolStrainIncrement
 
@@ -519,9 +520,10 @@
 
                   Particles(ParticleID)%WaterPressure = LiquidPressure
 
-                  if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
-                      Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
-                  end if
+                  ! I commented this for now because I do not need cavitation
+                  !if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
+                  !    Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
+                  !end if
 
                   !calculate bulk viscosity
                   if (CalParams%ApplyBulkViscosityDamping) then
@@ -542,7 +544,7 @@
 
                       Particles(ParticleID)%DBulkViscousPressure = ViscousDampingPressure
                   end if
-              end if
+              !end if
 
           end if ! 1 constituent
           
@@ -571,9 +573,9 @@
 
                   Particles(ParticleID)%WaterPressure = LiquidPressure
 
-                  if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
-                      Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
-                  end if
+                  !if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
+                  !    Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
+                  !end if
 
                   !--------------------------------------
                   ! Correction for MPL in LIQUID Status in which the (traction) mean pressure is set to zero
@@ -743,6 +745,8 @@
               
               ! Multipatch variables 
               integer(INTEGER_TYPE) :: IPatch_Temporary
+              
+              IPatch_Temporary = 1
 
               MaterialIndex = MaterialIDArray(ParticleID)
               

@@ -620,7 +620,7 @@ end select
                   if ( DumI == 1 ) CalParams%ApplyDetectLiquidFreeSurface = .true.
                   
                   ! set some necessary standard parameters
-                  MatParams(I)%PoissonRatio = 0.45 ! set Poisson ratio, relevant for calculation of shear modulus
+                  MatParams(I)%PoissonRatio = 0.49 ! set Poisson ratio, relevant for calculation of shear modulus
                   MatParams(I)%ShearModulus = 3.0 * MatParams(I)%BulkModulusLiquid * (1.0 - 2.0 * MatParams(I)%PoissonRatio) / &
                                                  (2 * (1.0 + MatParams(I)%PoissonRatio)) ! shear modulus computed from Poisson ratio and specified bulk modulus
                   MatParams(I)%K0Value = 1.0
@@ -629,12 +629,13 @@ end select
                   MatParams(I)%FluidThresholdDensity = MatParams(I)%DensityLiquid * &
                            ( 1 - CalParams%LiquidPressureCavitationThreshold / MatParams(I)%BulkModulusLiquid ) ! temporary if p=0 (at 1atm) 
 
-                  if ((IsMPMComputation()).and.(MatParams(I)%FluidThresholdDensity<=0.0)) then
-                    call GiveError('FluidThresholdDensity is zero or negative!'           // NEW_LINE('A') // &
-                                   '$$LIQUID_PRESSURE_CAVITATION_THRESHOLD is too large,' // &
-                                   ' or $$BULK_MODULUS_LIQUID is too small.'              // NEW_LINE('A') // &
-                                   'Note the requirement: Cavitation pressure < Bulk modulus, and change accordingly.')
-                  end if
+                  ! I am commenting this for now because I do not need cavitation
+                  !if ((IsMPMComputation()).and.(MatParams(I)%FluidThresholdDensity<=0.0)) then
+                  !  call GiveError('FluidThresholdDensity is zero or negative!'           // NEW_LINE('A') // &
+                  !                 '$$LIQUID_PRESSURE_CAVITATION_THRESHOLD is too large,' // &
+                  !                 ' or $$BULK_MODULUS_LIQUID is too small.'              // NEW_LINE('A') // &
+                  !                 'Note the requirement: Cavitation pressure < Bulk modulus, and change accordingly.')
+                  !end if
 
                   ! calculate density of the mixture (temporary solution)
                   MatParams(I)%DensitySolid = MatParams(I)%DensityLiquid

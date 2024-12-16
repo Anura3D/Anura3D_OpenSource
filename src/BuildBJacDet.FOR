@@ -66,7 +66,7 @@
       integer(INTEGER_TYPE), intent(in) :: Int
       integer(INTEGER_TYPE) :: IEl, ICon(ELEMENTNODES, Counters%NEl(IPatch))!ICon(ELEMENTNODES, Counters%NEL) 
       !real(REAL_TYPE) :: Co(Counters%NodTot, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
-      real(REAL_TYPE) :: Co(NURBS%Maximum_NControlPoints, NDIM), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
+      real(REAL_TYPE) :: Co(NURBS%Maximum_NControlPoints, NDIM, Counters%NPatches), B(NDIM, ELEMENTNODES), Det, WtN !-> Det is not an input, it is calculated in this routine 
       ! local variables
       integer(INTEGER_TYPE) :: I, J, K, NN
       real(REAL_TYPE) :: dx_dxi(NDIM, NDIM)
@@ -111,7 +111,7 @@
       ! the input into Evaluate_dx_dxi needs to be the global Icon so we might need to include the 
       
       !call Evaluate_dx_dxi(DShapeValuesArray(ParticleIndex,:,:) , Co, ICon, dx_dxi, IEl)
-      call Evaluate_dx_dxi(DShapeValuesArray, Co, ICon, dx_dxi, IEl, NDIM)
+      call Evaluate_dx_dxi(DShapeValuesArray, Co, ICon, dx_dxi, IEl, NDIM, IPatch)
         
        
       !debugger
@@ -132,7 +132,7 @@
         do K = 1, ELEMENTNODES
           NN = iCon(K, IEl)
           do J = 1, NDIM
-            call WriteInLogFile(trim(String(nn)) //' '// trim(String(co(nn,j))))
+            call WriteInLogFile(trim(String(nn)) //' '// trim(String(co(nn,j, IPatch))))
           end do
         end Do
         call GiveError('Determinant Det_dx_dxi less than zero. [subroutine FormB3()].')
@@ -192,7 +192,7 @@
         do K = 1, ELEMENTNODES
           NN = iCon(K, IEl)
           do J = 1, NDIM
-            call WriteInLogFile(trim(String(nn)) //' '// trim(String(co(nn,j))))
+            call WriteInLogFile(trim(String(nn)) //' '// trim(String(co(nn,j, IPatch))))
           end do
         end Do
         call GiveError('Determinant Det_dx_dtildexi less than zero. [subroutine FormB3()].')

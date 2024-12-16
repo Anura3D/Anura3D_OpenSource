@@ -350,7 +350,7 @@
                 
                 call DetJacob(HS, dHS, &
                     LocPos, Counters%NEl(IPatch), Counters%NodTot(IPatch), NDIM, &
-                    IElement, ElementConnectivities(:,1:Counters%NEl(IPatch), IPatch), NodalCoordinates(1:Counters%NodTot(IPatch),:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    IElement, ElementConnectivities(:,1:Counters%NEl(IPatch), IPatch), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, & !(1:Counters%NodTot(IPatch),:,IPatch)
                     dxi_dx, dtildexi_dxi, &
                     IPatch)
 
@@ -423,14 +423,14 @@
 
                 ! set material point shape function values and derivatives
                 call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, IElement, &
-                    ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                    ElementConnectivities(:,:, IPatch), NodalCoordinates, IPatch) ! -> this is the first time we call the shape functions in the code !(:,:,IPatch)
           
                 
                 ! continue here (6/14/2024)
                 ! set material point shape function values and derivatives --> Volumetric locking smoothing 
                 if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then 
                     call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, IElement, &
-                        NURBS%ElementConnectivities_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                        NURBS%ElementConnectivities_VolLockSmooth(:,:, IPatch), NodalCoordinates_VolLockSmooth, IPatch) ! -> this is the first time we call the shape functions in the code !(:,:,IPatch)
                 end if 
                 
 
@@ -634,10 +634,13 @@
                         !IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
                         !NSolidEle(101,PatchID)
                         !GaussPointLocalCoordinates_Backcalculate(WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+                        !IntegrationWeight = 4.0/NSolidEle(1,1) ! --> hardcoded to element 1
+                        
+                        
                         call GaussPointLocalCoordinates_Backcalculate(IntegrationWeight, LocPos, Maximum_NPartEle)!ELEMENTGAUSSPOINTS)
                     
                     elseif (NDIM ==3) then 
-                        IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)
+                        IntegrationWeight = 8.0/NSolidEle(ElementID,PatchID)
                     
                     end if 
                     
@@ -652,7 +655,7 @@
                 call DetJacob(HS, dHS, &
                     LocPos, Counters%NEl(PatchID), Counters%NodTot(PatchID), NDIM, &
                     ElementID, ElementConnectivities(:,1:Counters%NEl(PatchID), PatchID), & !NURBS%nel_NURBS(PatchID)
-                    NodalCoordinates(1:Counters%NodTot(PatchID),:,PatchID), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, & !(1:Counters%NodTot(PatchID),:,PatchID)
                     dxi_dx, dtildexi_dxi, &
                     PatchID)
                     
@@ -724,13 +727,13 @@
         
                 ! set material point shape function values and derivatives
                 call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex, ElementID, ElementConnectivities(:,:, PatchID), &
-                    NodalCoordinates(:,:,PatchID), PatchID) ! -> this is the first time we call the shape functions in the code
+                    NodalCoordinates, PatchID) ! -> this is the first time we call the shape functions in the code !(:,:,PatchID)
                 
                 ! continue here (6/14/2024)
                 ! set material point shape function values and derivatives --> Volumetric locking smoothing 
                 if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then 
                     call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex, ElementID, NURBS%ElementConnectivities_VolLockSmooth(:,:, IPatch), &
-                        NodalCoordinates_VolLockSmooth(:,:,IPatch), IPatch) ! -> this is the first time we call the shape functions in the code
+                        NodalCoordinates_VolLockSmooth, IPatch) ! -> this is the first time we call the shape functions in the code !(:,:,IPatch)
                 end if 
         
                 ! set material point housekeeping arrays EleParticle and EleParticleHelp
@@ -1037,7 +1040,7 @@
               ! NURBS
               ElementID = ElementIDArray(ParticleIndex)  
               PatchID = PatchIDArray(ParticleIndex)
-            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex,ElementID, ElementConnectivities(:,:, PatchID), NodalCoordinates(:,:,PatchID), PatchID) ! This needs to be done properly here!!!
+            call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex,ElementID, ElementConnectivities(:,:, PatchID), NodalCoordinates, PatchID) ! This needs to be done properly here!!! !(:,:,PatchID)
           end do
         
         end subroutine InitialiseParticleShapeFunctionData
@@ -1074,7 +1077,7 @@
               
             call SetParticleShapeFunctionData_VolLockSmooth(Particles(ParticleIndex),ParticleIndex,ElementID, &
                 NURBS%ElementConnectivities_VolLockSmooth(:,:, PatchID), &
-                NodalCoordinates_VolLockSmooth(:,:,PatchID), PatchID) ! This needs to be done properly here!!!
+                NodalCoordinates_VolLockSmooth, PatchID) ! This needs to be done properly here!!! !(:,:,PatchID)
           end do
         
         end subroutine InitialiseParticleShapeFunctionData_VolLockSmooth
@@ -2872,6 +2875,13 @@
             ! hardcoded 
             !NormalVector(1) = 0.0
             !NormalVector(2) = -1
+            
+            !NormalVector(1) = 1.0
+            !NormalVector(2) = 0.0
+            
+            !NormalVector(1) = 0.0
+            !NormalVector(2) = 1.0
+            
             !call Normal_T3( I, Coord, ILoadConLocal, NNodLOE, &  
             !                GPShapeFunctionDerivative_AllElements(ElementUponWhichLoadIsApplied,:,:,:), &
             !                NormalVector, VectorLength, ElementUponWhichLoadIsApplied)
@@ -3415,7 +3425,7 @@
         
         
               NParticles = 0
-              
+              LoadPerParticle = 0.0
               
               !do IElement_Traction = 1, nel_NURBS_Traction ! traction elements
                   
@@ -3457,7 +3467,9 @@
                               do IDim = 1, NDIM
                               
                               !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
-                              LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * -1 / real(ELEMENTBOUNDARYGAUSSPOINTS) ) !( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
+                              LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( GPShapeFunction_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode, 1, 1) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
+                              
+                              !LoadPerParticle(IDim) = LoadPerParticle(IDim) + ( SE(INode,IDim) * -1 / real(ELEMENTBOUNDARYGAUSSPOINTS) ) !( GPShapeFunctionBoundary_Xi_AllElements(ElementUponWhichLoadIsApplied, LoadedParticleCounter, INode) * SE(INode, IDim) * -1  * Factor  ) !(2/3)
                               
                               ! HARDCODED HALF * 0.5
                               ! HARDCODED MINUS ONE FOR DOWNWARDS

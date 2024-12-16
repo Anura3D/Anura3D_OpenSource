@@ -690,7 +690,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl(IPatch), Counters%NodTot(IPatch), NVECTOR, &
-              IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, &
+              IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Undeformed, & !(:,:,IPatch)
               dxi_dx, dtildexi_dxi, &
               IPatch)
           
@@ -701,7 +701,7 @@
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
               Particles(ParticleIndex)%LocPos, Counters%NEl(IPatch), Counters%NodTot(IPatch), NVECTOR, &
-              IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, &
+              IElement, ElementConnectivities(:,:, IPatch), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi_Deformed, & !(:,:,IPatch)
                   dxi_dx, dtildexi_dxi, &
               IPatch)
           
@@ -967,7 +967,7 @@
       ! Abdelrahman Alsardi : this won't work here.... ! hardcoded 
       !IntGlo = GetParticleIndex(Int, IEl, IPatch)
 
-      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch)
+      call FormB3(1, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates, B, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch) !(:,:,IPatch)
 
       if (CalParams%OutputDebugData) then
         open(TESTFILE,file='d:\tmp\testfileA.txt')
@@ -1772,7 +1772,7 @@
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               ! Moved this into the integration point loop 
-              call FormB3(1, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Weight, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)
+              call FormB3(1, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinates, B, Weight, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) !(:,:,IPatch)
 
               
               call GetMaterialData(IntGlo, ISet, XNu, BFac, SPhi, SPsi, GG, Cohec, Tens)
@@ -1953,7 +1953,7 @@
           do IParticle = 1, NElemPart
 
               ! IntGlo_Temporary hardcoded
-            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates(:,:,IPatch), B, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch)
+            call FormB3(IParticle, ElementID, ElementConnectivities(:,:, IPatch), NodalCoordinates, B, Weight, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch) !(:,:,IPatch)
   
             ParticleIndex = GetParticleIndex(IParticle, IActiveElement, IPatch) 
             ParticleShape = ShapeValuesArray(ParticleIndex,:)

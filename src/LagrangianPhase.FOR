@@ -125,6 +125,8 @@
           
           if ((CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /= 1)) then 
               call MapAccAndVeloP2NGeneralizedAlpha(LumpedMassDry)  ! --> 
+              call MapAccAndVeloP2NGeneralizedAlpha_2phase(LumpedMassDry)  
+              
           end if 
           
           
@@ -268,6 +270,8 @@
               
               
               call CalculateWaterIncrementalNodalAcceleration(RateofMomentumW) ! local coordinate system
+              
+              !AccelerationWater(50,1) = AccelerationWater(48,1)
 
               ! Rotate liquid velocity and acceleration from local to global coordinate system
               if (IS3DCYLINDRIC) then ! only 3D
@@ -978,7 +982,7 @@
                 ! Determine global ID of integration point 
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
              
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, IPatch) ! get the B-matrix once per element !(:,:,IPatch)
                 !GetParticleIndex(:,:, IPatch)
                 g = CalParams%GravityData%GAccel  !Gravity (m/s2)
             
@@ -1623,6 +1627,123 @@
           end do ! loop over patches
           
         end subroutine MapAccAndVeloP2NGeneralizedAlpha
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine MapAccAndVeloP2NGeneralizedAlpha_2phase(LumpedMassDry)
+        !**********************************************************************
+        !
+        ! Function:  to map the MP acceleration vector from MP to node 
+        !
+        !
+        !**********************************************************************
+
+        implicit none
+        
+        real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: LumpedMassDry
+          
+          ! Local variables
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape
+          real(REAL_TYPE) :: ParticleMass
+          
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn, IPatch
+
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+          !real(REAL_TYPE), dimension(NVECTOR, Counters%nEntity) :: AccMassGeneralizedAlpha, VeloMassGeneralizedAlpha
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: AccMassGeneralizedAlpha, VeloMassGeneralizedAlpha
+          
+          
+          AccMassGeneralizedAlpha = 0.0
+          VeloMassGeneralizedAlpha = 0.0
+          AccelerationWaterGeneralizedAlpha = 0.0
+          TotalVelocityWaterGeneralizedAlpha = 0.0
+         
+          NoEn = Counters%nEntity
+          
+          do IPatch = 1, Counters%NPatches
+              
+              Ni = 0
+          !if (CalParams%TimeStep == 1) RETURN ! because assume initially ParticleAcceleration = ParticleVelocity = 0.0
+       
+          do IAEl = 1, Counters%NAEl(IPatch) ! loop over all elements
+            
+            IEl = ActiveElement(IAEl, IPatch)
+            
+            do I = 1, NVECTOR
+                Ni(I, 1:ELEMENTNODES) = ReducedDof( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) ) + I
+            end do
+            
+            do IPart = 1, NPartEle(IEl, IPatch) ! loop over all material points in element
+               ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+
+              if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex) == MaterialPointTypeSolid) ) then ! Only if NumberOfLayers = 1 or SOLID Material Point
+                
+                  ParticleAcceleration = AccelerationWaterArray(ParticleIndex,:) !get particle acceleration vector
+                  ParticleVelocity = VelocityWaterArray(ParticleIndex,:) !get particle acceleration vector
+                  ParticleMass = MassArray(ParticleIndex) !get particle mass
+                  PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
+              
+                if (CalParams%ApplyContactAlgorithm) then
+                  iEntity = EntityIDArray(ParticleIndex)
+                else
+                  iEntity = 1
+                end if
+                
+                !do I=1,NVECTOR
+                !  Mom(I, :, iEntity) = Mom(I, :, iEntity) + ParticleMass * PartShape(:) * ParticleVelocity(I)
+                !end do
+                
+                ! initialize 
+                AccMassGeneralizedAlpha = 0.0
+                VeloMassGeneralizedAlpha = 0.0
+
+                ! nodal acceleration in directions from 1 to NDIM
+                do I=1,NVECTOR
+                    
+                    AccMassGeneralizedAlpha(I, :, iEntity) = AccMassGeneralizedAlpha(I, :, iEntity) &
+                            + (ParticleMass * PartShape(:) * ParticleAcceleration(I)) ! --> this value is for 1 particular node, row 1 is for X and row 2 is for Y... 
+                            !/LumpedMassDry(I, :, iEntity)
+                    VeloMassGeneralizedAlpha(I, :, iEntity) = VeloMassGeneralizedAlpha(I, :, iEntity) &
+                            + (ParticleMass * PartShape(:) * ParticleVelocity(I)) ! --> this value is for 1 particular node, row 1 is for X and row 2 is for Y... 
+                            !/LumpedMassDry(I, :, iEntity)
+                end do
+              
+              end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+            end do ! loop over material points in element
+            
+            ! do I = 1, NVECTOR
+            !  LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = LumMassX( 1:ELEMENTNODES, 1:NoEn )
+            !  Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = Mom( I, 1:ELEMENTNODES, 1:NoEn )
+            !end do
+            
+            do I = 1, NVECTOR !--> 1 corresponds to X-direction, 2 corresponds to Y-direction, 3 corresponds to Z-direction  
+                ! check the index on the LumpedMassDry vector 
+                !AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = AccelerationSoilGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + AccMassGeneralizedAlpha( I, 1:ELEMENTNODES, 1:NoEn )!/ LumpedMassDry( Ni(I, 1:ELEMENTNODES), 1:NoEn )) !this is elementwise division 
+                AccelerationWaterGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = AccelerationWaterGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + (AccMassGeneralizedAlpha( I, 1:ELEMENTNODES, 1:NoEn ) / LumpedMassDry( Ni(I, 1:ELEMENTNODES), 1:NoEn )) !this is elementwise division 
+                TotalVelocityWaterGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) = TotalVelocityWaterGeneralizedAlpha( Ni(I, 1:ELEMENTNODES), 1:NoEn ) + (VeloMassGeneralizedAlpha( I, 1:ELEMENTNODES, 1:NoEn ) / LumpedMassDry( Ni(I, 1:ELEMENTNODES), 1:NoEn ))
+            
+            end do
+          end do ! loop over Eelements
+          
+          
+          
+          end do ! loop over patches
+          
+        end subroutine MapAccAndVeloP2NGeneralizedAlpha_2phase
+        
+        
+        
+        
         
         
         
@@ -2454,24 +2575,24 @@
                   
                   ! HARDCODED------------------------------------------------------------------------------------------
                   ! Update CalParams%SoilSurfacePoint so that we  
-                  if (GlobPosArray(ParticleIndex, 1) < X3) then 
-                      CalParams%SoilSurfacePoint(2) = Y2
-                      
-                  elseif ( (GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3) ) then
-                      CalParams%SoilSurfacePoint(2) = Y2 + (((Y1-Y2)/(X4-X3))* (GlobPosArray(ParticleIndex, 1)-X3))
-                      
-                      
-                  elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
-                      CalParams%SoilSurfacePoint(2) = Y1
-                      
-                      
-                  !elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
-                  !    CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X3))
+                  !if (GlobPosArray(ParticleIndex, 1) < X3) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y2
+                  !    
+                  !elseif ( (GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3) ) then
+                  !    CalParams%SoilSurfacePoint(2) = Y2 + (((Y1-Y2)/(X4-X3))* (GlobPosArray(ParticleIndex, 1)-X3))
+                  !    
                   !    
                   !elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
                   !    CalParams%SoilSurfacePoint(2) = Y1
-                      
-                  end if
+                  !    
+                  !    
+                  !!elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
+                  !!    CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X3))
+                  !!    
+                  !!elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
+                  !!    CalParams%SoilSurfacePoint(2) = Y1
+                  !    
+                  !end if
                   
                   
                   !if (GlobPosArray(ParticleIndex, 1) < X1) then 
@@ -2785,53 +2906,155 @@
               call SurfaceNodesCoordinates(SoilSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
           end if
           
-        xMax= maxval(NodalCoordinates(:,1,IPatch_Temporary))   
-        yMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
-        if (NDIM == 3) then
-            zMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
-        end if
-        
-        if (Counters%PhreaticSurfaceNumberofSides == 0)then
-            if (NDIM == 3) then
-                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
-            elseif (NDIM == 2) then
-                allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
-            end if
-        end if
-        
-        if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides == 0))then
-            PhreaticSurfaceNodeCoordMatrix = 0.0
-            !
-        else if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides>0))then
-            !
-            If (CalParams%ApplyPartialSaturation) then
-                if (NDIM == 3) then
-                    PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
-                    PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
-                    PhreaticSurfaceNodeCoordMatrix(:,3)=zMin
-                else if (NDIM == 2) then
-                    PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
-                    PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
-                end if
-                !
-            else
-                call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
-            end if
-            
-        else if (Counters%PhreaticSurfaceNumberofSides > 0) then
-            call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, PhreaticSurfaceNodesConnectivities, Counters%PhreaticSurfaceNumberofSides)
-        end if
+        !xMax= maxval(NodalCoordinates(:,1,IPatch_Temporary))   
+        !yMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
+        !if (NDIM == 3) then
+        !    zMin= minval(NodalCoordinates(:,2,IPatch_Temporary))
+        !end if
+        !
+        !if (Counters%PhreaticSurfaceNumberofSides == 0)then
+        !    if (NDIM == 3) then
+        !        allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+        !    elseif (NDIM == 2) then
+        !        allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+        !    end if
+        !end if
+        !
+        !if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides == 0))then
+        !    PhreaticSurfaceNodeCoordMatrix = 0.0
+        !    !
+        !else if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides>0))then
+        !    !
+        !    If (CalParams%ApplyPartialSaturation) then
+        !        if (NDIM == 3) then
+        !            PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+        !            PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+        !            PhreaticSurfaceNodeCoordMatrix(:,3)=zMin
+        !        else if (NDIM == 2) then
+        !            PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+        !            PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+        !        end if
+        !        !
+        !    else
+        !        call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
+        !    end if
+        !    
+        !else if (Counters%PhreaticSurfaceNumberofSides > 0) then
+        !    call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, PhreaticSurfaceNodesConnectivities, Counters%PhreaticSurfaceNumberofSides)
+        !end if
         
         
           do ISoilLayer = 1, CalParams%NumberSoilLayers
         
               FindMaterialID = .true. ! Reset statement
               do IPatch = 1, Counters%NPatches ! loop over all patches
+                  
+                  
+                  ! I moved this here so that we can have continuous updating of the ymax 
+                  xMax= maxval(NodalCoordinates(1:Counters%NodTot(IPatch),1,IPatch))   
+                  yMin= minval(NodalCoordinates(1:Counters%NodTot(IPatch),2,IPatch))
+        
+                  if (NDIM == 3) then
+                      zMin= minval(NodalCoordinates(1:Counters%NodTot(IPatch),2,IPatch))
+                  end if
+        
+    
+                  if (Counters%PhreaticSurfaceNumberofSides == 0) then
+            
+                      if (NDIM == 3) then
+                
+                          allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+            
+                      elseif (NDIM == 2) then
+                
+                          allocate(PhreaticSurfaceNodeCoordMatrix(NDIM,NDIM))
+            
+                      end if
+        
+                  end if
+        
+        
+                  if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides == 0))then
+                      PhreaticSurfaceNodeCoordMatrix = 0.0
+            !
+        
+                  else if ((Counters%PhreaticSurfaceNumberofSides == 0).and.(Counters%SoilSurfaceNumberofSides>0))then
+            !
+            
+                      if (CalParams%ApplyPartialSaturation) then
+                
+                          if (NDIM == 3) then
+                    
+                              PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+                              PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+                              PhreaticSurfaceNodeCoordMatrix(:,3)=zMin
+                
+                          else if (NDIM == 2) then
+                    
+                              PhreaticSurfaceNodeCoordMatrix(:,1)=xMax
+                              PhreaticSurfaceNodeCoordMatrix(:,2)=yMin
+                
+                          end if
+            
+                      else
+                
+                          call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, SoilSurfaceNodesConnectivities, Counters%SoilSurfaceNumberofSides)
+            
+                      end if
+            
+        
+                  else if (Counters%PhreaticSurfaceNumberofSides > 0) then
+            
+                      call SurfaceNodesCoordinates(PhreaticSurfaceNodeCoordMatrix, PhreaticSurfaceNodesConnectivities, Counters%PhreaticSurfaceNumberofSides)
+        
+                  end if
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
                   do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
+                      
+                      IEl = ActiveElement(IAEl,IPatch)
+                      do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
               !do IAEL = 1, Counters%NAEl 
                 if(FindMaterialID) then
                   
-                  IEl = ActiveElement(IAEl,IPatch)
+                  
                   
                   ! Determine the location of IGaussPoint
                   call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
@@ -2854,20 +3077,20 @@
                   call DetermineCoordRelativeToSurface2LayersSolid_zdirection(PointCoord, Depth)
                   
                 end if
-              end do
+              !end do
               
               ! Assign new top layer depth
               TopLayerDepth = TopLayerDepth - CalParams%ThicknessSoilLayer(ISoilLayer)
               
-              end do
+              !end do
               
-          do IPatch = 1, Counters%NPatches ! loop over all patches
-          do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
-        
-          !do IAEl = 1, Counters%NAEl
-              IEl = ActiveElement(IAEl,IPatch)
+          !do IPatch = 1, Counters%NPatches ! loop over all patches
+          !do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
+          !
+          !!do IAEl = 1, Counters%NAEl
+          !    IEl = ActiveElement(IAEl,IPatch)
               
-              do IPart = 1, NPartEle(IEl,IPatch_Temporary) ! Loop over all particles in element
+              
                   ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
                   
                   ! initialize GaussPointPosition in the element
@@ -3024,7 +3247,9 @@
                      
               end do ! Loop over the particles within the element
             
-          end do ! Loop over all elements
+                  end do ! Loop over all elements
+                  
+                  deallocate(PhreaticSurfaceNodeCoordMatrix)
           
           end do ! Loop over all patches
           
@@ -4428,7 +4653,7 @@
               call BMatrix(LocPos, ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl, &
                                Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
                                IElem, ElementConnectivities(:,:,IPatch), &
-                               NodalCoordinates(:,:,IPatch), B, &
+                               NodalCoordinates, B, & !(:,:,IPatch)
                                IPatch)!, DetJac) !update Jacob -> dxi/dtildexi
               
               do INode = 1, ELEMENTNODES

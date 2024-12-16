@@ -202,6 +202,10 @@
             allocate(IntLoadWaterPorosityDegreeSat(Counters%N, Counters%NEntity), stat = IError)
             allocate(BishopIntLoad(Counters%N, Counters%NEntity), stat = IError)
             allocate(AccelerationGas(Counters%N, Counters%NEntity), stat = IError)
+            
+            allocate(AccelerationGasGeneralizedAlpha(Counters%N, Counters%NEntity), stat = IError)
+            
+            
             allocate(ExtLoadGas(Counters%N, Counters%NEntity), stat = IError)
             allocate(ExtLoadGasPorosityDegreeSat(Counters%N, Counters%NEntity), stat = IError)
             allocate(ExtLoadWaterPorosityDegreeSat(Counters%N, Counters%NEntity), stat = IError)
@@ -243,6 +247,7 @@
           IntLoadWaterPorosityDegreeSat = 0.0
           BishopIntLoad = 0.0
           AccelerationGas = 0.0
+          AccelerationGasGeneralizedAlpha = 0.0
           ExtLoadGas = 0.0
           ExtLoadGasPorosityDegreeSat = 0.0
           ExtLoadWaterPorosityDegreeSat = 0.0
@@ -491,6 +496,9 @@
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationGas(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+              
+
+              !GeneralizedNodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationGasGeneralizedAlpha(IDof(I, 1:ELEMENTNODES), 1:NoEn)
             end do
             
               do IPart = 1, NPartEle(IEl,IPatch)                                 ! loop over all particles in element
@@ -510,7 +518,28 @@
   
                  do I = 1, NVECTOR  
                    ParticleAcceleration(I) = ParticleAcceleration(I) + ParticleShape(INode) * NodAcc(I, INode, iEntity)   ! Particle accelerations
-                   ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)   ! Particle x-velocity
+                   
+                   !ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)   ! Particle x-velocity
+                   
+                   
+                   
+                   
+                   
+                   !if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /=1) ) then 
+                   !     !ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
+                   !     !    ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
+                   !     !    (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
+                   !     
+                   !     !Mapping the particle velocity using the generalized alpha time scheme
+                   !     ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
+                   !         ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
+                   !         (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
+                   ! else 
+                        ! Particle velocity (explicit time scheme) 
+                        ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)
+                    !end if
+                    
+                    
                  end do    
 
                end do !loop over nodes
@@ -587,7 +616,7 @@
                              ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl,  &
                              Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
-                             NodalCoordinatesUpd(:,:,IPatch),  &
+                             NodalCoordinatesUpd,  & !(:,:,IPatch)
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
      
@@ -661,7 +690,7 @@
                              ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl,  &
                              Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
-                             NodalCoordinatesUpd(:,:,IPatch),  &
+                             NodalCoordinatesUpd,  & !(:,:,IPatch)
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
 
@@ -731,7 +760,7 @@
                              ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl, &
                              Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
-                             NodalCoordinatesUpd(:,:,IPatch), &
+                             NodalCoordinatesUpd, & !(:,:,IPatch)
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
 
@@ -1028,8 +1057,8 @@
                 ! Determine global ID of integration point 
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
-                ! Moved this into the loop 
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                ! Moved this into the loop  
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
               
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl, IPatch) ) then
@@ -1143,7 +1172,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
                 ! Moved this into the integration loop
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo, :, :), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo, :, :), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
                   
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl, IPatch) ) then
@@ -1397,7 +1426,7 @@
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
                 ! Moved this into the integration loop 
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
               
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl, IPatch) ) then

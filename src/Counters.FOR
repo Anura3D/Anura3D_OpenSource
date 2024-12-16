@@ -178,8 +178,8 @@
           
           
      
-          Counters%NEl = NEl
-          Counters%NodTot = NodTot
+          !Counters%NEl = NEl
+          !Counters%NodTot = NodTot
           Counters%NLayers = MaxLayer
           Counters%NLoadedElementSidesSolidNodes = NLoadedElementSidesSolidNodes
           Counters%NLoadedElementSidesWaterNodes = NLoadedElementSidesWaterNodes

@@ -251,7 +251,7 @@
             IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch), BMatrix)!, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix)!, WtN) !(:,:,IPatch)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
@@ -328,7 +328,7 @@
             IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd(:,:,IPatch), BMatrix)!, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix)!, WtN) !(:,:,IPatch)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
@@ -710,6 +710,14 @@
            lambda = Kf/N
            DSigWP = lambda*( N * DEpsVolW + (1.0d0 - N) * DEpsVol)
          end if
+         
+         
+         ! Cavitation limit 
+         !DSigWP = 0.0 ! excess pore pressure is zero
+         !if (DSigWP>0.0) then 
+         !   DSigWP = 0.0
+         !end if
+         
         
          ! for submerged calculation
          if (CalParams%ApplySubmergedCalculation) then 

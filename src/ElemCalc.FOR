@@ -2125,7 +2125,7 @@
           integer(INTEGER_TYPE), intent(in) :: NEl, NodTot, IDim, IElement
           real(REAL_TYPE), dimension(:), intent(in) :: LocPos
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-          real(REAL_TYPE), dimension(:, :), intent(in) :: Co
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: Co
           real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dx_dtildexi !RJac
           real(REAL_TYPE), dimension(NDIM,NDIM), intent(out) :: dtildexi_dx !InvRJac
           real(REAL_TYPE), intent(out) :: Det_dx_dtildexi
@@ -2187,16 +2187,35 @@
           if (NDIM == 3) then 
               nk = NURBS%INN(ElementConnectivities(1,IElement,IPatch),3,IPatch)
           end if 
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Check for repeated knot
+          if ( ( NURBS%XiKnotEntries(ni+1,IPatch)-NURBS%XiKnotEntries(ni,IPatch) == 0.0) .or. &
+              ( NURBS%EtaKnotEntries(nj+1,IPatch)-NURBS%EtaKnotEntries(nj,IPatch) == 0.0) ) then !.or. & 
+              !( NURBS%ZetaKnotEntries(nk+1,IPatch)-NURBS%ZetaKnotEntries(nk,IPatch) == 0.0) ) then ! needs 3D generalization
+              Det_dx_dtildexi = 0
+              dtildexi_dxi = 0
+              dxi_dx = 0
+              dx_dxi = 0
+              return 
+
+          end if 
+          
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dx/dxi
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          call Evaluate_dx_dxi(dHS, Co, ICon, dx_dxi, IElement, NDIM)
+          call Evaluate_dx_dxi(dHS, Co, ICon, dx_dxi, IElement, NDIM, IPatch)
        
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculating dxi/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! Calculate inverse and determinant of Jacobian matrix
           
+          if (dx_dxi(2,2)==0) then ! repeated knot treatment
+             aa = 0.0
+             !return
+         end if 
           
           call RJacInv(IDim, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
 
@@ -2209,10 +2228,10 @@
          call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
          
          
-         !if (dxi_dtildexi(2,2)==0) then ! repeated knot treatment
-         !    Det_dx_dtildexi = 0.0
-         !    return
-         !end if 
+         if (dxi_dtildexi(2,2)==0) then ! repeated knot treatment
+             aa = 0.0
+             !return
+         end if 
          
          call RJacInv(IDim, dxi_dtildexi, dtildexi_dxi, Det_dxi_dtildexi, Det_dtildexi_dxi)
          
@@ -2439,7 +2458,7 @@
           real(REAL_TYPE), dimension(IDim), intent(in) :: LocPos
           integer(INTEGER_TYPE), intent(in) :: IElement
           integer(INTEGER_TYPE), dimension(ELEMENTNODES, NEl), intent(in) :: ICon
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord !dimension(NodTot, IDim)
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: NodeCoord !dimension(NodTot, IDim)
           real(REAL_TYPE), dimension(IDim, ELEMENTNODES), intent(out) :: B
           real(REAL_TYPE) :: DetJac !, intent(out)
           real(REAL_TYPE) :: Det1
@@ -2502,7 +2521,7 @@
           
 
           ! Evaluate jacobian between physical domain and parameter domain
-          call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement, NDIM)
+          call Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement, NDIM, IPatch)
           
           ! debugger
       !if (dx_dxi(2,2) == 0.0) then 
@@ -2705,7 +2724,7 @@
         
         
         
-        subroutine Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement, NDIM_Input)
+        subroutine Evaluate_dx_dxi(dHS, NodeCoord, ICon, dx_dxi, IElement, NDIM_Input, IPatch)
           ! this subroutine is part of the BMatrix evaluation. 
           !  
           ! 
@@ -2715,12 +2734,14 @@
 
           integer(INTEGER_TYPE) :: I, J, INode, NodeID, NNodes
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: NodeCoord
           
           real(REAL_TYPE), dimension(:, :), intent(in) :: dHS
           integer(INTEGER_TYPE), intent(in) :: IElement
           
           integer(INTEGER_TYPE), intent(in) :: NDIM_Input
+          
+          integer(INTEGER_TYPE), intent(in) :: IPatch
 
 
           real(REAL_TYPE), dimension(NDIM, NDIM), intent(out) :: dx_dxi
@@ -2736,7 +2757,7 @@
               ! This is gradient mapping from the parameter space to the physical space 
             do I = 1, NDIM_Input 
               do J = 1, NDIM_Input
-                dx_dxi(I, J) = dx_dxi(I, J) + (dHS(INode, I) * NodeCoord(NodeID, J)) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
+                dx_dxi(I, J) = dx_dxi(I, J) + (dHS(INode, I) * NodeCoord(NodeID, J, IPatch)) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
               end do
             end do
           end do
@@ -2883,6 +2904,8 @@
           real(REAL_TYPE) :: MaximumXCoordinate, MaximumYCoordinate
           real(REAL_TYPE) :: MinimumXCoordinate, MinimumYCoordinate
           real(REAL_TYPE) :: RangeX, RangeY
+          
+          integer(INTEGER_TYPE) :: IDim_index
                 
           !if (IDim==2) then
           !  Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
@@ -2966,6 +2989,15 @@
             Success = .false.
           else
               success = .true.
+              
+              ! I need to make sure that we do not have a local position that is 1 so I will just do this quick fix --> hardcoded 
+                !do IDim_index = 1, NDIM 
+                !    if (LocPos(IDim_index) > 0.99999999999) then !--> liquid column fix
+                !        LocPos(IDim_index) = LocPos(IDim_index)-(1e-10)
+                !    end if
+                !end do 
+              
+              
           end if
     
           !if (.not.Success) then
@@ -2977,6 +3009,199 @@
             end subroutine GetLocalCoordinates_StructuredMesh
         
         
+            
+            
+            
+            
+            
+
+    !-------------------------------------------------------------------------------
+            
+            
+            
+            
+            
+            
+            
+        
+        !subroutine GetLocalCoordinates_StructuredMesh_3D(GlobPos, IElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, LocPos, OutsideElement, Success, &
+        !    PatchID)
+        !!**********************************************************************
+        !!
+        !!    Function:  Determination of local coordinates from global coordinates,
+        !!               assuming that the point with global coordinates lies inside 
+        !!               the element within IElement.
+        !!               Success returns .false. if the local position could not be found
+        !!               inside the element within 10 iterations with sufficient accuracy.
+        !!
+        !!     GlobPos : Global coordinates of a point inside IElement
+        !!     IElement : ID of the element
+        !!     IElTyp : Number of node connectivities of IElement
+        !!     NEl : Number of elements
+        !!     NodTot : Total number of nodes
+        !!     IDim : Dimension of the mesh
+        !!     NodeCoord : Global nodal coordinates
+        !!     ICon : Element connectivities ICon(I, J): global node number of local node I in element J
+        !!
+        !! O   LocPos : Local coordinates of the considered point inside IElement
+        !! O   OutsideElement : True, if the local coordinate lie outside IElement
+        !! O   Success : True, if the local position could be found
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
+        !  real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+        !  integer(INTEGER_TYPE), intent(in) :: IElement
+        !  real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+        !  integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+        !  real(REAL_TYPE), dimension(IDim), intent(out) :: LocPos !local position of point is an output 
+        !  logical, intent(out) :: OutsideElement, Success
+        !  
+        !  integer(INTEGER_TYPE), intent(in) :: PatchID
+        !  
+        !  ! Local variables
+        !  real(REAL_TYPE), dimension(IDim, IDim) :: RJac, RJacInv
+        !  real(REAL_TYPE), dimension(IDim) :: GlobPosIteration
+        !  real(REAL_TYPE), dimension(IDim) :: DeltaGlobPos
+        !  integer(INTEGER_TYPE) :: I, J, Iteration
+        !  real(REAL_TYPE) :: Tolerance, Difference, DetJac
+        !  
+        !  real(REAL_TYPE) :: KnotSpanCoord1X, KnotSpanCoord1Y, KnotSpanCoord1Z
+        !  real(REAL_TYPE) :: KnotSpanCoord2X, KnotSpanCoord2Y, KnotSpanCoord2Z
+        !  real(REAL_TYPE) :: KnotSpanCoord3X, KnotSpanCoord3Y, KnotSpanCoord3Z
+        !  real(REAL_TYPE) :: KnotSpanCoord4X, KnotSpanCoord4Y, KnotSpanCoord4Z
+        !  
+        !  
+        !  real(REAL_TYPE) :: LowerBoundXCoordinate, UpperBoundXCoordinate 
+        !  real(REAL_TYPE) :: LowerBoundYCoordinate, UpperBoundYCoordinate
+        !  real(REAL_TYPE) :: LowerBoundZCoordinate, UpperBoundZCoordinate
+        !  
+        !  real(REAL_TYPE) :: DenominatorLocPosRange_1, DenominatorLocPosRange_2, DenominatorLocPosRange_3 
+        !  real(REAL_TYPE) :: MaximumXCoordinate, MaximumYCoordinate, MaximumZCoordinate
+        !  real(REAL_TYPE) :: MinimumXCoordinate, MinimumYCoordinate, MinimumZCoordinate
+        !  real(REAL_TYPE) :: RangeX, RangeY, RangeZ
+        !  
+        !  integer(INTEGER_TYPE) :: IDim_index
+        !        
+        !  !if (IDim==2) then
+        !  !  Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
+        !  !else
+        !  !  Tolerance = 1d-15 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-10  
+        !  !end if    
+        !  
+        !  Success = .true.
+        !  OutsideElement = .false.
+        !  
+        !  
+        !  ! Find the maximum x-coordinate 
+        !  MaximumXCoordinate = maxval(NodeCoord(1:Counters%NodTot(PatchID),1)) !NURBS%NControlPoints
+        !  MinimumXCoordinate = minval(NodeCoord(1:Counters%NodTot(PatchID),1)) !NURBS%NControlPoints
+        !  
+        !  ! Find the maximum y-coordinate
+        !  MaximumYCoordinate = maxval(NodeCoord(1:Counters%NodTot(PatchID),2)) !NURBS%NControlPoints
+        !  MinimumYCoordinate = minval(NodeCoord(1:Counters%NodTot(PatchID),2)) !NURBS%NControlPoints
+        !  
+        !  
+        !  ! Find the maximum z-coordinate
+        !  MaximumZCoordinate = maxval(NodeCoord(1:Counters%NodTot(PatchID),3)) !NURBS%NControlPoints
+        !  MinimumZCoordinate = minval(NodeCoord(1:Counters%NodTot(PatchID),3)) !NURBS%NControlPoints
+        !  
+        !  ! Find Bezier mesh range 
+        !  RangeX = MaximumXCoordinate - MinimumXCoordinate
+        !  RangeY = MaximumYCoordinate - MinimumYCoordinate
+        !  RangeZ = MaximumZCoordinate - MinimumZCoordinate
+        !  
+        !  !ICon = KnotBezierMeshConnectivity(IElement, :) ! This variable needs to be 1 row 4 columns 
+        !  ! for element 1, this should be ICon = [1, 2, 3, 4]
+        !
+        !  !Based on this identify the coordinates of the knot spans
+        !  !KnotSpanCoord1X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  !KnotSpanCoord1Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  !
+        !  !KnotSpanCoord2X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  !KnotSpanCoord2Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  !
+        !  !KnotSpanCoord3X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  !KnotSpanCoord3Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  !
+        !  !KnotSpanCoord4X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  !KnotSpanCoord4Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  
+        !  
+        !  KnotSpanCoord1X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  KnotSpanCoord1Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  KnotSpanCoord1Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  
+        !  KnotSpanCoord2X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  KnotSpanCoord2Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  KnotSpanCoord2Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  
+        !  KnotSpanCoord3X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  KnotSpanCoord3Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  KnotSpanCoord3Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  
+        !  KnotSpanCoord4X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  KnotSpanCoord4Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  KnotSpanCoord4Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+        !  
+        !  !We can use the knot coordinates for "1" and "4". That will give you the extent of the element 
+        !  
+        !  LowerBoundXCoordinate = KnotSpanCoord1X !should be 0.0
+        !  UpperBoundXCoordinate = KnotSpanCoord4X !should be 1.0
+        !  
+        !  LowerBoundYCoordinate = KnotSpanCoord1Y !should be 0.0
+        !  UpperBoundYCoordinate = KnotSpanCoord4Y !should be 0.5
+        !
+        !  LowerBoundZCoordinate = KnotSpanCoord1Z !should be 0.0
+        !  UpperBoundZCoordinate = KnotSpanCoord4Z !should be 0.5
+        !  
+        !  !Based on this, we can interpolate to find the LocPos in each direction
+        !  
+        !  ! LocPos(1)
+        !  DenominatorLocPosRange_1 = UpperBoundXCoordinate - LowerBoundXCoordinate
+        !  
+        !  LocPos(1) = ( (  (GlobPos(1)-LowerBoundXCoordinate)/DenominatorLocPosRange_1 ) * (1--1) ) + -1
+        !  
+        !  
+        !  ! LocPos(2)
+        !  DenominatorLocPosRange_2 = UpperBoundYCoordinate - LowerBoundYCoordinate 
+        !  
+        !  LocPos(2) = ( ( (GlobPos(2)-LowerBoundYCoordinate) /DenominatorLocPosRange_2 ) * (1--1) ) + -1
+        !  
+        !  
+        !  ! LocPos(3)
+        !  DenominatorLocPosRange_3 = UpperBoundZCoordinate - LowerBoundZCoordinate 
+        !  
+        !  LocPos(3) = ( ( (GlobPos(3)-LowerBoundZCoordinate) /DenominatorLocPosRange_3 ) * (1--1) ) + -1
+        !  
+        !    
+        !  if (.not.IsInsideElementLocPos(LocPos) ) then
+        !    OutsideElement = .true.
+        !    Success = .false.
+        !  else
+        !      success = .true.
+        !      
+        !      ! I need to make sure that we do not have a local position that is 1 so I will just do this quick fix --> hardcoded 
+        !        !do IDim_index = 1, NDIM 
+        !        !    if (LocPos(IDim_index) > 0.99999999999) then !--> liquid column fix
+        !        !        LocPos(IDim_index) = LocPos(IDim_index)-(1e-10)
+        !        !    end if
+        !        !end do 
+        !      
+        !      
+        !  end if
+        !
+        !  !if (.not.Success) then
+        !  !  call GiveError('Did not find local coordinates of particle in '// &
+        !  !                 trim(String(IElement)) // &
+        !  !                 ' within limit number of iterations.')
+        !  !end if
+        !
+        !    end subroutine GetLocalCoordinates_StructuredMesh_3D
         
     
     
@@ -3047,6 +3272,9 @@
           
           real(REAL_TYPE) :: DenominatorLocPosRange_1, DenominatorLocPosRange_2, DenominatorLocPosRange_3
           real(REAL_TYPE) :: MaximumXCoordinate, MaximumYCoordinate, MaximumZCoordinate
+          real(REAL_TYPE) :: MinimumXCoordinate, MinimumYCoordinate, MinimumZCoordinate
+          
+          real(REAL_TYPE) :: RangeX, RangeY, RangeZ
                 
           !if (IDim==2) then
           !  Tolerance = 1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
@@ -3060,48 +3288,65 @@
           
           ! Find the maximum x-coordinate 
           MaximumXCoordinate = maxval(NodeCoord(:,1))
+          MinimumXCoordinate = minval(NodeCoord(:,1))
           
           ! Find the maximum y-coordinate
           MaximumYCoordinate = maxval(NodeCoord(:,2))
+          MinimumYCoordinate = minval(NodeCoord(:,2))
           
           ! Find the maximum z-coordinate
           MaximumZCoordinate = maxval(NodeCoord(:,3))
+          MinimumZCoordinate = minval(NodeCoord(:,3))
+
           
           !ICon = KnotBezierMeshConnectivity(IElement, :) ! This variable needs to be 1 row 4 columns 
           ! for element 1, this should be ICon = [1, 2, 3, 4]
+          
+          
+          
+          ! Find Bezier mesh range 
+          RangeX = MaximumXCoordinate - MinimumXCoordinate
+          RangeY = MaximumYCoordinate - MinimumYCoordinate
+          RangeZ = MaximumZCoordinate - MinimumZCoordinate
+          
+          
+          
+          
+          
+          
     
           !Based on this identify the coordinates of the knot spans
-          KnotSpanCoord1X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord1Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord1Z = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord1Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 1, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord2X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord2Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord2Z = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Y = MinimumYCoordinate + (Rangey * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord2Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 2, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord3X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord3Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord3Z = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord3Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 3, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord4X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord4Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord4Z = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord4Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 4, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
 
-          KnotSpanCoord5X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord5Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord5Z = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord5Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 5, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord6X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord6Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord6Z = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord6Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 6, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord7X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord7Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord7Z = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord7Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 7, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
-          KnotSpanCoord8X = MaximumXCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8, PatchID),1, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord8Y = MaximumYCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8, PatchID),2, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
-          KnotSpanCoord8Z = MaximumZCoordinate * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8, PatchID),3, PatchID) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8X = MinimumXCoordinate + (RangeX * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8, PatchID),1, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8Y = MinimumYCoordinate + (RangeY * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8, PatchID),2, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
+          KnotSpanCoord8Z = MinimumZCoordinate + (RangeZ * KnotBezierMesh(KnotBezierMeshConnectivity(IElement, 8, PatchID),3, PatchID)) ! first entry is from the connectivity, second entry is from the IDim (i.e., x or y)
           
           !We can use the knot coordinates for "1" and "4". That will give you the extent of the element 
           
@@ -3628,7 +3873,7 @@
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
           real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           integer(INTEGER_TYPE), intent(in) :: IElement
-          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NDIM), intent(in) :: NodeCoord !(IPatch)
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NDIM, Counters%NPatches), intent(in) :: NodeCoord !(IPatch)
           !real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
           !integer(INTEGER_TYPE), dimension((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), nel_NURBS(IPatch)), intent(in) :: ICon
 
@@ -3679,16 +3924,16 @@
           !integer(INTEGER_TYPE), intent(in) :: GetAdjacentElement
           ! evaluate tolerances based on input "true" global positon 
           !if (IDim==2) then
-            Tolerance = 1d-15!1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
+            Tolerance = 1d-10!1d-15 * (dabs(GlobPos(1)) + dabs(GlobPos(2)) ) + 1d-15 !1d-10
           !else
           !  Tolerance = 1d-2 * (dabs(GlobPos(1) ) + dabs(GlobPos(2) ) + dabs(GlobPos(3) ) ) + 1d-2
           !end if    
           
           ! Set the tolerance value to 1%
-            tolerance_Xi(1) = 1e-15
-            tolerance_Xi(2) = 1e-15
+            tolerance_Xi(1) = Tolerance!1e-15
+            tolerance_Xi(2) = Tolerance!1e-15
             if (NDIM == 3) then 
-            tolerance_Xi(3) = 1e-15
+            tolerance_Xi(3) = Tolerance!1e-15
             end if
           
           ! local positions can be expressed in either xi or xitilde format
@@ -3865,7 +4110,7 @@
               LocPos = LocPos_XiTilde
               EXIT
             else ! Difference greater or equal Tolerance
-              if (Iteration >= 30) then ! Too many iterations needed, something went wrong
+              if (Iteration >= 300) then ! Too many iterations needed, something went wrong
                 Success = .false.
                 EXIT
               else ! Continue iteration
@@ -3969,7 +4214,8 @@
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
           real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           integer(INTEGER_TYPE), intent(in) :: IElement
-          real(REAL_TYPE), dimension(Counters%NodTot(IPatch), NDIM), intent(in) :: NodeCoord
+          !real(REAL_TYPE), dimension(Counters%NodTot(IPatch), NDIM), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NDIM, Counters%NPatches), intent(in) :: NodeCoord
           !real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
           !integer(INTEGER_TYPE), dimension((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), nel_NURBS(IPatch)), intent(in) :: ICon
 
@@ -4864,7 +5110,7 @@
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos_XiTilde
           integer(INTEGER_TYPE), intent(in) :: IElement
           integer(INTEGER_TYPE), dimension(ELEMENTNODES, NEl), intent(in) :: ICon
-          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, IDim), intent(in) :: NodeCoord !NodTot
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, IDim, Counters%NPatches), intent(in) :: NodeCoord !NodTot
           !real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: IncrementalDisplacementSoil
           real(REAL_TYPE), dimension(IDim), intent(out) :: GlobPos
           ! Local variables
@@ -4892,7 +5138,7 @@
           do I = 1, ELEMENTNODES
             NodeID = ICon(I, IElement)
             do J = 1, IDim
-              GlobPos(J) = GlobPos(J) + (ShapeValues(I) * NodeCoord(NodeID, J))
+              GlobPos(J) = GlobPos(J) + (ShapeValues(I) * NodeCoord(NodeID, J, IPatch))
             end do  
           end do
 

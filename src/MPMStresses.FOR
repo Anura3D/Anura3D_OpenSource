@@ -1250,7 +1250,7 @@
         
           integer(INTEGER_TYPE), intent(in) :: IEl, LocalID
           !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Co
-          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NVECTOR), intent(in) :: Co ! this might need to be generalized so that IPatch is an input and we loop on the outside....
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), intent(in) :: Co ! this might need to be generalized so that IPatch is an input and we loop on the outside....
 
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(out) :: B
           real(REAL_TYPE) :: WtN !, intent(out)
@@ -2119,8 +2119,8 @@
             PatchID = PatchIDArray(IP) 
             ElementID = ElementIDArray(IP)
           
-            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
-
+            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+            !(:,:,IPatch)
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
               iEntity = EntityIDArray(IP) 

@@ -85,8 +85,8 @@
         !> Nodal acceleration for water
         real(REAL_TYPE), dimension(:, :), allocatable :: AccelerationWater
         
-        !> Nodal acceleration for water for generalized alpha scheme
-        real(REAL_TYPE), dimension(:, :), allocatable :: AccelerationWaterGeneralizedAlpha
+        !!> Nodal acceleration for water for generalized alpha scheme
+        !real(REAL_TYPE), dimension(:, :), allocatable :: AccelerationWaterGeneralizedAlpha
         
         
         !> Nodal load array of external water load
@@ -507,6 +507,22 @@
                do IDOF = 1, Counters%N                                
             do J = 1, Counters%nEntity !loop through all entities    
                 if(LumpedMassWater(IDOF,J)/=0) then
+                    
+                    ! According to Tran and Solowski (2020), this time intergration to obtain velocity was done at the nodal level...
+                    ! However, in the FLIP approach, we do not do this! <-- why is it unstable 
+                    !if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch== 1) .and. (CalParams%TimeStep /=1) ) then  
+                    !    TotalVelocitySoil(IDOF, J) = TotalVelocitySoil(IDOF, J) + &
+                    !     ( CalParams%TimeIncrement * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*AccelerationSoil(IDOF, J) + &
+                    !     (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*AccelerationSoilGeneralizedAlpha(IDOF, J)) ) * PBoundary(IDOF)
+                    !else 
+                    !    TotalVelocitySoil(IDOF,J) = ( Momentum(IDOF,J) /  &
+                    !                    LumpedMassDry(IDOF,J) )*  &
+                    !                    PBoundary(IDOF)
+                    !end if
+                    !    
+                        
+                        
+                        
                     TotalVelocityWater(IDOF,J) = ( Momentum(IDOF,J) /  &
                                         LumpedMassWater(IDOF,J) )*  &
                                         PboundaryWater(IDOF)
@@ -685,16 +701,18 @@
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum  
           ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
-          integer(INTEGER_TYPE), dimension(ELEMENTNODES, NVECTOR) :: IDof
+          !integer(INTEGER_TYPE), dimension(ELEMENTNODES, NVECTOR) :: IDof
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
+          
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleIncrementalVelocity
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
-          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity, NVECTOR) :: NodAcc
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc, GeneralizedNodAcc !ELEMENTNODES, Counters%nEntity, NVECTOR
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
           real(REAL_TYPE) :: Time, ParticleMass
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
                               
           Momentum = 0.0
@@ -710,8 +728,26 @@
             
             do I = 1, NVECTOR
               ! Loop over dimensions
-              IDof(1:ELEMENTNODES, I) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)) + I
-              NodAcc(1:ELEMENTNODES, 1:NoEn, I) = AccelerationWater(IDof(1:ELEMENTNODES, I), 1:NoEn)
+              !IDof(1:ELEMENTNODES, I) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)) + I
+              
+              IDof(I, 1:ELEMENTNODES) = &
+              ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints( &
+              ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch)) + I
+              
+              
+              !NodAcc(1:ELEMENTNODES, 1:NoEn, I) = AccelerationWater(IDof(1:ELEMENTNODES, I), 1:NoEn)
+              !
+              !GeneralizedNodAcc(1:ELEMENTNODES, 1:NoEn, I) = AccelerationWaterGeneralizedAlpha(IDof(1:ELEMENTNODES, I), 1:NoEn)
+              
+              
+              
+              NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = &
+                                AccelerationWater(IDof(I, 1:ELEMENTNODES), 1:NoEn) 
+       
+    
+              GeneralizedNodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationWaterGeneralizedAlpha(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+                
+              
             end do
             
               do IPart = 1, NPartEle(IEl,IPatch)                                 ! Loop over all particles in element
@@ -739,9 +775,33 @@
                  do I = 1, NVECTOR ! Loop over dimensions
                    do INode = 1, ELEMENTNODES ! loop over element nodes
                      ! Particle acceleration
-                     ParticleAcceleration(I) = ParticleAcceleration(I) + ParticleShape(INode) * NodAcc(INode, iEntity, I)
-                     ! Particle velocity
-                     ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(INode, iEntity, I)
+                     ParticleAcceleration(I) = ParticleAcceleration(I) + ( ParticleShape(INode) * NodAcc(I, INode, iEntity) )!* NodAcc(INode, iEntity, I)
+                     !! Particle velocity
+                     !ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(INode, iEntity, I)
+                     
+                     
+                     if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /=1) ) then 
+                        !ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
+                        !    ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(I, INode, iEntity) + &
+                        !    (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(I, INode, iEntity)) )
+                        
+                        !Mapping the particle velocity using the generalized alpha time scheme
+                        ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + &
+                            ( CalParams%TimeIncrement * ParticleShape(INode) * (CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma*NodAcc(INode, iEntity, I) + &
+                            (1-CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma)*GeneralizedNodAcc(INode, iEntity, I)) )!INode, I, INode, iEntity)) )
+                     else 
+                        ! Particle velocity (explicit time scheme) 
+                        !ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)
+                         ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + (Time * ParticleShape(INode) * NodAcc(I, INode, iEntity) ) !NodAcc(INode, iEntity, I))
+                    end if
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
                    end do  !Loop over dimensions
                  end do !Loop over nodes
                
@@ -749,12 +809,16 @@
 
                  ! nodal momentum
                  do I = 1, NVECTOR ! Loop over dimensions
-                   Momentum(IDof(1:ELEMENTNODES, I), iEntity) = Momentum(IDof(1:ELEMENTNODES, I), iEntity) + ParticleMass * ParticleShape * ParticleVelocity(I)
+                   !Momentum(IDof(1:ELEMENTNODES, I), iEntity) = Momentum(IDof(1:ELEMENTNODES, I), iEntity) + ParticleMass * ParticleShape * ParticleVelocity(I)
+                   Momentum(IDof(I,1:ELEMENTNODES), iEntity) = &
+                                            Momentum(IDof(I,1:ELEMENTNODES), iEntity) + ( ParticleMass * ParticleShape * ParticleVelocity(I) )
+           
                  end do !Loop over dimensions
 
      
                  if(NFORMULATION==1) then ! 1 constituent
                    VelocityWaterArray(ParticleIndex,:) = ParticleVelocity
+                   AccelerationWaterArray(ParticleIndex,:) = ParticleAcceleration
                  else  ! 2 constituents
                    VelocityArray(ParticleIndex,:) = ParticleVelocity
                    AccelerationArray(ParticleIndex,:) =  ParticleAcceleration
@@ -921,8 +985,8 @@
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
                              ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl,  &
                              Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
-                             IElement, ElementConnectivities(:,:,IPatch), &
-                             NodalCoordinatesUpd(:,:,IPatch), &!NodalCoordinatesUpd,  &
+                             IElement, ElementConnectivities(:,:,IPatch), & !
+                             NodalCoordinatesUpd, &!NodalCoordinatesUpd,  &!(:,:,IPatch)
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
      
@@ -2187,7 +2251,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 
                 ! moved this into the loop 
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
                 !GetParticleIndex(:,:,IPatch),
               
                 ! Set the integration weight
@@ -2305,7 +2369,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   ! moved this into the loop 
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN,  DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN,  DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, IPatch) ! get the B-matrix once per element !(:,:,IPatch)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -2409,7 +2473,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   ! this needs multipatch generalization
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -2630,7 +2694,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
                 ! moved this into the loop
-                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
                 
                 if (IsParticleIntegration(IEl, IPatch) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
@@ -2707,7 +2771,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                   ! Determine global ID of integration point 
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -2782,7 +2846,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                   IntGlo = GetParticleIndex(Int, IEl, IPatch)
                   
                   ! Moved this into the patch
-                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+                  call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
                   
                   if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then ! Only LIQUID material Point
               
@@ -3216,7 +3280,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
               ! Determine global ID of integration point 
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
               
                PartPorosity = Particles(ParticleIndex)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -3348,7 +3412,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               ! Moved this into the integeration point loop
-              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+              call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
               
               PartPorosity = Particles(IntGlo)%Porosity
                if (CalParams%ApplyPartialSaturation) then

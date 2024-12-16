@@ -406,12 +406,17 @@
           integer(INTEGER_TYPE) :: RELEVANTBLOCKS != 5 , parameter
           integer(INTEGER_TYPE) :: NumberOfPatchRepitions = 3
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
+          
+          integer(INTEGER_TYPE) :: PatchCounter
+          
           character(len = 80) :: Header
           character(len = 12) :: BlockName
           
           ! we loop over patches so we have to increase RelevantBlocks accordings
-          RELEVANTBLOCKS = 5! + (NumberOfPatchRepitions*(Counters%NPatches-1))
+          RELEVANTBLOCKS = 5 + (NumberOfPatchRepitions*(Counters%NPatches-1))
 
+          PatchCounter = 1
+          
           call FileOpenAction(BRFunit, BRFfilename, 'R')
           
           BlockCheck = 0 ! No relevant blocks found yet
@@ -431,11 +436,11 @@
                   else if (BlockName=='$$ELPART_I$$') then ! Read element-particle assignment
                     call ReadBlockELPART_I(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$ELPARTHI$$') then ! Read element-particle assignment helper array
-                    call ReadBlockELPARTHI(BRFunit, NBytes, BlockCheck)
+                    call ReadBlockELPARTHI(BRFunit, NBytes, BlockCheck, PatchCounter)
                   else if (BlockName=='$$USEPARTI$$') then ! Read element integration type
-                    call ReadBlockUSEPARTI(BRFunit, NBytes, BlockCheck)
+                    call ReadBlockUSEPARTI(BRFunit, NBytes, BlockCheck, PatchCounter)
                   else if (BlockName=='$$NUMPARTI$$') then ! Read number of particles per element
-                    call ReadBlockNUMPARTI(BRFunit, NBytes, BlockCheck)
+                    call ReadBlockNUMPARTI(BRFunit, NBytes, BlockCheck, PatchCounter)
                     !EXIT ! I ADDED THIS
                   else ! Skip bytes of block
                     call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
@@ -1354,7 +1359,7 @@
         !end subroutine ReadBlockNUMPARTI
         
         
-        subroutine ReadBlockNUMPARTI(FileUnit, NBytes, BlockCheck)
+        subroutine ReadBlockNUMPARTI(FileUnit, NBytes, BlockCheck, PatchCounter)
         !**********************************************************************
         !
         !    Function:  Reads data from the block NUMPARTI containing the number of particles per element
@@ -1374,6 +1379,9 @@
           integer(INTEGER_TYPE), intent(in) :: FileUnit
           integer(INTEGER_TYPE), intent(in) :: NBytes
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          
+          integer(INTEGER_TYPE), intent(inout) :: PatchCounter
+          
           ! Local variables
           integer(INTEGER_TYPE) :: I
           ! Multipatch variables 
@@ -1387,18 +1395,26 @@
           !  
           !end if
           
+          if (PatchCounter  == Counters%NPatches +1) then 
+    
+              PatchCounter = 1
+
+          end if
+          
           !read(FileUnit) (IPatch)  
           
-          do IPatch = 1, Counters%NPatches
-          if ( ((NBytes) / 4)==Counters%NEl(IPatch)) then !-4 !NURBS%nel_NURBS(IPatch)
+          !do IPatch = 1, Counters%NPatches
+          if ( ((NBytes) / 4)==Counters%NEl(PatchCounter)) then !-4 !NURBS%nel_NURBS(IPatch)
             
             
-            read(FileUnit) (NPartEle(I, IPatch), I = 1, Counters%NEl(IPatch)) !NURBS%NEl_NURBS
+            read(FileUnit) (NPartEle(I, PatchCounter), I = 1, Counters%NEl(PatchCounter)) !NURBS%NEl_NURBS
           
             BlockCheck = BlockCheck + 1
             
+            PatchCounter = PatchCounter +1
+            
           end if
-          end do
+          !end do
           
           
  
@@ -1487,7 +1503,7 @@
         
         
         
-        subroutine ReadBlockELPARTHI(FileUnit, NBytes, BlockCheck)
+        subroutine ReadBlockELPARTHI(FileUnit, NBytes, BlockCheck, PatchCounter)
         !**********************************************************************
         !
         !    Function:  Reads data from the block ELPARTHI containing the helper array used for
@@ -1515,19 +1531,44 @@
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
+          integer(INTEGER_TYPE), intent(inout) :: PatchCounter
+          
           
           !read(FileUnit) IPatch  
           
-        do IPatch = 1, Counters%NPatches
-          if ( ((NBytes) / 4)==Counters%NEl(IPatch)) then !-4 ! remove 4 byts associated with patch number writing !NURBS%nel_NURBS(IPatch)
+        !do IPatch = 1, Counters%NPatches
+        !  if ( ((NBytes) / 4)==Counters%NEl(IPatch)) then !-4 ! remove 4 byts associated with patch number writing !NURBS%nel_NURBS(IPatch)
+        !    
+        !    read(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, Counters%NEl(IPatch))!Counters%NEl) !nel_NURBS(IPatch)
+        !    
+        !    BlockCheck = BlockCheck + 1
+        !    
+        !  end if
+        !  
+        !end do 
+        
+        if (PatchCounter  == Counters%NPatches +1) then 
+    
+            PatchCounter = 1
+    
+        end if
+        
+        
+        
+        
+        
+        !do IPatch = 1, Counters%NPatches
+          if ( ((NBytes) / 4)==Counters%NEl(PatchCounter)) then !-4 ! remove 4 byts associated with patch number writing !NURBS%nel_NURBS(IPatch)
             
-            read(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, Counters%NEl(IPatch))!Counters%NEl) !nel_NURBS(IPatch)
+            read(FileUnit) (EleParticlesHelp(I, PatchCounter), I = 1, Counters%NEl(PatchCounter))!Counters%NEl) !nel_NURBS(IPatch)
             
             BlockCheck = BlockCheck + 1
             
+            PatchCounter = PatchCounter + 1
+            
           end if
           
-        end do 
+        !end do 
         
          
         end subroutine ReadBlockELPARTHI
@@ -2384,7 +2425,7 @@
         
         end subroutine ReadBlockGPRESS_R
 
-        subroutine ReadBlockUSEPARTI(FileUnit, NBytes, BlockCheck)!, IPatch)
+        subroutine ReadBlockUSEPARTI(FileUnit, NBytes, BlockCheck, PatchCounter)!, IPatch)
         !**********************************************************************
         !
         !    Function:  Reads data from the block USEPARTI containing the flag per element indicating
@@ -2410,6 +2451,7 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE), intent(inout) :: PatchCounter
         
           !if ( (NBytes / 4)==Counters%NEl) then
           !  
@@ -2421,15 +2463,25 @@
           
           !read(FileUnit) IPatch
           
-          do IPatch = 1, Counters%NPatches
-          if ( ((NBytes) / 4)==Counters%NEl(IPatch) ) then !-4 !NURBS%nel_NURBS(IPatch)
+          
+          if (PatchCounter  == Counters%NPatches +1) then 
+              
+              PatchCounter = 1
+              
+          end if
+          
+          
+          !do IPatch = 1, Counters%NPatches
+          if ( ((NBytes) / 4)==Counters%NEl(PatchCounter) ) then !-4 !NURBS%nel_NURBS(IPatch)
            
-            read(FileUnit) (IsParticleIntegration(I, IPatch), I = 1, Counters%NEl(IPatch))!Counters%NEl) !NURBS%nel_NURBS(IPatch)
+            read(FileUnit) (IsParticleIntegration(I, PatchCounter), I = 1, Counters%NEl(PatchCounter))!Counters%NEl) !NURBS%nel_NURBS(IPatch)
             
             BlockCheck = BlockCheck + 1
             
+            PatchCounter = PatchCounter + 1
+            
           end if
-          end do 
+          !end do 
  
         end subroutine ReadBlockUSEPARTI
 

@@ -473,6 +473,13 @@
            call GetNodalVelocityFromNodalMomentumConv(Momentum)!, Momentum_VolLockSmooth) ! In local coordinate system
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
              call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
+             
+             !TotalVelocityWater(40,1) = TotalVelocityWater(2,1)
+             !TotalVelocityWater(42,1) = TotalVelocityWater(2,1)
+             !TotalVelocityWater(44,1) = TotalVelocityWater(2,1)
+             !TotalVelocityWater(46,1) = TotalVelocityWater(2,1)
+             !TotalVelocityWater(48,1) = TotalVelocityWater(2,1)
+             
              if (CalParams%NumberOfPhases==3) then
                call GetNodalGasVelocityFromNodalGasMomentum(MomentumG)
              end if
@@ -527,7 +534,7 @@
            end if
           
            ! incremental displacement soil for the higher order grid 
-          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil)
+          call GetNodalIncrementalDisplacement(IncrementalDisplacementSoil, TotalVelocitySoil, AccelerationSoilGeneralizedAlpha, AccelerationSoil)
           !if (CalParams%ApplyBBar) then !--> volumetric locking mitigation
           !    call GetNodalIncrementalDisplacement_VolLockSmooth(IncrementalDisplacementSoil_VolLockSmooth, TotalVelocitySoil_VolLockSmooth)
           !end if   
@@ -537,7 +544,7 @@
           end if
 
           if ((.not.(NFORMULATION==1))) then
-            call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
+            call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater, AccelerationWaterGeneralizedAlpha, AccelerationWater) ! Global coordinate system
           
             if (.not.IsMPMComputation()) then !FEM
              do I = 1, Counters%N
@@ -547,7 +554,7 @@
           end if
 
           if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
-            call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater) ! Global coordinate system
+            call GetNodalIncrementalDisplacement(IncrementalDisplacementWater, TotalVelocityWater, AccelerationWaterGeneralizedAlpha, AccelerationWater) ! Global coordinate system
      
             if ( CalParams%ApplyAbsorbingBoundary.and.IsMPMComputation()) then
               !MPM ...need to get the accumulated displacement at the nodes
@@ -568,7 +575,7 @@
           end if ! consolidation
       
           if (CalParams%NumberOfPhases==3) then
-            call GetNodalIncrementalDisplacement(NodalIncDisplacementG, TotalVelocityGas)
+            call GetNodalIncrementalDisplacement(NodalIncDisplacementG, TotalVelocityGas, AccelerationGasGeneralizedAlpha, AccelerationGas)
      
             if ( CalParams%ApplyAbsorbingBoundary.and. IsMPMComputation()) then !MPM ...need to get the accumulated displacement at the nodes
               call GetNodalAccumulatedDisplacementsGas(NodalIncDisplacementG)
@@ -603,7 +610,7 @@
          
          ! Determine nodal density field
           if(NFORMULATION==1) then ! 1 Constituent
-              call DetermineLiquidDensityField()
+              !call DetermineLiquidDensityField() !--> I commented this for now
           else ! 2 Constituents
               if(CalParams%NumberOfPhases==1) then ! 1 Phase
                 call DetermineLiquidDensityField() !TEMPORARY
@@ -698,7 +705,7 @@
 
 
         ! Pore pressure smoothing 
-        if (CalParams%ApplyFBar) then  !.and. CalParams%ApplyFBarSmoothStresses) then !CalParams%ApplyFBarSmoothStrains
+        !if (CalParams%ApplyFBar) then  !.and. CalParams%ApplyFBarSmoothStresses) then !CalParams%ApplyFBarSmoothStrains
                 
                 ! Smooth the stress field 
                 !--------------------------------------------------------------
@@ -744,7 +751,7 @@
                 end if
                 !--------------------------------------------------------------
                 
-            end if 
+            !end if 
         
         
         
@@ -2398,6 +2405,7 @@
             
                   do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
               
+                      
                       ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
                       if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
@@ -2414,7 +2422,7 @@
                              iEntity = 1
                           end if 
                  
-                          
+                          !if ( abs(Particles(ParticleIndex)%WaterPressure) > 1e-5) then 
                           
                           !do I = 1, NTENSOR ! nodal i-momentum
                               WeightedWP_Numerator( INode(1:ELEMENTNODES), iEntity) = & !I, 
@@ -2422,6 +2430,9 @@
                                   + ( PartilceMass * ParticleShape * Particles(ParticleIndex)%WaterPressure )
                           !end do     
        
+                         ! end if 
+                          
+                              
                       end if ! NumbOfLayers = 1 or SOLID MatPoint
             
                   end do !Loop over particles
@@ -4595,7 +4606,7 @@
        
        
          
-         subroutine GetNodalIncrementalDisplacement(NodalIncDisplacement, NodalVelocities)
+         subroutine GetNodalIncrementalDisplacement(NodalIncDisplacement, NodalVelocities, AccelerationSoilGeneralizedAlpha_Input, AccelerationSoil_Input)
                                                    
         !**********************************************************************
         !
@@ -4612,6 +4623,9 @@
         
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: NodalIncDisplacement
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: NodalVelocities
+          
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoilGeneralizedAlpha_Input
+          real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: AccelerationSoil_Input
      
           ! Local variables
           integer(INTEGER_TYPE) :: IDOF, J
@@ -4623,7 +4637,7 @@
                     NodalIncDisplacement(IDOF,J) = & !NodalIncDisplacement(IDOF,J) + &
                                              (NodalVelocities(IDOF,J)*CalParams%TimeIncrement) + &
                                              ( (CalParams%TimeIncrement**2) * &
-                                             ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(IDOF,J) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(IDOF,J) ) ) 
+                                             ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha_Input(IDOF,J) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil_Input(IDOF,J) ) ) 
                 else 
 
                     NodalIncDisplacement(IDOF,J) = NodalVelocities(IDOF,J) * CalParams%TimeIncrement

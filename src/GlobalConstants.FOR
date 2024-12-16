@@ -740,6 +740,18 @@
         real(REAL_TYPE), dimension(:, :), & 
           allocatable :: TotalVelocitySoilGeneralizedAlpha
         
+        
+        real(REAL_TYPE), dimension(:, :), & 
+          allocatable :: AccelerationWaterGeneralizedAlpha  ! Nodal acceleration of soil at time step k (i.e., mapped from MP to nodes in the beginning of the LagrangianPhase)
+        real(REAL_TYPE), dimension(:, :), & 
+          allocatable :: TotalVelocityWaterGeneralizedAlpha
+        
+        
+        real(REAL_TYPE), dimension(:, :), & 
+          allocatable :: AccelerationGasGeneralizedAlpha  ! Nodal acceleration of soil at time step k (i.e., mapped from MP to nodes in the beginning of the LagrangianPhase)
+        real(REAL_TYPE), dimension(:, :), & 
+          allocatable :: TotalVelocityGasGeneralizedAlpha
+        
         real(REAL_TYPE), dimension(:, :), &
           allocatable :: RateofMomentum  ! Rate of momentum
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ActiveElement ! ID of the active elements (rank 2 for number of patches)

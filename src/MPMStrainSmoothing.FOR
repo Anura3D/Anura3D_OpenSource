@@ -132,7 +132,7 @@
                              ELEMENTNODES, Counters%NEl(IPatch), &!NURBS%nel_NURBS(IPatch), &!Counters%NEl,  &
                              Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IEl, ElementConnectivities(:,:, IPatch), &
-                             NodalCoordinatesUpd(:,:,IPatch),  &
+                             NodalCoordinatesUpd, &!(:,:,IPatch),  &
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
 				
@@ -338,7 +338,7 @@
                              ELEMENTNODES, Counters%NEl(IPatch), & !NURBS%nel_NURBS(IPatch), &!Counters%NEl,  &
                              Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
                              IEl, ElementConnectivities(:,:, IPatch), &
-                             NodalCoordinatesUpd(:,:,IPatch),  &
+                             NodalCoordinatesUpd, &!(:,:,IPatch),  &
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
                   
@@ -744,8 +744,8 @@
           !    IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac, &
           !        dxi_dx, dtildexi_dxi)
           call DetJacob(HS, dHS, &
-              PosGP, Counters%Sum_NEl, Counters%Sum_NodTot, NVECTOR, &
-              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates(:,:,IPatch_Temporary), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+              PosGP, Counters%Sum_NEl, Counters%Sum_NodTot, NVECTOR, & 
+              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, & !(:,:,IPatch_Temporary)
                   dxi_dx, dtildexi_dxi, &
               IPatch_Temporary)
           

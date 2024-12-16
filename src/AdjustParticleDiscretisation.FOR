@@ -352,6 +352,7 @@
           deallocate(VelocityWaterArray, stat = IError)
           deallocate(VelocityGasArray, stat = IError)
           deallocate(AccelerationArray, stat = IError)
+          deallocate(AccelerationWaterArray, stat = IError)
           deallocate(MassArray, stat = IError)
           deallocate(ESMstatevArray, stat = IError)
           deallocate(MassWaterArray, stat = IError)
@@ -419,6 +420,7 @@
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(AccelerationWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
@@ -711,7 +713,7 @@
           
         
           ! Update ShapeValues, DShapeValues
-          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,PatchID), NodalCoordinates(:,:,PatchID), PatchID)
+          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,PatchID), NodalCoordinates, PatchID) !(:,:,PatchID)
 
           ! Update GlobPos
           call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID, PatchID)

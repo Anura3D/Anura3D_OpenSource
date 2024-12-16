@@ -1657,7 +1657,7 @@
           close(GOMunit)
 
           ! we need to transfer these variabels into counters type
-          NLoadedElementSidesSolidNodes = NURBS%NLoadSystems_Traction_NumberOfElements 
+         ! NLoadedElementSidesSolidNodes = NURBS%NLoadSystems_Traction_NumberOfElements 
           
           call InitCountersFromFile(CalParams%ApplyContactAlgorithm, &
                                     Counters%Sum_NEl, Counters%Sum_NodTot, &!NElements, NNodes, & !NURBS%sum_nel_NURBS, NURBS%sum_NControlPoints
@@ -1742,7 +1742,7 @@
               call FormBezierMeshUsingUniqueKnotVectors_3D(NURBS%XiKnotEntriesUNIQUE(:,IPatch), NURBS%NXiKnotEntriesUNIQUE(IPatch), & 
                                                     NURBS%EtaKnotEntriesUNIQUE(:,IPatch), NURBS%NEtaKnotEntriesUNIQUE(IPatch), &
                                                     NURBS%ZetaKnotEntriesUNIQUE(:,IPatch), NURBS%NZetaKnotEntriesUNIQUE(IPatch), &
-                                                    KnotBezierMesh(:,:,IPatch)) 
+                                                    IPatch)!KnotBezierMesh(:,:,IPatch)) 
               
           end if
           end do ! loop over patches
@@ -1795,8 +1795,9 @@
               call FormBezierMeshKnotConnectivity_3D(NURBS%NXiKnotEntriesUNIQUE(IPatch), &
                   NURBS%NEtaKnotEntriesUNIQUE(IPatch), &
                   NURBS%NZetaKnotEntriesUNIQUE(IPatch), &
-                  KnotBezierMeshConnectivity(:,:,IPatch), &
-                  IPatch)    
+                   IPatch)  
+                  !KnotBezierMeshConnectivity(:,:,IPatch), &
+                   
           
           end if 
           end do ! loop over patches
@@ -2902,8 +2903,7 @@
             (NXiKnotEntriesUNIQUE, &
             NEtaKnotEntriesUNIQUE, &
             NZetaKnotEntriesUNIQUE, &
-            KnotBezierMeshConnectivity, &
-            IPatch)
+            IPatch) ! KnotBezierMeshConnectivity, &
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! Description: This subroutine forms the connectivity matrix for forming the Bezier connectivity mesh. 
@@ -2931,8 +2931,8 @@
         NumberOfElements_Xi, NumberOfElements_Eta, NumberOfElements_Zeta
         integer(INTEGER_TYPE) :: sum_variable
         
-        integer(INTEGER_TYPE), dimension(:,:), &
-            intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
+        !integer(INTEGER_TYPE), dimension(:,:), &
+        !    intent(inout) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
         
         integer(INTEGER_TYPE), dimension(1,8) :: UnitBezierVector
         integer(INTEGER_TYPE) :: UniqueHorizontalIndex, &
@@ -2944,41 +2944,41 @@
 
         
         
-        KnotBezierMeshConnectivity = 0
+        !KnotBezierMeshConnectivity = 0
         NumberOfElements_Xi = (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch))!NXiKnotEntriesUNIQUE-1
         NumberOfElements_Eta = (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch))!NEtaKnotEntriesUNIQUE-1
         NumberOfElements_Zeta = (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NURBS%NZetaKnotOrder(IPatch))!NZetaKnotEntriesUNIQUE-1
 
         
         
-        KnotBezierMeshConnectivity(1, 1) = 1!UniqueHorizontalDummyIndex
-        KnotBezierMeshConnectivity(1, 2) = 2!UniqueHorizontalDummyIndex+1
-        KnotBezierMeshConnectivity(1, 3) = KnotBezierMeshConnectivity(1, 1) + NumberOfElements_Xi + 1!3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
-        KnotBezierMeshConnectivity(1, 4) = KnotBezierMeshConnectivity(1, 2) + NumberOfElements_Xi + 1!4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
-        KnotBezierMeshConnectivity(1, 5) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 1)
-        KnotBezierMeshConnectivity(1, 6) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 2)
-        KnotBezierMeshConnectivity(1, 7) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 3)
-        KnotBezierMeshConnectivity(1, 8) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 4)
+        KnotBezierMeshConnectivity(1, 1, IPatch) = 1!UniqueHorizontalDummyIndex
+        KnotBezierMeshConnectivity(1, 2, IPatch) = 2!UniqueHorizontalDummyIndex+1
+        KnotBezierMeshConnectivity(1, 3, IPatch) = KnotBezierMeshConnectivity(1, 1, IPatch) + NumberOfElements_Xi + 1!3!NumberOfElements_Xi+2! 3 UniqueHorizontalIndex NumberOfElements_Eta
+        KnotBezierMeshConnectivity(1, 4, IPatch) = KnotBezierMeshConnectivity(1, 2, IPatch) + NumberOfElements_Xi + 1!4!NumberOfElements_Xi+3! 4 UniqueHorizontalIndex+1
+        KnotBezierMeshConnectivity(1, 5, IPatch) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 1, IPatch)
+        KnotBezierMeshConnectivity(1, 6, IPatch) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 2, IPatch)
+        KnotBezierMeshConnectivity(1, 7, IPatch) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 3, IPatch)
+        KnotBezierMeshConnectivity(1, 8, IPatch) = ((NumberOfElements_Xi+1)*(NumberOfElements_Eta+1)) + KnotBezierMeshConnectivity(1, 4, IPatch)
         
         
         do ii = 2, NumberOfElements_Xi
             do jj = 1, 8
                 
-                KnotBezierMeshConnectivity(ii,jj) = KnotBezierMeshConnectivity(ii-1,jj)+1
+                KnotBezierMeshConnectivity(ii,jj, IPatch) = KnotBezierMeshConnectivity(ii-1,jj, IPatch)+1
             
             end do
         end do 
         
         do ii = 2, NumberOfElements_Eta
                 
-                KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Xi)+1:ii*NumberOfElements_Xi, :) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Xi)+1:(ii-1)*NumberOfElements_Xi, :) + NumberOfElements_Xi +1
+                KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Xi)+1:ii*NumberOfElements_Xi, :, IPatch) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Xi)+1:(ii-1)*NumberOfElements_Xi, :, IPatch) + NumberOfElements_Xi +1
                
         end do
         
         
         do ii = 2, NumberOfElements_Zeta
                 
-                KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Xi*NumberOfElements_Eta)+1:ii*NumberOfElements_Xi*NumberOfElements_Eta, :) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Xi*NumberOfElements_Eta)+1:(ii-1)*NumberOfElements_Xi*NumberOfElements_Eta, :) + ((NumberOfElements_Xi+1) * (NumberOfElements_Eta+1))
+                KnotBezierMeshConnectivity(((ii-1)*NumberOfElements_Xi*NumberOfElements_Eta)+1:ii*NumberOfElements_Xi*NumberOfElements_Eta, :, IPatch) = KnotBezierMeshConnectivity(((ii-2)*NumberOfElements_Xi*NumberOfElements_Eta)+1:(ii-1)*NumberOfElements_Xi*NumberOfElements_Eta, :, IPatch) + ((NumberOfElements_Xi+1) * (NumberOfElements_Eta+1))
                
         end do
         
@@ -3179,7 +3179,7 @@
         subroutine FormBezierMeshUsingUniqueKnotVectors_3D(XiKnotEntriesUNIQUE, NXiKnotEntriesUNIQUE, & 
                                                         EtaKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
                                                         ZetaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
-                                                        KnotBezierMesh) 
+                                                        IPatch) !KnotBezierMesh) 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! Description: It is necessary to know the boundaries of the knot spans as they do not necessarily 
         !             conform with the control point locations. The KnotBezierMesh tells you the coordinates of
@@ -3207,12 +3207,14 @@
         integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
         integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntriesUNIQUE
         
+        integer(INTEGER_TYPE), intent(in) :: IPatch
+        
         real(REAL_TYPE), intent(in), dimension(:) :: XiKnotEntriesUNIQUE       
         real(REAL_TYPE), intent(in), dimension(:) :: EtaKnotEntriesUNIQUE
         real(REAL_TYPE), intent(in), dimension(:) :: ZetaKnotEntriesUNIQUE
 
         ! outputs
-        real(REAL_TYPE), intent(out), dimension(:,:) :: KnotBezierMesh  !allocatable,
+        !real(REAL_TYPE), intent(out), dimension(:,:) :: KnotBezierMesh  !allocatable,
         
         
         !This subroutine worked for 1 by 1 by 1 for 3D NURBS
@@ -3223,7 +3225,7 @@
         
         !! initialize
         !allocate(KnotBezierMesh(NoOfItems, NDIM), stat = IError)
-        KnotBezierMesh = 0.0
+        !KnotBezierMesh = 0.0
         
         counter = 1
         
@@ -3235,7 +3237,7 @@
         do ii = 1, NZetaKnotEntriesUNIQUE
             do  kk = 1, NEtaKnotEntriesUNIQUE
                 do jj = 1, NXiKnotEntriesUNIQUE
-                   KnotBezierMesh(counter, 1) = XiKnotEntriesUNIQUE(jj) !* HighestPointOnASurfaceDefiningPhysicalDomain(1)
+                   KnotBezierMesh(counter, 1, IPatch) = XiKnotEntriesUNIQUE(jj) !* HighestPointOnASurfaceDefiningPhysicalDomain(1)
                    counter = counter + 1
                 end do 
             end do    
@@ -3255,7 +3257,7 @@
                 
                     
                         
-                        KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk) !* HighestPointOnASurfaceDefiningPhysicalDomain(2)
+                        KnotBezierMesh(counter, 2, IPatch) = EtaKnotEntriesUNIQUE(kk) !* HighestPointOnASurfaceDefiningPhysicalDomain(2)
                         counter = counter + 1
                    !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
                    !counter = counter + 1
@@ -3274,7 +3276,7 @@
             do ii = 1, NXiKnotEntriesUNIQUE
             do  kk = 1, NEtaKnotEntriesUNIQUE
                 
-                        KnotBezierMesh(counter, 3) = ZetaKnotEntriesUNIQUE(jj) !* HighestPointOnASurfaceDefiningPhysicalDomain(3)
+                        KnotBezierMesh(counter, 3, IPatch) = ZetaKnotEntriesUNIQUE(jj) !* HighestPointOnASurfaceDefiningPhysicalDomain(3)
                         counter = counter + 1
                    !KnotBezierMesh(counter, 2) = EtaKnotEntriesUNIQUE(kk)
                    !counter = counter + 1
@@ -4931,9 +4933,23 @@
           allocate(AccelerationSoil(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoil = 0.0
           
+          
+          
+          
+          
+          
+          
+          
+          
           allocate(AccelerationSoilGeneralizedAlpha(Counters%N, Counters%NEntity), stat = IError)
           AccelerationSoilGeneralizedAlpha = 0.0 !This vector is populated from the acceleration of the material points 
 
+          
+          
+          
+          
+          
+          
           allocate(TotalVelocitySoil(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocitySoil = 0.0
           
@@ -4955,6 +4971,19 @@
           allocate(TotalVelocityWater(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocityWater = 0.0
           
+          
+          
+          
+          
+          
+          allocate(AccelerationWaterGeneralizedAlpha(Counters%N, Counters%NEntity), stat = IError)
+          AccelerationWaterGeneralizedAlpha = 0.0 !This vector is populated from the acceleration of the material points 
+          
+          
+          
+          
+          
+          
           allocate(TotalVelocityWaterPrevious(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocityWaterPrevious = 0.0
           
@@ -4972,7 +5001,13 @@
 
           allocate(TotalVelocityGas(Counters%N, Counters%NEntity), stat = IError)
           TotalVelocityGas = 0.0
+          
+          allocate(TotalVelocityGasGeneralizedAlpha(Counters%N, Counters%NEntity), stat = IError)
+          TotalVelocityGas = 0.0
+          
+          
 
+          
           allocate(NonAdvectiveFluxAirInWater(Counters%N, Counters%NEntity), stat = IError)
           NonAdvectiveFluxAirInWater = 0.0
 
@@ -4999,6 +5034,7 @@
           
           allocate(NodalUnitMassGradient(Counters%Sum_NodTot, NDIM), stat = IError)
           NodalUnitMassGradient = 0.0
+          
           allocate(ExtFlow(Counters%Sum_NodTot), stat = IError)
           ExtFlow = 0.0
 

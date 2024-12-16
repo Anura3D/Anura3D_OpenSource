@@ -378,7 +378,7 @@
                                ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
                                Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
                                IElement, ElementConnectivities(:,:,IPatch), &
-                               NodalCoordinatesUpd(:,:,IPatch),  &
+                               NodalCoordinatesUpd,  & !(:,:,IPatch)
                                BMatrixDeformed, &
                                IPatch)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
@@ -1553,7 +1553,7 @@
                              ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl,  &
                              Counters%NodTot(IPatch), NDIM, & ! Counters%NodTot
                              IElement, ElementConnectivities(:,:,IPatch), &
-                             NodalCoordinatesUpd(:,:,IPatch), &!NodalCoordinatesUpd, &
+                             NodalCoordinatesUpd, &!NodalCoordinatesUpd, & !(:,:,IPatch)
                              BMatrixDeformed, &
                              IPatch)!, DetJac)
 
@@ -1662,10 +1662,10 @@
             end if
 
             ! Calculate new particle shape function values -> after updating position 
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,PatchIDArray(IParticle)), NodalCoordinates(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,PatchIDArray(IParticle)), NodalCoordinates, PatchIDArray(IParticle)) ! -> this needs to be for singular MP !(:,:,PatchIDArray(IParticle))
             ! Calculate new particle shape function values -> after updating position --> Volumetric locking smoothing
             if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then
-                call SetParticleShapeFunctionData_VolLockSmooth(Particles(IParticle), IParticle, ElementIDArray(IParticle), NURBS%ElementConnectivities_VolLockSmooth(:,:,PatchIDArray(IParticle)), NodalCoordinates_VolLockSmooth(:,:,PatchIDArray(IParticle)), PatchIDArray(IParticle)) ! -> this needs to be for singular MP
+                call SetParticleShapeFunctionData_VolLockSmooth(Particles(IParticle), IParticle, ElementIDArray(IParticle), NURBS%ElementConnectivities_VolLockSmooth(:,:,PatchIDArray(IParticle)), NodalCoordinates_VolLockSmooth, PatchIDArray(IParticle)) ! -> this needs to be for singular MP !(:,:,PatchIDArray(IParticle))
             end if 
             
                  
@@ -1905,13 +1905,17 @@
                   
           elseif (NDIM ==3 ) then 
               
-              
+              ! debugging
+                      if ((OldElementID .le. 0) .or. (OldElementID .gt. Counters%NEl(IPatch) )) then !.and. OldElementID .ge. nel_NURBS(IPatch)) then 
+                          Success = .false.
+                        return 
+                      end if 
               
                   
               if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
 
                       
-                      call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, Counters%NEl(IPatch),  Counters%NodTot(IPatch), NDIM, NodalCoordinates(:,:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), &
+                      call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, Counters%NEl(IPatch),  Counters%NodTot(IPatch), NDIM, NodalCoordinates(1:Counters%NodTot(IPatch),:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), &
                                      NewLocPos, OutsideElement, Success, IPatch)
                 
               
@@ -1924,7 +1928,7 @@
                                    ELEMENTNODES, &
                                    Counters%NEl(IPatch),  & 
                                    Counters%NodTot(IPatch), NDIM, & 
-                                   NodalCoordinates(:,1:NDIM,IPatch), & 
+                                   NodalCoordinates, &  !(:,1:NDIM,IPatch)
                                    ElementConnectivities(:,:,IPatch), & 
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)
@@ -2166,13 +2170,18 @@
                     elseif (NDIM ==3) then 
                         
                         
+                        if ((ElemTrial .le. 0) .or. (ElemTrial .gt. Counters%NEl(PatchTrial) )) then !.and. OldElementID .ge. nel_NURBS(IPatch)) then 
+                          Success = .false.
+                        return 
+                      end if 
+                        
                     if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
 
                                                         
                         call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  ElemTrial, ELEMENTNODES, &
-                                Counters%NEl(PatchTrial),  Counters%NodTot(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
+                                Counters%NEl(PatchTrial),  Counters%NodTot(PatchTrial), NDIM, NodalCoordinates(1:Counters%NodTot(PatchTrial),:,PatchTrial),& !(1:Counters%NodTot(IPatch),:) !
                                 ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(PatchTrial),PatchTrial), &
-                                     NewLocPos, OutsideElement, Success, IPatch)
+                                     NewLocPos, OutsideElement, Success, PatchTrial)
                         
                                                         
                                                         
@@ -2183,7 +2192,7 @@
                                    ElemTrial, &
                                    ELEMENTNODES, Counters%NEl(PatchTrial),  & !Counters%NEl
                                    Counters%NodTot(PatchTrial), NDIM, & !Counters%NodTot
-                                   NodalCoordinates(:,:,PatchTrial), &
+                                   NodalCoordinates, & !(:,:,PatchTrial)
                                    ElementConnectivities(:,:,PatchTrial), &
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
@@ -2385,7 +2394,7 @@
           do IPatch = 1, Counters%NPatches ! Loop over patches
               
               FirstParticle = 1!GetParticleIndex(1, )!1
-              counters%NAEl = 0
+              !counters%NAEl = 0
               Counters%NAEl(IPatch) = 0
               
           do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements

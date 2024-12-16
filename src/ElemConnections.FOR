@@ -2543,7 +2543,7 @@
                 
                 call DetJacob(HS, dHS, &
                     PosGP, Counters%NEl(IPatch), Counters%NodTot(IPatch), NVECTOR, &
-                    IElement, ElementConnectivities(:,:,IPatch), NodeCoord(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    IElement, ElementConnectivities(:,:,IPatch), NodeCoord, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                     dxi_dx, dtildexi_dxi, &
                     IPatch) !update Jacob
                 
@@ -3192,18 +3192,18 @@
                   !call GetLocalCoordinates_2D(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
                   !                   NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
                   
-                  
+                  ! debugging
+                      if ((NewElementID .le. 0) .or. (NewElementID .gt. Counters%NEl(IPatch)) ) then !.and. (NewElementID .ge. nel_NURBS(IPatch))) then 
+                          Success = .false.
+                        return 
+                      end if 
                   
                   
               !
               !
                   if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
                       
-                      ! debugging
-                      if ((NewElementID .le. 0) ) then !.and. (NewElementID .ge. nel_NURBS(IPatch))) then 
-                          Success = .false.
-                        return 
-                      end if 
+                      
                       
                   call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
                                      NewLocPos, OutsideElement, Success, IPatch)
@@ -3221,12 +3221,15 @@
                   !call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
                   !                   NewLocPos, OutsideElement, Success)
              
-                  
+                  if ((NewElementID .le. 0) .or. (NewElementID .gt. Counters%NEl(IPatch)) ) then !.and. (NewElementID .ge. nel_NURBS(IPatch))) then 
+                          Success = .false.
+                        return 
+                      end if 
 
                   if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
 
                       
-                      call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                      call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord(1:Counters%NodTot(IPatch),:), ICon, &
                                      NewLocPos, OutsideElement, Success, IPatch)
                   
                   else 

@@ -617,7 +617,7 @@
                 !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
                 !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries) ! ELEMENTNODES was removed from argument
                 call DetJacob(HS, dHS, PosGP, Counters%Sum_NEl, Counters%Sum_NodTot, NVECTOR,  &
-                              IElement, ElementConnectivities(:,:,IPatch), NodalCoordinates(:,:,IPatch), &
+                              IElement, ElementConnectivities(:,:,IPatch), NodalCoordinates, & !(:,:,IPatch)
                               dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                               dxi_dx, dtildexi_dxi, &
                     IPatch)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac  
@@ -925,7 +925,7 @@
                !   dxi_dx, dtildexi_dxi)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
                call DetJacob(HS, dHS, &
                    PosGP, Counters%Sum_NEl, Counters%Sum_NodTot, NVECTOR,  &          
-                   IElement, ElementConnectivities(:,:,IPatch), NodalCoordinates(:,:,IPatch), &
+                   IElement, ElementConnectivities(:,:,IPatch), NodalCoordinates, & !(:,:,IPatch)
                    dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &!RJac, InvRJac, DetJac, &
                    dxi_dx, dtildexi_dxi, &
                    IPatch)  ! Calculate Jacobian matrix RJac and the inverse of the Jacobian matrix InvRJac
@@ -1134,7 +1134,7 @@
                   
                   ! dHS needs to be an input in BMatrix
                   call BMatrix(LocPosition, ELEMENTNODES, Counters%NEl(IPatch), Counters%NodTot(IPatch), NDIM, & !Counters%NEl !Counters%NodTot !NURBS%nel_NURBS
-                             IElement, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), BMatrixDeformed, &
+                             IElement, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, BMatrixDeformed, & !(:,:,IPatch)
                              IPatch)!, DetJac) !NodalCoordinatesUpd
      
                   !call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), &

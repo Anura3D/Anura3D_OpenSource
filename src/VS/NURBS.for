@@ -526,10 +526,16 @@
         do ii = 1,NoOfBasisFunctions_uKnot !loop accross basis function
             uknot_left = XiKnotEntries(ii)
             uknot_right = XiKnotEntries(ii+1)
-                if ( (uKnot_left<=Xi_ParametricDomain) .and. (Xi_ParametricDomain<uKnot_right) ) then 
-                    NN_IncludesZeroValues(ii,1) = 1  ! zero order values are in slot 1    
-                    !note that the derivative of zero order is zero 
-                end if 
+                
+            if ( (uKnot_left<=Xi_ParametricDomain) .and. (Xi_ParametricDomain<uKnot_right) ) then      
+            !if ( (uKnot_left<=Xi_ParametricDomain) .and. (Xi_ParametricDomain<=uKnot_right) ) then  ! -> I changed this for the water column 
+                NN_IncludesZeroValues(ii,1) = 1  ! zero order values are in slot 1    
+                !note that the derivative of zero order is zero 
+                !if (ii == (NoOfBasisFunctions_uKnot-NXiKnotOrder)) then !--> hardcoded for now to make sure we are in the right knot span 
+                !    exit
+                !end if 
+                
+            end if 
         end do 
              
         
@@ -3014,6 +3020,8 @@
           nj = NURBS%INN(ElementConnectivities(1,IElement,IPatch),2,IPatch)
          
          
+          
+          
           ! calculate parametric domain values 
           Xi_ParametricDomain =  ( (XiKnotEntries(ni+1) - XiKnotEntries(ni) ) * LocPos(1) &
                                     + (XiKnotEntries(ni+1) + XiKnotEntries(ni)) ) * 0.5 ! this should be a scalar always
@@ -3022,6 +3030,7 @@
           Eta_ParametricDomain =  ( (EtaKnotEntries(nj+1) - EtaKnotEntries(nj) ) * LocPos(2) &
                                     + (EtaKnotEntries(nj+1) + EtaKnotEntries(nj)) ) * 0.5 ! this should be a scalar always
        
+          
              
          
           ! - evaluate each basis function value at the material point

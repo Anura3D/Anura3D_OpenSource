@@ -168,7 +168,7 @@
 
         
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
-        !real(REAL_TYPE), allocatable :: AccelerationWaterArray(:,:)       !> Acceleration of the particle (water)
+        real(REAL_TYPE), allocatable :: AccelerationWaterArray(:,:)       !> Acceleration of the particle (water)
         
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
@@ -980,6 +980,7 @@
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(AccelerationWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
@@ -1149,7 +1150,7 @@
                                    IEl, &
                                    ELEMENTNODES, Counters%NEl(IPatch),  & !Counters%NEl
                                    Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
-                                   NodalCoordinates(:,:,IPatch), &
+                                   NodalCoordinates, & !(:,:,IPatch)
                                    ElementConnectivities(:,:,IPatch), &
                                    NewLocPos, &
                                    OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
@@ -1644,7 +1645,7 @@
           !integer(INTEGER_TYPE), intent(in) :: NEl, NodTot, IDim, IElement
           !real(REAL_TYPE), dimension(:), intent(in) :: LocPos
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-          real(REAL_TYPE), dimension(:, :), intent(in) :: Co
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: Co
           real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
           real(REAL_TYPE), dimension(NDIM, NDIM) :: dx_dxi
           real(REAL_TYPE), dimension(NDIM, NDIM) :: dxi_dx
@@ -1753,7 +1754,7 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           
-          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID, NDIM)
+          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID, NDIM, PatchID)
           !NNodes = nen_NURBS
           !! Determine the Jacobian matrix RJac
           !RJac = 0.0
@@ -1778,6 +1779,11 @@
           ! Calculating dxi/dx
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! debugger
+          
+          !if (dx_dxi(2,2) == 0.0) then 
+          !    aa =1.0
+          !end if 
+          
      
 
           
@@ -1865,7 +1871,7 @@
           !integer(INTEGER_TYPE), intent(in) :: NEl, NodTot, IDim, IElement
           !real(REAL_TYPE), dimension(:), intent(in) :: LocPos
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-          real(REAL_TYPE), dimension(:, :), intent(in) :: Co
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: Co
           real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
           real(REAL_TYPE), dimension(NDIM, NDIM) :: dx_dxi
           real(REAL_TYPE), dimension(NDIM, NDIM) :: dxi_dx
@@ -1971,7 +1977,7 @@
           ! Calculating dx/dxi
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
-          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID, NDIM)
+          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID, NDIM, PatchID)
           !NNodes = nen_NURBS
           !! Determine the Jacobian matrix RJac
           !RJac = 0.0

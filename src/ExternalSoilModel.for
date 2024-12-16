@@ -1353,10 +1353,13 @@ end subroutine StressSolid
       real(REAL_TYPE) :: moduleEr,moduleSigDSig
       real(REAL_TYPE) :: EpsPEq,EpsPEq1,EpsPEq2 !Equivalent Plastic Deformation
       real(REAL_TYPE) :: DEpsPEq !Derivative Strain in function of Equivalent Plastic Deformation
-      !real(REAL_TYPE) :: p,J,Lode,S3TA
-      !real(REAL_TYPE), dimension(3) :: Principal_stresses
-      !real(REAL_TYPE), dimension(3) :: SigC_TC
-      !real(REAL_TYPE), dimension(3,3) :: Principal_vectors
+      real(REAL_TYPE) :: p,J,Lode,S3TA
+      real(REAL_TYPE), dimension(3) :: Principal_stresses
+      real(REAL_TYPE), dimension(3) :: SigC_TC
+      real(REAL_TYPE), dimension(3,3) :: SigC_TC_mat
+      real(REAL_TYPE), dimension(3,3) :: SigC_cartesian
+      integer(INTEGER_TYPE) :: ii, jj, kk, ll
+      real(REAL_TYPE), dimension(3,3) :: Principal_vectors
       real(REAL_TYPE), dimension(6) :: SigYield, SigYield2
       real(REAL_TYPE), dimension(6) :: DSigPP,DSigP1,DSigP2
       real(REAL_TYPE), dimension(6) :: DEpsPP,DEpsPP1,DEpsPP2
@@ -1408,6 +1411,72 @@ end subroutine StressSolid
       psitol = abs(psip-psir)*SPTOL
       DTmin = 0.000000001d0
       
+      
+      
+      !call CalculateInvariants(IntGlo,SigC,p,J,Lode,S3TA)
+      !if (p > 0) then !hardcoding T as zero
+      !    call Get_EigenValues_EigenVectors(SigC, Principal_stresses, Principal_vectors)          
+      !    !SigC = 0.0
+      !    SigC_TC(3) = Principal_stresses(3) + ( - (Principal_stresses(1)+Principal_stresses(2)+Principal_stresses(3)) )/3
+      !    SigC_TC(2) = Principal_stresses(2) + ( - (Principal_stresses(1)+Principal_stresses(2)+Principal_stresses(3)) )/3
+      !    SigC_TC(1) = Principal_stresses(1) + ( - (Principal_stresses(1)+Principal_stresses(2)+Principal_stresses(3)) )/3
+      !    SigC = [Sig_TC(1), Sig_TC(2), Sig_TC(3), 0, 0, 0]
+      !end if
+      ! START TENSION CUTOFF ---------------------------------------------------------------------------------------------------------------
+      !call CalculateInvariants(IntGlo, SigC, p, J, Lode, S3TA)
+      !
+      !
+      !if (p > 0) then
+      !
+      !    ! Compute principal stresses and directions
+      !    call Get_EigenValues_EigenVectors(SigC, Principal_stresses, Principal_vectors)
+      !
+      !
+      !    ! Adjust principal stresses for tension cutoff or other modifications
+      !    SigC_TC(3) = Principal_stresses(3) - (Principal_stresses(1) + Principal_stresses(2) + Principal_stresses(3)) / 3.0
+      !    SigC_TC(2) = Principal_stresses(2) - (Principal_stresses(1) + Principal_stresses(2) + Principal_stresses(3)) / 3.0
+      !    SigC_TC(1) = Principal_stresses(1) - (Principal_stresses(1) + Principal_stresses(2) + Principal_stresses(3)) / 3.0
+      !
+      !
+      !    ! Reassemble SigC_TC as a diagonal tensor
+      !    do ii = 1, 3
+      !        do jj = 1, 3
+      !            SigC_TC_mat(ii, jj) = 0.0
+      !        end do
+      !        SigC_TC_mat(ii, ii) = SigC_TC(ii)
+      !    end do
+      !
+      !
+      !    ! Perform rotation back to Cartesian coordinates: SigC = R * SigC_TC * R^T
+      !    do ii = 1, 3
+      !        do jj = 1, 3
+      !            SigC_cartesian(ii, jj) = 0.0
+      !            do kk = 1, 3
+      !                do ll = 1, 3
+      !                    SigC_cartesian(ii, jj) = SigC_cartesian(ii, jj) + Principal_vectors(ii, kk) * SigC_TC_mat(kk, ll) * Principal_vectors(jj, ll)
+      !                end do
+      !            end do
+      !        end do
+      !    end do
+      !    
+      !    
+      !    
+      !    ! Assemble the rotated stress tensor in Voigt notation
+      !    SigC(1) = SigC_cartesian(1, 1) ! σ_xx
+      !    SigC(2) = SigC_cartesian(2, 2) ! σ_yy
+      !    SigC(3) = SigC_cartesian(3, 3) ! σ_zz
+      !    SigC(4) = SigC_cartesian(2, 3) ! σ_yz
+      !    SigC(5) = SigC_cartesian(1, 3) ! σ_xz
+      !    SigC(6) = SigC_cartesian(1, 2) ! σ_xy
+      !    
+      !    
+      !end if
+      
+      ! END TENSION CUTOFF ---------------------------------------------------------------------------------------------------------------
+      
+      
+      
+      
       !Check the yield function value
       call DetermineYieldFunctionValue(IntGlo,SigC,c,phi,F)
       
@@ -1415,17 +1484,10 @@ end subroutine StressSolid
       !If F<0 then the behaviour is elastic --> Return
       if (F <= YTOL) then
         IPL = 0
-      !  ! Tension cutoff implementation 
-      !! First -> compute mean effective stress 'p' and deviatoric stress 'J' for SigC
+        ! Tension cutoff implementation 
+      ! First -> compute mean effective stress 'p' and deviatoric stress 'J' for SigC
       !call CalculateInvariants(IntGlo,SigC,p,J,Lode,S3TA)
-      !if (3*p > 0) then !hardcoding T as zero
-      !    call Get_EigenValues_EigenVectors(SigC, Principal_stresses, Principal_vectors)          
-      !    SigC = 0.0
-      !    !SigC_TC(3) = Principal_stresses(3) + (0 - (Principal_stresses(1)+Principal_stresses(2)+Principal_stresses(3)) )/3
-      !    !SigC_TC(2) = Principal_stresses(2) + (0 - (Principal_stresses(1)+Principal_stresses(2)+Principal_stresses(3)) )/3
-      !    !SigC_TC(1) = Principal_stresses(1) + (0 - (Principal_stresses(1)+Principal_stresses(2)+Principal_stresses(3)) )/3
-      !    !SigC = [Sig_TC(1), Sig_TC(2), Sig_TC(3), 0, 0, 0]
-      !end if
+      
         return
       end if
 
@@ -1582,6 +1644,23 @@ end subroutine StressSolid
         !If T1>1 the calculation is finished
         If (T1 >= 1d0) then
             SigC = SigYield   !Determine Final stresses
+            
+            ! Tension cutoff implementation 
+            ! First -> compute mean effective stress 'p' and deviatoric stress 'J' for SigC
+          !  call CalculateInvariants(IntGlo,SigC,p,J,Lode,S3TA)
+          !  
+            !if (p > 0) then !hardcoding T as zero
+          !
+          !      !call Get_EigenValues_EigenVectors(SigC, Principal_stresses, Principal_vectors)  
+                !SigC = 0.0
+          !!SigC_TC = 0.0
+          !!SigC_TC(3) = SigC(3) + (0 - p)
+          !!SigC_TC(2) = SigC(2) + (0 - p)
+          !!SigC_TC(1) = SigC(1) + (0 - p)
+          !      
+           ! end if
+            
+            
             return
         end if
 
@@ -1601,17 +1680,7 @@ end subroutine StressSolid
         
       end do  !If T=1 the loop is finished
       
-      ! Tension cutoff implementation 
-      ! First -> compute mean effective stress 'p' and deviatoric stress 'J' for SigC
-      !call CalculateInvariants(IntGlo,SigC,p,J,Lode,S3TA)
-      !if (3*p > 0) then !hardcoding T as zero
-      !    call Get_EigenValues_EigenVectors(SigC, Principal_stresses, Principal_vectors)  
-      !    SigC = 0.0
-      !    !SigC_TC = 0.0
-      !    !SigC_TC(3) = SigC(3) + (0 - p)
-      !    !SigC_TC(2) = SigC(2) + (0 - p)
-      !    !SigC_TC(1) = SigC(1) + (0 - p)
-      !end if
+      
       
       
 
