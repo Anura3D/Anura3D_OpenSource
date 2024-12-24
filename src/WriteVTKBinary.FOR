@@ -38,17 +38,20 @@ module ModWriteVTKBinary
     !     $Date: 2022-04-14 14:56:02 +0200 (Thu, 14 Apr 2022) $
     !
     !**********************************************************************
-    
+    use ModFileIO
     use ModGlobalConstants
+    !use ModFileIO
     use ModReadCalculationData
     use ModMPMData
-    use ModFileIO
+    !use ModFileIO
     
     character(1), parameter:: end_rec = char(10)    ! end-character for binary-record finalize
     integer(INTEGER_TYPE), parameter:: maxlen = 500         ! max number of characters os static string
     character(len=maxlen) ::  cbuffer ! string buffer for binary data
     
     contains
+    
+    
     
     subroutine InitialiseVTKFileBinary(NumberMaterialPoints, VTKFileName)
     !**********************************************************************
@@ -107,6 +110,75 @@ module ModWriteVTKBinary
     write(VTKUnit) trim(cbuffer)//end_rec
 
     end subroutine InitialiseVTKFileBinary
+    
+    
+    subroutine InitialiseVTKFileBinary_ControlPoints(NumberNodes, VTKFileName, IPatch)
+    !**********************************************************************
+    !
+    !    Function: initialise VTK files
+    !
+    ! I NumberMaterialPoints: Number of material  points
+    ! O VTKFileName: VTK output file name
+    !
+    !**********************************************************************    
+    implicit none
+
+    integer(INTEGER_TYPE), intent(in) :: NumberNodes
+    character*(*), intent(in) :: VTKFileName
+    ! local variables
+    integer(INTEGER_TYPE) :: MaterialPointID
+    real(REAL_TYPE), dimension(3) :: NoCo = 0.0 ! dimension 3 as ParaView requires 3D data structure
+
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    integer(INTEGER_TYPE), intent(in) :: IPatch
+    
+    ! open the VTK file for material point data
+
+    call FileOpenWriteBinary(VTKUnit, VTKFileName)
+
+    write(VTKUnit) trim(VTK_VERSION)//end_rec ! writing file version and identifier
+    write(VTKUnit) trim(CalParams%FileNames%ProjectName)//end_rec ! writing header
+    write(VTKUnit) trim(BINARY_FORMAT)//end_rec ! writing file format
+
+    ! writing dataset structure (defines geometry and topology of dataset)
+    write(VTKUnit) 'DATASET UNSTRUCTURED_GRID'//end_rec
+
+    write(cbuffer, '(A,I8,A)') 'POINTS ',NumberNodes,' DOUBLE'
+    write(VTKUnit) trim(cbuffer)//end_rec
+
+    do MaterialPointID = 1, NumberNodes ! loop over number of material points
+        NoCo(1) = NodalCoordinates(MaterialPointID, 1, IPatch)
+        NoCo(2) = NodalCoordinates(MaterialPointID, 2, IPatch)
+        if (NDIM==3) NoCo(3) = NodalCoordinates(MaterialPointID, 3, IPatch) ! for 2D third coordinate is set equal to 0.0
+        write(VTKUnit) NoCo
+    end do
+
+    write(cbuffer,'(A,2I8)')'CELLS ',NumberNodes,2*NumberNodes
+    write(VTKUnit) trim(cbuffer)//end_rec
+
+    do MaterialPointID = 1, NumberNodes ! loop over material points
+        write(VTKUnit) 1, MaterialPointID-1 ! write "connectivities" of material points (note that the index has to be decreased by 1)
+    end do
+
+    write(cbuffer,'(A,I8)')'CELL_TYPES ',NumberNodes
+    write(VTKUnit) trim(cbuffer)//end_rec
+
+    do MaterialPointID = 1, NumberNodes ! loop over material points
+        write(VTKUnit) 1 ! i.e. specification for single point, VTK_VERTEX=1
+    end do
+
+    ! writing dataset attributes for material points (defines the actual dataset values)
+    write(cbuffer,'(A,I8)')'POINT_DATA ',NumberNodes
+    write(VTKUnit) trim(cbuffer)//end_rec
+
+    end subroutine InitialiseVTKFileBinary_ControlPoints
+    
+    
+    
+    
+    
+    
     
     subroutine WriteVTKFloatScalarDataBinary(DataSetName,DataSetScalar)
     !**********************************************************************

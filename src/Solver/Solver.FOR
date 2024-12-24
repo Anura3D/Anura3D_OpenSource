@@ -124,15 +124,24 @@
       integer(INTEGER_TYPE) :: Opt, Counter
       integer(INTEGER_TYPE), dimension(:), allocatable :: PermutationVector
       logical :: FirstNonZeroDoF
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
 
-      allocate(Equations%ReducedDoFMapping(Counters%NodTot * NDOFLQS), stat = IError)  
+      allocate(Equations%ReducedDoFMapping(Counters%Sum_NodTot * NDOFLQS), stat = IError)  
       Equations%ReducedDoFMapping = 0
-      allocate(Equations%ReducedDoFMappingMode(Counters%NodTot * NDOFLQS), stat = IError)
+      allocate(Equations%ReducedDoFMappingMode(Counters%Sum_NodTot * NDOFLQS), stat = IError)
       Equations%ReducedDoFMappingMode = 0
 
       Equations%NReducedDoF = 0
-      do NodeID = 1, Counters%NodTot
-        if (IsElementCornerNode(NodeID)) then
+      do IPatch = 1, Counters%NPatches ! loop over patches
+      do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+          
+        if (IsElementCornerNode(NodeID, IPatch)) then
           do I = 1, NVECTOR
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
             if (PBoundaryQuasiStatic(IDoF)/=0) then
@@ -149,6 +158,8 @@
           end if
         end if
       end do
+      
+      end do ! loop over patches
 
       allocate(Equations%ReducedDoFMappingInverse(Equations%NReducedDoF), stat = IError)
       Equations%ReducedDoFMappingInverse = 0
@@ -156,8 +167,13 @@
       Equations%ReducedDoFMappingInverseNodes = 0
 
       Counter = 0
-      do NodeID = 1, Counters%NodTot
-        if (IsElementCornerNode(NodeID)) then
+      do IPatch = 1, Counters%NPatches ! loop over patches
+          
+      do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+          
+        if (IsElementCornerNode(NodeID, IPatch)) then
           do I = 1, NDOFLQS 
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
             if (PBoundaryQuasiStatic(IDoF)/=0) then
@@ -168,21 +184,30 @@
           end do
         end if
       end do
+      
+      end do ! loop over patches
 
       Equations%NNonZeros = 0
-      do NodeID = 1, Counters%NodTot
-        if (IsElementCornerNode(NodeID)) then
+      do IPatch = 1, Counters%NPatches ! loop over patches
+          
+      do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+          
+        if (IsElementCornerNode(NodeID, IPatch)) then
           NFreeDoFI = GetNDoFOfNode(NodeID)
           if (NFreeDoFI/=0) then
             NNodes = GetNNodesOfNode(NodeID)
             NFreeDoFJ = 0
             do I = 1, NNodes
-              NFreeDoFJ = NFreeDoFJ + GetNDoFOfNode(GetNodeIOfNode(NodeID, I))
+              NFreeDoFJ = NFreeDoFJ + GetNDoFOfNode(GetNodeIOfNode(NodeID, I, IPatch))
             end do
             Equations%NNonZeros = Equations%NNonZeros + NFreeDoFJ * NFreeDoFI
           end if
         end if
       end do
+      
+      end do 
 
       if (Equations%IsSymmetric) then
         Equations%NNonZeros =  (Equations%NNonZeros - Equations%NReducedDoF) / 2 + Equations%NReducedDoF
@@ -194,8 +219,14 @@
       Equations%RowIndexDSS = 0
 
       Counter = 0
-      do NodeID = 1, Counters%NodTot
-        if (IsElementCornerNode(NodeID)) then
+      
+      do IPatch = 1, Counters%NPatches ! loop over patches
+      
+      do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+          
+        if (IsElementCornerNode(NodeID, IPatch_Temporary)) then
           NNodes = GetNNodesOfNode(NodeID)
           do I = 1, NDOFLQS
             IDoF = ReducedDoFQuasiStatic(NodeID) + I
@@ -203,7 +234,7 @@
               IReducedDoF = Equations%ReducedDoFMapping(IDoF)
               FirstNonZeroDoF = .false.
               do INode = 1, NNodes
-                INodeID = GetNodeIOfNode(NodeID, INode)
+                INodeID = GetNodeIOfNode(NodeID, INode, IPatch)
                 do J = 1, NDOFLQS
                   JDoF = ReducedDoFQuasiStatic(INodeID) + J
                   if (PBoundaryQuasiStatic(JDoF)/=0) then
@@ -225,6 +256,8 @@
           end do
         end if
       end do
+      
+      end do ! loop over patches
 
       Equations%RowIndexDSS(Equations%NReducedDoF + 1) = Equations%NNonZeros + 1
 
@@ -323,15 +356,18 @@
       real(REAL_TYPE) :: value
       integer(INTEGER_TYPE), parameter :: SOLVERFILE = 11
       
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      
       ! Add to matrix
       do NodeLocalRow = 1, ELEMENTNODES
-        NodeIDRow = ElementConnectivities(NodeLocalRow, ElementID)
+        NodeIDRow = ElementConnectivities(NodeLocalRow, ElementID,IPatch_Temporary)
         do IDimRow = 1, NDOFLQS
           IDoFRow = ReducedDoFQuasiStatic(NodeIDRow) + IDimRow
           if (PBoundaryQuasiStatic(IDoFRow)/=0) then
             IReducedDoFRow = Equations%ReducedDoFMapping(IDoFRow)
             do NodeLocalColumn = 1, ELEMENTNODES
-              NodeIDColumn = ElementConnectivities(NodeLocalColumn, ElementID)
+              NodeIDColumn = ElementConnectivities(NodeLocalColumn, ElementID, IPatch_Temporary)
               do IDimColumn = 1, NDOFLQS
                 IDoFColumn = ReducedDoFQuasiStatic(NodeIDColumn) + IDimColumn
                 if (PBoundaryQuasiStatic(IDoFColumn)/=0) then
@@ -358,7 +394,7 @@
           write(SOLVERFILE,*)
           write(SOLVERFILE,*) 'ReducedDof'
           do NodeLocalRow = 1, ELEMENTNODES
-            NodeIDRow = ElementConnectivities(NodeLocalRow, ElementID)
+            NodeIDRow = ElementConnectivities(NodeLocalRow, ElementID, IPatch_Temporary)
             do IDimRow = 1, NDOFLQS
               IDoFRow = ReducedDoFQuasiStatic(NodeIDRow) + IDimRow
               write(SOLVERFILE,*) NodeLocalRow, NodeIDRow, IDimRow, IDoFRow
@@ -401,12 +437,22 @@
 
       ! Local variables
       integer(INTEGER_TYPE) :: INode, IDim, IDoF, IReducedDoF, MatrixIndex
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+      integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
+
 
       if (.not.IsMPMComputation()) RETURN
 
-      do INode = 1, Counters%NodTot
-        if (IsElementCornerNode(INode)) then
-          if (.not.ActiveNode(INode)) then
+      do IPatch = 1, Counters%NPatches ! loop over patches
+      do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+          
+        if (IsElementCornerNode(INode, IPatch)) then
+          if (.not.ActiveNode(INode, IPatch)) then
             do IDim = 1, NDOFLQS
               IDoF = ReducedDoFQuasiStatic(INode) + IDim
               if (PBoundaryQuasiStatic(IDoF)/=0) then
@@ -418,6 +464,8 @@
           end if
         end if
       end do
+      
+      end do ! loop over patches
 
       end subroutine AdjustGlobalStiffnessMatrixForInactiveElements
 
@@ -432,8 +480,8 @@
 
       real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(in) :: RateOfMomentum
       real(REAL_TYPE), dimension(Counters%N), intent(inout) :: SubIncrementalDisplacement
-      real(REAL_TYPE), dimension(Counters%NodTot), intent(in) :: RateOffFlow
-      real(REAL_TYPE), dimension(Counters%NodTot), intent(inout) :: SubIncrementalPressure
+      real(REAL_TYPE), dimension(Counters%Sum_NodTot), intent(in) :: RateOffFlow
+      real(REAL_TYPE), dimension(Counters%Sum_NodTot), intent(inout) :: SubIncrementalPressure
       
       ! Local variables
       integer(INTEGER_TYPE) :: Opt, IReducedDoF, IDoF, INode, I, IMode, FirstNonZeroInRow, N, Row, Column, J
@@ -441,8 +489,23 @@
       integer(INTEGER_TYPE), parameter :: SOLVERFILE2 = 12
       real(REAL_TYPE), dimension(:), allocatable :: ErrorVector
       integer(INTEGER_TYPE) :: IError
+      
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch
+      
+      
+      
+      
+      
       allocate(ErrorVector(Equations%NReducedDoF), stat = IError)  
+      
+      
+      
+      
       ErrorVector = 0
+      
+      
       
       if (CalParams%OutputDebugData) then
         open(SOLVERFILE2,file='d:\tmp\struct.txt')
@@ -451,15 +514,15 @@
           write(SOLVERFILE2,*) I, PBoundary(I)
         end do
         write(SOLVERFILE2,*) 'ReducedDoF', Counters%NodTot+1
-        do I = 1, Counters%NodTot+1
+        do I = 1, Counters%Sum_NodTot+1
           write(SOLVERFILE2,*) I, ReducedDoF(I)
         end do
         write(SOLVERFILE2,*) 'ReducedDofQuasiStatic', Counters%NodTot+1
-        do I = 1, Counters%NodTot+1
+        do I = 1, Counters%Sum_NodTot+1
           write(SOLVERFILE2,*) I, ReducedDofQuasiStatic(I)
         end do
         write(SOLVERFILE2,*) 'PBoundaryQuasiStatic', Counters%NodTot*4
-        do I = 1, Counters%NodTot*NDOFLQS
+        do I = 1, Counters%Sum_NodTot*NDOFLQS
           write(SOLVERFILE2,*) I, PBoundaryQuasiStatic(I)
         end do
         write(SOLVERFILE2,*) 'PBoundaryWater', Counters%N
@@ -467,7 +530,7 @@
           write(SOLVERFILE2,*) I, PBoundaryWater(I)
         end do
         write(SOLVERFILE2,*) 'ReducedDoFMapping ReducedDoFMappingMode', Counters%NodTot * NDOFLQS
-        do I = 1, Counters%NodTot * NDOFLQS
+        do I = 1, Counters%Sum_NodTot * NDOFLQS
           write(SOLVERFILE2,*) I, Equations%ReducedDoFMapping(I), Equations%ReducedDoFMappingMode(I)
         end do
         write(SOLVERFILE2,*) 'ReducedDoFInverse ReducedDoFMappingInverseNodes', Equations%NReducedDoF
@@ -514,7 +577,7 @@
           write(SOLVERFILE2,*) I, RateOfMomentum(I, 1)
         end do
         write(SOLVERFILE2,*) 'steady flow'
-        do I = 1, Counters%NodTot
+        do I = 1, Counters%Sum_NodTot
           write(SOLVERFILE2,*) I, RateOffFlow(I)
         end do
         write(SOLVERFILE2,*) 'RHS'
@@ -556,7 +619,7 @@
           write(SOLVERFILE2,*) I, SubIncrementalDisplacement(I)
         end do
         write(SOLVERFILE2,*) 'pressure', Counters%NodTot
-        do I = 1, Counters%NodTot
+        do I = 1, Counters%Sum_NodTot
           write(SOLVERFILE2,*) I, SubIncrementalPressure(I)
         end do
         close(SOLVERFILE2)

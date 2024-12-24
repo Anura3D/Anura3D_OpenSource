@@ -38,11 +38,12 @@ module ModWriteVTKASCII
     !     $Date: 2022-04-14 14:56:02 +0200 (Thu, 14 Apr 2022) $
     !
     !**********************************************************************
-    
+    use ModFileIO
     use ModGlobalConstants
+    !use ModFileIO
     use ModReadCalculationData
     use ModMPMData
-    use ModFileIO
+    !use ModFileIO
     
     contains
     

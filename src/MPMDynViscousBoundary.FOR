@@ -114,6 +114,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError, INode, SizeAB, NVisNodSld, NVisNodWat, NVisNodGas
           real(REAL_TYPE), dimension(:), allocatable :: NodeConditionLocal
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           call DestroyViscousBoundaryData()
 
@@ -134,8 +137,8 @@
 
           ! Arrays related to solid phase
           allocate(VisDampForceSld(Counters%N, Counters%nEntity), stat=IError)
-          allocate(VisNodSurAraSld(Counters%NodTot), stat=IError)
-          allocate(NodeCndVisSld2(Counters%NodTot, SizeAB), stat=IError)
+          allocate(VisNodSurAraSld(Counters%Sum_NodTot), stat=IError)
+          allocate(NodeCndVisSld2(Counters%Sum_NodTot, SizeAB), stat=IError)
           allocate(DashpotSld(Counters%N), stat=IError)
           allocate(NormDashpotSld(Counters%N), stat=IError)
           allocate(SpringSld(Counters%N), stat=IError)
@@ -154,8 +157,8 @@
           
           ! Arrays related to liquid phase
           allocate(VisDampForceWat(Counters%N,Counters%nEntity), stat=IError)
-          allocate(VisNodSurAraWat(Counters%NodTot), stat=IError)
-          allocate(NodeCndVisWat2(Counters%NodTot, SizeAB), stat=IError)
+          allocate(VisNodSurAraWat(Counters%Sum_NodTot), stat=IError)
+          allocate(NodeCndVisWat2(Counters%Sum_NodTot, SizeAB), stat=IError)
           allocate(DashpotWat(Counters%N), stat=IError)
           allocate(SpringWat(Counters%N), stat=IError)
           allocate(DofCndVisWat(Counters%N), stat=IError)
@@ -170,9 +173,9 @@
 
           ! Arrays related to gas phase
           allocate(VisDampForceGas(Counters%N,Counters%nEntity), stat=IError)
-          allocate(VisNodSurAraGas(Counters%NodTot), stat=IError)
-          allocate(NodeCndVisGas(Counters%NodTot, SizeAB), stat=IError)
-          allocate(NodeCndVisGas2(Counters%NodTot, SizeAB), stat=IError)
+          allocate(VisNodSurAraGas(Counters%Sum_NodTot), stat=IError)
+          allocate(NodeCndVisGas(Counters%Sum_NodTot, SizeAB), stat=IError)
+          allocate(NodeCndVisGas2(Counters%Sum_NodTot, SizeAB), stat=IError)
           allocate(DashpotGas(Counters%N), stat=IError)
           allocate(SpringGas(Counters%N), stat=IError)
           allocate(DofCndVisGas(Counters%N), stat=IError)
@@ -189,7 +192,7 @@
           ! surfaces solid
           do INode = 1, GeoParams%NABSurfaceNodesSolid  ! loop over viscous elements 
             NodeConditionLocal = GeoParams%AbsorbingBoundariesSurfacesSolid(INode, :) 
-            if (IsElementCornerNode(NodeConditionLocal(1))) then
+            if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
               NodeCndVisSld2(NodeConditionLocal(1), :) = NodeConditionLocal
             end if  
           end do 
@@ -197,7 +200,7 @@
           ! lines solid
           do INode = 1, GeoParams%NABLineNodesSolid
                 NodeConditionLocal = GeoParams%AbsorbingBoundariesLinesSolid(INode, :)
-                  if (IsElementCornerNode(NodeConditionLocal(1))) then
+                  if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                     NodeCndVisSld2(NodeConditionLocal(1), :) = NodeConditionLocal
                   end if  
           end do
@@ -205,7 +208,7 @@
           ! points solid
           do INode = 1, GeoParams%NABPointNodesSolid
                 NodeConditionLocal = GeoParams%AbsorbingBoundariesPointsSolid(INode, :)
-                  if (IsElementCornerNode(NodeConditionLocal(1))) then
+                  if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                     NodeCndVisSld2(NodeConditionLocal(1), :) = NodeConditionLocal
                   end if  
           end do
@@ -213,7 +216,7 @@
           ! surfaces liquid
           do INode =1, GeoParams%NABSurfaceNodesLiquid  ! loop over viscous elements
                NodeConditionLocal = GeoParams%AbsorbingBoundariesSurfacesLiquid(INode, :)
-               if (IsElementCornerNode(NodeConditionLocal(1))) then
+               if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                  NodeCndVisWat2(NodeConditionLocal(1), :) = NodeConditionLocal
                end if  
           end do
@@ -221,7 +224,7 @@
           ! lines liquid
           do INode = 1, GeoParams%NABLineNodesLiquid
                NodeConditionLocal = GeoParams%AbsorbingBoundariesLinesLiquid(INode, :)
-                 if (IsElementCornerNode(NodeConditionLocal(1))) then
+                 if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                    NodeCndVisWat2(NodeConditionLocal(1), :) = NodeConditionLocal
                  end if  
           end do
@@ -229,7 +232,7 @@
           ! points liquid
           do INode = 1, GeoParams%NABPointNodesLiquid               
                NodeConditionLocal = GeoParams%AbsorbingBoundariesPointsLiquid(INode, :)
-               if (IsElementCornerNode(NodeConditionLocal(1))) then
+               if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                  NodeCndVisWat2(NodeConditionLocal(1), :) = NodeConditionLocal
                end if  
           end do
@@ -237,7 +240,7 @@
           ! surfaces gas
           do INode =1, GeoParams%NABSurfaceNodesGas  ! loop over viscous elements
                NodeConditionLocal = GeoParams%AbsorbingBoundariesSurfacesGas(INode, :)
-               if (IsElementCornerNode(NodeConditionLocal(1))) then
+               if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                  NodeCndVisGas2(NodeConditionLocal(1), :) = NodeConditionLocal
                end if  
           end do
@@ -245,7 +248,7 @@
           ! lines gas
           do INode = 1, GeoParams%NABLineNodesGas
                NodeConditionLocal = GeoParams%AbsorbingBoundariesLinesGas(INode, :)
-                 if (IsElementCornerNode(NodeConditionLocal(1))) then
+                 if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                    NodeCndVisGas2(NodeConditionLocal(1), :) = NodeConditionLocal
                  end if  
           end do
@@ -253,7 +256,7 @@
           ! points gas
           do INode = 1, GeoParams%NABPointNodesGas               
                NodeConditionLocal = GeoParams%AbsorbingBoundariesPointsGas(INode, :)
-               if (IsElementCornerNode(NodeConditionLocal(1))) then
+               if (IsElementCornerNode(NodeConditionLocal(1), IPatch_Temporary)) then
                  NodeCndVisGas2(NodeConditionLocal(1), :) = NodeConditionLocal
                end if  
           end do
@@ -436,23 +439,33 @@
         implicit none
         
           ! local variables 
-          real(REAL_TYPE), dimension(Counters%NEl) :: ElmSurfaceArea   
+          real(REAL_TYPE), dimension(Counters%Sum_NEl) :: ElmSurfaceArea   
           real(REAL_TYPE), dimension(NVECTOR):: Vec1, Vec2, Normal, ScalarProduct, Connector
           integer(INTEGER_TYPE) :: INode, INode2, INode3, ISide, IDim, I, NumberOfElementsNode
           integer(INTEGER_TYPE) :: IsMeshBoundary, ElementID, LocalNodeID
           integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: DummyNode
           logical :: Belongs2AbsorbingBoundary
-                                  
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
+          
+          
           VisNodSurAraSld = 0.0
           ElmSurfaceArea = 0.0   
                  
-            do INode = 1, Counters%NodTot                          ! loop all nodes
+          do IPatch = 1, Counters%NPatches ! loop over patches
+            do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot                          ! loop all nodes
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                
               if ( NodeCndVisSld2(INode, 1) > 0 ) then             ! check if node is defined as viscous node in GOM-file
-                NumberOfElementsNode = ElementsPerNode(INode)      ! get number of elements around this considered node
+                NumberOfElementsNode = ElementsPerNode(INode,IPatch)      ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                ! check all elements sharing this node
-                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode)+INode2) ! get the element ID of each neighbouring element
+                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch)+INode2, IPatch) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                       ! loop around all element sides                       
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch), Counters%Sum_NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then               ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES          ! get the node IDs of this side
@@ -473,14 +486,14 @@
                           end if
                         end if  
                         
-                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID)
+                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch)
                         if ( NodeCndVisSld2(DummyNode(INode3), 1) == 0 ) Belongs2AbsorbingBoundary = .false. ! check if node lies on defined beoundary
                       end do 
                       if (Belongs2AbsorbingBoundary) then
                           
                         if ( NDIM == 2 ) then
                           ! connecting vector between the two nodes spanning the absorbing boundary line
-                          Connector = NodalOriginalCoord(DummyNode(2), :) - NodalOriginalCoord(DummyNode(1), :)  
+                          Connector = NodalOriginalCoord(DummyNode(2), :, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), :, IPatch)  
                           ! calculate length of absorbing boundary line 
                           ElmSurfaceArea(ElementID) = Length(Connector, 2)
                           ! calculate contribution to each adjacent node
@@ -499,8 +512,8 @@
                         
                         if ( NDIM == 3 )  then  
                           do IDim = 1, NVECTOR ! create connecting vector between the 3 nodes
-                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim) - NodalOriginalCoord(DummyNode(1), IDim)
-                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim) - NodalOriginalCoord(DummyNode(1), IDim)                    
+                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch)
+                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch)                    
                           end do
                           Normal = CrossProduct(Vec1, Vec2) ! calculate the normal and determine its direction
                           ScalarProduct(1) = DotProduct((/1.0,0.0,0.0/),Normal,3) 
@@ -526,7 +539,8 @@
                   end do    
                 end do
               end if
-            end do
+            end do ! loop over control points
+            end do ! loop over patches
             
         end subroutine CalculateNodeSurfaceAreaandSetCondSolid
 
@@ -544,29 +558,38 @@
         implicit none
         
           ! local variables 
-          real(REAL_TYPE), dimension(Counters%NEl) :: ElmSurfaceArea   
+          real(REAL_TYPE), dimension(Counters%Sum_NEl) :: ElmSurfaceArea   
           real(REAL_TYPE), dimension(NVECTOR):: Vec1, Vec2, Normal, ScalarProduct, Connector
           integer(INTEGER_TYPE) :: INode, INode2, INode3, ISide, IDim, I, NumberOfElementsNode
           integer(INTEGER_TYPE) :: IsMeshBoundary, ElementID, LocalNodeID
           integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: DummyNode
           logical :: Belongs2AbsorbingBoundary
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
                                   
           VisNodSurAraWat = 0.0
           ElmSurfaceArea = 0.0   
                  
-            do INode = 1, Counters%Nodtot                                ! loop all nodes 
+          do IPatch = 1, Counters%NPatches ! loop over patches
+            do INode = 1, Counters%NodTot(IPatch)!Counters%Nodtot                                ! loop all nodes 
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                
               if ( NodeCndVisWat2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
-                NumberOfElementsNode = ElementsPerNode(INode)            ! get number of elements around this considered node
+                NumberOfElementsNode = ElementsPerNode(INode,IPatch)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
-                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode)+INode2) ! get the element ID of each neighbouring element
+                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch)+INode2, IPatch) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch), Counters%Sum_NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
                         if ( NDIM == 3 ) LocalNodeID = DetermineSideNodesTetrahedronHOE(ISide, INode3)
                         if ( NDIM == 2 ) LocalNodeID = DetermineSideNodesTRI6(ISide, INode3)  
-                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID)
+                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch)
                         if ( NodeCndVisWat2(DummyNode(INode3), 1) == 0 ) Belongs2AbsorbingBoundary = .false. ! check if node lies on defined boundary
                       end do 
                       
@@ -574,7 +597,7 @@
                         
                         if ( NDIM == 2 ) then
                           ! connecting vector between the two nodes spanning the absorbing boundary line
-                          Connector = NodalOriginalCoord(DummyNode(2), :) - NodalOriginalCoord(DummyNode(1), :)  
+                          Connector = NodalOriginalCoord(DummyNode(2), :, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), :, IPatch)  
                           ! calculate length of absorbing boundary line 
                           ElmSurfaceArea(ElementID) = Length(Connector, 2)
                           ! calculate contribution to each adjacent node
@@ -593,8 +616,8 @@
                           
                         if ( NDIM == 3 ) then    
                           do IDim = 1, NVECTOR ! create connecting vector between the 3 nodes
-                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim) - NodalOriginalCoord(DummyNode(1), IDim)
-                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim) - NodalOriginalCoord(DummyNode(1), IDim)                    
+                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim, IPatch) - NodalOriginalCoord(DummyNode(1), IDim, IPatch)
+                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim, IPatch) - NodalOriginalCoord(DummyNode(1), IDim, IPatch)                    
                           end do
                           Normal = CrossProduct(Vec1, Vec2) ! calculate the normal and determine its direction
                           ScalarProduct(1) = DotProduct((/1.0,0.0,0.0/),Normal,3)
@@ -621,6 +644,8 @@
                 end do
               end if
             end do
+            
+            end do ! loop over patches
                    
         end subroutine CalculateNodeSurfaceAreaandSetCondLiquid
          
@@ -638,29 +663,40 @@
         implicit none
         
           ! local variables 
-          real(REAL_TYPE), dimension(Counters%NEl) :: ElmSurfaceArea   
+          real(REAL_TYPE), dimension(Counters%Sum_NEl) :: ElmSurfaceArea   
           real(REAL_TYPE), dimension(NVECTOR):: Vec1, Vec2, Normal, ScalarProduct, Connector
           integer(INTEGER_TYPE) :: INode, INode2, INode3, ISide, IDim, I, NumberOfElementsNode
           integer(INTEGER_TYPE) :: IsMeshBoundary, ElementID, LocalNodeID
           integer(INTEGER_TYPE), dimension(ELEMENTBOUNDARYNODES) :: DummyNode
           logical :: Belongs2AbsorbingBoundary
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
                                   
           VisNodSurAraGas = 0.0
           ElmSurfaceArea = 0.0   
                  
-            do INode = 1, Counters%Nodtot                                ! loop all nodes 
+          do IPatch = 1, Counters%NPatches ! loop over patches
+            do INode = 1, Counters%NodTot(IPatch)!Counters%Nodtot                                ! loop all nodes 
+                
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+                
+                
               if ( NodeCndVisGas2(INode, 1) > 0 ) then                   ! check if node is defined as viscous node in .GOM file
-                NumberOfElementsNode = ElementsPerNode(INode)            ! get number of elements around this considered node
+                NumberOfElementsNode = ElementsPerNode(INode,IPatch)            ! get number of elements around this considered node
                 do INode2 = 1, NumberOfElementsNode                      ! check all elements sharing this node
-                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode)+INode2) ! get the element ID of each neighbouring element
+                  ElementID = NodeElementAdjacencies(NodeElementOffsets(INode, IPatch)+INode2, IPatch) ! get the element ID of each neighbouring element
                   do ISide = 1, ELEMENTSIDES                             ! loop around all element sides        
-                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement, Counters%NEl) ! check if elementside is a mesh boundary
+                    IsMeshBoundary = BoundaryElementSurface(ElementID, ISide, IsActiveElement(:,IPatch), Counters%Sum_NEl) ! check if elementside is a mesh boundary
                     if ( IsMeshBoundary == -1 ) then                     ! check which side of the element is part of the boundary
                       Belongs2AbsorbingBoundary = .true.
                       do INode3 = 1, ELEMENTBOUNDARYNODES                ! get the node IDs of this side
                         if ( NDIM == 3 ) LocalNodeID = DetermineSideNodesTetrahedronHOE(ISide, INode3)
                         if ( NDIM == 2 ) LocalNodeID = DetermineSideNodesTRI6(ISide, INode3)  
-                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID)
+                        DummyNode(INode3) = ElementConnectivities(LocalNodeID, ElementID, IPatch)
                         if ( NodeCndVisGas2(DummyNode(INode3), 1) == 0 ) Belongs2AbsorbingBoundary = .false. ! check if node lies on defined boundary
                       end do 
                       
@@ -668,7 +704,7 @@
                         
                         if ( NDIM == 2 ) then
                           ! connecting vector between the two nodes spanning the absorbing boundary line
-                          Connector = NodalOriginalCoord(DummyNode(2), :) - NodalOriginalCoord(DummyNode(1), :)  
+                          Connector = NodalOriginalCoord(DummyNode(2), :, IPatch) - NodalOriginalCoord(DummyNode(1), :, IPatch)  
                           ! calculate length of absorbing boundary line 
                           ElmSurfaceArea(ElementID) = Length(Connector, 2)
                           ! calculate contribution to each adjacent node
@@ -687,8 +723,8 @@
                           
                         if ( NDIM == 3 ) then    
                           do IDim = 1, NVECTOR ! create connecting vector between the 3 nodes
-                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim) - NodalOriginalCoord(DummyNode(1), IDim)
-                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim) - NodalOriginalCoord(DummyNode(1), IDim)                    
+                            Vec1(IDim) = NodalOriginalCoord(DummyNode(2), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch_Temporary)
+                            Vec2(IDim) = NodalOriginalCoord(DummyNode(3), IDim, IPatch_Temporary) - NodalOriginalCoord(DummyNode(1), IDim, IPatch_Temporary)                    
                           end do
                           Normal = CrossProduct(Vec1, Vec2) ! calculate the normal and determine its direction
                           ScalarProduct(1) = DotProduct((/1.0,0.0,0.0/),Normal,3)
@@ -715,6 +751,8 @@
                 end do
               end if
             end do
+            
+            end do ! loop over patches
                    
         end subroutine CalculateNodeSurfaceAreaandSetCondGas
         
@@ -736,6 +774,10 @@
           integer(INTEGER_TYPE) :: INode, IDim, Nix, ICondition, MSet
           real(REAL_TYPE) :: Vp, Vs, rho, A, Eoed, G, Nu, Kw, n
           logical:: IsUndrEffectiveStress
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
  
           DashpotSld = 0.0
           SpringSld = 0.0
@@ -761,10 +803,13 @@
           Vp = sqrt( Eoed / rho ) ! m/s       
           Vs = sqrt( G / rho ) ! m/s
             
-          do INode = 1, Counters%NodTot ! over nodes
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot ! over nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
               
             A = VisNodSurAraSld(INode) ! surface area
-            Nix = ReducedDof(INode) + 1 ! global dof x
+            Nix = ReducedDof(GlobalNodeID) + 1 ! global dof x
 
             do IDim = 1, NVECTOR ! over coordinates
               ICondition = NodeCndVisSld2(INode, 2+3*(IDim-1))
@@ -785,6 +830,8 @@
             end do
               
           end do ! over nodes
+          
+          end do ! over patches
 
         end subroutine FormDashpotandSpringSolid
 
@@ -805,6 +852,10 @@
           ! local variables 
           integer(INTEGER_TYPE) :: INode, IDim, Nix, ICondition, MSet
           real(REAL_TYPE) :: Vp, rho, A, Kw
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
                                   
           DashpotWat = 0.0
           SpringWat = 0.0
@@ -819,9 +870,14 @@
             Vp = sqrt( Kw / rho ) ! m/s
           end if  
             
-          do INode = 1, Counters%NodTot ! over nodes
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot ! over nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
+              
             A = VisNodSurAraWat(INode) ! surface area
-            Nix = ReducedDof(INode) + 1  ! global dof x
+            Nix = ReducedDof(GlobalNodeID) + 1  ! global dof x
 
             do IDim = 1, NVECTOR ! over coordinates
               ICondition = NodeCndVisWat2(INode,2+3*(IDim-1))
@@ -840,6 +896,9 @@
             end do
             
           end do ! over nodes
+          
+          
+          end do ! over patches
           
         end subroutine FormDashpotandSpringLiquid
 
@@ -860,6 +919,10 @@
           ! local variables 
           integer(INTEGER_TYPE) :: INode, IDim, Nix, ICondition, MSet
           real(REAL_TYPE) :: Vp, rho, A, Kg
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
                                   
           DashpotGas = 0.0
           SpringGas = 0.0
@@ -874,9 +937,13 @@
             Vp = sqrt( Kg / rho ) ! m/s
           end if  
             
-          do INode = 1, Counters%NodTot ! over nodes
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot ! over nodes
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
             A = VisNodSurAraGas(INode) ! surface area
-            Nix = ReducedDof(INode) + 1  ! global dof x
+            Nix = ReducedDof(GlobalNodeID) + 1  ! global dof x
 
             do IDim = 1, NVECTOR ! over coordinates
               ICondition = NodeCndVisGas2(INode,2+3*(IDim-1))
@@ -895,6 +962,8 @@
             end do
             
           end do ! over nodes
+          
+          end do ! over patches
           
         end subroutine FormDashpotandSpringGas
         
@@ -1001,12 +1070,19 @@
           integer(INTEGER_TYPE) :: IDof, INode, iEntity, IParticle, ElementID
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleWaterDisplacement
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: PatchID
 
           if (CalParams%NumberOfPhases/=2) RETURN
           if (.not.CalParams%ApplyAbsorbingBoundary) RETURN
           
           do IParticle = 1, Counters%NParticles ! Loop over particles
 
+            PatchID = PatchIDArray(IParticle)   
+              
             ElementID = ElementIDArray(IParticle)
 
             if (CalParams%ApplyContactAlgorithm) then
@@ -1019,7 +1095,7 @@
 
             do IDof = 1, NVECTOR
               do INode = 1, ELEMENTNODES  
-                NodeID = iabs( ElementConnectivities(INode, ElementID) ) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs( ElementConnectivities(INode, ElementID, IPatch_Temporary) ) , IPatch_Temporary)
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleWaterDisplacement(IDof) = ParticleWaterDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * IncrementalDisplacementWater(DofID,iEntity)
               end do
@@ -1069,18 +1145,26 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, IAEl, IEl, INode, NodeID, IDof
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          
           ActiveDof = 0
          
-          do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
             do INode = 1, ELEMENTNODES
-              NodeID = ElementConnectivities(INode, IEl) ! Global node ID
+              NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch), IPatch) ! Global node ID
               IDof = ReducedDof(NodeID)  ! Global storage coordinate of x-val
               do I = 1, NVECTOR
                 ActiveDof(IDof+I) = 1
               end do
            end do
-         end do
+                end do ! active elements
+                
+                end do ! patches
 
         end subroutine SetActiveDof    
 
@@ -1162,17 +1246,23 @@
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration, ParticleDisplacement
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
       
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+      
           NoEn = Counters%nEntity
           IncrementalDisplacementWaterVBSld = 0.0
           CorrectedNodalAcce = 0.0
 
-          do IAEl = 1, Counters%NAEl ! Loop over all elements
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl ! Loop over all elements
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) ) + I
             end do
-            do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               ParticleShape = ShapeValuesArray(ParticleIndex,:)
               ParticleAcceleration = 0.0
               if (CalParams%ApplyContactAlgorithm) then
@@ -1190,7 +1280,9 @@
  
             end do ! loop over material points
             
-          end do ! loop over elements
+                end do ! loop over elements
+                
+                end do ! loop over patches
           
         end subroutine CorrectIncAccelerationAndIncDispWater
 
@@ -1211,19 +1303,25 @@
           integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration,  ParticleDisplacement
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
       
           NoEn = Counters%nEntity
           IncrementalDisplacementSoilVBSld = 0.0
           CorrectedNodalAcce = 0.0
 
-          do IAEl = 1, Counters%NAEl  ! loop over all active elements
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl  ! loop over all active elements
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
             do I = 1, NVECTOR
-              IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
+              IDof(I, 1:ELEMENTNODES) = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)) + I
             end do
             
-            do IPart = 1, NPartEle(IEl) ! Loop over all particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
+            do IPart = 1, NPartEle(IEl,IPatch) ! Loop over all particles in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               ParticleShape = ShapeValuesArray(ParticleIndex,:)
               ParticleAcceleration = 0.0
               if (CalParams%ApplyContactAlgorithm) then
@@ -1245,7 +1343,9 @@
 
             end do ! loop material points
             
-          end do ! loop elements    
+                end do ! loop elements    
+                
+                end do ! patches
           
         end subroutine CorrectIncAccelerationAndIncDisp
 
@@ -1366,7 +1466,7 @@
         implicit none
         
           ! Local variables
-          real(REAL_TYPE), dimension(Counters%NodTot) :: NodalVerticalStressesSoil, NodalPressuresWater
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot) :: NodalVerticalStressesSoil, NodalPressuresWater
           
           if (.not.CalParams%ApplyAbsorbingBoundary) RETURN
           if (NFORMULATION==2) RETURN 
@@ -1393,20 +1493,27 @@
 
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%Nodtot), intent(in) :: NodalVerticalStressesSoil, NodalPressuresWater
+          real(REAL_TYPE), dimension(Counters%Sum_Nodtot), intent(in) :: NodalVerticalStressesSoil, NodalPressuresWater
           ! Local variables
           integer(INTEGER_TYPE) :: INod, NiX, IConditionX, IConditionY, IConditionZ, IEntity
           real(REAL_TYPE) :: A, F, FX, FY, FZ, FWP, FWPX, FWPY, FWPZ, K0Value
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
  
           K0Value = MatParams(CalParams%AbsorbingBoundaries%VBMaterialSet)%K0Value
         
-          do INod = 1, Counters%NodTot
+          do IPatch = 1, Counters%NPatches ! loop over patches
+              
+          do INod = 1, Counters%NodTot(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INod,IPatch)
           
             A = VisNodSurAraSld(INod) ! Surface area
             if (A>0.0) then ! Get stresses at this node
               F = NodalVerticalStressesSoil(INod) * A
               FWP = NodalPressuresWater(INod) * A
-              NiX = ReducedDof(INod) + 1
+              NiX = ReducedDof(GlobalNodeID) + 1
               IConditionX = NodeCndVisSld(INod, 1)
               IConditionY = NodeCndVisSld(INod, 2)
               IConditionZ = NodeCndVisSld(INod, 3)
@@ -1445,6 +1552,8 @@
                 
             end if
           end do
+          
+          end do ! loop over patches
 
           if (IS3DCYLINDRIC) then
            do IEntity = 1, Counters%nEntity
@@ -1463,21 +1572,31 @@
         !**********************************************************************   
         implicit none
         
-          real(REAL_TYPE), dimension(Counters%NodTot, NDIM), intent(in) :: NodeCoord
-          real(REAL_TYPE), dimension(Counters%NodTot), intent(inout) :: NodalVerticalStressesSoil, NodalPressuresWater
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot, NDIM), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot), intent(inout) :: NodalVerticalStressesSoil, NodalPressuresWater
           ! Local variables
           integer(INTEGER_TYPE) :: INode, MSet
           real(REAL_TYPE) :: K0Value, UpdatedFluidDensity, SigY, SigWP
+          ! Multipacth variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
             
           MSet = CalParams%AbsorbingBoundaries%VBMaterialSet
           K0Value = MatParams(MSet)%K0Value
           if (K0Value<SKIP_K0_THRESHOLD) RETURN
           
-          do INode = 1, Counters%NodTot
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
             call ComputeVerticalStressForK0(MSet, NodeCoord(INode, 1:2), UpdatedFluidDensity, SigY, SigWP,SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
             NodalVerticalStressesSoil(INode) = SigY
             NodalPressuresWater(INode) = SigWP
           end do
+          
+          end do 
 
         end subroutine ComputeNodalVerticalStressesForK0
 

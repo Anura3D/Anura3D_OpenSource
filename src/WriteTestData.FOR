@@ -42,15 +42,19 @@
       !     $Date: 2022-04-14 14:56:02 +0200 (Thu, 14 Apr 2022) $
       !
       !**********************************************************************
-
+      use ModFileIO  
       use ModGlobalConstants
       use ModParticle
+      !use ModFileIO
       use ModReadCalculationData
       use ModMPMData
       use ModMPMDYN2PhaseSP
       use ModMPMDYN3PhaseSP
       use ModDynViscousBoudary
       use ModMPMDynContact
+      !use ModFileIO
+      
+      !External :: FExist
 
       implicit none
 
@@ -136,6 +140,8 @@
           character(len = 8) :: XXXCounter
           integer(INTEGER_TYPE) :: I
           character(len = 255) :: CompleteFileName
+          
+          !External :: FExist
         
           if ( (CalParams%OutputNumberParticles > 0) .and. (CalParams%OutputNumberParticles <= MAXOUTPUTPARTICLES) ) then
             ! Open files for output of particle data
@@ -152,18 +158,53 @@
                   
                   select case(NDIM)
                   
-                    case(3)
-                      write(PARUnit + I, '(28A12)')  &
-                            'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
-                            'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
-                            'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
-                            'IntWeight ', 'MatID '
+                  case(3) !shape functions are missing from here
+                      !write(PARUnit + I, '(31A12)')  &
+                      !      'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
+                      !      'Ux ', 'Uy ', 'Uz ', 'Vx ', 'Vy ', 'Vz ',  'Ax ', 'Ay ', 'Az ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
+                      !      'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
+                      !      'IntWeight ', 'MatID '
+                      
+                      
+                      ! Write the header
+                    write(PARUnit + I, '(A)')  & 
+                    'LoadStep TimeStep Time PA(1) PA(2) PGravity ID_MP X Y Z ' // &
+                    'Ux Uy Uz Vx Vy Vz Ax Ay Az SigmaXX SigmaYY SigmaZZ SigmaXY SigmaYZ SigmaZX ' // &
+                    'WPressure EpsilonXX EpsilonYY EpsilonZZ GammaXY GammaYZ GammaZX IntWeight MatID'
+                      
                     case(2)
-                      write(PARUnit + I, '(22A12)')  &
+                      !write(PARUnit + I, '(117A17)')  & !117 !79
+                      write(PARUnit + I, '(25A17)')  & !117 !79
                             'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
-                            'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
-                            'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
-                            'IntWeight ', 'MatID '
+                            'Ux ', 'Uy ', 'Vx ', 'Vy ',  'Ax ', 'Ay ', &
+                      !      'ShapeXiOne ', 'ShapeXiTwo ', 'ShapeXiThr ', &
+                      !      'DShapeXiOne ', 'DShapeXiTwo ', 'DShapeXiThr ', &
+                      !      'ShapeEtaOne ', 'ShapeEtaTwo ', 'ShapeEtaThr ', &
+                      !      'DShapeEtaOne ', 'DShapeEtaTwo ', 'DShapeEtaThr ', &
+                      !      
+                      !      'MMOne ', 'MMTwo ', 'MMThr ', 'MMFou ', 'MMFiv ', 'MMSix ', 'MMSev ', 'MMEig ', &
+                      !      
+                      !      'NNOne ', 'NNTwo ', 'NNThr ', 'NNFou ', 'NNFiv ', &
+                      !      
+                      !      'dMMOne ', 'dMMTwo ', 'dMMThr ', 'dMMFou ', 'dMMFiv ', 'dMMSix ', 'dMMSev ', 'dMMEig ', &
+                      !      
+                      !      'dNNOne ', 'dNNTwo ', 'dNNThr ', 'dNNFou ', 'dNNFiv ', &                            
+                      !    
+                      !
+                      !      'ShapeValOne ', 'ShapeValTwo ', 'ShapeValThr ', 'ShapeValFou ', 'ShapeValFiv ', 'ShapeValSix ', 'ShapeValSev ', 'ShapeValEig ', 'ShapeValNin ', &
+                      !    
+                      !
+                      !      'dRdXiOne ', 'dRdXiTwo ', 'dRdXiThr ', 'dRdXiFou ', 'dRdXiFiv ', 'dRdXiSix ', 'dRdXiSev ', 'dRdXiEig ', 'dRdXiNin ', &
+                      !
+                      !    
+                      !      'dRdEtaOne ', 'dRdEtaTwo ', 'dRdEtaThr ', 'dRdEtaFou ', 'dRdEtaFiv ', 'dRdEtaSix ', 'dRdEtaSev ', 'dRdEtaEig ', 'dRdEtaNin ', &
+                      !    
+                      !    
+                            'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
+                            'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ',&
+                            'GammaXY '!, &
+                            !'IntWeight '!, &
+                            !'MatID '
                   end select
 
                 end if  
@@ -187,6 +228,8 @@
           integer(INTEGER_TYPE) :: ISurface, MaterialIndex
           logical :: IsUndrEffectiveStress
           character(len = 255) :: CompleteFileName
+          
+          !External :: FExist
           
           if(Counters%NReactionSurfaceOutput<1) RETURN
           IsUndrEffectiveStress = .false.
@@ -446,6 +489,9 @@
           ! local variables
           integer(INTEGER_TYPE) :: I, J, ParticleIndex, ParticleID
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           if ( .not.( mod(CalParams%TimeStep, CalParams%OutputCurvesIntervals)==0 .or. CalParams%TimeStep==1 &
                    .or. IsLastTimeStepOfExplicitCalculation() ) ) RETURN
 
@@ -464,31 +510,120 @@
                 ParticleIndex = CalParams%OutputParticles(I)
                end if 
                 if (ParticleIndex<=Counters%NParticles) then
-                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 20G12.4, I12)') &
-                      CalParams%IStep, &
-                      CalParams%TimeStep, &
-                      CalParams%OverallRealTime, &
-                      CalParams%Multipliers%SolidACurrent,  &
-                      CalParams%Multipliers%GravityCurrent,  &
-                      IDArray(ParticleIndex), &
-                   
-                      (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & 
-                    
-                      (UArray(ParticleIndex,J), J=1,NVECTOR), & 
-                      
-                      (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & 
-                      
-                      Particles(ParticleIndex)%WaterPressure, &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 45G20.5, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G16.6, I12, 90G12.5, I12)') &            
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 172G12.5, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 56G15.8, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 54G648.8, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 56G15.8, I12)') &
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 110G15.8, I12)') &
 
-                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), & 
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 28G25.8)') &
                         
-                      Particles(ParticleIndex)%IntegrationWeight, &
-                      MaterialIDArray(ParticleIndex)
+                                        
+                    !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 79G25.8)') &
+
+                    !, I12)') &
+
+
+    
+                      CalParams%IStep, & !I12
+                      CalParams%TimeStep, & !I12
+                      CalParams%OverallRealTime, & !4G12.4
+                      CalParams%Multipliers%SolidACurrent,  & !4G12.4
+                      CalParams%Multipliers%GravityCurrent,  & !4G12.4
+                      IDArray(ParticleIndex), & !I12
+                   
+                      (GlobPosArray(ParticleIndex,J), J=1,NVECTOR), & ! 3 entries 
+                    !    
+                    !
+                    !  !---------------------------------------------------------------  
+                    !
+                      (UArray(ParticleIndex,J), J=1,NVECTOR), & ! displacement ! 3 entries 
+                        
+                      (VelocityArray(ParticleIndex,J), J=1,NVECTOR), & ! velocity ! 3 entries 
+                        
+                      (AccelerationArray(ParticleIndex,J), J=1,NVECTOR), & ! acceleration ! 3 entries 
+                    !
+                    !  !---------------------------------------------------------------  
+                    !    
+                    !  !! Xi  (before tensor product)
+                      !(ShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), & ! 3 entries 
+                      !! Xi derivative   (before tensor product)
+                      !(DShapeValuesArray_Xi(J,  ParticleIndex), J=1,NXiKnotOrder+1), & ! 3 entries 
+                      !! Eta   (before tensor product)
+                      !(ShapeValuesArray_Eta(J,  ParticleIndex), J=1,NEtaKnotOrder+1), & ! 3 entries 
+                      !! Eta derivative   (before tensor product)
+                      !(DShapeValuesArray_Eta(J, ParticleIndex), J=1,NEtaKnotOrder+1), & ! 3 entries 
+                    !    
+                    !  !---------------------------------------------------------------  
+                    !  
+                      ! Plotting shape functions 
+                        
+                    
+                      !(OO_IncludesZeroValues_Print(J, NZetaKnotOrder(IPatch_Temporary)+1 ), J=1, NZetaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 7 entries for cubic problem 
+                      !  !1, 
+                      !  
+                      ! (MM_IncludesZeroValues_Print(J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NEtaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
+                      !  !1, 
+                      !
+                      ! (NN_IncludesZeroValues_Print(J, NXiKnotOrder(IPatch_Temporary)+1 ), J=1, NXiKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
+                      !  !1, 
+                      !
+                      !! Plotting shape functions derivatives 
+                      !
+                      ! (dO_dzeta_IncludesZeroValues_Print(J, NZetaKnotOrder(IPatch_Temporary)+1 ), J=1, NZetaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 7 entries for cubic problem 
+                      !      !1, 
+                      ! (dM_deta_IncludesZeroValues_Print(J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NEtaKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 54 entries --> 9 entries for cubic problem 
+                      !      !1, 
+                      ! (dN_dxi_IncludesZeroValues_Print(J, NEtaKnotOrder(IPatch_Temporary)+1 ), J=1, NXiKnotEntries(IPatch_Temporary)-1), & ! 8 entries ! 5 entries --> 11 entries for cubic problem 
+                            !1, 
+                    !    
+                    !!---------------------------------------------------------------  
+                    !
+                    !  
+                    !  ! NURBS shape functions after the tensor product 
+                    !    
+                      !(ShapeValuesArray(ParticleIndex,J), J=1,ELEMENTNODES), & ! 9 entries 
+                      !  
+                      !(DShapeValuesArray(ParticleIndex,J, 1), J=1,ELEMENTNODES), & ! xi direction dR/dxi ! 9 entries 
+                      !  
+                      !(DShapeValuesArray(ParticleIndex,J, 2), J=1,ELEMENTNODES), & ! eta direction dR/deta ! 9 entries 
+                    !  !---------------------------------------------------------------  
+                    !  
+                      (SigmaEffArray(ParticleIndex,J), J=1,NTENSOR), & ! 6 entries 
+                    !  
+                      Particles(ParticleIndex)%WaterPressure, & ! 1 entries
+                    !
+                      (GetEpsI(Particles(ParticleIndex),J), J=1,NTENSOR), &!, & ! 6 entries
+                    !    
+                      !Particles(ParticleIndex)%IntegrationWeight, & !, & ! 1 entries
+                      !MaterialIDArray(ParticleIndex) ! 1 entries
+                    
+                      KineticEnergyTotal, &
+                        
+                      StrainEnergyTotal  
+                    
                 end if
               end if
             end do
           end if
 
+          
+          
+          !
+          !! Xi 
+          !ShapeValuesArray_Xi(:,  ParticleIndex) = ShapeValuesArray_Temp_Xi
+          !DShapeValuesArray_Xi(:, ParticleIndex) = DShapeValuesArray_Temp_Xi
+          !!WeightArray_Xi(:,  ParticleIndex) = Weights_Xi    
+          !
+          !
+          !! Eta
+          !ShapeValuesArray_Eta(:,  ParticleIndex) = ShapeValuesArray_Temp_Eta
+          !DShapeValuesArray_Eta(:, ParticleIndex) = DShapeValuesArray_Temp_Eta
+          
+          
+          
         end subroutine MaterialPointOutput
 
         subroutine EnergyOutput()
@@ -662,13 +797,31 @@
         real(REAL_TYPE), dimension(Counters%N, CalParams%NumberOfMaterials) :: GravityGas
         
         integer(INTEGER_TYPE) :: I, J, IEl, NElemPart, Int, INtGlo, MaterialIndex, Inode, nn, nix
-        real(REAL_TYPE):: VPressure, WTN, WPP, GPP, Det
+        real(REAL_TYPE):: VPressure, WTN, WPP, GPP !, Det
         real(REAL_TYPE) :: Position
         real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
         real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
         real(REAL_TYPE), dimension(NTENSOR) :: S
         real(REAL_TYPE), dimension(NVECTOR) :: PartGravity, PartGravityWater, PartGravityGas
         logical :: IsUndrEffectiveStress
+        
+        integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEl
+          
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE) :: IPatch
+          
+          maxParticle = 1
+          maxEl       = 1
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+             NEl = ActiveElement(IAEl, IPatch)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
+                enddo
+                end do 
         
         if((CalParams%TimeStep==1)) then
           call DetermineReactionElements
@@ -682,21 +835,28 @@
         do I=1, Counters%NElemReactions !loop over the elements that have a node on the reaction surface
           IEl = ConsideredElemReaction(I)
           
-          if (.not.IsActiveElement(IEl)) CYCLE
+          if (.not.IsActiveElement(IEl,IPatch)) CYCLE
             
-          if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-             NElemPart = NPartEle(IEl)  ! Number of material points in element
+          if (IsParticleIntegration(IEl, IPatch) ) then ! True - material point based integration, false - Gauss point based integration
+             NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
           else
              NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
           end if
              
-          call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
-            ! Determine global ID of integration point 
-            IntGlo = GetParticleIndex(Int, IEl)
+              
+              ! Determine global ID of integration point 
+            IntGlo = GetParticleIndex(Int, IEl, IPatch)
             MaterialIndex = MaterialIDArray(IntGlo)
+
+            call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+            !(:,:,IPatch)
+              
+            ! Determine global ID of integration point 
+            !IntGlo = GetParticleIndex(Int, IEl, IPatch)
+            !MaterialIndex = MaterialIDArray(IntGlo)
             WPP = 0.0
             GPP = 0.0
             S = 0.0
@@ -708,7 +868,7 @@
             IsUndrEffectiveStress = (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE)
               
             ! Set the integration weight
-            if (IsParticleIntegration(IEl)) then 
+            if (IsParticleIntegration(IEl, IPatch_Temporary)) then 
              if ( ISAXISYMMETRIC ) then
              ! the integration weight of the MP is not corrected due to the axisymmetry
                Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
@@ -744,7 +904,7 @@
             end if
                             
             do iNode=1,ELEMENTNODES ! loop over element nodes
-              nn = ElementConnectivities(iNode,iel) ! get global node number
+              nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch) ! get global node number
               nix = reducedDof(nn)
                 
               if (IsReactionNode(nn)) then
@@ -789,13 +949,13 @@
         
         do I=1, Counters%NElemReactions !loop over the elements that have a node on the reaction surface
           IEl = ConsideredElemReaction(I)
-          NElemPart = NPartEle(IEl)
+          NElemPart = NPartEle(IEl, IPatch)
           PartGravity = 0.0
           PartGravityWater = 0.0
           PartGravityGas = 0.0
           do Int = 1, NElemPart ! Loop over number of integration points per element IEl
             ! Determine global ID of integration point 
-            IntGlo = GetParticleIndex(Int, IEl)
+            IntGlo = GetParticleIndex(Int, IEl, IPatch)
             MaterialIndex = MaterialIDArray(IntGlo)
             if (CalParams%ApplySubmergedCalculation) then
              PartGravity = Particles(IntGlo)%FBodyMixed * CalParams%Multipliers%GravityCurrent
@@ -811,7 +971,7 @@
             end if
             
             do iNode=1,ELEMENTNODES ! loop over element nodes
-              nn=ElementConnectivities(iNode,iel) ! get global node number
+              nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch),IPatch) ! get global node number
               nix = reducedDof(nn)
               
               if (IsReactionNode(nn)) then
@@ -879,7 +1039,7 @@
             !code version 2017.1 and following
             (trim(MatParams(MaterialID)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
            
-             do INode = 1, Counters%NodTot
+             do INode = 1, Counters%Sum_NodTot
               If (IsReactionNodeSurface(INode,ISurface)) then
                dof = ReducedDof(INode)
                do IDim = 1, NVECTOR
@@ -968,6 +1128,10 @@
           character(len=30), dimension(:), allocatable :: DataLabel
           character(len=50), dimension(:), allocatable :: DataValue
           integer(INTEGER_TYPE) :: I, Size
+          
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
+          IPatch_Temporary = 1
 
           Size=50
           allocate(DataLabel(Size),DataValue(Size))
@@ -987,15 +1151,15 @@
           DataLabel(6) = 'Current load step' 
           DataValue(6) = IntToStr(CalParams%IStep)
           DataLabel(7) = 'Number of elements' 
-          DataValue(7) = IntToStr(Counters%NEl)
+          DataValue(7) = IntToStr(Counters%NEl(IPatch_Temporary))!(Counters%NEl) !NURBS%nel_NURBS
           DataLabel(8) = 'Number of nodes' 
-          DataValue(8) = IntToStr(Counters%NodTot)
+          DataValue(8) = IntToStr(Counters%Sum_NodTot)
           DataLabel(9) = 'Number of degrees of freedom' 
           DataValue(9) = IntToStr(Counters%N)
           DataLabel(10) = 'Number of entities' 
           DataValue(10) = IntToStr(Counters%NEntity)
           DataLabel(11) = 'Number of active elements' 
-          DataValue(11) = IntToStr(Counters%NAEl)
+          DataValue(11) = IntToStr(Counters%NAEl(IPatch_Temporary))!(Counters%NAEl)
           DataLabel(12) = 'Number of material points' 
           DataValue(12) = IntToStr(Counters%NParticles)
           DataLabel(13) = 'Number of solid material points' 
@@ -1036,9 +1200,9 @@
             DataLabel(1) = 'Number of load steps' 
             DataValue(1) = IntToStr(CalParams%NLoadSteps)
             DataLabel(2) = 'Number of elements' 
-            DataValue(2) = IntToStr(Counters%NEl)
+            DataValue(2) = IntToStr(Counters%Sum_NEl)
             DataLabel(3) = 'Number of nodes' 
-            DataValue(3) = IntToStr(Counters%NodTot)
+            DataValue(3) = IntToStr(Counters%Sum_NodTot)
             DataLabel(4) = 'Number of degrees of freedom' 
             DataValue(4) = IntToStr(Counters%N)
             DataLabel(5) = 'Number of entities' 
@@ -1128,9 +1292,9 @@
             DataLabel(1) = 'Number of load steps' 
             DataValue(1) = IntToStr(CalParams%NLoadSteps)
             DataLabel(2) = 'Number of elements' 
-            DataValue(2) = IntToStr(Counters%NEl)
+            DataValue(2) = IntToStr(Counters%Sum_NEl)
             DataLabel(3) = 'Number of nodes' 
-            DataValue(3) = IntToStr(Counters%NodTot)
+            DataValue(3) = IntToStr(Counters%Sum_NodTot)
             DataLabel(4) = 'Number of degrees of freedom' 
             DataValue(4) = IntToStr(Counters%N)
             DataLabel(5) = 'Number of entities' 

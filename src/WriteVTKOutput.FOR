@@ -39,6 +39,7 @@ module ModWriteVTKOutput
     !
     !**********************************************************************
 
+    use ModFileIO
     use ModReadCalculationData
     use ModReadMaterialData
     use ModGlobalConstants
@@ -49,7 +50,7 @@ module ModWriteVTKOutput
     use ModMeshInfo
     use ModWriteVTKASCII
     use ModWriteVTKBinary
-    use ModFileIO
+    !use ModFileIO
 
     implicit none
 
@@ -93,7 +94,11 @@ module ModWriteVTKOutput
         call CollectAndWriteDataSetScalar()
         call CollectAndWriteDataSetVector()
         call CollectAndWriteDataSetTensor()
-        call CollectAndWriteMeshData()
+        !do IPatch = 1, NPATCHES
+        call CollectAndWriteDataSetVector_ControlPoints()
+        !end do 
+        
+        !call CollectAndWriteMeshData()
         
     end subroutine WriteVTKOutput
 
@@ -113,6 +118,9 @@ module ModWriteVTKOutput
     integer(INTEGER_TYPE) :: NodeID, DataSetID, NumberNodes, DataSetSizeNode
     real(REAL_TYPE), dimension(3) :: NoCo = 0.0 ! dimension 3 as ParaView requires 3D data structure
     character(len=MAX_FILENAME_LENGTH) :: VTKFileName
+    
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
     NumberNodes = size(DataSetScalarNode,1) ! total number of material points
     DataSetSizeNode = size(DataSetScalarNode,2) ! total number of datasets
@@ -132,9 +140,9 @@ module ModWriteVTKOutput
 
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberNodes,' float'
     do NodeID = 1, NumberNodes ! loop over Nodes
-        NoCo(1) = NodalCoordinates(NodeID, 1)
-        NoCo(2) = NodalCoordinates(NodeID, 2)
-        if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3) ! for 2D third coordinate is set equal to 0.0
+        NoCo(1) = NodalCoordinates(NodeID, 1, IPatch_Temporary)
+        NoCo(2) = NodalCoordinates(NodeID, 2, IPatch_Temporary)
+        if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3, IPatch_Temporary) ! for 2D third coordinate is set equal to 0.0
         write(VTKUnit,*) NoCo
     end do
 
@@ -163,6 +171,146 @@ module ModWriteVTKOutput
     end subroutine WriteVTKNodeScalar
 
 
+    !subroutine WriteVTKMeshData(DataSetName,DataSetScalar)
+    !!**********************************************************************
+    !!
+    !! Function:  Write Material Point Data in VTK format
+    !!
+    !!**********************************************************************
+    !
+    !implicit none
+    !
+    !character(len=*), dimension(:), intent(in) :: DataSetName ! dimension(DataSetSize)
+    !real(REAL_TYPE), dimension(:,:), intent(in) :: DataSetScalar ! dimension(NumberElements,DataSetSize)
+    !!integer(INTEGER_TYPE) :: ControlNetGrid
+    !
+    !! local variables
+    !integer(INTEGER_TYPE) :: I, ElementID, NodeID, DataSetID, NumberElements, NumberNodes, DataSetSize
+    !real(REAL_TYPE), dimension(3) :: NoCo = 0.0 ! dimension 3 as ParaView requires 3D data structure
+    !character(len=MAX_FILENAME_LENGTH) :: VTKFileName
+    !
+    !NumberNodes = Counters%NodTot ! total number of nodes
+    !NumberElements = size(DataSetScalar,1) ! total number of elements
+    !DataSetSize = size(DataSetScalar,2) ! total number of datasets
+    !
+    !! open the VTK file for mesh data
+    !if (.not.CalParams%ApplyImplicitQuasiStatic) then
+    !    VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MeshData'//'_'// &
+    !        trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+    !else
+    !    VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MeshData'//'_'// &
+    !        trim(CalParams%FileNames%TimeStepExt) &
+    !        //'.vtk'
+    !end if
+    !
+    !call FileOpen(VTKUnit, VTKFileName)
+    !
+    !
+    !write(VTKUnit,'(A)') trim(VTK_VERSION) ! writing file version and identifier
+    !write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName) ! writing header
+    !write(VTKUnit,'(A)') trim(ASCII_FORMAT) ! writing file format
+    !
+    !! writing dataset structure (defines geometry and topology of dataset)
+    !write(VTKUnit,'(A)')'DATASET UNSTRUCTURED_GRID'
+    !
+    !write(VTKUnit,'(A,I8,A)')'POINTS ',NumberNodes,' float'
+    !do NodeID = 1, NumberNodes ! loop over number of nodes
+    !    NoCo(1) = NodalCoordinates(NodeID, 1) ! x-coordinate
+    !    NoCo(2) = NodalCoordinates(NodeID, 2) ! y-coordinate
+    !    if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3) ! for 2D third coordinate is set equal to 0.0
+    !    write(VTKUnit,*) NoCo ! z-coordinate is zero in 2D simulations
+    !end do
+    !
+    !
+    !! There is a problem here with how this is written for NURBS
+    !
+    !
+    !!if (NXiKnotOrder == 1) then 
+    !    
+    !    write(VTKUnit,'(A,2I8)')'CELLS ',NumberElements,(ELEMENTNODES+1)*NumberElements
+    !
+    !    do ElementID = 1, NumberElements ! loop over elements
+    !    
+    !    ! This is a hardcoded fix for the NURBS implementation to properly plot the mesh shape... it is probably computationally expensive and not quite efficient...
+    !    !if (ElementID == 3) then         
+    !    !    write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID+1))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+    !    !end if 
+    !    !
+    !    !if (ElementID == 4) then 
+    !    !    write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID-1))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+    !    !end if 
+    !    
+    !        write(VTKUnit,*) ELEMENTNODES, ((ElementConnectivities(1,ElementID))-1), ((ElementConnectivities(2,ElementID))-1), ((ElementConnectivities(4,ElementID))-1), ((ElementConnectivities(3,ElementID))-1) ! write element connectivities (note that the index has to be decreased by 1)
+    !    end do 
+    !
+    !else                 
+    !       !ControlNetGrid = 4
+    !
+    !    
+    !       write(VTKUnit,'(A,2I8)')'CELLS ',NumberOfControlNetGrid,(ControlNetGrid+1)*NumberOfControlNetGrid
+    !
+    !    
+    !       do ElementID = 1, NumberOfControlNetGrid ! loop over elements
+    !   
+    !    
+    !       
+    !           write(VTKUnit,*) ControlNetGrid, ((ControlNetConnectivity(1,ElementID))-1), ((ControlNetConnectivity(2,ElementID))-1), ((ControlNetConnectivity(3,ElementID))-1), ((ControlNetConnectivity(4,ElementID))-1) ! write element connectivities (note that the index has to be decreased by 1)
+    !
+    !       end do
+    !       
+    !            
+    !    !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+    !    !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+    !    !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+    !    !write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID))-1), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+    !
+    !
+    !end if
+    !
+    !
+    !!end do
+    !
+    !if (NXiKnotOrder == 1) then 
+    !
+    !    write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberElements
+    !    do ElementID = 1, NumberElements ! loop over elements
+    !        write(VTKUnit,*) VTK_CELL ! specification for element, i.e. CELL_TYPE_VTK
+    !    end do
+    !else
+    !    write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberOfControlNetGrid
+    !    do ElementID = 1, NumberOfControlNetGrid ! loop over elements
+    !        write(VTKUnit,*) VTK_CELL ! specification for element, i.e. CELL_TYPE_VTK
+    !    end do
+    !    
+    !end if
+    !
+    !
+    !if (NXiKnotOrder == 1) then 
+    !! writing dataset attributes for elements (defines the actual dataset values)
+    !write(VTKUnit,'(A,I8)')'CELL_DATA ',NumberElements
+    !do DataSetID = 1, DataSetSize ! loop over datasets
+    !    write(VTKUnit,'(3A)')'SCALARS ',trim(DataSetName(DataSetID)),' float 1' ! write dataset name
+    !    write(VTKUnit,'(A)')'LOOKUP_TABLE default'
+    !    do ElementID = 1, NumberElements ! loop over elements
+    !        write(VTKUnit,*)DataSetScalar(ElementID,DataSetID) ! write data of elements
+    !    end do
+    !end do
+    !else
+    !    ! do nothing if higher order... this will probably cause you problems when you are trying to plot Active Elements but for now it is okay...
+    !end if 
+    !
+    !
+    !close(VTKUnit) ! close the VTK file
+    !
+    !end subroutine WriteVTKMeshData
+    
+    
+    
+    
+    
+    
+    
+    
     subroutine WriteVTKMeshData(DataSetName,DataSetScalar)
     !**********************************************************************
     !
@@ -180,7 +328,11 @@ module ModWriteVTKOutput
     real(REAL_TYPE), dimension(3) :: NoCo = 0.0 ! dimension 3 as ParaView requires 3D data structure
     character(len=MAX_FILENAME_LENGTH) :: VTKFileName
 
-    NumberNodes = Counters%NodTot ! total number of nodes
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    
+    
+    NumberNodes = Counters%Sum_NodTot ! total number of nodes
     NumberElements = size(DataSetScalar,1) ! total number of elements
     DataSetSize = size(DataSetScalar,2) ! total number of datasets
 
@@ -206,15 +358,20 @@ module ModWriteVTKOutput
 
     write(VTKUnit,'(A,I8,A)')'POINTS ',NumberNodes,' float'
     do NodeID = 1, NumberNodes ! loop over number of nodes
-        NoCo(1) = NodalCoordinates(NodeID, 1)
-        NoCo(2) = NodalCoordinates(NodeID, 2)
-        if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3) ! for 2D third coordinate is set equal to 0.0
+        NoCo(1) = NodalCoordinates(NodeID, 1, IPatch_Temporary)
+        NoCo(2) = NodalCoordinates(NodeID, 2, IPatch_Temporary)
+        if (NDIM==3) NoCo(3) = NodalCoordinates(NodeID, 3, IPatch_Temporary) ! for 2D third coordinate is set equal to 0.0
         write(VTKUnit,*) NoCo
     end do
 
     write(VTKUnit,'(A,2I8)')'CELLS ',NumberElements,(ELEMENTNODES+1)*NumberElements
     do ElementID = 1, NumberElements ! loop over elements
-        write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID)-1)), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+        write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID, IPatch_Temporary)-1)), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
+    end do
+    
+    write(VTKUnit,'(A,2I8)')'CELLS ',NumberElements,(ELEMENTNODES+1)*NumberElements
+    do ElementID = 1, NumberElements ! loop over elements
+        write(VTKUnit,*) ELEMENTNODES, (((ElementConnectivities(I,ElementID, IPatch_Temporary)-1)), I = 1, size(ElementConnectivities,1)) ! write element connectivities (note that the index has to be decreased by 1)
     end do
 
     write(VTKUnit,'(A,I8)')'CELL_TYPES ',NumberElements
@@ -235,6 +392,12 @@ module ModWriteVTKOutput
     close(VTKUnit) ! close the VTK file
 
     end subroutine WriteVTKMeshData
+    
+    
+    
+    
+    
+    
 
     subroutine CollectAndWriteDataSetScalar()
     !**********************************************************************
@@ -305,11 +468,21 @@ module ModWriteVTKOutput
     end do
     call WriteVTKScalarDataPointer('deviatoric_strain_solid',DataSetScalar)
 
-    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-        DataSetScalar(MaterialPointID) =(  SigmaEffArray(MaterialPointID,1) &
+    !if (CalParams%ApplyFBar == .true.) then 
+    !
+    !    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !        DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%FBarVolumetricStressGradient / 3.0
+    !    end do 
+    ! 
+    !else
+
+        do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+            DataSetScalar(MaterialPointID) =(  SigmaEffArray(MaterialPointID,1) &
             + SigmaEffArray(MaterialPointID,2) &
             + SigmaEffArray(MaterialPointID,3) ) / 3.0 ! mean effective stress ! valid for 2D and 3D
-    end do
+        end do
+     !end if
+     
     call WriteVTKScalarDataPointer('mean_effective_stress',DataSetScalar)
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
@@ -369,6 +542,7 @@ module ModWriteVTKOutput
         call WriteVTKScalarDataPointer('porosity',                  Particles(:)%Porosity)
         call WriteVTKScalarDataPointer('integration_weight',        Particles(:)%IntegrationWeight)
         call WriteVTKScalarDataPointer('material_point_id',         IDArray(:))
+        call WriteVTKScalarDataPointer('patch_id',                  PatchIDArray(:))
         call WriteVTKScalarDataPointer('element_id',                ElementIDArray(:))
         call WriteVTKScalarDataPointer('entity_id',                 EntityIDArray(:))
         call WriteVTKScalarDataPointer('material_id',               MaterialIDArray(:))
@@ -449,8 +623,9 @@ module ModWriteVTKOutput
     !**********************************************************************
     implicit none
     ! local variables
-    integer(INTEGER_TYPE) :: N, K, MaterialPointID, NumberMaterialPoints
+    integer(INTEGER_TYPE) :: N, K, MaterialPointID, NumberMaterialPoints, NodeID, NumberNodes
     real(REAL_TYPE), dimension(:,:), allocatable :: DataSetVector
+    !real(REAL_TYPE), dimension(:,:), allocatable :: DataSetVector_ControlPoints
     real(REAL_TYPE), dimension(NVECTOR) :: VectorValue
     character(len=MAX_FILENAME_LENGTH) :: VTKFileName
     logical :: HasValue
@@ -463,7 +638,10 @@ module ModWriteVTKOutput
     end if
 
     NumberMaterialPoints = Counters%NParticles ! total number of material points
+    !NumberNodes = Counters%NodTot ! total number of nodes
+    
     allocate(DataSetVector(NumberMaterialPoints,NVECTOR))
+    !allocate(DataSetVector_ControlPoints(NumberNodes,NVECTOR))
 
     call InitialiseVTKFilePointer(NumberMaterialPoints, VTKFileName)
 
@@ -516,7 +694,19 @@ module ModWriteVTKOutput
         DataSetVector(MaterialPointID,:) = GlobPosArray(MaterialPointID,:)
     end do
     call WriteVTKVectorDataPointer('global_position',DataSetVector)
+    
+    
+    
+    !do NodeID = 1, NumberNodes ! loop over material points
+    !    DataSetVector_ControlPoints(NodeID,:) = NodalCoordinates(NodeID,:)
+    !end do
+    !call WriteVTKVectorDataPointer('global_position_NURBScontrolpoints',DataSetVector_ControlPoints)
+    !
 
+    
+    
+    
+    
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%LocPos(:)
     end do
@@ -621,6 +811,235 @@ module ModWriteVTKOutput
 
     end subroutine CollectAndWriteDataSetVector
 
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    subroutine CollectAndWriteDataSetVector_ControlPoints()
+    !**********************************************************************
+    !
+    ! Function:  Write vectorial data VTK output files
+    !
+    !**********************************************************************
+    implicit none
+    ! local variables
+    integer(INTEGER_TYPE) :: N, K, MaterialPointID, NumberMaterialPoints, NodeID, NumberNodes
+    !real(REAL_TYPE), dimension(:,:), allocatable :: DataSetVector
+    real(REAL_TYPE), dimension(:,:), allocatable :: DataSetVector_ControlPoints
+    real(REAL_TYPE), dimension(NVECTOR) :: VectorValue
+    character(len=MAX_FILENAME_LENGTH) :: VTKFileName
+    logical :: HasValue
+    
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch
+    character(len=10) :: PatchString
+
+    
+    
+    do IPatch = 1, Counters%NPatches
+        
+        
+        write(PatchString, '(I0)') IPatch
+        
+        ! open the VTK file for material point data
+    if (.not.CalParams%ApplyImplicitQuasiStatic) then
+        VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPVectorControlPoints'//'_Patch'// trim(PatchString) //'_' //trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+    else
+        VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPVectorControlPoints'//'_Patch'// trim(PatchString) //'_' //trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+    end if
+
+    NumberMaterialPoints = Counters%NParticles ! total number of material points
+    NumberNodes = Counters%NodTot(IPatch) !Counters%NodTot ! total number of nodes
+    
+    !allocate(DataSetVector(NumberMaterialPoints,NVECTOR))
+    allocate(DataSetVector_ControlPoints(NumberNodes,NVECTOR))
+
+    ! HARDCODED FOR NOW - 8/11/2023
+    call InitialiseVTKFileBinary_ControlPoints(NumberNodes, VTKFileName, IPatch)
+
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+    !        ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+    !    DataSetVector(MaterialPointID,:) = 0.0
+    !    else
+    !        DataSetVector(MaterialPointID,:) = VelocityArray(MaterialPointID,:)
+    !    end if
+    !end do
+    !call WriteVTKVectorDataPointer('velocity_solid',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+    !        ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid)))then
+    !    DataSetVector(MaterialPointID,:) = VelocityArray(MaterialPointID,:)
+    !    else
+    !        DataSetVector(MaterialPointID,:) = VelocityWaterArray(MaterialPointID,:)
+    !    end if
+    !end do
+    !call WriteVTKVectorDataPointer('velocity_liquid',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+    !        ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+    !    DataSetVector(MaterialPointID,:) = 0.0
+    !    else
+    !        DataSetVector(MaterialPointID,:) = UArray(MaterialPointID,:)
+    !    end if
+    !end do
+    !call WriteVTKVectorDataPointer('displacement_solid',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+    !        ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+    !    DataSetVector(MaterialPointID,:) = UArray(MaterialPointID,:)
+    !    else
+    !        DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%UW(:)
+    !    end if
+    !end do
+    !call WriteVTKVectorDataPointer('displacement_liquid',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    DataSetVector(MaterialPointID,:) = AccelerationArray(MaterialPointID,:)
+    !end do
+    !call WriteVTKVectorDataPointer('acceleration_solid',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    DataSetVector(MaterialPointID,:) = GlobPosArray(MaterialPointID,:)
+    !end do
+    !call WriteVTKVectorDataPointer('global_position',DataSetVector)
+    
+    
+    
+    do NodeID = 1, NumberNodes ! loop over material points
+        DataSetVector_ControlPoints(NodeID,:) = NodalCoordinates(NodeID,:,IPatch)
+    end do
+    call WriteVTKVectorDataPointer('global_position_NURBScontrolpoints',DataSetVector_ControlPoints)
+    
+
+    do NodeID = 1, NumberNodes ! loop over material points
+        DataSetVector_ControlPoints(NodeID,:) = ActiveNode(NodeID,IPatch)
+    end do
+    call WriteVTKVectorDataPointer('active_node_NURBScontrolpoints',DataSetVector_ControlPoints)
+    
+    
+    
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%LocPos(:)
+    !end do
+    !call WriteVTKVectorDataPointer('local_position',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%FBody(:)
+    !end do
+    !call WriteVTKVectorDataPointer('bodyforce',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+    !        ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+    !    DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%FBody(:)
+    !    else
+    !        DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%FBodyWater(:)
+    !    end if
+    !end do
+    !call WriteVTKVectorDataPointer('bodyforce_liquid',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%FBodyMixed(:)
+    !end do
+    !call WriteVTKVectorDataPointer('bodyforce_mixture',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    HasValue = .false.
+    !    do N = 1, NVECTOR
+    !      do K=1,MAX_LOAD_SYSTEMS  
+    !        HasValue = HasValue .or. (Particles(MaterialPointID)%FExt(N,K) /= 0.0)
+    !      end do
+    !    end do
+    !    if (HasValue) then
+    !        VectorValue = 0.0
+    !      do K=1,MAX_LOAD_SYSTEMS    
+    !        VectorValue(:) = VectorValue(:)+Particles(MaterialPointID)%FExt(:,K)*CalParams%Multipliers%SolidACurrent(k)
+    !      end do
+    !        DataSetVector(MaterialPointID,:) = VectorValue(:)
+    !    else
+    !        DataSetVector(MaterialPointID,:) = 0.0
+    !    end if
+    !end do
+    !call WriteVTKVectorDataPointer('externalforce',DataSetVector)
+    !
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    HasValue = .false.
+    !    do N = 1, NVECTOR
+    !      do K=1,MAX_LOAD_SYSTEMS  
+    !        HasValue = HasValue .or. (Particles(MaterialPointID)%FExtWater(N,K) /= 0.0)
+    !      end do
+    !    end do
+    !    if (HasValue) then
+    !        VectorValue = 0.0
+    !      do K=1,MAX_LOAD_SYSTEMS    
+    !        VectorValue(:) = VectorValue(:)+Particles(MaterialPointID)%FExtWater(:,K)*CalParams%Multipliers%WaterACurrent(k)
+    !      end do
+    !        DataSetVector(MaterialPointID,:) = VectorValue(:)
+    !    else
+    !        DataSetVector(MaterialPointID,:) = 0.0
+    !    end if
+    !end do
+    !call WriteVTKVectorDataPointer('externalforce_liquid',DataSetVector)
+    !
+    !if (isThreePhaseCalculation()) then
+    !    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !        DataSetVector(MaterialPointID,:) = VelocityGasArray(MaterialPointID,:)
+    !    end do
+    !    call WriteVTKVectorDataPointer('velocity_gas',DataSetVector)
+    !
+    !    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !        DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%UG(:)
+    !    end do
+    !    call WriteVTKVectorDataPointer('displacement_gas',DataSetVector)
+    !
+    !    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !        DataSetVector(MaterialPointID,:) = Particles(MaterialPointID)%FBodyGas(:)
+    !    end do
+    !    call WriteVTKVectorDataPointer('bodyforce_gas',DataSetVector)
+    !
+    !    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !      HasValue = .false.
+    !      do N = 1, NVECTOR
+    !        do K=1,MAX_LOAD_SYSTEMS  
+    !          HasValue = HasValue .or. (Particles(MaterialPointID)%FExtGas(N,K) /= 0.0)
+    !        end do
+    !      end do
+    !      if (HasValue) then
+    !        VectorValue = 0.0
+    !        do K=1,MAX_LOAD_SYSTEMS    
+    !          VectorValue(:) = VectorValue(:)+Particles(MaterialPointID)%FExtGas(:,K)*CalParams%Multipliers%GasACurrent(k)
+    !        end do
+    !        DataSetVector(MaterialPointID,:) = VectorValue(:)
+    !      else
+    !        DataSetVector(MaterialPointID,:) = 0.0
+    !      end if
+    !    end do
+    !    call WriteVTKVectorDataPointer('externalforce_gas',DataSetVector)
+    !end if
+    close(VTKunit)
+    deallocate(DataSetVector_ControlPoints)
+    
+    end do ! loop over patches
+
+    
+    
+
+    end subroutine CollectAndWriteDataSetVector_ControlPoints
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
 
     subroutine CollectAndWriteDataSetTensor()
     !**********************************************************************
@@ -836,9 +1255,12 @@ module ModWriteVTKOutput
     character(len=50), dimension(:), allocatable :: DataSetName
     real(REAL_TYPE), dimension(:,:), allocatable :: DataSetScalar
     
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    
     !********** START: writing scalar mesh data ****************************************
     
-    NumberElements = Counters%NEl ! total number of elements
+    NumberElements = Counters%Sum_NEl ! total number of elements
     DataSetSize = 2 ! total number of datasets for elements to be written
     allocate(DataSetName(DataSetSize))
     allocate(DataSetScalar(NumberElements,DataSetSize))
@@ -849,7 +1271,7 @@ module ModWriteVTKOutput
         if (DataSetID == 1) then
             DataSetName(DataSetID) = 'active_elements' ! assign name to dataset
             do ElementID = 1, NumberElements ! loop over elements
-                if (IsActiveElement(ElementID)) then
+                if (IsActiveElement(ElementID,IPatch_Temporary)) then
                     DataSetScalar(ElementID,DataSetID) = 1.0 ! assign output data to elements
                 else
                     DataSetScalar(ElementID,DataSetID) = 0.0
@@ -893,7 +1315,7 @@ module ModWriteVTKOutput
     NumberMaterialPoints = Counters%NParticles ! total number of material points
 
     !********** START: writing scalar node data ****************************************
-    NumberNodes = Counters%NodTot ! total number of nodes
+    NumberNodes = Counters%Sum_NodTot ! total number of nodes
     DataSetSize = 1 ! total number of datasets for material points to be written
     allocate(DataSetNameNode(DataSetSize))
     allocate(DataSetScalarNode(NumberNodes,DataSetSize))

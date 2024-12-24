@@ -64,28 +64,30 @@
         integer(kind = 8), private, save  :: PartFactor = 10
         
         !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NPartEle
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NPartEle
 
         !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: InitialNPartEle
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: InitialNPartEle
         
         !> NPartEle(IElement) = Number of particles in element IElement, size = NEl
         integer(INTEGER_TYPE), dimension(:,:), allocatable :: InitialParticleIndex
         
+        integer(INTEGER_TYPE) :: Maximum_NPartEle
+
         !> NSolidEle(IElement) = Number of solid material points in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NSolidEle
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NSolidEle !(rank 2 for multipatch)
 
         !> NLiquidEle(IElement) = Number of liquid material points in element IElement, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NLiquidEle
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NLiquidEle !(rank 2 for multipatch)
 
         !> List which contains the particle connectivities (particle - element assigments), size = NParticles
         integer(kind = 8), dimension(:), allocatable :: EleParticles
 
         !> Helper list for EleParticles, index of first particle of element, size = NEl
-        integer(INTEGER_TYPE), dimension(:), allocatable :: EleParticlesHelp
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: EleParticlesHelp ! (rank 2 for multipatch)
 
         !> True, if particle based integration is used inside element IElement, size = NEl
-        logical, dimension(:), allocatable :: IsParticleIntegration
+        logical, dimension(:, :), allocatable :: IsParticleIntegration ! rank 2 for multipatch generalization
         
         !> True, if liquid free surface Material Point is inside element IElement, size = NEl
         logical, dimension(:), allocatable :: IsElemWithLiquidFreeSurfMP
@@ -95,6 +97,7 @@
         !> The following arrays correspond to the stripped members of the Particle datatype to improve efficency (spatial locality)  
         integer(INTEGER_TYPE), allocatable          :: IDArray(:)                   !> Unique ID of a particle. This variable should only be set once through the routine InitParticle.
         integer(INTEGER_TYPE), allocatable          :: ElementIDArray(:)            !> Unique ID of the element to whom the particle belongs. A value of -1 indicates no assignment.
+        integer(INTEGER_TYPE), allocatable          :: PatchIDArray(:)              !> Patch ID of the element to whon the particle belongs. A value of -1 indicates no assignment. 
         integer(INTEGER_TYPE), allocatable          :: EntityIDArray(:)             !> Unique ID indicating to which entity the particle belongs
         integer(INTEGER_TYPE), allocatable          :: MaterialIDArray(:)           !> Material ID of the particle referring to the material data read from input files
         
@@ -102,13 +105,55 @@
         real(REAL_TYPE), allocatable :: MassArray(:)                 !> Particle mass [kg] (corresponds to the dry density of soil) (fixed during simulation - ensures conservation of mass)
         real(REAL_TYPE), allocatable :: MassWaterArray(:)            !> Particle mass [kg] (corresponds to the water density)(fixed during simulation - ensures conservation of mass)
         
+        
+        real(REAL_TYPE), allocatable :: KineticEnergyMP(:) !> Kinetic energy of each material point
+        real(REAL_TYPE), allocatable :: StrainEnergyMP(:)  !> Strain energy of each material point
+        
+        real(REAL_TYPE) :: KineticEnergyTotal = 0.0
+        real(REAL_TYPE) :: StrainEnergyTotal = 0.0
+        
+        
         ! Displacements (solid)
         real(REAL_TYPE), allocatable :: UArray(:,:)                  !> Total displacements in x, y, z direction of the particle
         real(REAL_TYPE), allocatable :: UPhaseArray(:,:)             !> Displacements in x, y, z direction of the particle during a phase
         real(REAL_TYPE), allocatable :: UStepArray(:,:)              !> Displacements in x, y, z direction of the particle during a load step
        
         real(REAL_TYPE), allocatable :: ShapeValuesArray(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        real(REAL_TYPE), allocatable :: ShapeValuesArray_VolLockSmooth(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
+        !Shape function values for NURBS for debugging purposes I am plotting the Xi and Eta shape functions 
+        ! -----------------------------------------------------------------------
+        
+        !real(REAL_TYPE), allocatable :: ShapeValuesArray_Xi(:,:)
+        !real(REAL_TYPE), allocatable :: ShapeValuesArray_Eta(:,:)
+        !real(REAL_TYPE), allocatable :: ShapeValuesArray_Zeta(:,:)
+
+        
+        !real(REAL_TYPE), allocatable :: DShapeValuesArray_Xi(:,:)
+        !real(REAL_TYPE), allocatable :: DShapeValuesArray_Eta(:,:)
+        !real(REAL_TYPE), allocatable :: DShapeValuesArray_Zeta(:,:)
+
+        ! we honestly do not need this here... weights are not multidimensional
+        !real(REAL_TYPE), allocatable :: WeightArray_Xi(:) 
+        !real(REAL_TYPE), allocatable :: WeightArray_Eta(:)
+        !real(REAL_TYPE), allocatable :: WeightArray_Zeta(:)
+        
+        ! -----------------------------------------------------------------------
+        
+        !real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:)
+        !real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:)
+        !
+        !real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:)
+        !real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:)
+        
+        ! -----------------------------------------------------------------------
+
+        
+        
+        
+        
         real(REAL_TYPE), allocatable :: GlobPosArray(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
+        real(REAL_TYPE), allocatable :: GlobPosArray_Arranged(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
+
         
         real(REAL_TYPE), allocatable :: VelocityArray(:,:)           ! Velocity of the particle (soil)
         real(REAL_TYPE), allocatable :: VelocityWaterArray(:,:)      ! Velocity of the particle (water)
@@ -118,8 +163,17 @@
         real(REAL_TYPE), allocatable :: SigmaEffArray(:,:)           !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
         real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:)          !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step
         
+        real(REAL_TYPE), allocatable :: SigmaEffArrayGaussPointsWaterPressure(:,:) !> Gauss point integration using quadrilateral elements --> water pressure --> Rank 2 because scalar
+        real(REAL_TYPE), allocatable :: SigmaEffArrayGaussPointsGasPressure(:,:) !> Gauss point integration using quadrilateral elements --> gas pressure --> Rank 2 because scalar
+        real(REAL_TYPE), allocatable :: SigmaEffArrayGaussPointsBulkViscousPressure(:,:) !> Gauss point integration using quadrilateral elements --> bulk viscous damping
+        
+        
         real(REAL_TYPE), allocatable :: DShapeValuesArray(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+        real(REAL_TYPE), allocatable :: DShapeValuesArray_VolLockSmooth(:,:,:)     !> Shape function derivatives for the particle, these values are updated when new local coordinates are calculated.
+
+        
         real(REAL_TYPE), allocatable :: AccelerationArray(:,:)       !> Acceleration of the particle (soil)
+        real(REAL_TYPE), allocatable :: AccelerationWaterArray(:,:)       !> Acceleration of the particle (water)
         
         ! User defined model
         real(REAL_TYPE), allocatable :: ESMstatevArray(:,:)         !> array of state variables of the user defined material model
@@ -237,16 +291,20 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           ! Local variables
           integer(INTEGER_TYPE) :: I, MaterialPointIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary, IPatch
 
           NMaterialParticlesEle = 0
-          do I = 1, NPartEle(IElement)
-            MaterialPointIndex = GetParticleIndex(I, IElement)
+          do IPatch = 1, Counters%NPatches
+          do I = 1, NPartEle(IElement,IPatch)
+            MaterialPointIndex = GetParticleIndex(I, IElement, IPatch)
             
             if (IsMaterialParticle(MaterialPointIndex)) then
               NMaterialParticlesEle = NMaterialParticlesEle + 1
             end if
 
           end do
+          end do 
         
         end function NMaterialParticlesEle
 
@@ -265,10 +323,12 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           ! Local variables
           integer(INTEGER_TYPE) :: I, ParticleIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           NVirtualParticlesEle = 0
-          do I = 1, NPartEle(IElement)
-            ParticleIndex = GetParticleIndexFunction(I, IElement)
+          do I = 1, NPartEle(IElement,IPatch_Temporary)
+            ParticleIndex = GetParticleIndexFunction(I, IElement, IPatch_Temporary)
             
             if (IsVirtualParticle(ParticleIndex) ) then
               NVirtualParticlesEle = NVirtualParticlesEle + 1
@@ -291,10 +351,12 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           ! Local variables
           integer(INTEGER_TYPE) :: I, ParticleIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           NRemovedParticlesEle = 0
-          do I = 1, NPartEle(IElement)
-            ParticleIndex = GetParticleIndex(I, IElement)
+          do I = 1, NPartEle(IElement,IPatch_Temporary)
+            ParticleIndex = GetParticleIndex(I, IElement, IPatch_Temporary)
             
             if (IsRemovedParticle(ParticleIndex) ) then
               NRemovedParticlesEle = NRemovedParticlesEle + 1
@@ -319,10 +381,12 @@
           integer(INTEGER_TYPE), intent(in) :: IElement
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           HasBoundaryParticle = .false.
-          do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+          do IParticle = 1, NPartEle(IElement,IPatch_Temporary) ! Loop over particles in IElement
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch_Temporary)
       
             if (Particles(ParticleIndex)%IsBoundaryParticle) then
               HasBoundaryParticle = .true.
@@ -333,7 +397,7 @@
         end function HasBoundaryParticle
 
 
-        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement) result(res)
+        integer(INTEGER_TYPE) function GetParticleIndexFunction(IParticle, IElement, IPatch) result(res)
         !**********************************************************************
         !
         !    Function:  Returns the index of the material point with the local number
@@ -358,10 +422,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: EleParticleIndex
           integer(kind = 8) :: LocalIElement
+          ! Multipatch variables 
+          integer(INTEGER_TYPE), intent(in) :: IPatch!_Temporary = 1
           
           if ( (allocated(EleParticlesHelp) ).and.(allocated(EleParticles) ).and. &
-               (IParticle>=1).and.(IParticle<=NPartEle(IElement))            ) then
-            EleParticleIndex = EleParticlesHelp(IElement) + IParticle - 1
+               (IParticle>=1).and.(IParticle<=NPartEle(IElement,IPatch))            ) then
+            EleParticleIndex = EleParticlesHelp(IElement, IPatch) + IParticle - 1
             LocalIElement = IElement
             res = EleParticles(EleParticleIndex) - LocalIElement * PartFactor
           else
@@ -370,6 +436,120 @@
 
         end function GetParticleIndexFunction
 
+        subroutine SetParticleIndex_MPInitFile()
+        !**********************************************************************
+        !
+        !    Function:  Sets/updates GetParticleIndex.
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
+
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE), allocatable, dimension(:,:,:) :: GetParticleIndex_Temporary
+        !integer(INTEGER_TYPE) :: maxParticle_previous = 64
+        integer(INTEGER_TYPE) :: counter = 1
+        integer(INTEGER_TYPE) :: StartingValue
+        
+        integer(INTEGER_TYPE) :: ParticleIndex
+        integer(INTEGER_TYPE), dimension(Counters%Sum_NEl, Counters%NPatches) :: IParticle !Counters%NPatches !Counters%NEl
+        
+        IParticle = 0
+        
+        maxParticle = 1
+        maxEl       = 1
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+        !do IAEl = 1, Counters%NAEl
+          iEl = ActiveElement(IAEl, IPatch)
+          maxEl = max(maxEl, iEl)
+          maxParticle = max(maxParticle, NPartEle(iEl,IPatch))
+                end do ! loop over active elements
+        end do ! loop over patches
+        
+        iError = 0
+
+        !!!!!!!!!!!!!!!!!!!!
+
+        allocate(GetParticleIndex_Temporary(Counters%NParticles, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+
+        GetParticleIndex_Temporary = -huge(GetParticleIndex_Temporary)
+        
+        if (allocated(GetParticleIndex)) then
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+          
+                iEl = ActiveElement(IAEl, IPatch)
+                do int = 1, Counters%NParticles!maxParticle_previous!NPartEle(iEl,IPatch)
+                    if (GetParticleIndex(int, iEl, IPatch)>0) then 
+                    GetParticleIndex_Temporary(counter, iEl, IPatch) = GetParticleIndex(int, iEl, IPatch)
+                    counter = counter + 1
+                    end if
+                enddo
+               counter = 1
+            enddo
+            counter = 1
+        end do!loop over patches
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        if (allocated(GetParticleIndex)) then
+          deallocate(GetParticleIndex, stat = IError)
+          call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
+        endif
+
+        allocate(GetParticleIndex(Counters%NParticles, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+
+        !Counters%NParticles
+        call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
+        GetParticleIndex = -huge(GetParticleIndex)
+
+
+        
+        StartingValue = 0
+        if ( (FirstTimeGetParticleIndex == .false.)) then  !(CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and.
+
+        do ParticleIndex = 1, Counters%NParticles 
+            
+            iEl = ElementIDArray(ParticleIndex)
+            IPatch = PatchIDArray(ParticleIndex)
+            
+            IParticle(iEl, IPatch) = IParticle(iEl, IPatch) + 1
+            
+              
+            GetParticleIndex(IParticle(iEl, IPatch), iEl, IPatch) = &
+                GetParticleIndexFunction(IParticle(iEl, IPatch), iEl, IPatch) !+ StartingValue !IParticle(iEl, IPatch)
+
+          
+        end do ! loop over particles 
+        
+        
+        
+        FirstTimeGetParticleIndex = .true.
+        
+        else 
+            
+              GetParticleIndex = GetParticleIndex_Temporary
+            
+        end if 
+        
+        end subroutine 
+        
+        
+        
+        
+        
+        
+        
+        
         subroutine SetParticleIndex()
         !**********************************************************************
         !
@@ -383,30 +563,119 @@
         implicit none
         integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
 
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch
+        ! Multipatch variables 
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        integer(INTEGER_TYPE), allocatable, dimension(:,:,:) :: GetParticleIndex_Temporary
+        !integer(INTEGER_TYPE) :: maxParticle_previous = 64
+        integer(INTEGER_TYPE) :: counter = 1
+        integer(INTEGER_TYPE) :: StartingValue
+        
         maxParticle = 1
         maxEl       = 1
-        do IAEl = 1, Counters%NAEl
-          iEl = ActiveElement(IAEl)
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+        !do IAEl = 1, Counters%NAEl
+          iEl = ActiveElement(IAEl, IPatch)
           maxEl = max(maxEl, iEl)
-          maxParticle = max(maxParticle, NPartEle(iEl))
-        enddo
-
+          maxParticle = max(maxParticle, NPartEle(iEl,IPatch))
+                end do ! loop over active elements
+        end do ! loop over patches
+        
         iError = 0
+
+        !!!!!!!!!!!!!!!!!!!!
+        !Counters%NParticles
+        !allocate(GetParticleIndex_Temporary(maxParticle_previous, maxEl, NumberOfPatches), stat = IError)
+        !allocate(GetParticleIndex_Temporary(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
+        allocate(GetParticleIndex_Temporary(Counters%NParticles, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+
+        GetParticleIndex_Temporary = -huge(GetParticleIndex_Temporary)
+        
+        if (allocated(GetParticleIndex)) then
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+          
+                iEl = ActiveElement(IAEl, IPatch)
+                do int = 1, Counters%NParticles!maxParticle_previous!NPartEle(iEl,IPatch)
+                    if (GetParticleIndex(int, iEl, IPatch)>0) then 
+                    GetParticleIndex_Temporary(counter, iEl, IPatch) = GetParticleIndex(int, iEl, IPatch)
+                    counter = counter + 1
+                    end if
+                enddo
+               counter = 1
+            enddo
+            counter = 1
+        end do!loop over patches
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
         if (allocated(GetParticleIndex)) then
           deallocate(GetParticleIndex, stat = IError)
           call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         endif
 
-        allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
+        !allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
+        !allocate(GetParticleIndex(maxParticle, maxEl, NumberOfPatches), stat = IError)
+        !allocate(GetParticleIndex(Counters%NParticles, maxEl, NumberOfPatches), stat = IError)
+        allocate(GetParticleIndex(Counters%NParticles, NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError)
+
+        !Counters%NParticles
         call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
         GetParticleIndex = -huge(GetParticleIndex)
 
-        do IAEl = 1, Counters%NAEl
-          iEl = ActiveElement(IAEl)
-          do int = 1, NPartEle(iEl)
-            GetParticleIndex(int, iEl) = GetParticleIndexFunction(int, iEl)
+        !do IAEl = 1, Counters%NAEl
+        
+        StartingValue = 0
+        if ( (FirstTimeGetParticleIndex == .false.)) then  !(CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and.
+        !if ((CalParams%IStep == 1) .and. (CalParams%TimeStep == 1) .and. (FirstTimeGetParticleIndex == .false.)) then 
+
+        !if (.not.allocated(GetParticleIndex)) then
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+          iEl = ActiveElement(IAEl, IPatch)
+          do int = 1, NPartEle(iEl,IPatch)
+            GetParticleIndex(int, iEl, IPatch) = GetParticleIndexFunction(int, iEl, IPatch) !+ StartingValue
           enddo
-        enddo
+                enddo
+                
+                !StartingValue = GetParticleIndex(int-1, iEl, IPatch)
+                
+        end do!loop over patches
+        
+        FirstTimeGetParticleIndex = .true.
+        
+        else 
+            
+          !  do IPatch = 1, NumberOfPatches ! Loop over patches
+          !      do IAEl = 1, nael_NURBS(IPatch)!Counters%NEl ! Loop over all elements 
+          !  
+          !iEl = ActiveElement(IAEl, IPatch)
+          !do int = 1, NPartEle(iEl,IPatch)
+              
+              
+              !GetParticleIndex(int, iEl, IPatch) = GetParticleIndex_Temporary(int, iEl, IPatch)
+              GetParticleIndex = GetParticleIndex_Temporary
+
+              
+              
+
+          !enddo
+          !
+          !      enddo
+                
+        !end do!loop over patches
+            
+            
+            
+        end if 
+        
+        !maxParticle_previous = maxParticle
+        
+        
         end subroutine SetParticleIndex
 
 
@@ -506,7 +775,7 @@
         end subroutine SetPartFactor
 
 
-        integer(INTEGER_TYPE) function NumberOfIntegrationPoints(IElement)
+        integer(INTEGER_TYPE) function NumberOfIntegrationPoints(IElement, IPatch)
         !**********************************************************************
         !
         !    Function: Returns the number of particles in element IElement if the element is 
@@ -524,9 +793,12 @@
         implicit none
         
           integer(INTEGER_TYPE) :: IElement
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
         
-          if (IsParticleIntegration(IElement) ) then ! Partially filled element
-            NumberOfIntegrationPoints = NPartEle(IElement) ! Number of particles in IElement
+          if (IsParticleIntegration(IElement, IPatch) ) then ! Partially filled element
+            NumberOfIntegrationPoints = NPartEle(IElement,IPatch) ! Number of particles in IElement
           else ! Fully filled element
             NumberOfIntegrationPoints = ELEMENTGAUSSPOINTS ! Number of Gauss points in element
           end if
@@ -534,7 +806,7 @@
         end function NumberOfIntegrationPoints
 
 
-        subroutine SetEleParticles(IElement, IParticle, ParticleIndex)
+        subroutine SetEleParticles(IElement, IParticle, ParticleIndex, IPatch)
         !**********************************************************************
         !
         !    Function:  Sets EleParticles(ParticleIndex) and EleParticlesHelp(IElement)
@@ -562,21 +834,27 @@
             ! Local variables
             integer(kind = 8) :: LocalIElement
             integer(kind = 8) :: LocalParticleIndex
-
             
-            if (ParticleIndex>0) then
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+            integer(INTEGER_TYPE), intent(in) :: IPatch
+            
+            
+            
+            if (ParticleIndex>0) then 
               LocalIElement = IElement
-              LocalParticleIndex = ParticleIndex
+              LocalParticleIndex = ParticleIndex 
 
               EleParticles(ParticleIndex) = LocalIElement * PartFactor + &
                                             LocalParticleIndex
-     
-          
+              
               if (IParticle==1) then ! First particle of element
-                EleParticlesHelp(IElement) = ParticleIndex
+                EleParticlesHelp(IElement, IPatch) = ParticleIndex
               end if
+              
+              
             else ! Inactive element
-              EleParticlesHelp(IElement) = -1
+              EleParticlesHelp(IElement, IPatch) = -1
             end if
         
         end subroutine SetEleParticles
@@ -608,6 +886,7 @@
           LocalParticleIndex = ParticleIndex
 
           ElementIDArray(ParticleIndex)= NewElementID
+          !PatchIDArray(ParticleIndex)= NewPatchID
           EleParticles(IParticle) = LocalNewElementID * PartFactor +  &
                                     LocalParticleIndex
         end subroutine SetParticleElementID
@@ -628,12 +907,16 @@
           ! local variables
           integer(INTEGER_TYPE) :: IError
           integer(INTEGER_TYPE) :: I
+          
+          ! Multipatch variable
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
-          allocate(EleParticlesHelp(Counters%NEl), stat = IError)
+          !allocate(EleParticlesHelp(Counters%NEl), stat = IError) ! I need to make this patch dependent         
+          allocate(EleParticlesHelp(NURBS%Maximum_nel_NURBS,Counters%NPatches), stat = IError) ! I need to make this patch dependent
           EleParticlesHelp = -1
           
           allocate(EleParticles(Counters%NParticles), stat = IError)
-           
+          
           EleParticles = -1
           
           allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS)::Particles(Counters%NParticles), stat = IError)
@@ -642,6 +925,10 @@
           end do
           
           allocate(ElementIDArray(Counters%NParticles), stat = IError)
+          
+          ! Multipatch generalization 
+          allocate(PatchIDArray(Counters%NParticles), stat = IError)
+          
           allocate(IDArray(Counters%NParticles), stat = IError)
           allocate(EntityIDArray(Counters%NParticles), stat = IError)
           allocate(MaterialIDArray(Counters%NParticles), stat = IError)
@@ -649,23 +936,96 @@
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          allocate(ShapeValuesArray_VolLockSmooth(Counters%NParticles,ELEMENTNODES_VolLockSmooth), stat = IError)
+          
+          ! For NURBS debugging can create these functions here 
+          ! ------------------------------------------------------------------------------------
+
+          ! Xi
+          !allocate(ShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! this needs to be a maximum
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          !allocate(DShapeValuesArray_Xi(NXiKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! this needs to be a maximum
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! Eta
+          !allocate(ShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! this needs to be a maximum
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          !allocate(DShapeValuesArray_Eta(NEtaKnotOrder(IPatch_Temporary)+1, Counters%NParticles), stat = IError) ! this needs to be a maximum
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! Weights 
+          !allocate(WeightArray_Xi(Counters%NParticles), stat = IError) !(NXiKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          !allocate(WeightArray_Eta(Counters%NParticles), stat = IError) !(NEtaKnotOrder+1, Counters%NParticles), stat = IError)
+          !Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          ! ------------------------------------------------------------------------------------
+          
+
+          !
+          !allocate(NN_IncludesZeroValues_Print(NXiKnotEntries-1), stat = IError)
+          !allocate(dN_dxi_IncludesZeroValues_Print(NXiKnotEntries-1), stat = IError)
+          !
+          !
+          !allocate(MM_IncludesZeroValues_Print(NEtaKnotEntries-1), stat = IError)
+          !allocate(dM_deta_IncludesZeroValues_Print(NEtaKnotEntries-1), stat = IError)
+          
+          
+          
+          ! ------------------------------------------------------------------------------------
+
+          
+          
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
+          
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(GlobPosArray_Arranged(Counters%NParticles,NVECTOR), stat = IError)
+          
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
+          
+          ! stress for gauss point integration for each phase
+          !allocate(SigmaEffArrayGaussPoints             (Counters%NEl, Counters%NGaussPoints, NTENSOR), stat = IError) !--> solid skeleton --> tensor for each GP
+          allocate(SigmaEffArrayGaussPointsWaterPressure(Counters%Sum_NEl, Counters%NGaussPoints), stat = IError) !--> water pressure --> scalar for each GP !Counters%NEl
+          allocate(SigmaEffArrayGaussPointsGasPressure  (Counters%Sum_NEl, Counters%NGaussPoints), stat = IError) !--> gas pressure --> scalar for each GP !Counters%NEl
+          allocate(SigmaEffArrayGaussPointsBulkViscousPressure(Counters%Sum_NEl, Counters%NGaussPoints), stat = IError) !--> bulk viscous damping !Counters%NEl
+          
+          
+          ! in each element, we are tracking how many material points associated with a gauss point in an element
+          allocate(SubElementMPOrganization(Counters%Sum_NEl, Counters%NGaussPoints), stat = IError) ! --> global matrix
+          
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
+          allocate(DShapeValuesArray_VolLockSmooth(Counters%NParticles,ELEMENTNODES_VolLockSmooth,NVECTOR), stat = IError)
+          
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(AccelerationWaterArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(MassArray(Counters%NParticles), stat = IError)
           allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
-          !allocate(ESMpropsArray(Counters%NParticles, NPROPERTIES), stat = IError)
           allocate(MassWaterArray(Counters%NParticles), stat = IError)
-          allocate(IsParticleIntegration(Counters%NEl), stat = IError)
+          
+          allocate(KineticEnergyMP(Counters%NParticles), stat = IError)
+          allocate(StrainEnergyMP(Counters%NParticles), stat = IError)
+          
+          !allocate(IsParticleIntegration(Counters%NEl), stat = IError)
+          
+          !allocate(IsParticleIntegration(Counters%NEl), stat = IError)         
+          allocate(IsParticleIntegration(NURBS%Maximum_nel_NURBS, Counters%NPatches), stat = IError) 
+            
+          ! above this should the number of control point elements which is only three 
           
           ! Initialize
           ElementIDArray = -1
+          
+          ! Multipatch generalization 
+          PatchIDArray = -1 
+          
           IDArray = - 1
           EntityIDArray = -1
           MaterialIDArray = -1
@@ -694,6 +1054,316 @@
           end if
 
         end subroutine InitialiseHouseKeepingArrays
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine AssignMPInitializationFile(InitialSolidMaterialPoints)
+        !**********************************************************************
+        !   Reading the material points from file with the following format: 
+        !   XCoord[m] 		YCoord[m]		Material
+        !   real no.        real no.        integer no. 
+        ! - fills up GlobPosArray
+        !
+        !**********************************************************************
+        
+        implicit none 
+        
+        
+        integer(INTEGER_TYPE) :: IError
+        integer(INTEGER_TYPE) :: IMP, IPatch, IEl
+        integer(INTEGER_TYPE) :: NewElementID
+        real(REAL_TYPE), dimension(NVECTOR) :: NewLocPos
+        logical :: Success, OutsideElement
+        
+        
+        integer(INTEGER_TYPE), dimension(NURBS%maximum_nel_NURBS, Counters%NPatches), intent(inout) :: InitialSolidMaterialPoints
+        
+        integer(INTEGER_TYPE) :: counter
+        
+        logical, dimension(Counters%NParticles) :: SuccessMPAssignment
+        
+        
+        SuccessMPAssignment = .false. 
+        
+        counter = 0
+        GlobPosArray_Arranged = 0
+        
+        
+        ElementMaterialID = -1
+        
+        ! assign material point global coordinate
+        !GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
+        GlobPosArray = MPInitFileMatrix(:,1:NDIM)
+        ! assume all solid material points
+        
+        ! I need to loop over the material points with their corresponding 
+        
+        ! allocate variables now that we know the number of material points we have 
+        !allocate(GlobPosArray(Counters%NParticles, NVECTOR), stat = IError)
+        !GlobPosArray = 0.0
+        !
+        !
+        ! loop over all material points initialized from file
+            
+
+            
+            
+
+        
+
+        
+            
+            do IPatch = 1, Counters%NPatches ! loop over patches
+                
+                do IEl = 1, Counters%NEl(IPatch) ! loop over number of elements in patch
+                    
+                            
+                            do IMP = 1, Counters%NParticles ! loop over material points
+
+                    
+                        
+                                if (SuccessMPAssignment(IMP) == .true.) cycle
+            
+                        ! to prevent looping over this again
+                        !if (ElementIDArray(IMP)>0) cycle
+            
+                    
+                    
+                    if (NDIM ==2 ) then 
+                        
+                        !call GetLocalCoordinates_2D(GlobPosArray(IMP,:), &
+                        !           UStepArray(IMP,:), &
+                        !           IEl, &
+                        !           ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+                        !           NControlPoints(IPatch), NDIM, & !Counters%NodTot
+                        !           NodalCoordinates(:,:,IPatch), &
+                        !           ElementConnectivities(:,:,IPatch), &
+                        !           NewLocPos, &
+                        !           OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+                        
+                            
+                        call GetLocalCoordinates_StructuredMesh(GlobPosArray(IMP,:), &
+                                   IEl, &
+                                   ELEMENTNODES, Counters%NEl(IPatch),  & !Counters%NEl
+                                   Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
+                                   NodalCoordinates(:,:,IPatch), &
+                                   ElementConnectivities(:,:,IPatch), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, IPatch)!, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+                            
+
+                            !if (( NewLocPos(1) > -1 .and. NewLocPos(1) < 1) .and. (NewLocPos(2) > -1 .and. NewLocPos(2) < 1)) then
+                            !    success = .true. 
+                            !else
+                            !    success = .false.
+                            !end if 
+                            
+                            
+                            
+                        
+                        
+                    elseif (NDIM ==3) then 
+                        
+                    call GetLocalCoordinates(GlobPosArray(IMP,:), &
+                                   UStepArray(IMP,:), &
+                                   IEl, &
+                                   ELEMENTNODES, Counters%NEl(IPatch),  & !Counters%NEl
+                                   Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
+                                   NodalCoordinates, & !(:,:,IPatch)
+                                   ElementConnectivities(:,:,IPatch), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+                        
+                    end if 
+                    
+                        if (success) then 
+                            !if (ElementIDArray(IMP)>0) cycle
+                            counter = counter + 1
+                            
+                            SuccessMPAssignment(IMP) = .true. 
+                            
+                            GlobPosArray_Arranged(counter,1:NVECTOR) = GlobPosArray(IMP, 1:NVECTOR) ! arranging them per element since that seems to work better with the indexing
+                            ElementIDArray(counter)= IEl !NewElementID
+                            PatchIDArray(counter)= IPatch
+                            NewElementID = IEl
+                            Particles(counter)%LocPos = NewLocPos
+                            InitialSolidMaterialPoints(IEl, IPatch) = InitialSolidMaterialPoints(IEl, IPatch) + 1  !counter
+                            MaterialIDArray(counter) = MPInitFileMatrix(IMP, NVECTOR+1)
+                            ElementMaterialID(IEl, IPatch) = MPInitFileMatrix(IMP, NVECTOR+1) 
+                            ! I also need to record the local position of the material point
+                            
+                            ! remove it from old patch
+                            !do IParticle = 1, Counters%NParticles
+                            !    if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+                            !        GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+                            !        !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !        exit
+                            !    end if 
+                            !end do 
+                            !! add it in new patch
+                            !!do IParticle = 1, Counters%NParticles
+                            !!    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+                            !        GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !!        exit
+                            !!    end if 
+                            !!end do 
+                            !        GetParticleIndexCounter = GetParticleIndexCounter-1
+                             
+                                    
+                            
+                            !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            
+                            !call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                            !      ' moved from element'  // trim(String(OldElementID))      // &
+                            !      ' in patch '  // trim(String(IPatch)) // &   
+                            !      ' to '          // trim(String(ElemTrial))      // &
+                            !      ' in patch '  // trim(String(PatchTrial)) // &   
+                            !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                            !      'TimeStep '     // trim(String(Calparams%Timestep))  )
+                            
+                            !success = .false.
+                            !exit
+                            !if (counter == Counters%NParticles) then 
+                            !! reassign GlobPosArray using GlobPosArray_Arranged
+                            !GlobPosArray = GlobPosArray_Arranged
+                            !
+                            !return
+                            !exit
+                            
+                        else 
+                            
+                            cycle
+                            
+
+                        end if 
+                            
+                        
+            
+                        
+                
+                
+                end do ! loop over number of elements in patch 
+                
+            end do ! loop over patches 
+            
+        end do ! loop over material points
+        
+        
+        
+        
+        
+        
+        
+        
+        !**********************************************************************************************
+        
+        			!do PatchTrial = 1, Counters%NPatches ! loop over patches
+           !     do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
+           !     
+           !     !--------------------------------------------------------------------
+           !     ! Abdel: repeat again to see if we can catch it in the new element
+           !     !call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+           !     !                         UStepArray(ParticleID,:), &
+           !     !                         ElemTrial, &
+           !     !                         ELEMENTNODES,  &
+           !     !                         Counters%NEl,  &
+           !     !                         Counters%NodTot,  &
+           !     !                         NDIM, &
+           !     !                         NodalCoordinates,  &
+           !     !                         ElementConnectivities, &
+           !     !                         NewElementID, &
+           !     !                         NewLocPos, &
+           !     !                         Success)
+           !     !ElementIDArray(ParticleID)= NewElementID
+           !         if (NDIM ==2 ) then 
+           !             
+           !             call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+           !                        UStepArray(ParticleID,:), &
+           !                        ElemTrial, &
+           !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+           !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+           !                        NodalCoordinates(:,:,PatchTrial), &
+           !                        ElementConnectivities(:,:,PatchTrial), &
+           !                        NewLocPos, &
+           !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+           !             
+           !             
+           !         elseif (NDIM ==3) then 
+           !             
+           !         call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+           !                        UStepArray(ParticleID,:), &
+           !                        ElemTrial, &
+           !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+           !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+           !                        NodalCoordinates(:,:,PatchTrial), &
+           !                        ElementConnectivities(:,:,PatchTrial), &
+           !                        NewLocPos, &
+           !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+           !             
+           !         end if 
+           !         
+           !             if (success) then 
+           !                 ElementIDArray(ParticleID)= ElemTrial!NewElementID
+           !                 PatchIDArray(ParticleID)= PatchTrial
+           !                 NewElementID = ElemTrial
+           !                 ! remove it from old patch
+           !                 do IParticle = 1, Counters%NParticles
+           !                     if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+           !                         GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+           !                         !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+           !                         exit
+           !                     end if 
+           !                 end do 
+           !                 ! add it in new patch
+           !                 !do IParticle = 1, Counters%NParticles
+           !                 !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+           !                         GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+           !                 !        exit
+           !                 !    end if 
+           !                 !end do 
+           !                         GetParticleIndexCounter = GetParticleIndexCounter-1
+           !                  
+           !                         
+           !                 
+           !                 !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+           !                 
+           !                 call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+           !                       ' moved from element'  // trim(String(OldElementID))      // &
+           !                       ' in patch '  // trim(String(IPatch)) // &   
+           !                       ' to '          // trim(String(ElemTrial))      // &
+           !                       ' in patch '  // trim(String(PatchTrial)) // &   
+           !                       ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+           !                       'TimeStep '     // trim(String(Calparams%Timestep))  )
+           !                 
+           !                 
+           !                 exit
+           !                 
+           !             end if 
+           !             
+           !     !--------------------------------------------------------------------------
+           !     end do ! loop over elements
+           !         
+           ! end do ! loop over patches
+        
+        !**********************************************************************************************
+        
+        
+                end subroutine AssignMPInitializationFile
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 
         subroutine DestroyHouseKeeping()
@@ -734,6 +1404,10 @@
           if (allocated(ElementIDArray) ) then
             deallocate(ElementIDArray, stat = IError)
           end if
+          
+          if (allocated(PatchIDArray) ) then
+            deallocate(PatchIDArray, stat = IError)
+          end if
 
          if (allocated(EntityIDArray) ) then
             deallocate(EntityIDArray, stat = IError)
@@ -765,6 +1439,10 @@
                  
          if (allocated(GlobPosArray) ) then
             deallocate(GlobPosArray, stat = IError)
+         end if
+         
+         if (allocated(GlobPosArray_Arranged) ) then
+            deallocate(GlobPosArray_Arranged, stat = IError)
          end if
          
          if (allocated(VelocityArray) ) then
@@ -860,7 +1538,7 @@
         end function DecimalFactor
 
 
-        subroutine CoordLocalToGlobal(IElement, LNodalCoordinates)
+        subroutine CoordLocalToGlobal(IElement, LNodalCoordinates, IPatch)
         !**********************************************************************
         !
         !    Function:  Determines the global coordinates associated with the local
@@ -879,27 +1557,85 @@
         implicit none 
 
           integer(INTEGER_TYPE), intent(in) :: IElement
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR) :: LNodalCoordinates
+          !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR) :: LNodalCoordinates
+          !real(REAL_TYPE), dimension(NControlPoints(IPatch), NVECTOR) :: LNodalCoordinates
+          real(REAL_TYPE), dimension(:, :) :: LNodalCoordinates
+
           ! Local variables
           integer(INTEGER_TYPE) :: NodeID, ParticleIndex
           integer(INTEGER_TYPE) :: I, IParticle, IDim
-
-          do IParticle = 1, NPartEle(IElement) ! Loop over particles of IElement
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
+          do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles of IElement
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch)
 
             GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
-            do I = 1, ELEMENTNODES ! Loop over nodes of IElement
-              NodeID = iabs(ElementConnectivities(I, IElement) )
+            do I = 1, ELEMENTNODES!ELEMENTNODES ! Loop over nodes of IElement
+              !NodeID = iabs(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(I, IElement, IPatch), IPatch ) )
+              NodeID = iabs(ElementConnectivities(I, IElement, IPatch) )
+
               do IDim = 1, NVECTOR ! Loop over dimensions of IElement
-                GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)
+                GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)  ! hardcoded
               end do
             end do
             
           end do
 
         end subroutine CoordLocalToGlobal
+        
+        subroutine CoordLocalToGlobal_MPFileInit(IElement, LNodalCoordinates, IPatch, ParticleIndex)
+        !**********************************************************************
+        !
+        !    Function:  Determines the global coordinates associated with the local
+        !               coordinates of particles inside a considered element.
+        !               Updates the global coordinates of particles inside IElement.
+        !
+        !     IElement : ID of the considered element
+        !     LNodalCoordinates : Nodal coordinates used for updating the integration point locations
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
 
-        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex)
+        use ModCounters
+
+        implicit none 
+
+          integer(INTEGER_TYPE), intent(in) :: IElement
+          !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR) :: LNodalCoordinates
+          !real(REAL_TYPE), dimension(NControlPoints(IPatch), NVECTOR) :: LNodalCoordinates
+          real(REAL_TYPE), dimension(:, :) :: LNodalCoordinates
+
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex
+          ! Local variables
+          integer(INTEGER_TYPE) :: NodeID
+          integer(INTEGER_TYPE) :: I, IParticle, IDim
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
+          !do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles of IElement
+          !  ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch)
+
+            GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
+            do I = 1, ELEMENTNODES!ELEMENTNODES ! Loop over nodes of IElement
+              !NodeID = iabs(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(I, IElement, IPatch), IPatch ) )
+              NodeID = iabs(ElementConnectivities(I, IElement, IPatch) )
+
+              do IDim = 1, NVECTOR ! Loop over dimensions of IElement
+                GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)  ! hardcoded
+              end do
+            end do
+            
+          !end do
+
+        end subroutine CoordLocalToGlobal_MPFileInit
+
+        subroutine SetParticleShapeFunctionData(Particle, ParticleIndex, ElementID, ICon, Co, PatchID)
         !**********************************************************************
         !
         !    Function:  Calculate the shape function values and derivatives
@@ -911,19 +1647,566 @@
         !
         !**********************************************************************
         
+        
         implicit none
 
           type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
-          integer(INTEGER_TYPE), intent(in) :: ParticleIndex
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
           ! Local variables
-          real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
-          real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues ! allocatable, 
+          real(REAL_TYPE), dimension(ELEMENTNODES,NDIM) :: DShapeValues !allocatable, 
+          
+          real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain
+          
+          ! NURBS Xi output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          !
+          !real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          !real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+          
+          ! Jacobian variables 
+          
+          !integer(INTEGER_TYPE), intent(in) :: NEl, NodTot, IDim, IElement
+          !real(REAL_TYPE), dimension(:), intent(in) :: LocPos
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: Co
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: dx_dxi
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: dxi_dx
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: InvRJac
+          real(REAL_TYPE) :: DetJac
+          
+          !real(REAL_TYPE), dimension(nen_NURBS, NDIM) :: dR_dx
+          
+          integer(INTEGER_TYPE) :: I, J, INode, NodeID, NNodes
+          !real(REAL_TYPE), dimension(:), allocatable :: HS
+          !real(REAL_TYPE), dimension(:, :), allocatable :: dHS
+          real(REAL_TYPE) :: Det1
+          
+          ! Hardcoded index to 1 
+          real(REAL_TYPE), dimension(:,:), allocatable :: dR_dx ! IPatch_Temporary ! dimension(nen_NURBS(1),NDIM)
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
+          integer(INTEGER_TYPE) :: aa, bb, cc, loc_num, ii, jj
+          integer(INTEGER_TYPE) :: ni, nj, nk
+                    
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
+          
+          real(REAL_TYPE) :: Det_dx_dxi
+          real(REAL_TYPE) :: Det_dxi_dx
+          
+          ! Multipatch variable 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: PatchID
+          !integer(INTEGER_TYPE) :: aa
+          
+          !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
+          !
+          !    ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
+          
+          
+          
+          !! NURBS
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+          !                                  
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+          !
+          !
+          !allocate( Wt(ELEMENTGAUSSPOINTS) )
+          !allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+          !allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+          !
+          !! Xi direction 
+          !allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+          !
+          !! Eta direction 
+          !allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        
+          
+          !Xi_ParametricDomain = Particle%LocPos(1)
+          !Eta_ParametricDomain = Particle%LocPos(2)
+          !
+          !call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+          !                                          HS_Xi, dHS_Xi, Wt_Xi, &
+          !                                          HS_Eta, dHS_Eta, Wt_Eta, &
+          !                                          XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+          !                                          EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+          !                                          ni, nj) !NURBS related inputs in the eta direction 
+          
 
-          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues)
-          ShapeValuesArray(ParticleIndex, : ) = ShapeValues
-          DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
+          call ShapeFunctionData(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID, PatchID)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries) ! ELEMENTNODES,
+          
+          
+          
+          
+          
+          ! finding the NURBS coordinates for the element
+
+          ni = NURBS%INN(ElementConnectivities(1,ElementID,PatchID),1,PatchID)    
+          nj = NURBS%INN(ElementConnectivities(1,ElementID,PatchID),2,PatchID)
+          
+          	
+          if (NDIM == 3) then 
+              nk = NURBS%INN(ElementConnectivities(1,ElementID,PatchID),3,PatchID)
+          end if 
+          
+          
+          
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Calculating dx/dxi
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          
+          
+          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID, NDIM, PatchID)
+          !NNodes = nen_NURBS
+          !! Determine the Jacobian matrix RJac
+          !RJac = 0.0
+          !dx_dxi = 0
+          !do INode = 1, NNodes ! loop nodes of each element
+          !  
+          !    !ni = INN(IEN(1,IElement),1)    
+          !    !nj = INN(IEN(2,IElement),2)
+          !    
+          !    !XiKnotEntries(ni) 
+          !    !note that the coordinates of the control points are the ones we need here in 'Co'
+          !    NodeID = ICon(INode, ElementID)
+          !    ! This is gradient mapping from the parameter space to the physical space 
+          !  do I = 1, NDIM
+          !    do J = 1, NDIM
+          !      dx_dxi(I, J) = dx_dxi(I, J) + DShapeValues(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
+          !    end do
+          !  end do
+          !end do
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Calculating dxi/dx
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! debugger
+          
+          !if (dx_dxi(2,2) == 0.0) then 
+          !    aa =1.0
+          !end if 
+          
+     
+
+          
+          
+          
+          ! Calculate inverse and determinant of Jacobian matrix
+          call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
+
+          
+          
+          ! InvRJac -> dxi_dx 
+          !
+          !
+          ! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Calculating dR/dx
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !Calculate derivative of basis functions with respect to physical coordinates
+          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID, NURBS%nen_NURBS) ! dR_dx = dxi_dx * dR_dxi 
+          
+          
+          
+          ! Note this Jacobian needs to be updated but since we are not outputting it then there is no need to add more calcs
+          if ( (Det_dx_dxi < 0.0) .or. (Det_dxi_dx < 0.0) ) then
+            call WriteInLogFile('Negative determinant '// trim(String(DetJac)) // trim(String(Det1)) // ' element ' // trim(String(ElementID)))
+          end if
+
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          ShapeValuesArray(ParticleIndex, :) = ShapeValues
+          DShapeValuesArray(ParticleIndex, :, : ) = dR_dx
 
         end subroutine SetParticleShapeFunctionData
+        
+        
+        
+        subroutine SetParticleShapeFunctionData_VolLockSmooth(Particle, ParticleIndex, ElementID, ICon, Co, PatchID)
+        !**********************************************************************
+        !
+        !     Function:  Calculate the shape function values and derivatives
+        !               for the new local position of Particle.
+        !
+        !     Particle : Considered particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        
+        implicit none
+      
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
+          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
+          ! Local variables
+          real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: ShapeValues ! allocatable,
+          real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth, NDIM) :: DShapeValues ! allocatable,
+          
+          real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain
+          
+          ! NURBS Xi output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+          !                       
+          !! NURBS Eta output for debugging purposes 
+          !real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+          !
+          !real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+          !real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+          
+          ! Jacobian variables 
+          
+          !integer(INTEGER_TYPE), intent(in) :: NEl, NodTot, IDim, IElement
+          !real(REAL_TYPE), dimension(:), intent(in) :: LocPos
+          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: Co
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: dx_dxi
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: dxi_dx
+          real(REAL_TYPE), dimension(NDIM, NDIM) :: InvRJac
+          real(REAL_TYPE) :: DetJac
+          
+          !real(REAL_TYPE), dimension(nen_NURBS, NDIM) :: dR_dx
+          
+          integer(INTEGER_TYPE) :: I, J, INode, NodeID, NNodes
+          !real(REAL_TYPE), dimension(:), allocatable :: HS
+          !real(REAL_TYPE), dimension(:, :), allocatable :: dHS
+          real(REAL_TYPE) :: Det1
+          
+          ! Hardcoded index to 1 
+          real(REAL_TYPE), dimension(:,:), allocatable :: dR_dx ! IPatch_Temporary ! dimension(nen_NURBS(1),NDIM)
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: J_mat
+          integer(INTEGER_TYPE) :: aa, bb, cc, loc_num, ii, jj
+          integer(INTEGER_TYPE) :: ni, nj, nk
+                    
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
+          
+          real(REAL_TYPE) :: Det_dx_dxi
+          real(REAL_TYPE) :: Det_dxi_dx
+          
+          ! Multipatch variable 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: PatchID
+          !integer(INTEGER_TYPE) :: aa
+          
+          !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
+          !
+          !    ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
+          
+          
+          
+          !! NURBS
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+          !                                  
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+          !
+          !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+          !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+          !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+          !
+          !
+          !allocate( Wt(ELEMENTGAUSSPOINTS) )
+          !allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+          !allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+          !
+          !! Xi direction 
+          !allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+          !
+          !! Eta direction 
+          !allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS) )
+          !allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+          !allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        
+          
+          !Xi_ParametricDomain = Particle%LocPos(1)
+          !Eta_ParametricDomain = Particle%LocPos(2)
+          !
+          !call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+          !                                          HS_Xi, dHS_Xi, Wt_Xi, &
+          !                                          HS_Eta, dHS_Eta, Wt_Eta, &
+          !                                          XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+          !                                          EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+          !                                          ni, nj) !NURBS related inputs in the eta direction 
+          
+      
+          call ShapeFunctionData_VolLockSmooth(Particle%LocPos, ELEMENTNODES_VolLockSmooth, ShapeValues, DShapeValues, ElementID, PatchID) !, &
+                !ELEMENTNODES_VolLockSmooth, ELEMENTBOUNDARYNODES_XI_VolLockSmooth, ELEMENTBOUNDARYNODES_ETA_VolLockSmooth, ELEMENTBOUNDARYNODES_ZETA_VolLockSmooth, &
+                !nel_NURBS_VolLockSmooth(PatchID), nen_NURBS_VolLockSmooth(PatchID), nnp_NURBS_VolLockSmooth(PatchID), &
+                !INN_VolLockSmooth, IEN_VolLockSmooth, &
+                !NXiKnotEntries_VolLockSmooth, NEtaKnotEntries_VolLockSmooth, NZetaKnotEntries_VolLockSmooth, &
+                !XiKnotEntries_VolLockSmooth, EtaKnotEntries_VolLockSmooth, ZetaKnotEntries_VolLockSmooth) ! ELEMENTNODES,
+          
+          
+          
+          
+          
+          ! finding the NURBS coordinates for the element
+      
+          ni = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,ElementID,PatchID),1,PatchID)    
+          nj = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,ElementID,PatchID),2,PatchID)
+          if (NDIM == 3) then 
+              nk = NURBS%INN_VolLockSmooth(NURBS%ElementConnectivities_VolLockSmooth(1,ElementID,PatchID),3,PatchID)
+          end if 
+          
+          
+          
+          
+          
+          
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Calculating dx/dxi
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          
+          call Evaluate_dx_dxi(DShapeValues, Co, ICon, dx_dxi, ElementID, NDIM, PatchID)
+          !NNodes = nen_NURBS
+          !! Determine the Jacobian matrix RJac
+          !RJac = 0.0
+          !dx_dxi = 0
+          !do INode = 1, NNodes ! loop nodes of each element
+          !  
+          !    !ni = INN(IEN(1,IElement),1)    
+          !    !nj = INN(IEN(2,IElement),2)
+          !    
+          !    !XiKnotEntries(ni) 
+          !    !note that the coordinates of the control points are the ones we need here in 'Co'
+          !    NodeID = ICon(INode, ElementID)
+          !    ! This is gradient mapping from the parameter space to the physical space 
+          !  do I = 1, NDIM
+          !    do J = 1, NDIM
+          !      dx_dxi(I, J) = dx_dxi(I, J) + DShapeValues(INode, I) * Co(NodeID, J) !calculation of the jacobian matrix from the coordinates of one element ! -> this is checked and now it is working
+          !    end do
+          !  end do
+          !end do
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Calculating dxi/dx
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! debugger
+      !if (dx_dxi(2,2) == 0.0) then 
+      !    aa=1
+      !end if
+      
+          
+          
+          
+          ! Calculate inverse and determinant of Jacobian matrix
+          call RJacInv(NDIM, dx_dxi, dxi_dx, Det_dx_dxi, Det_dxi_dx)
+      
+          
+          
+          ! InvRJac -> dxi_dx 
+          !
+          !
+          ! EVERYTHING BELOW HERE SHOULD GO IN THE PARENT SUBROUTINE 
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Calculating dR/dx
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !Calculate derivative of basis functions with respect to physical coordinates
+          call Get_dR_dx_MapShapFuncDrivWRTPhysCoord(dxi_dx, DShapeValues, dR_dx, PatchID, NURBS%nen_NURBS_VolLockSmooth) ! dR_dx = dxi_dx * dR_dxi 
+          
+          
+          
+          ! Note this Jacobian needs to be updated but since we are not outputting it then there is no need to add more calcs
+          if ( (Det_dx_dxi < 0.0) .or. (Det_dxi_dx < 0.0) ) then
+            call WriteInLogFile('Negative determinant '// trim(String(DetJac)) // trim(String(Det1)) // ' element ' // trim(String(ElementID)))
+          end if
+      
+          
+          
+          ShapeValuesArray_VolLockSmooth(ParticleIndex, :) = ShapeValues
+          DShapeValuesArray_VolLockSmooth(ParticleIndex, :, : ) = dR_dx
+      
+        end subroutine SetParticleShapeFunctionData_VolLockSmooth
+        
+        
+        
+        !----------------------------------------------------------------------------------
+        ! SINGLE PARTICLE 
+        
+        
+        
+        !subroutine SetParticleShapeFunctionData_SingleParticle(Particle, ParticleIndex, ElementID)
+        !!**********************************************************************
+        !!
+        !!     Function:  Calculate the shape function values and derivatives
+        !!               for the new local position of Particle.
+        !!
+        !!     Particle : Considered particle
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)) :: Particle
+        !  integer(INTEGER_TYPE), intent(in) :: ParticleIndex, ElementID
+        !  ! Local variables
+        !  real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
+        !  real(REAL_TYPE), dimension(ELEMENTNODES, NVECTOR) :: DShapeValues
+        !  
+        !  real(REAL_TYPE) :: Xi_ParametricDomain, Eta_ParametricDomain
+        !  
+        !  ! NURBS Xi output for debugging purposes 
+        !  real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Xi 
+        !  real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Xi
+        !                         
+        !  ! NURBS Eta output for debugging purposes 
+        !  real(REAL_TYPE), allocatable, dimension(:) :: ShapeValuesArray_Temp_Eta 
+        !  real(REAL_TYPE), allocatable, dimension(:) :: DShapeValuesArray_Temp_Eta
+        !  
+        !  real(REAL_TYPE), dimension(:), allocatable :: ShapeValuesArray_Temp_Zeta
+        !  real(REAL_TYPE), dimension(:), allocatable :: DShapeValuesArray_Temp_Zeta
+        !  
+        !  !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
+        !  !
+        !  !    ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
+        !  
+        !  
+        !  
+        !  !! NURBS
+        !  !real(REAL_TYPE), allocatable, dimension(:,:) :: HS
+        !  !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS 
+        !  !real(REAL_TYPE), allocatable, dimension(:) :: Wt !classic inout parameters
+        !  !                                  
+        !  !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Xi 
+        !  !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Xi
+        !  !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Xi
+        !  !
+        !  !real(REAL_TYPE), allocatable, dimension(:,:) :: HS_Eta 
+        !  !real(REAL_TYPE), allocatable, dimension(:,:,:) :: dHS_Eta
+        !  !real(REAL_TYPE), allocatable, dimension(:) :: Wt_Eta          
+        !  !
+        !  !
+        !  !allocate( Wt(ELEMENTGAUSSPOINTS) )
+        !  !allocate( HS(ELEMENTGAUSSPOINTS, ELEMENTNODES) )
+        !  !allocate( dHS(ELEMENTGAUSSPOINTS, ELEMENTNODES, NDOFL) ) 
+        !  !
+        !  !! Xi direction 
+        !  !allocate( Wt_Xi(ELEMENTBOUNDARYGAUSSPOINTS) )
+        !  !allocate( HS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        !  !allocate( dHS_Xi(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        !  !
+        !  !! Eta direction 
+        !  !allocate( Wt_Eta(ELEMENTBOUNDARYGAUSSPOINTS) )
+        !  !allocate( HS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES) )
+        !  !allocate( dHS_Eta(ELEMENTBOUNDARYGAUSSPOINTS, ELEMENTBOUNDARYNODES, NDOFL-1) )
+        !
+        !  
+        !  !Xi_ParametricDomain = Particle%LocPos(1)
+        !  !Eta_ParametricDomain = Particle%LocPos(2)
+        !  !
+        !  !call InitialiseShapeFunctionsQUAD4_NURBS(HS, dHS, Wt, & !classic inout parameters
+        !  !                                          HS_Xi, dHS_Xi, Wt_Xi, &
+        !  !                                          HS_Eta, dHS_Eta, Wt_Eta, &
+        !  !                                          XiKnotEntries, NXiKnotEntries, Xi_ParametricDomain, NXiKnotOrder, & !NURBS related inputs in the xi direction 
+        !  !                                          EtaKnotEntries, NEtaKnotEntries, Eta_ParametricDomain, NEtaKnotOrder, &
+        !  !                                          ni, nj) !NURBS related inputs in the eta direction 
+        !  
+        !
+        !  call ShapeFunctionData_SingleParticle(Particle%LocPos, ELEMENTNODES, ShapeValues, DShapeValues, ElementID, &
+        !                         ShapeValuesArray_Temp_Xi, DShapeValuesArray_Temp_Xi, &
+        !                         ShapeValuesArray_Temp_Eta, DShapeValuesArray_Temp_Eta, &
+        !                         ShapeValuesArray_Temp_Zeta, DShapeValuesArray_Temp_Zeta)
+        !  
+        !  ! This is where we should save the values of ShapeValuesArray_Xi, DShapeValuesArray_Xi, WeightsArray_Xi,  ShapeValuesArray_Eta, DShapeValuesArray_Eta, WeightsArray_Eta
+        !  ! for debugging purposes 
+        !  
+        !  !ShapeValuesArray_Xi(:,  IElement) = HS_Xi
+        !  !DShapeValuesArray_Xi(:, IElement) = dHS_Xi
+        !  !WeightArray_Xi(:,  IElement) = Wt_Xi
+        !  
+        !  !ShapeValues_Xi, DShapeValues_Xi, Weights_Xi, &
+        !  !ShapeValues_Eta, DShapeValues_Eta, Weights_Eta
+        !  
+        !  ! Xi 
+        !  ShapeValuesArray_Xi(:,  ParticleIndex) = ShapeValuesArray_Temp_Xi
+        !  DShapeValuesArray_Xi(:, ParticleIndex) = DShapeValuesArray_Temp_Xi
+        !  !WeightArray_Xi(:,  ParticleIndex) = Weights_Xi    
+        !  
+        !  
+        !  ! Eta
+        !  ShapeValuesArray_Eta(:,  ParticleIndex) = ShapeValuesArray_Temp_Eta
+        !  DShapeValuesArray_Eta(:, ParticleIndex) = DShapeValuesArray_Temp_Eta
+        !  !WeightArray_Eta(:,  ParticleIndex) = Weights_Eta
+        !  
+        !  
+        !  ! Zeta
+        !  ! ... need to extend to 3D
+        !  
+        !  ShapeValuesArray(ParticleIndex, : ) = ShapeValues ! no of rows = no of particles, no of columns = no of nodes per element
+        !
+        !  DShapeValuesArray(ParticleIndex, :, : ) = DShapeValues
+        !
+        !end subroutine SetParticleShapeFunctionData_SingleParticle
+        
+        
+        
+        ! SINGLE PARTICLE
+        !----------------------------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 
         subroutine DetermineAdjacentParticles(ISide, NParticles, ParticleStatus)
@@ -986,7 +2269,76 @@
                             call DetermineAdjacentParticlesTETRA_MP20(ISide, NParticles, ParticleStatus)
                         case default
                           call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
-                    end select
+                        end select
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                case(QUAD4_NURBS)
+                    select case (NParticles)
+                        case(1) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP1(ISide, NParticles, ParticleStatus)
+                        case(4) ! 4 material points per element
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP4(ISide, NParticles, ParticleStatus)
+                        case(9) ! 9 material points per element 
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP9(ISide, NParticles, ParticleStatus)
+                        case(16) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP16(ISide, NParticles, ParticleStatus)
+                        case(25) ! 4 material points per element
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP25(ISide, NParticles, ParticleStatus)
+                        case(36) ! 9 material points per element 
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP36(NParticles, ParticleStatus)
+                        case(49) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP49(NParticles, ParticleStatus)
+                        case(64) ! 4 material points per element
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP64(NParticles, ParticleStatus)
+                        case(81) ! 9 material points per element 
+                            call DetermineAdjacentParticlesQUAD4_NURBS_MP81(NParticles, ParticleStatus)
+                            
+                            !call DetermineAdjacentParticlesQUAD4_NURBS_MP4(ISide, NParticles, ParticleStatus)
+                        !case(7) ! 7 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP7(ISide, NParticles, ParticleStatus)
+                        !case(8) ! 8 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP8(ISide, NParticles, ParticleStatus)
+                        !case(10) ! 10 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP10(ISide, NParticles, ParticleStatus)
+                        !case(13) ! 13 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP13(ISide, NParticles, ParticleStatus)
+                        !case(20) ! 20 material points per element
+                        !    call DetermineAdjacentParticlesQUAD4_NURBS_MP20(ISide, NParticles, ParticleStatus)
+                        !case default
+                        !  call GiveError("Undefined number of material points per element in [subroutine DetermineAdjacentParticles()], 3D case.")
+                        end select
+                        
+                        
+                        
+                case(HEXA_NURBS)
+                    select case (NParticles)
+                        case(1) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP1(ISide, NParticles, ParticleStatus)
+                        case(8) ! 4 material points per element
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP8(ISide, NParticles, ParticleStatus)
+                        case(27) ! 9 material points per element 
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP27(ISide, NParticles, ParticleStatus)
+                        case(64) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP64(ISide, NParticles, ParticleStatus)
+                        case(125) ! 4 material points per element
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP125(ISide, NParticles, ParticleStatus)
+                        case(216) ! 9 material points per element 
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP216(ISide, NParticles, ParticleStatus)
+                        case(343) ! 1 material point per element / FEM calculation
+                            call DetermineAdjacentParticlesHEXA_NURBS_MP343(ISide, NParticles, ParticleStatus)
+                        end select
+                        
+                
+                        
+                        
+                        
+                        
                 end select
 
         end subroutine DetermineAdjacentParticles
@@ -1041,14 +2393,21 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IElement
         
-          do IElement = 1, Counters%NEl
-        
-            do IParticle = 1, NPartEle(IElement)
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
-              ParticleIndex = GetParticleIndex(IParticle, IElement)
+          
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over elements
+        
+            do IParticle = 1, NPartEle(IElement,IPatch)
+
+              ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
 
               ! Indicate partially and fully filled elements -> VariableData(1)
-              if (IsParticleIntegration(IElement) ) then
+              if (IsParticleIntegration(IElement, IPatch) ) then
                 call SetVariableDataI(Particles(ParticleIndex), 1, 1.d0)
               else
                 call SetVariableDataI(Particles(ParticleIndex), 1, 0.d0)
@@ -1060,7 +2419,8 @@
 
             end do
           
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
         
         end subroutine DefineVariableData        
 

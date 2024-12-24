@@ -66,7 +66,7 @@
           allocate(RigdBodyDOF(Counters%N), stat = IError)
           RigdBodyDOF = .false.
           
-          allocate(RigdBodyInterface(Counters%NodTot), stat = IError)
+          allocate(RigdBodyInterface(Counters%Sum_NodTot), stat = IError)
           RigdBodyInterface = .false.
 
           if (.not.CalParams%RigidBody%IsRigidBody) RETURN
@@ -88,17 +88,21 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IAEl, IEl, NElemPart
+          integer(INTEGER_TYPE) :: IPatch
           logical :: VelHasBeenFound
 		  
 		  if (.not.IsFollowUpPhase()) RETURN   !Only for restarted calculation		  
 
 		  VelHasBeenFound= .false.
-          do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
-            NElemPart = NPartEle(IEl)        
+          !do IAEl = 1, Counters%NAEl ! loop over active elements
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+            IEl = ActiveElement(IAEl, IPatch)
+            NElemPart = NPartEle(IEl, IPatch)        
 
             do IParticle = 1, NElemPart ! loop over material points of the element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
+              ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
               if (EntityIDArray(ParticleIndex)== CalParams%RigidBody%RigidEntity) then
                 ! material point belongs to the rigid body
                 CalParams%RigidBody%Velocity=VelocityArray(ParticleIndex, :) ! sets the velocity
@@ -107,7 +111,9 @@
               end if
             end do ! loop over material points           
 			if (VelHasBeenFound) EXIT
-          end do ! loop over active elements
+                end do ! loop over active elements
+                
+                end do ! loop over patches
 
         end subroutine InitializeRigidBodyVelocity
 
@@ -123,6 +129,10 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, IAEl, IEl, NElemPart, INode, iDofOffset
           logical :: RigidEntityElm
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           CalParams%RigidBody%Mass = 0.0
           CalParams%RigidBody%TractionForce = 0.0
@@ -137,13 +147,17 @@
             end if ! rigid entity particles
           end do ! loop over material points
 
-          do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
-            NElemPart = NPartEle(IEl)
+          !do IAEl = 1, Counters%NAEl ! loop over active elements
+              
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+            IEl = ActiveElement(IAEl, IPatch)
+            NElemPart = NPartEle(IEl, IPatch)
             RigidEntityElm = .false.
 
             do IParticle = 1, NElemPart ! loop over material points of the element
-              ParticleIndex = GetParticleIndex(IParticle, IEl)
+              ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
               if (EntityIDArray(ParticleIndex)== CalParams%RigidBody%RigidEntity) then ! material point belongs to the rigid body
                 RigidEntityElm = .true.
               end if
@@ -151,13 +165,15 @@
 
             if (RigidEntityElm) then
               do INode = 1,ELEMENTNODES ! loop over element nodes
-                iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
+                iDofOffset = Multipatch_Connecting_Local_To_Global_ControlPoints(ReducedDof(ElementConnectivities(INode,IEl,IPatch)), IPatch)
                 ! All DOFs
                 RigdBodyDOF(iDofOffset+1: iDofOffset + NDOFL) = .true.
               end do ! loop over element nodes
             end if
 
-          end do ! loop over active elements
+                end do ! loop over active elements
+                
+                end do ! patches
 
         end subroutine GetRigidBodyTotalMassAndExternalForces
 
@@ -175,6 +191,11 @@
           real(REAL_TYPE) :: Mass
           real(REAL_TYPE), dimension(NVECTOR) :: TractionForce, GravityForce, RMom, InternalForce, Acc, Acc0
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
           if (.not.CalParams%RigidBody%IsRigidBody) RETURN
 
@@ -198,10 +219,12 @@
             TotalVelocitySoil(IDOF,RigidEntity) = 0.0
           end do ! loop over degrees of freedom
 
-          do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl ! loop over active elements
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
+              iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch), IPatch))
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
@@ -210,7 +233,8 @@
                 endif
               enddo
             enddo ! loop over element nodes
-          enddo
+                enddo ! active elements
+                end do ! patches
 
         end subroutine OverWriteRateofMomentumRigidBody
 
@@ -224,19 +248,27 @@
         implicit none
 
           integer(INTEGER_TYPE) :: INode, iDofOffset, iDim
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
          if (.not.CalParams%ApplyContactAlgorithm) RETURN
          if (.not.CalParams%RigidBody%IsRigidBody) RETURN
 		 CalParams%RigidBody%InternalForce=0
-          do INode = 1, Counters%NodTot
+         
+         do IPatch = 1, Counters%NPatches ! loop over patches
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode,IPatch)
+              
             if (RigdBodyInterface(INode)) then ! interface node
-              iDofOffset = ReducedDof(INode)
+              iDofOffset = Multipatch_Connecting_Local_To_Global_ControlPoints(ReducedDof(GlobalNodeID), IPatch)
               do iDim = 1, NVECTOR
                 ! reaction force on the rigid body
                 CalParams%RigidBody%InternalForce(iDim) =  CalParams%RigidBody%InternalForce(iDim) + IntLoad(iDofOffset+iDim, SOFT_ENTITY)
               end do
             end if
-		  end do	  
+          end do	
+          end do ! loop over patches
 
 		do iDim=1, NVECTOR
 		    if (CalParams%RigidBody%Constrains(iDim)==1) &
@@ -258,7 +290,7 @@
           ! Local variables
           character :: FilNME*1023
           integer(INTEGER_TYPE) :: NumNodes, INode, NodeID
-          logical :: RigdInter (Counters%NodTot)
+          logical :: RigdInter (Counters%Sum_NodTot)
           real(REAL_TYPE) :: IDum			
 		  if ( CalParams%ApplyContactAlgorithm ) then
 			  RigdBodyInterface=InterfaceNodes
@@ -287,6 +319,10 @@
           real(REAL_TYPE) :: Mass
           real(REAL_TYPE), dimension(NVECTOR) :: TotLMass, TotAcc, Acc, TractionForce, GravityForce
 
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          
           if (.not.(NFORMULATION==1)) RETURN
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
           if (.not.CalParams%RigidBody%IsRigidBody) RETURN
@@ -310,10 +346,12 @@
         CalParams%RigidBody%Acceleration = Acc
 		CalParams%RigidBody%Velocity = CalParams%RigidBody%Velocity + CalParams%RigidBody%Acceleration * CalParams%TimeIncrement
 
-          do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl ! loop over active elements
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IAEl)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
+              iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch), IPatch) )
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
@@ -321,7 +359,8 @@
                 endif
               enddo
             enddo ! loop over element nodes
-          enddo
+                enddo ! loop over active elements
+                end do ! loop over patches
         end subroutine GetRigidBodyAverageAcceleration
 
 
@@ -340,6 +379,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, ParticleIndex, EintityID, RigidEntity, IDOF, iDofOffset, i, iEl, iNode, iAEl
 
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          
           if (.not.(NFORMULATION==1)) RETURN
           if (.not.CalParams%ApplyContactAlgorithm) RETURN
           if (.not.CalParams%RigidBody%IsRigidBody) RETURN
@@ -358,10 +402,13 @@
 
           TotalVelocitySoil(1:Counters%N,RigidEntity) = 0.0
 
-          do IAEl = 1, Counters%NAEl ! loop over active elements
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl ! loop over active elements
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+            IEl = ActiveElement(IAEl, IPatch)
             do INode = 1,ELEMENTNODES ! loop over element nodes
-              iDofOffset = ReducedDof(ElementConnectivities(INode,IEl))
+              iDofOffset = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IEl,IPatch), IPatch))
               do i = 1, NVECTOR
                 iDof = iDofOffset+i
                 if (RigdBodyDOF(iDof)) then
@@ -369,7 +416,9 @@
                 endif
               enddo
             enddo ! loop over element nodes
-          enddo
+                enddo
+                
+                end do 
 
         end subroutine OverWriteParticleAndNodalAccAndVeloRigidBody
 

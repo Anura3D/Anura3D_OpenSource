@@ -39,11 +39,12 @@ module ModWriteVTKTwoLayer
     !     $Date: 2024-03-20 18:14:36 +0100 (Wed, 20 Mar 2024) $
     !
     !**********************************************************************
-    
+    use ModFileIO
     use ModGlobalConstants
+    !use ModFileIO
     use ModMPMData
     use ModWriteVTKOutput
-    use ModFileIO
+    !use ModFileIO
     
     contains
     
@@ -66,6 +67,9 @@ module ModWriteVTKTwoLayer
     real(REAL_TYPE), dimension(:,:,:,:), allocatable :: DataSetTensor
     real(REAL_TYPE):: EpsD
     real(REAL_TYPE), dimension(NVECTOR) :: VectorValue
+    
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
     !********** START: writing scalar material point data ****************************************
     NumberMaterialPoints = Counters%NParticles ! total number of material points
@@ -248,6 +252,18 @@ module ModWriteVTKTwoLayer
             DataSetScalar(SolidMaterialPointID,DataSetID) = EpsD ! assign output data to material points
         end if  
     end do
+    
+    ! Multipatch variable 
+    ! --> consider moving this up next to element_id near DataSetID=6
+    DataSetID = 17 ! index of dataset
+    DataSetName(DataSetID) = 'patch_id' ! assign name to dataset
+    SolidMaterialPointID = 0
+    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+        if(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid) then
+            SolidMaterialPointID = SolidMaterialPointID + 1
+            DataSetScalar(SolidMaterialPointID,DataSetID) = PatchIDArray(MaterialPointID) ! assign output data to material points
+        end if
+    end do
 
     call WriteVTKMaterialPointScalar_2LayForm_Solid(DataSetName,DataSetScalar) ! write all scalar datasets for material points
 
@@ -269,6 +285,10 @@ module ModWriteVTKTwoLayer
     end do
     allocate(DataSetVector(NumberSolidMaterialPoints,NVECTOR,DataSetSize))
     DataSetVector = 0.0
+    
+    !! NURBS contorl points
+    !allocate(DataSetVector_ControlPoints(NumberOfNodes,NVECTOR,1)) ! only one item in the data set but we can improve. 
+    !DataSetVector_ControlPoints = 0.0
 
     DataSetID = 1 ! index of dataset
     DataSetName(DataSetID) = 'acceleration' ! assign name to dataset
@@ -427,7 +447,7 @@ module ModWriteVTKTwoLayer
     !********** END: writing tensor material point data ****************************************
 
     !********** START: writing scalar mesh data ****************************************
-    NumberElements = Counters%NEl ! total number of elements
+    NumberElements = Counters%Sum_NEl ! total number of elements
     DataSetSize = 1 ! total number of datasets for elements to be written
     allocate(DataSetName(DataSetSize))
     allocate(DataSetScalar(NumberElements,DataSetSize))
@@ -435,7 +455,7 @@ module ModWriteVTKTwoLayer
     DataSetID = 1 ! index of dataset
     DataSetName(DataSetID) = 'active_elements' ! assign name to dataset
     do ElementID = 1, NumberElements ! loop over elements
-        if (IsActiveElement(ElementID)) then
+        if (IsActiveElement(ElementID,IPatch_Temporary)) then
             DataSetScalar(ElementID,DataSetID) = 1.0 ! assign output data to elements
         else
             DataSetScalar(ElementID,DataSetID) = 0.0
@@ -687,6 +707,7 @@ module ModWriteVTKTwoLayer
     character(len=50), dimension(:), allocatable :: DataSetName
     real(REAL_TYPE), dimension(:,:), allocatable :: DataSetScalar
     real(REAL_TYPE), dimension(:,:,:), allocatable :: DataSetVector
+    real(REAL_TYPE), dimension(:,:,:), allocatable :: DataSetVector_ControlPoints
     real(REAL_TYPE), dimension(:,:,:,:), allocatable :: DataSetTensor
     real(REAL_TYPE), dimension(NVECTOR) :: VectorValue
 

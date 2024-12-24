@@ -58,43 +58,45 @@
       use ModElementEvaluation
       use ModIsort
       use ModMatrixMath
+      use ModNURBS
       
       implicit none
       
-        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 50
+        integer(INTEGER_TYPE), parameter :: NRECURSIONS = 10 !NRECURSIONS hardcoded
       
-        real(REAL_TYPE), dimension(:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements
-        real(REAL_TYPE), dimension(:), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements
-        real(REAL_TYPE), dimension(:), allocatable :: ElementLMin ! minmum altitude of elements
-        real(REAL_TYPE), dimension(:,:), allocatable :: ElementStrain ! Element strain
-        real(REAL_TYPE), dimension(:, :), allocatable :: StrainSmooth
-        real(REAL_TYPE), dimension(:, :), allocatable :: LiquidPressureSmooth 
-        real(REAL_TYPE), dimension(:, :), allocatable :: ElementVector 
-        real(REAL_TYPE), dimension(:, :), allocatable :: ElementMatrix
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementCentrePoints ! Centrepoints of elements (rank 3 for multiple patches)
+        real(REAL_TYPE), dimension(:, :), allocatable :: ElementSpace ! Surface(2D) or Volume(3D) of the elements (rank 2 for multiple patches)
+        real(REAL_TYPE), dimension(:, :), allocatable :: ElementLMin ! minmum altitude of elements (rank 2 for multiple patches)
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementStrain ! Element strain (rank 3 for multiple patches)
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: StrainSmooth ! (rank 2 for multiple patches)
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: LiquidPressureSmooth ! (rank 3 for multiple patches) 
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementVector ! (rank 3 for multiple patches)
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: ElementMatrix ! (rank 3 for multiple patches)
 
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementAdjacencies ! Element adjacencies 1 to ELEMENTSIDES for each element
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: EntityElements      !  For each entity, gives the active elements
-        integer(INTEGER_TYPE), dimension(:, :), allocatable :: MaterialElements  ! For each material ID, gives the active elements
+        integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: ElementAdjacencies ! Element adjacencies 1 to ELEMENTSIDES for each element (rank 3 for multipatches)
+        integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: EntityElements      !  For each entity, gives the active elements (rank 3 for multiple patch)
+        integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: MaterialElements  ! For each material ID, gives the active elements (rank 3 for multiple patch)
 
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NodeElementAdjacencies ! Node-element adjacencies
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodeElementAdjacencies ! Node-element adjacencies (rank 2 for multiple patches)
         ! Offsets assembled from the number of elements attached to each node, needed to access NodeElementAdjacencies
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NodeElementOffsets
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodeElementOffsets ! rank 2 for multiple patches
         ! Number of elements attached to each node, needed to access NodeElementAdjacencies
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ElementsPerNode
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementsPerNode ! rank 2 for multiple patches
 
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ElementElementAdjacencies ! ID of elements adjacent to each element
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementElementAdjacencies ! ID of elements adjacent to each element (rank 2 for multiple patches)
         ! Offsets assembled from the number of elements attached to each element, needed to access ElementElementAdjacencies
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ElementElementOffsets
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ElementsPerElement ! Number of elements adjacent to each element
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementElementOffsets ! rank 2 for multiple patches
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ElementsPerElement ! Number of elements adjacent to each element (rank 2 for multiple patches)
 
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NodeNodeAdjacencies ! ID of corner (!) nodes adjacent to each corner node
+        ! bookmark
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodeNodeAdjacencies ! ID of corner (!) nodes adjacent to each corner node (rank 2 for multiple patches)
         ! Offsets assembled from the number of corner (!) nodes attached to each corner node
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NodeNodeOffsets
-        integer(INTEGER_TYPE), dimension(:), allocatable :: NodesPerNode ! Number of corner (!) nodes adjacent to each corner node
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodeNodeOffsets ! (rank 2 for multiple patches)
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodesPerNode ! Number of corner (!) nodes adjacent to each corner node
         
-        logical, dimension(:), allocatable :: IsElementCornerNode ! Stores whether a node is a corner node
+        logical, dimension(:, :), allocatable :: IsElementCornerNode ! Stores whether a node is a corner node (rank 2 for multiple patches)
         
-        real(REAL_TYPE), dimension(:, :), allocatable :: NodeNormals ! Normed normal vectors for each node on the mesh boundary
+        real(REAL_TYPE), dimension(:,:, :), allocatable :: NodeNormals ! Normed normal vectors for each node on the mesh boundary (rank 3 for multiple patches)
         
         real(REAL_TYPE), dimension(:), allocatable :: BoundingBoxMin, &
                                                       BoundingBoxMax ! Bounding box of the mesh
@@ -236,12 +238,45 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IEl, INode, SNode, Count
           
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      
+            
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1 
+
+      
+          ! Load system generalization 
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary = 1
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+          
           NElements = 0
           IElements = 0
           ISides = 0
           
-          do IEl = 1, NEl
-            if (IsElm(IEl)) then ! Loop over all active elements
+          
+          
+          ! I need to loop over all elements in traction surface
+          !        to loop over all elements in actual solid
+          !        to check if traction node in surface is located in the solid 
+          !        we are looking for all traction nodes to fit in the solid  
+          !        if they all do fit in the solid then we are good 
+          !
+          !                     Traction_Connecting_Local_To_Global_ControlPoints
+          !
+          
+          
+          
+          
+          
+          
+          
+          
+          do IEl = 1, NURBS%nel_NURBS_Traction(ILoadSystem_Temporary, IPatch_Temporary) !NEl
+            !if (IsElm(IEl)) then ! Loop over all active elements
               
               Count = 0
               do INode = 1, IElTyp ! Loop over all element connectivities
@@ -258,14 +293,14 @@
                 ISides(NElements) = DetermineElementSideSurface(IEl, NEl, IElTyp, NSurfaceNodes, ICon, IConSurface)
               end if
               
-            end if
+            !end if
           end do
      
         end subroutine DetermineElementsAdjacentSurface
         
         
-        integer(INTEGER_TYPE) function DetermineElementSideSurface(IEl, NEl, IElTyp, NSurfaceNodes, ICon, IConSurface)
-                !*************************************************************************************   
+        integer(INTEGER_TYPE) function DetermineElementSideSurface(IEl, NEl, IElTyp, NSurfaceNodes, ICon, IConSurface)        
+        !*************************************************************************************   
         !    FUNCTION:     DetermineElementSideSurface
         ! 
         !    DESCRIPTION:        
@@ -295,9 +330,12 @@
           integer(INTEGER_TYPE), dimension(:,:), allocatable :: CheckEdgeNodes ! (NNodes, ELEMENTSIDES)
           integer(INTEGER_TYPE), dimension(:), allocatable :: CheckNodes ! (NNodes)
           logical :: found
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           if ( NDIM == 2 ) then
-              ElementSideNeighbours = ElementAdjacencies(IEl, :) !(IElement, ISide)
+              ElementSideNeighbours = ElementAdjacencies(IEl, :, IPatch_Temporary) !(IElement, ISide)
               DetermineElementSideSurface = 0
               do ISide = 1, ELEMENTSIDES
                 INeighbour = ElementSideNeighbours(ISide)  
@@ -378,8 +416,11 @@
         
           integer(INTEGER_TYPE), intent(in) :: NodeID
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          
           if ( (allocated(NodesPerNode) ) .and. (NodeID >= 1).and. (NodeID <= ubound(NodesPerNode, 1) ) ) then
-            GetNNodesOfNode = NodesPerNode(NodeID)
+            GetNNodesOfNode = NodesPerNode(NodeID, IPatch_Temporary)
           else
             GetNNodesOfNode = 0
           end if
@@ -387,7 +428,7 @@
         end function GetNNodesOfNode
 
 
-        integer(INTEGER_TYPE) function GetNodeIOfNode(NodeID, INode)
+        integer(INTEGER_TYPE) function GetNodeIOfNode(NodeID, INode, IPatch)
                 !*************************************************************************************   
         !    FUNCTION:     GetNodeIOfNode
         ! 
@@ -406,10 +447,13 @@
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: NodeID, INode
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
                     
           if ( (allocated(NodesPerNode)) .and. (allocated(NodeNodeOffsets)) .and. (allocated(NodeNodeAdjacencies)) .and. &
-               (NodeID >= 1) .and. (NodeID <= ubound(NodesPerNode, 1)) .and. (INode >= 1) .and. (INode <= NodesPerNode(NodeID)) ) then
-            GetNodeIOfNode = NodeNodeAdjacencies(NodeNodeOffsets(NodeID) + INode)
+               (NodeID >= 1) .and. (NodeID <= ubound(NodesPerNode, 1)) .and. (INode >= 1) .and. (INode <= NodesPerNode(NodeID, IPatch)) ) then
+            GetNodeIOfNode = NodeNodeAdjacencies(NodeNodeOffsets(NodeID, IPatch) + INode, IPatch)
           else
             GetNodeIOfNode = -1
           end if
@@ -417,7 +461,7 @@
         end function GetNodeIOfNode
  
 
-        integer(INTEGER_TYPE) function GetNElmOfNode(NodeID)
+        integer(INTEGER_TYPE) function GetNElmOfNode(NodeID, IPatch)
                 !*************************************************************************************   
         !    FUNCTION:     GetNElmOfNode
         ! 
@@ -435,8 +479,16 @@
         
           integer(INTEGER_TYPE), intent(in) :: NodeID
           
-          if ( (allocated(ElementsPerNode)) .and. (NodeID >= 1) .and. (NodeID<=ubound(ElementsPerNode, 1)) ) then
-            GetNElmOfNode = ElementsPerNode(NodeID)
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+
+          
+          if ( (allocated(ElementsPerNode)) .and. (NodeID >= 1) .and. (NodeID<=ubound(ElementsPerNode, 1)) ) then 
+              ! Abdelrahman Alsardi: hardcoded: the ubound approach above here might not work... it depends on your elements
+              ! consider depends on how many elements you have in each patch
+              
+              GetNElmOfNode = ElementsPerNode(NodeID, IPatch)
           else
             GetNElmOfNode = 0
           end if
@@ -444,7 +496,7 @@
         end function GetNElmOfNode
         
 
-        integer(INTEGER_TYPE) function GetElmIOfNode(NodeID, IElement)
+        integer(INTEGER_TYPE) function GetElmIOfNode(NodeID, IElement, IPatch)
                 !*************************************************************************************   
         !    FUNCTION:     GetElmIOfNode
         ! 
@@ -464,9 +516,14 @@
         
           integer(INTEGER_TYPE), intent(in) :: NodeID, IElement
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
           if ( (allocated(ElementsPerNode)) .and. (allocated(NodeElementOffsets)) .and. (allocated(NodeElementAdjacencies)) .and. &
-               (NodeID >= 1) .and. (NodeID <= ubound(ElementsPerNode, 1)) .and. (IElement >= 1) .and. (IElement <= ElementsPerNode(NodeID) ) ) then
-            GetElmIOfNode = NodeElementAdjacencies(NodeElementOffsets(NodeID) + IElement)
+               (NodeID >= 1) .and. (NodeID <= ubound(ElementsPerNode, 1)) .and. (IElement >= 1) .and. (IElement <= ElementsPerNode(NodeID,IPatch) ) ) then
+              ! Abdelrahman (August 6 2023) : ubound approach might not work
+            GetElmIOfNode = NodeElementAdjacencies(NodeElementOffsets(NodeID, IPatch) + IElement, IPatch)
           else
             GetElmIOfNode = -1
           end if
@@ -492,8 +549,11 @@
         
           integer(INTEGER_TYPE), intent(in) :: ElementID
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           if ( (allocated(ElementsPerElement)) .and. (ElementID >= 1) .and. (ElementID <= ubound(ElementsPerElement, 1)) ) then
-            GetNElmOfElm = ElementsPerElement(ElementID)
+            GetNElmOfElm = ElementsPerElement(ElementID, IPatch_Temporary)
           else
             GetNElmOfElm = 0
           end if
@@ -521,9 +581,12 @@
 
           integer(INTEGER_TYPE), intent(in) :: ElementID, IElement
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           if ( (allocated(ElementsPerElement)) .and. (allocated(ElementElementOffsets)) .and. (allocated(ElementElementAdjacencies)) .and. &
-               (ElementID >= 1) .and. (ElementID <= ubound(ElementsPerElement, 1)) .and. (IElement >= 1) .and. (IElement <= ElementsPerElement(ElementID)) ) then
-            GetElmIOfElm = ElementElementAdjacencies(ElementElementOffsets(ElementID) +  IElement)
+               (ElementID >= 1) .and. (ElementID <= ubound(ElementsPerElement, 1)) .and. (IElement >= 1) .and. (IElement <= ElementsPerElement(ElementID, IPatch_Temporary)) ) then
+            GetElmIOfElm = ElementElementAdjacencies(ElementElementOffsets(ElementID, IPatch_Temporary) +  IElement, IPatch_Temporary)
           else
             GetElmIOfElm = -1
           end if
@@ -532,7 +595,7 @@
         
         
 
-        integer(INTEGER_TYPE) function GetAdjacentElement(IElement, ISide)
+        integer(INTEGER_TYPE) function GetAdjacentElement(IElement, ISide, IPatch)
                 !*************************************************************************************   
         !    FUNCTION:     GetAdjacentElement
         ! 
@@ -550,9 +613,13 @@
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: IElement, ISide
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
         
           if ( (allocated(ElementAdjacencies)) .and. (ISide >= 1) .and. (ISide <= ELEMENTSIDES) ) then
-            GetAdjacentElement = ElementAdjacencies(IElement, ISide)
+            GetAdjacentElement = ElementAdjacencies(IElement, ISide, IPatch)
           else
             GetAdjacentElement = -999
             call WriteInLogFile('Trying to access non-existing information: GetAdjacentElement')
@@ -585,8 +652,10 @@
           logical, dimension(NEl), intent(in) :: IsElm
           ! Local variables
           integer(INTEGER_TYPE) :: AdjacentElement
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           
-          AdjacentElement = GetAdjacentElement(IElement, ISide)
+          AdjacentElement = GetAdjacentElement(IElement, ISide, IPatch_Temporary)
           
           if (AdjacentElement == 0) then ! No adjacent element exists, boundary of the mesh
             BoundaryElementSurface = -1
@@ -617,12 +686,19 @@
 
         implicit none
 
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR),  intent(in) :: InitialNodalCoord
+          !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR, Counters%NPatches),  intent(in) :: InitialNodalCoord          
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches),  intent(in) :: InitialNodalCoord !Counters%NodTot
 
-          call DetermineElementCentrePoints(InitialNodalCoord)
-          call DetermineElementSpace(InitialNodalCoord, ElementConnectivities)
-          call MeshBoundingBox(InitialNodalCoord, BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
-        
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          !do IPatch = 1, Counters%NPatches
+          call DetermineElementCentrePoints(InitialNodalCoord)!(:,:,IPatch))
+          call DetermineElementSpace(InitialNodalCoord, ElementConnectivities) !(:,:,IPatch) (:,:,IPatch)
+          call MeshBoundingBox(InitialNodalCoord, BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter) !(:,:,IPatch)
+          !end do 
+          
         end subroutine UpdateMeshAdjacencyInformation
 
 
@@ -638,37 +714,47 @@
         
         implicit none
         
-          integer(INTEGER_TYPE), dimension(:,:), allocatable :: ICon
+          integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: ICon ! (rank 3 for multipatch)
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
         
           if (ELEMENTTYPE == TETRAOLD) then
-            allocate(ICon(N_NODES_HOE, Counters%NEl))  
-            ICon = ElementConnectivities10Node ! element connectivities
+            !allocate(ICon(N_NODES_HOE, Counters%NEl))  
+            !ICon = ElementConnectivities10Node ! element connectivities
           else
-            allocate(ICon(ELEMENTNODES, Counters%NEl))  
-            ICon = ElementConnectivities ! element connectivities  
+            !allocate(ICon(ELEMENTNODES, Counters%NEl))    
+            allocate(ICon(ELEMENTNODES, NURBS%Maximum_nel_NURBS, Counters%NPatches))  
+
+            ICon = ElementConnectivities!(:,:,IPatch_Temporary) ! element connectivities  
           end if
           
           call InitialiseAdjacencyArrays()
+          
+          
 
+          !call MeshBoundingBox(NodalCoordinates(:,:,IPatch_Temporary), BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
           call MeshBoundingBox(NodalCoordinates, BoundingBoxMin, BoundingBoxMax, BoundingBoxDiameter)
+
      
-          call DetermineElementCentrePoints(NodalCoordinates)
+          call DetermineElementCentrePoints(NodalCoordinates)!(:,:,IPatch_Temporary))
           
-          call InitialiseGPGlobalPositionArrays() ! only required for axisymmetric analysis
+          !call InitialiseGPGlobalPositionArrays() ! only required for axisymmetric analysis -> I commented this for NURBS implementation... 
 
-          call DetermineElementSpace(NodalCoordinates, ICon)
+          call DetermineElementSpace(NodalCoordinates, ICon) !(:,:,IPatch_Temporary)
           
-          call DetermineElementMatrix(NodalCoordinates, ElementMatrix, ElementVector)
+          !call DetermineElementMatrix(NodalCoordinates, ElementMatrix, ElementVector) !--> what does this subroutine do? 
           
-          call DetermineNodeElementAdjacencies()
+          call DetermineNodeElementAdjacencies() ! multipatch generalized
         
-          call DetermineSurroundingElements()
+          ! bookmark -
+          call DetermineSurroundingElements() ! multipatch generalized
 
-          call DetermineElementSideAdjacencies()
+          call DetermineElementSideAdjacencies() ! multipatch generalized
 
-          call DetermineCornerNodes()
+          call DetermineCornerNodes() ! multipatch generalized
 
-          call DetermineNodeNodeConnections()
+          call DetermineNodeNodeConnections() ! multipatch generalized
 
         end subroutine DetermineAdjacencies
 
@@ -687,6 +773,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IError, NLayers
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary=1
+          
+          integer(INTEGER_TYPE) :: NumberOfNodesParameterSpace_Xi
+          integer(INTEGER_TYPE) :: NumberOfNodesParameterSpace_Eta
+          
           if (CalParams%ApplyContactMeshBoundary) then
             NLayers = 2
           else
@@ -695,25 +787,72 @@
           
           call DestroyAdjacencyArrays()
           
-          allocate( ElementCentrePoints(Counters%NEl, NVECTOR), stat = IError )
-          allocate( ElementSpace(Counters%NEl), stat = IError )
-          allocate( ElementLMin(Counters%NEl), stat = IError ) 
-          allocate( ElementStrain(Counters%NEl, NTENSOR), stat = IError )
-          allocate( EntityElements(Counters%NEntity, Counters%NEl), stat = IError )
-          allocate( MaterialElements(NLayers, Counters%NEl), stat = IError )
-          allocate( StrainSmooth(Counters%NodTot, 2), stat = IError )
-          allocate( LiquidPressureSmooth(Counters%NodTot, 2), stat = IError )
-          allocate( ElementVector(Counters%NEl, NVECTOR), stat = IError )
-          allocate( ElementMatrix(Counters%NEl, NVECTOR * NVECTOR), stat = IError )
-          allocate( ElementAdjacencies(Counters%NEl, ELEMENTSIDES), stat = IError )
-          allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
-          allocate( ElementsPerNode(Counters%NodTot), stat = IError )
-          allocate( ElementElementOffsets(Counters%NEl + 1), stat = IError )
-          allocate( ElementsPerElement(Counters%NEl), stat = IError )
-          allocate( NodeNodeOffsets(Counters%NodTot + 1), stat = IError )
-          allocate( NodesPerNode(Counters%NodTot), stat = IError )
-          allocate( IsElementCornerNode(Counters%NodTot), stat = IError )
-          allocate( NodeNormals(Counters%NodTot, NVECTOR), stat = IError )          
+          ! bookmark for multipatch generalization
+          allocate( ElementCentrePoints(NURBS%maximum_nel_NURBS, NVECTOR, Counters%NPatches), stat = IError ) ! let's keep this for global element numbering  !, Counters%NPatches
+          allocate( ElementSpace(NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError )! let's keep this for global element numbering  !, Counters%NPatches !Counters%NEl
+          allocate( ElementLMin(NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError ) ! let's keep this for global element numbering  !, Counters%NPatches !Counters%NEl
+          allocate( ElementStrain(NURBS%maximum_nel_NURBS, NTENSOR, Counters%NPatches), stat = IError ) !Counters%NEl
+          allocate( EntityElements(Counters%NEntity, NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError )  !Counters%NEl
+          allocate( MaterialElements(NLayers, NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError ) !Counters%NEl
+          !allocate( StrainSmooth(Counters%NodTot, 2, Counters%NPatches), stat = IError )
+          allocate( StrainSmooth(NURBS%Maximum_NControlPoints, 2, Counters%NPatches), stat = IError )
+          !allocate( LiquidPressureSmooth(Counters%NodTot, 2, Counters%NPatches), stat = IError )
+          allocate( LiquidPressureSmooth(NURBS%Maximum_NControlPoints, 2, Counters%NPatches), stat = IError )
+          allocate( ElementVector(NURBS%maximum_nel_NURBS, NVECTOR, Counters%NPatches), stat = IError ) !Counters%NEl
+          allocate( ElementMatrix(NURBS%maximum_nel_NURBS, NVECTOR * NVECTOR, Counters%NPatches), stat = IError ) !Counters%NEl
+          allocate( ElementAdjacencies(NURBS%maximum_nel_NURBS, ELEMENTSIDES, Counters%NPatches), stat = IError ) ! rank 3 for multipatches !Counters%NEl
+          !allocate( NodeElementOffsets(Counters%NodTot + 1), stat = IError )
+          !allocate( ElementsPerNode(Counters%NodTot), stat = IError )
+          
+          ! Modified for the implementation of NURBS
+          
+          
+          
+          
+          if (NDIM ==2) then 
+          
+          NumberOfNodesParameterSpace_Xi = NURBS%NXiKnotEntries(IPatch_Temporary) - (2*NURBS%NXiKnotOrder(IPatch_Temporary))!NXiKnotEntriesUNIQUE(IPatch_Temporary)-1
+          NumberOfNodesParameterSpace_Eta = NURBS%NEtaKnotEntries(IPatch_Temporary) - (2*NURBS%NEtaKnotOrder(IPatch_Temporary))!NEtaKnotEntriesUNIQUE(IPatch_Temporary)-1
+            
+              
+              
+          allocate( NodeElementOffsets( ( (NumberOfNodesParameterSpace_Xi)*(NumberOfNodesParameterSpace_Eta)) + 1, Counters%NPatches), stat = IError )
+          allocate( ElementsPerNode( (NumberOfNodesParameterSpace_Xi)*(NumberOfNodesParameterSpace_Eta), Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
+          
+          
+          elseif (NDIM ==3) then 
+          !allocate( NodeElementOffsets( ( (Maximum_NXiKnotEntriesUNIQUE)*(Maximum_NEtaKnotEntriesUNIQUE)*(Maximum_NZetaKnotEntriesUNIQUE)) + 1, Counters%NPatches), stat = IError )
+
+
+          allocate( NodeElementOffsets( &
+              ( ((NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NURBS%NXiKnotOrder(IPatch_Temporary)+1))*&
+              ((NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NURBS%NEtaKnotOrder(IPatch_Temporary)+1))*&
+              ((NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NURBS%NZetaKnotOrder(IPatch_Temporary)+1))) + 1, Counters%NPatches), stat = IError )
+
+          
+          !allocate( ElementsPerNode( (Maximum_NXiKnotEntriesUNIQUE)*&
+          !    (Maximum_NEtaKnotEntriesUNIQUE)*&
+          !    (Maximum_NZetaKnotEntriesUNIQUE), Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
+          
+          allocate( ElementsPerNode( (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NURBS%NXiKnotOrder(IPatch_Temporary)+1)*&
+                                     (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NURBS%NEtaKnotOrder(IPatch_Temporary)+1)*&
+                                    (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NURBS%NZetaKnotOrder(IPatch_Temporary)+1), &
+                                    Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
+              
+              
+          end if 
+          
+          allocate( ElementElementOffsets( NURBS%maximum_nel_NURBS + 1, Counters%NPatches), stat = IError ) 
+          allocate( ElementsPerElement( NURBS%maximum_nel_NURBS, Counters%NPatches), stat = IError ) 
+          
+          allocate( NodeNodeOffsets(NURBS%Maximum_NControlPoints + 1, Counters%NPatches), stat = IError )
+
+          allocate( NodesPerNode(NURBS%Maximum_NControlPoints, Counters%NPatches), stat = IError )
+
+          allocate( IsElementCornerNode(NURBS%Maximum_NControlPoints, Counters%NPatches), stat = IError )
+
+          allocate( NodeNormals(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), stat = IError )          
+
           allocate( BoundingBoxMin(NVECTOR), BoundingBoxMax(NVECTOR), stat = IError )
           BoundingBoxMin = 0.0
           BoundingBoxMax = 0.0
@@ -834,28 +973,41 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, ISide, IError
+          
+          ! Multipatch variables 
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           ! Initialise resulting array
           if (.not.allocated(ElementAdjacencies) ) then
-            allocate(ElementAdjacencies(Counters%NEl, ELEMENTSIDES), stat = IError)
+            allocate(ElementAdjacencies(NURBS%Maximum_nel_NURBS, ELEMENTSIDES, Counters%NPatches), stat = IError) !Counters%NEl
           end if
           ElementAdjacencies = -1
           
-          do IElement = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, Counters%NPatches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             do ISide = 1, ELEMENTSIDES ! loop over all sides of the element
-              if (ELEMENTTYPE == TETRAOLD) then ! only 3D, in sprint#2 add 2D functionality
-                ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, Counters%NEl, ElementConnectivities10Node)
+              if ((ELEMENTTYPE == TETRAOLD)) then ! only 3D, in sprint#2 add 2D functionality
+                ElementAdjacencies(IElement, ISide, IPatch) = CheckEdgeNodeAdjacencies3D(IElement, ISide, N_NODES_HOE, Counters%NEl(IPatch), ElementConnectivities10Node, IPatch)
+              !Counters%NEl
+              else if ((ELEMENTTYPE == HEXA_NURBS)) then               
+                  ! HARDCODED --> 8 nodes in a knot span "tessalation" mesh 
+                  ElementAdjacencies(IElement, ISide, IPatch) = CheckEdgeNodeAdjacencies3D(IElement, ISide, 8, Counters%NEl(IPatch), KnotBezierMeshConnectivity(:,:, IPatch), IPatch) !KnotBezierMesh
+                  !5*4
+                  !Counters%NEl
+              
               else
-                ElementAdjacencies(IElement, ISide) = CheckEdgeNodeAdjacencies(IElement, ISide) ! only for 3-noded triangle
+                ElementAdjacencies(IElement, ISide, IPatch) = CheckEdgeNodeAdjacencies(IElement, ISide, IPatch) ! only for 3-noded triangle
               end if
             end do
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
         end subroutine DetermineElementSideAdjacencies
 
         
 
-        integer(INTEGER_TYPE) function CheckEdgeNodeAdjacencies(IElement, ISide)
+        integer(INTEGER_TYPE) function CheckEdgeNodeAdjacencies(IElement, ISide, IPatch)
                 !*************************************************************************************   
         !    FUNCTION:     CheckEdgeNodeAdjacencies
         ! 
@@ -883,25 +1035,54 @@
           integer(INTEGER_TYPE) :: NodeID1, NodeID2
           integer(INTEGER_TYPE) :: NAdjacentElementsNode1, NAdjacentElementsNode2
           integer(INTEGER_TYPE) :: CheckElementID1, CheckElementID2
-
-          CheckVertexNodes = reshape((/ 1, 2, & ! vertex nodes to check for side 1 spanned by nodes 1-2
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
+          if (ELEMENTTYPE == TRI3) then 
+              CheckVertexNodes = reshape((/ 1, 2, & ! vertex nodes to check for side 1 spanned by nodes 1-2
                                 3, 1, & ! vertex nodes to check for side 2 spanned by nodes 3-4
                                 2, 3 /), & ! vertex nodes to check for side 3 spanned by nodes 2-3
                                 (/ 2, ELEMENTSIDES /) )
+              
+          elseif (ELEMENTTYPE == QUAD4) then 
+              CheckVertexNodes = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 2, 3,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 3, 4,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 4, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                                (/ 2, ELEMENTSIDES /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+          ! repeated here for NURBS --> check if this is also correct here??
+          elseif (ELEMENTTYPE == QUAD4_NURBS) then 
+              CheckVertexNodes = reshape( (/ 1, 2,   & ! Corner nodes to check for side 1 spanned by nodes 1-2
+                                 2, 4,   & ! Corner nodes to check for side 2 spanned by nodes 2-3
+                                 4, 3,   & ! Corner nodes to check for side 3 spanned by nodes 3-4
+                                 3, 1/), & ! Corner nodes to check for side 4 spanned by nodes 4-1
+                                (/ 2, ELEMENTSIDES /) ) ! 8 elements which should be reshaped to a 2x4 matrix. N_SIDE is always 4 for a quadrilateral.
+              
+          end if 
+          
+
+          
 
           ! get number of adjacent elements of local vertex node 1, i.e. CheckVertexNodes(1, ISide)
-          NodeID1 = ElementConnectivities(CheckVertexNodes(1, ISide), IElement)
-          NAdjacentElementsNode1 = GetNElmOfNode(NodeID1)
+          NodeID1 = KnotBezierMeshConnectivity(IElement, CheckVertexNodes(1, ISide), IPatch) 
+          
+          !ElementConnectivities(CheckVertexNodes(1, ISide), IElement)
+          
+          NAdjacentElementsNode1 = GetNElmOfNode(NodeID1, IPatch)
           ! get number of adjacent elements of local vertex node 2, i.e. CheckVertexNodes(2, ISide)
-          NodeID2 = ElementConnectivities(CheckVertexNodes(2, ISide), IElement)
-          NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
+          NodeID2 = KnotBezierMeshConnectivity(IElement, CheckVertexNodes(2, ISide), IPatch)
+          
+          !ElementConnectivities(CheckVertexNodes(2, ISide), IElement)
+          NAdjacentElementsNode2 = GetNElmOfNode(NodeID2, IPatch)
 
           CheckEdgeNodeAdjacencies = 0 ! No adjacent element found
 
           do I = 1, NAdjacentElementsNode1
             do J = 1, NAdjacentElementsNode2
-              CheckElementID1 = GetElmIOfNode(NodeID1, I)
-              CheckElementID2 = GetElmIOfNode(NodeID2, J)
+              CheckElementID1 = GetElmIOfNode(NodeID1, I, IPatch)
+              CheckElementID2 = GetElmIOfNode(NodeID2, J, IPatch)
               if ( (CheckElementID1 /= IElement) .and. (CheckElementID1==CheckElementID2) ) then ! adjacent element found
                 CheckEdgeNodeAdjacencies = CheckElementID1
                 EXIT
@@ -912,7 +1093,7 @@
         end function CheckEdgeNodeAdjacencies
 
 
-        integer(INTEGER_TYPE) function CheckEdgeNodeAdjacencies3D(IElement, ISide, IElTyp, NEl, ICon)
+        integer(INTEGER_TYPE) function CheckEdgeNodeAdjacencies3D(IElement, ISide, IElTyp, NEl, ICon, IPatch)
                 
         !*************************************************************************************   
         !    FUNCTION:     CheckEdgeNodeAdjacencies3D
@@ -938,29 +1119,89 @@
         
           integer(INTEGER_TYPE), intent(in) :: IElement, ISide
           integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl
-          integer(INTEGER_TYPE), dimension(IElTyp, NEl), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension(NEl, IElTyp ), intent(in) :: ICon
           ! Local variables
           integer(INTEGER_TYPE), parameter :: NNodes = 2 ! for 3D
-          integer(INTEGER_TYPE), dimension(NNodes, ELEMENTSIDES) :: CheckEdgeNodes
+          !integer(INTEGER_TYPE), dimension(NNodes, ELEMENTSIDES) :: CheckEdgeNodes
+          integer(INTEGER_TYPE), dimension(NNodes, ELEMENTBOUNDARYNODES) :: CheckEdgeNodes
           integer(INTEGER_TYPE) :: NodeID1, NodeID2, I, J
           integer(INTEGER_TYPE) :: NAdjacentElementsNode1, NAdjacentElementsNode2
           integer(INTEGER_TYPE) :: CheckElementID1, CheckElementID2
+          
+          integer(INTEGER_TYPE), dimension(5, 6) :: SideConnectivities
+          integer(INTEGER_TYPE), dimension(5) :: KnotNodesForSide
+          
+          integer(INTEGER_TYPE) :: IEdge
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
+          
+          !subroutine CheckEdgeNodesForEachSide
+          !
+          !integer(INTEGER_TYPE), intent(in) :: SideID
+          !integer(INTEGER_TYPE), intent(in) :: EdgeNumber
+          
+          !SideConnectivities = &
+          !    reshape( (/ 1, 2, 5, 6, &! 6, 7, & ! side 1
+          !               1, 5,7, 3, &! 9, 5, & ! side 2 
+          !               1, 2, 3, 4, &!10, 8, & ! side 3
+          !               2, 6, 8, 4, & ! side 4
+          !               5, 6, 8, 7,  & ! side 5
+          !               4, 3, 7, 8/), & ! side 6
+          !              (/ 4, 6 /) )
+          
+          SideConnectivities = &
+              reshape( (/ 1, 2, 6, 5, 1, &! 6, 7, & ! side 1
+                         1, 5, 7, 3, 1, &! 9, 5, & ! side 2 
+                         1, 2, 4, 3, 1, &!10, 8, & ! side 3
+                         2, 6, 8, 4, 2, & ! side 4
+                         5, 6, 8, 7, 5, & ! side 5
+                         4, 8, 7, 3, 4/), & ! side 6
+                        (/ 5, 6 /) )
+          
+          
+          !SideConnectivities = &
+          !    reshape( (/ 1, 2, 4, 3, 1, &! 6, 7, & ! side 1
+          !               2, 6, 8, 4, 2, &! 9, 5, & ! side 2 
+          !               1, 5, 7, 3, 1, &!10, 8, & ! side 3
+          !               5, 6, 8, 7, 5, & ! side 4
+          !               4, 3, 7, 8, 4, & ! side 5
+          !               1, 2, 6, 5, 1/), & ! side 6
+          !              (/ 5, 6 /) )
 
+          
+          KnotNodesForSide = SideConnectivities(:,ISide)
+          
+          !end subroutine  
+          do IEdge = 1, 4 ! 4 edges in a side of knot vector mesh 
+          
+              
+          
           call DetermineCheckEdgeNodes(CheckEdgeNodes)
 
+          
+          
+          !! Get number of adjacent elements of local node CheckEdgeNodes(1, ISide)
+          !NodeID1 = KnotBezierMeshConnectivity(IElement, CheckEdgeNodes(1, ISide)) ! Abdel: I replaced ICon here 
+          !NAdjacentElementsNode1 = GetNElmOfNode(NodeID1)
+          !! Get number of adjacent elements of local node CheckEdgeNodes(2, ISide)
+          !NodeID2 = KnotBezierMeshConnectivity(IElement, CheckEdgeNodes(2, ISide)) ! Abdel: I replaced ICon here  
+          !NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
+          
           ! Get number of adjacent elements of local node CheckEdgeNodes(1, ISide)
-          NodeID1 = ICon(CheckEdgeNodes(1, ISide), IElement)
-          NAdjacentElementsNode1 = GetNElmOfNode(NodeID1)
+          NodeID1 = KnotBezierMeshConnectivity(IElement, KnotNodesForSide(IEdge), IPatch) ! Abdel: I replaced ICon here 
+          NAdjacentElementsNode1 = GetNElmOfNode(NodeID1, IPatch)
           ! Get number of adjacent elements of local node CheckEdgeNodes(2, ISide)
-          NodeID2 = ICon(CheckEdgeNodes(2, ISide), IElement)
-          NAdjacentElementsNode2 = GetNElmOfNode(NodeID2)
+          NodeID2 = KnotBezierMeshConnectivity(IElement, KnotNodesForSide(IEdge+1), IPatch) ! Abdel: I replaced ICon here  
+          NAdjacentElementsNode2 = GetNElmOfNode(NodeID2, IPatch)
 
           CheckEdgeNodeAdjacencies3D = 0 ! No adjacent element found
 
           do I = 1, NAdjacentElementsNode1
             do J = 1, NAdjacentElementsNode2
-              CheckElementID1 = GetElmIOfNode(NodeID1, I)
-              CheckElementID2 = GetElmIOfNode(NodeID2, J)
+              CheckElementID1 = GetElmIOfNode(NodeID1, I, IPatch)
+              CheckElementID2 = GetElmIOfNode(NodeID2, J, IPatch)
               
               if ( (CheckElementID1/=IElement).and. &
                    (CheckElementID1==CheckElementID2) ) then ! Adjacent element found
@@ -969,6 +1210,8 @@
               end if
             end do
           end do
+          
+          end do 
 
         end function CheckEdgeNodeAdjacencies3D
 
@@ -991,6 +1234,13 @@
               call DetermineCheckEdgeNodesTRI6(CheckEdgeNodes)
             case(QUAD8)
               !call DetermineCheckEdgeNodesQUAD8(CheckEdgeNodes) --> to be added  
+                
+                
+                
+            case(HEXA_NURBS)
+                call DetermineCheckEdgeNodesHEXA10(CheckEdgeNodes) ! --> I don't know if this will work??
+                
+                
             case(TETRA10)
               call DetermineCheckEdgeNodesTETRA10(CheckEdgeNodes)
             case(HEXA20)
@@ -1012,15 +1262,18 @@
         implicit none
         
           ! Local variables
-          integer(INTEGER_TYPE) :: NOccurences
+          integer(INTEGER_TYPE), dimension(Counters%NPatches) :: NOccurences
           
-          call DetermineNodeOccurences(NOccurences)
+          ! we might need a loop here or could be in the outer layer of this code
+          
+          ! bookmark - NOccurences
+          call DetermineNodeOccurences(NOccurences) ! multipatch generalized
      
-          call DetermineOffsets()
+          call DetermineOffsets()! multipatch generalized
      
-          call DetermineNodeElementAdjacenciesFromLists(NOccurences)
+          call DetermineNodeElementAdjacenciesFromLists(NOccurences) ! multipatch generalized
      
-          call SortNodeElementAdjacencies()
+          call SortNodeElementAdjacencies() ! multipatch generalized
           
         end subroutine DetermineNodeElementAdjacencies
         
@@ -1037,12 +1290,18 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
           IsElementCornerNode = .false.
-          do IElement = 1, Counters%NEl
-            do INode = 1, ELEMENTNODES
-              IsElementCornerNode(ElementConnectivities(INode, IElement)) = .true.
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+            do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
+              IsElementCornerNode(ElementConnectivities(INode, IElement, IPatch), IPatch) = .true. 
+              !not sure why this is relevant since it is looping accross all nodes 
             end do
-          end do
+          end do ! loop over elements 
+          end do ! loop over patches
           
         end subroutine DetermineCornerNodes
         
@@ -1057,7 +1316,7 @@
         implicit none
         
           ! Local variables
-          integer(INTEGER_TYPE) :: NOccurences
+          integer(INTEGER_TYPE), dimension(Counters%NPatches) :: NOccurences
           
           call DetermineNodeNodeOccurences(NOccurences)
           
@@ -1081,23 +1340,30 @@
  
         implicit none
 
-          integer(INTEGER_TYPE), intent(out) :: NOccurences
+          integer(INTEGER_TYPE), dimension(Counters%NPatches), intent(out) :: NOccurences
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID, ElmNodeID, NElements, ElementID
           integer(INTEGER_TYPE) :: LowestNodeID, HighestNodeID
-          integer(INTEGER_TYPE), dimension(Counters%NodTot) :: TempNodes
+          integer(INTEGER_TYPE), dimension(NURBS%Maximum_NControlPoints) :: TempNodes !Counters%NodTot
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
+          
           NodesPerNode = 0
-          do NodeID = 1, Counters%NodTot
-            if (IsElementCornerNode(NodeID)) then
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
+              !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+            if (IsElementCornerNode(NodeID, IPatch)) then
               TempNodes = 0
-              LowestNodeID = Counters%NodTot
+              LowestNodeID = Counters%NodTot(IPatch)!Counters%NodTot
               HighestNodeID = 0
-              NElements = GetNElmOfNode(NodeID)
+              NElements = GetNElmOfNode(NodeID, IPatch)
               do IElement = 1, NElements
-                ElementID = GetElmIOfNode(NodeID, IElement)
-                do INode = 1, ELEMENTNODES
-                  ElmNodeID = ElementConnectivities(INode, ElementID)
+                ElementID = GetElmIOfNode(NodeID, IElement, IPatch)
+                do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
+                  ElmNodeID = ElementConnectivities(INode, ElementID, IPatch)
                   TempNodes(ElmNodeID) = 1
                   if (ElmNodeID<LowestNodeID) then
                     LowestNodeID = ElmNodeID
@@ -1109,16 +1375,20 @@
               end do
               do ElmNodeID = LowestNodeID, HighestNodeID
                 if (TempNodes(ElmNodeID)>0) then
-                  NodesPerNode(NodeID) = NodesPerNode(NodeID) + 1
+                  NodesPerNode(NodeID, IPatch) = NodesPerNode(NodeID, IPatch) + 1
                 end if
               end do
             end if
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
           
           NOccurences = 0
-          do INode = 1, Counters%NodTot ! Loop over all entries of NodesPerNode
-            NOccurences = NOccurences + NodesPerNode(INode)
-          end do
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot ! Loop over all entries of NodesPerNode
+              !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+            NOccurences(IPatch) = NOccurences(IPatch) + NodesPerNode(INode, IPatch)
+          end do ! loop over control points
+          end do ! loop over patches
         
         end subroutine DetermineNodeNodeOccurences
         
@@ -1135,10 +1405,17 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
+          
           NodeNodeOffsets = 0
-          do I = 1, Counters%NodTot
-            NodeNodeOffsets(I+1) = NodeNodeOffsets(I) + NodesPerNode(I)
-          end do
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+            NodeNodeOffsets(I+1, IPatch) = NodeNodeOffsets(I, IPatch) + NodesPerNode(I, IPatch)
+          end do ! loop over control points
+          end do ! loop over patches
         
         end subroutine DetermineNodeNodeOffsets
 
@@ -1154,28 +1431,42 @@
           
         implicit none
 
-          integer(INTEGER_TYPE), intent(in) :: NOccurences
+          integer(INTEGER_TYPE), dimension(Counters%NPatches), intent(in) :: NOccurences
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID, ElmNodeID, NElements, ElementID, IError
           integer(INTEGER_TYPE) :: LowestNodeID, HighestNodeID, Index
-          integer(INTEGER_TYPE), dimension(Counters%NodTot) :: TempNodes
+          integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot) :: TempNodes
 
+          ! Multipatch variables 
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
+          integer(INTEGER_TYPE) :: Maximum_NOccurences
+          
           if (allocated(NodeNodeAdjacencies)) then
             deallocate(NodeNodeAdjacencies, stat = IError)
           end if
-          allocate(NodeNodeAdjacencies(NOccurences), stat = IError)
+          
+          Maximum_NOccurences = maxval(NOccurences)
+          
+          allocate(NodeNodeAdjacencies(Maximum_NOccurences, Counters%NPatches), stat = IError)
+
           
           NodesPerNode = 0
-          do NodeID = 1, Counters%NodTot
-            if (IsElementCornerNode(NodeID)) then
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do NodeID = 1, Counters%NodTot(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+              
+            if (IsElementCornerNode(NodeID, IPatch)) then
               TempNodes = 0
-              LowestNodeID = Counters%NodTot
+              LowestNodeID = Counters%NodTot(IPatch)!Counters%NodTot
               HighestNodeID = 0
-              NElements = GetNElmOfNode(NodeID)
+              NElements = GetNElmOfNode(NodeID, IPatch)
               do IElement = 1, NElements
-                ElementID = GetElmIOfNode(NodeID, IElement)
-                do INode = 1, ELEMENTNODES
-                  ElmNodeID = ElementConnectivities(INode, ElementID)
+                ElementID = GetElmIOfNode(NodeID, IElement, IPatch)
+                do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
+                  ElmNodeID = ElementConnectivities(INode, ElementID, IPatch)
                   TempNodes(ElmNodeID) = 1
                   if (ElmNodeID<LowestNodeID) then
                     LowestNodeID = ElmNodeID
@@ -1187,13 +1478,14 @@
               end do
               do ElmNodeID = LowestNodeID, HighestNodeID
                 if (TempNodes(ElmNodeID)>0) then
-                  NodesPerNode(NodeID) = NodesPerNode(NodeID) + 1
-                  Index = NodeNodeOffsets(NodeID) + NodesPerNode(NodeID)
-                  NodeNodeAdjacencies(Index) = ElmNodeID
+                  NodesPerNode(NodeID, IPatch) = NodesPerNode(NodeID, IPatch) + 1
+                  Index = NodeNodeOffsets(NodeID, IPatch) + NodesPerNode(NodeID, IPatch)
+                  NodeNodeAdjacencies(Index, IPatch) = ElmNodeID
                 end if
               end do
             end if
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
           
         end subroutine DetermineNodeNodeConnectionsFromLists
 
@@ -1209,12 +1501,21 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: INode
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
-          do INode = 1, Counters%NodTot
-            if (NodesPerNode(INode)/=0) then
-              call IHpSort(NodeNodeAdjacencies(NodeNodeOffsets(INode) + 1), NodesPerNode(INode))
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do INode = 1, Counters%NodTot(IPatch)!Counters%NodTot
+              
+              !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID,IPatch)
+              
+            if (NodesPerNode(INode, IPatch)/=0) then
+              call IHpSort(NodeNodeAdjacencies(NodeNodeOffsets(INode, IPatch) + 1, IPatch), NodesPerNode(INode, IPatch))
             end if
-          end do
+          end do ! loop over control points 
+          end do ! loop over patches
         
         end subroutine SortNodeNodeConnections
         
@@ -1231,29 +1532,75 @@
 
         implicit none
 
-          integer(INTEGER_TYPE), intent(out) :: NOccurences
+          integer(INTEGER_TYPE), dimension(Counters%NPatches), intent(out) :: NOccurences
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
         
           ElementsPerNode = 0
-          do IElement = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             if (ELEMENTTYPE == TETRAOLD) then
             do INode = 1, N_NODES_HOE ! loop over all nodes of the element
               NodeID = ElementConnectivities10Node(INode, IElement)
-              ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
-            end do
-            else
-            do INode = 1, ELEMENTNODES ! loop over all nodes of the element
-              NodeID = ElementConnectivities(INode, IElement)
-              ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
+              ElementsPerNode(NodeID,IPatch) = ElementsPerNode(NodeID,IPatch) + 1
+            end do ! loop over elements
+            !end do ! loop over patches
+            
+            
+            else if (ELEMENTTYPE == HEXA_NURBS) then
+                
+                do INode = 1, 8!ELEMENTBOUNDARYNODES !ELEMENTSIDES !ELEMENTSIDES ! loop over all nodes of the element
+                    ! in the 3D parameter space, there are 8 nodes to form a cube
+                    NodeID = KnotBezierMeshConnectivity( IElement, INode, IPatch )
+                    ElementsPerNode(NodeID,IPatch) = ElementsPerNode(NodeID,IPatch) + 1
+                
+              !NodeID = ElementConnectivities(INode, IElement)
+              !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
+           
+                end do
+            
+            
+            
+            elseif (ELEMENTTYPE ==  QUAD4_NURBS) then
+            do INode = 1, 4!ELEMENTBOUNDARYNODES !ELEMENTSIDES ! loop over all nodes of the element
+              
+                ! in the 2D parameter space, there are 4 nodes to form a square
+                NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch )
+                ElementsPerNode(NodeID,IPatch) = ElementsPerNode(NodeID,IPatch) + 1
+                
+              !NodeID = ElementConnectivities(INode, IElement)
+              !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
             end do
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
           NOccurences = 0
-          do INode = 1, Counters%NodTot ! loop over all element nodes of the system
-            NOccurences = NOccurences + ElementsPerNode(INode)
-          end do
+          
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          if (NDIM == 2) then 
+          
+              do INode = 1, (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)+1)*(NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)+1)
+                  
+                  !(NXiKnotEntries(IPatch)-(2*NXiKnotOrder(IPatch)))*(NEtaKnotEntries(IPatch)-(2*NEtaKnotOrder(IPatch)))!(NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+                  NOccurences(IPatch) = NOccurences(IPatch) + ElementsPerNode(INode,IPatch) ! --> this is not referring to control points but element intersections...
+              end do
+              
+          else if (NDIM == 3) then 
+              
+              do INode = 1, (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch)-NURBS%NXiKnotOrder(IPatch)+1)*(NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch)-NURBS%NEtaKnotOrder(IPatch)+1)*(NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch)-NURBS%NZetaKnotOrder(IPatch)+1)
+                  
+                  !(NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch))*(NZetaKnotEntriesUNIQUE(IPatch))!((nel_NURBS*2)+2)!( (NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1) ) !Counters%NodTot ! loop over all element nodes of the system !hardcoded
+                  NOccurences(IPatch) = NOccurences(IPatch) + ElementsPerNode(INode,IPatch) ! --> this is not referring to control points but element intersections...
+              end do
+              
+          end if
+          
+          end do ! loop over patches
+          
+          
         
         end subroutine DetermineNodeOccurences
         
@@ -1270,11 +1617,31 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
 
+          
           NodeElementOffsets = 0
-          do I = 1, Counters%NodTot ! loop over all element nodes of the system
-            NodeElementOffsets(I+1) = NodeElementOffsets(I) + ElementsPerNode(I)
+          
+          
+          if (NDIM == 2) then 
+          do IPatch = 1, Counters%NPatches
+          do I = 1, (NURBS%NXiKnotEntries(IPatch) - (2*NURBS%NXiKnotOrder(IPatch)))*(NURBS%NEtaKnotEntries(IPatch) - (2*NURBS%NEtaKnotOrder(IPatch)))!( (NXiKnotEntriesUNIQUE(IPatch))*(NEtaKnotEntriesUNIQUE(IPatch)) ) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+            NodeElementOffsets(I+1, IPatch) = NodeElementOffsets(I, IPatch) + ElementsPerNode(I,IPatch)
           end do
+          end do              
+              
+              
+          else if (NDIM == 3) then 
+              
+          do IPatch = 1, Counters%NPatches
+          do I = 1, ((NURBS%NXiKnotEntriesUNIQUE(IPatch))*(NURBS%NEtaKnotEntriesUNIQUE(IPatch))*(NURBS%NZetaKnotEntriesUNIQUE(IPatch))) !((nel_NURBS*2)+2)!((NXiKnotEntriesUNIQUE-1)*(NEtaKnotEntriesUNIQUE-1))!Counters%NodTot ! loop over all element nodes of the system
+            NodeElementOffsets(I+1, IPatch) = NodeElementOffsets(I, IPatch) + ElementsPerNode(I,IPatch)
+          end do
+          end do
+          
+          end if 
 
         end subroutine DetermineOffsets
         
@@ -1293,33 +1660,58 @@
         
         implicit none
 
-          integer(INTEGER_TYPE), intent(in) :: NOccurences
+          integer(INTEGER_TYPE), dimension(Counters%NPatches), intent(in) :: NOccurences
+          integer(INTEGER_TYPE) :: Maximum_NOccurences  
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID, IError, Index
+          
+          ! Multipatch variables 
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
           if ( allocated(NodeElementAdjacencies) ) then
             deallocate(NodeElementAdjacencies, stat = IError)
           end if
-          allocate(NodeElementAdjacencies(NOccurences), stat = IError)
+          
+          Maximum_NOccurences = maxval(NOccurences)
+          
+          allocate(NodeElementAdjacencies(Maximum_NOccurences, Counters%NPatches), stat = IError)
           
           ElementsPerNode = 0
-          do IElement = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do IElement = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
             if (ELEMENTTYPE == TETRAOLD) then
             do INode = 1, N_NODES_HOE ! loop over all nodes of the element
               NodeID = ElementConnectivities10Node(INode, IElement)
-              ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
-              Index = NodeElementOffsets(NodeID) + ElementsPerNode(NodeID)
-              NodeElementAdjacencies(Index) = IElement
+              ElementsPerNode(NodeID,IPatch) = ElementsPerNode(NodeID,IPatch) + 1
+              Index = NodeElementOffsets(NodeID, IPatch) + ElementsPerNode(NodeID,IPatch)
+              NodeElementAdjacencies(Index, IPatch) = IElement
             end do
             else    
-            do INode = 1, ELEMENTNODES ! loop over all nodes of the element
-              NodeID = ElementConnectivities(INode, IElement)
-              ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
-              Index = NodeElementOffsets(NodeID) + ElementsPerNode(NodeID)
-              NodeElementAdjacencies(Index) = IElement
+            do INode = 1, VERTICESINPARAMETERSPACE!8!ELEMENTBOUNDARYNODES !8!ELEMENTSIDES !ELEMENTNODES ! loop over all nodes of the element
+              
+                ! Modified for NURBS
+                NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch)
+                
+                ElementsPerNode(NodeID,IPatch) = ElementsPerNode(NodeID,IPatch) + 1
+                
+                Index = NodeElementOffsets(NodeID, IPatch) + ElementsPerNode(NodeID,IPatch)
+                
+                NodeElementAdjacencies(Index, IPatch) = IElement !HARDCODED
+                
+                
+                
+                !NodeID = ElementConnectivities(INode, IElement)
+                !
+                !ElementsPerNode(NodeID) = ElementsPerNode(NodeID) + 1
+                !
+                !Index = NodeElementOffsets(NodeID) + ElementsPerNode(NodeID)
+                !
+                !NodeElementAdjacencies(Index) = IElement
             end do
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
 
         end subroutine DetermineNodeElementAdjacenciesFromLists
 
@@ -1336,11 +1728,44 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: INode
-        
-          do INode = 1, Counters%NodTot ! loop over all element nodes of the system
-            call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode) + 1),  ElementsPerNode(INode) )
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
+        !needs to be modified if 2D or 3D .... now it is 3D
+          if (NDIM ==2) then 
+              
+          
+          do IPatch = 1, Counters%NPatches
+          do INode = 1, (NURBS%NXiKnotEntries(IPatch) - (2*NURBS%NXiKnotOrder(IPatch)))*(NURBS%NEtaKnotEntries(IPatch) - (2*NURBS%NEtaKnotOrder(IPatch)))!Counters%NodTot ! loop over all element nodes of the system
+            !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
+            !HARDCODED to remove the below subroutine 
+            call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode, IPatch) + 1, IPatch),  ElementsPerNode(INode,IPatch) ) ! I removed the + 1 but let's see how this will work out...
+
           end do
+          end do 
+            
+              
+              
+              
+              
+          else if (NDIM ==3) then 
+              
+          
+          
+          
+          do IPatch = 1, Counters%NPatches
+          do INode = 1, (NURBS%NXiKnotEntries(IPatch) - (2*NURBS%NXiKnotOrder(IPatch)))     * (NURBS%NEtaKnotEntries(IPatch) - (2*NURBS%NEtaKnotOrder(IPatch)))   * (NURBS%NZetaKnotEntries(IPatch) - (2*NURBS%NZetaKnotOrder(IPatch)))!Counters%NodTot ! loop over all element nodes of the system
+            !call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode)),  ElementsPerNode(INode) )
+            !HARDCODED to remove the below subroutine 
+            call IHpSort(NodeElementAdjacencies( NodeElementOffsets(INode, IPatch) + 1, IPatch),  ElementsPerNode(INode,IPatch) ) ! I removed the + 1 but let's see how this will work out...
+
+          end do
+          end do 
         
+          end if 
+          
+          
         end subroutine SortNodeElementAdjacencies
 
         
@@ -1356,14 +1781,14 @@
         
           ! Local variables
           integer(INTEGER_TYPE) :: IError, TotElementCounter
-     
-          call InitialiseSurroundingElementLists(TotElementCounter)
+          
+          call InitialiseSurroundingElementLists(TotElementCounter)!, IPatch_Temporary)
           
           ! Allocate list for storing the elements adjacent to each element
           if ( allocated(ElementElementAdjacencies) ) then
             deallocate(ElementElementAdjacencies, stat = IError)
           end if
-          allocate(ElementElementAdjacencies(TotElementCounter), stat = IError)
+          allocate(ElementElementAdjacencies(TotElementCounter, Counters%NPatches), stat = IError)
         
           call FillElementElementAdjacencies()
           
@@ -1372,7 +1797,7 @@
         end subroutine DetermineSurroundingElements
 
         
-        subroutine InitialiseSurroundingElementLists(TotElementCounter)
+        subroutine InitialiseSurroundingElementLists(TotElementCounter)!, IPatch_Temporary)
         !**********************************************************************
         !
         !    Function:  Determine total number of adjacent elements for all elements.
@@ -1389,12 +1814,17 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, ElementCounter, INode, NodeID
           integer(INTEGER_TYPE) :: IAdjacent, AdjacentElementID
-          integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements
+          integer(INTEGER_TYPE), dimension(Counters%Sum_NEl) :: CheckElements !, Counters%NPatches !Counters%NEl
+          
+          ! Multipatch variables 
+       !   integer(INTEGER_TYPE), intent(in) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
 
           TotElementCounter = 0
           ElementElementOffsets = 0
           
-          do IElement = 1, Counters%NEl ! loop over all elements
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over all elements
           
             CheckElements = 0
             ElementCounter = 0
@@ -1406,10 +1836,10 @@
                 
               NodeID = ElementConnectivities10Node(INode, IElement)
               if ( IsCornerNode(INode, N_NODES_HOE) ) then ! check adjacent elements only of corner nodes
-                do IAdjacent = 1, ElementsPerNode(NodeID)
-                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
-                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter
-                    CheckElements(AdjacentElementID) = 1
+                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch)
+                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch)
+                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter !, IPatch_Temporary
+                    CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
                   end if
                 end do
@@ -1417,14 +1847,14 @@
               
             end do
             else
-            do INode = 1, ELEMENTNODES
+            do INode = 1, VERTICESINPARAMETERSPACE!8!ELEMENTBOUNDARYNODES!8!ELEMENTSIDES !ELEMENTNODES
                 
-              NodeID = ElementConnectivities(INode, IElement)
+              NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch) !ElementConnectivities(INode, IElement)
               if ( IsCornerNode(INode, ELEMENTNODES) ) then ! check adjacent elements only of corner nodes
-                do IAdjacent = 1, ElementsPerNode(NodeID)
-                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
-                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter
-                    CheckElements(AdjacentElementID) = 1
+                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch)
+                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch)
+                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! found new element ID not yet added to ElementCounter !, IPatch_Temporary
+                    CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
                   end if
                 end do
@@ -1435,11 +1865,22 @@
             end if
             
 
-            ElementsPerElement(IElement) = ElementCounter
-            ElementElementOffsets(IElement + 1) = ElementElementOffsets(IElement) + ElementsPerElement(IElement)
+            ElementsPerElement(IElement, IPatch) = ElementCounter
+            ElementElementOffsets(IElement + 1, IPatch) = ElementElementOffsets(IElement, IPatch) + ElementsPerElement(IElement, IPatch)
             TotElementCounter = TotElementCounter + ElementCounter
             
-          end do
+          end do ! loop over all elements
+          end do ! loop over patches
+          
+          !ElementsPerElement(1)=1
+          !ElementsPerElement(2)=2
+          !ElementsPerElement(3)=2
+          !ElementsPerElement(4)=1
+          
+          !ElementElementOffsets(1)=1
+          !ElementElementOffsets(2)=2
+          !ElementElementOffsets(3)=
+          !ElementElementOffsets(4)=
 
         end subroutine InitialiseSurroundingElementLists
 
@@ -1456,9 +1897,13 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, ElementCounter, INode, NodeID
           integer(INTEGER_TYPE) :: IAdjacent, AdjacentElementID, Index
-          integer(INTEGER_TYPE), dimension(Counters%NEl) :: CheckElements
+          integer(INTEGER_TYPE), dimension(Counters%Sum_NEl) :: CheckElements !, Counters%NPatches !Counters%NEl
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
 
-          do IElement = 1, Counters%NEl ! Loop over all elements
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
           
             CheckElements = 0
             ElementCounter = 0
@@ -1469,30 +1914,31 @@
                 
               NodeID = ElementConnectivities10Node(INode, IElement)
               if ( IsCornerNode(INode, N_NODES_HOE) ) then ! Check adjacent elements only of corner nodes
-                do IAdjacent = 1, ElementsPerNode(NodeID)
-                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
-                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter
-                    CheckElements(AdjacentElementID) = 1
+                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch)
+                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch)
+                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter !, IPatch_Temporary
+                    CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
-                    Index = ElementElementOffsets(IElement) + ElementCounter
-                    ElementElementAdjacencies(Index) = AdjacentElementID
+                    Index = ElementElementOffsets(IElement, IPatch) + ElementCounter
+                    ElementElementAdjacencies(Index, IPatch) = AdjacentElementID
                   end if
                 end do
               end if
               
             end do
             else
-            do INode = 1, ELEMENTNODES
+                !need to sort this for 2D/3D
+            do INode = 1, VERTICESINPARAMETERSPACE!8!ELEMENTBOUNDARYNODES!8! !ELEMENTNODES
                 
-              NodeID = ElementConnectivities(INode, IElement)
-              if ( IsCornerNode(INode, ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
-                do IAdjacent = 1, ElementsPerNode(NodeID)
-                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent)
-                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter
-                    CheckElements(AdjacentElementID) = 1
+              NodeID = KnotBezierMeshConnectivity(IElement, INode, IPatch) !ElementConnectivities(INode, IElement)
+              if ( IsCornerNode(INode, ELEMENTSIDES ) ) then !ELEMENTNODES) ) then ! Check adjacent elements only of corner nodes
+                do IAdjacent = 1, ElementsPerNode(NodeID,IPatch)
+                  AdjacentElementID = GetElmIOfNode(NodeID, IAdjacent, IPatch)
+                  if ( (AdjacentElementID/=IElement) .and. (CheckElements(AdjacentElementID)==0) ) then ! Found new element ID not yet added to ElementCounter !, IPatch_Temporary
+                    CheckElements(AdjacentElementID) = 1 !, IPatch_Temporary
                     ElementCounter = ElementCounter + 1
-                    Index = ElementElementOffsets(IElement) + ElementCounter
-                    ElementElementAdjacencies(Index) = AdjacentElementID
+                    Index = ElementElementOffsets(IElement, IPatch) + ElementCounter
+                    ElementElementAdjacencies(Index, IPatch) = AdjacentElementID !Vector size is no of elements x no of adjancies
                   end if
                 end do
               end if
@@ -1500,7 +1946,8 @@
             end do
             end if
             
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
 
         end subroutine FillElementElementAdjacencies
 
@@ -1518,9 +1965,16 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IElement
           
-          do IElement = 1, Counters%NEl
-            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement) + 1), ElementsPerElement(IElement) )
-          end do
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
+              ! below need to be generalized for multiple patches
+            call IHpSort( ElementElementAdjacencies(ElementElementOffsets(IElement, IPatch) + 1, IPatch), ElementsPerElement(IElement, IPatch) )
+          end do ! loop over elements
+          end do ! loop over patches
+          
         
         end subroutine SortElementElementAdjacencies
 
@@ -1864,18 +2318,25 @@
      
         implicit none
         
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: NodeCoord ! rank 3 for multiple patches
           real(REAL_TYPE), dimension(:), intent(inout) :: Minimum, Maximum 
 
           real(REAL_TYPE), intent(out) :: Diameter
           ! Local variables
           integer(INTEGER_TYPE) :: I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           Minimum = 1.E30
           Maximum = -1.E30
-          do I = 1, Counters%NodTot ! loop nodes of all elements
-            call CheckMinMax( NodeCoord(I, :), Minimum, Maximum )
-          end do
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop nodes of all elements
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+            call CheckMinMax( NodeCoord(I, :, IPatch), Minimum, Maximum )
+          end do ! loop over control points 
+          end do ! loop over patches
 
           Diameter = 0.0
           do I = 1, size(Minimum)
@@ -1897,23 +2358,96 @@
 
         implicit none
 
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: NodeCoord
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, INode, NodeID
+          integer(INTEGER_TYPE) :: ee, ni, nj, nk
           real(REAL_TYPE), dimension(ELEMENTVERTICES, NVECTOR) :: Vertices
+          real(REAL_TYPE) :: Xi_ParametricDomain
+          real(REAL_TYPE) :: Eta_ParametricDomain
+          real(REAL_TYPE) :: Zeta_ParametricDomain
           
-          do IElement = 1, Counters%NEl ! loop all elements
+          real(REAL_TYPE) :: xi_tilde
+          real(REAL_TYPE) :: eta_tilde
+          real(REAL_TYPE) :: zeta_tilde
           
-            do INode = 1, ELEMENTVERTICES ! loop vertice nodes of each element
-                
-              NodeID = ElementConnectivities(INode, IElement)
-              Vertices(INode, :) = NodeCoord(NodeID, :)
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+
+          
+          xi_tilde = 0.0 ! center of the element 
+          eta_tilde = 0.0 ! center of the element 
+          zeta_tilde = 0.0 ! center of the element 
+
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          do IElement = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop all elements ! nel_NURBS can also be used in this context 
+          
+              ! here we are looping accross element coordinates but we need to loop accross NURBS coordinates 
               
-            end do
+            !do INode = 1, ELEMENTVERTICES ! loop vertice nodes of each element
+                
+                !do ii = 1, nn_NURBS_NumberOfUnivariateXiKnots
+                !    do jj = 1, mm_NURBS_NumberOfUnivariateEtaKnots
+                        
+              ni = NURBS%INN(ElementConnectivities(1, IElement,IPatch),1,IPatch) !nen_NURBS
+              nj = NURBS%INN(ElementConnectivities(1, IElement,IPatch),2,IPatch) !nen_NURBS
+              
+              if (NDIM == 3) then 
+                  nk = NURBS%INN(ElementConnectivities(1, IElement,IPatch),3,IPatch) !nen_NURBS
+              end if 
+              
+                !NodeID = 
+              
+              
+              Xi_ParametricDomain =  ( (NURBS%XiKnotEntries(ni+1,IPatch) - NURBS%XiKnotEntries(ni,IPatch) ) * xi_tilde &
+                                    + (NURBS%XiKnotEntries(ni+1,IPatch) + NURBS%XiKnotEntries(ni,IPatch)) ) * 0.5; 
+            
+            
+              Eta_ParametricDomain =  ( (NURBS%EtaKnotEntries(nj+1,IPatch) - NURBS%EtaKnotEntries(nj,IPatch) ) * eta_tilde &
+                                    + (NURBS%EtaKnotEntries(nj+1,IPatch) + NURBS%EtaKnotEntries(nj,IPatch)) ) * 0.5; 
+            
+              if (NDIM==3) then 
+              Zeta_ParametricDomain =  ( (NURBS%ZetaKnotEntries(nk+1,IPatch) - NURBS%ZetaKnotEntries(nk,IPatch) ) * zeta_tilde &
+                                    + (NURBS%ZetaKnotEntries(nk+1,IPatch) + NURBS%ZetaKnotEntries(nk,IPatch)) ) * 0.5; 
+              end if 
+              
+              
+              
+              
+              !ElementConnectivities(INode, IElement)
+              !Vertices(1,1) = XiKnotEntries(ni)
+              !Vertices(1,2) = EtaKnotEntries
+              !
+              !Vertices(2,1) = XiKnotEntries
+              !Vertices(2,2) = EtaKnotEntries
+              !
+              !Vertices(3,1) = XiKnotEntries
+              !Vertices(3,2) = EtaKnotEntries
+              !
+              !Vertices(4,1) = XiKnotEntries
+              !Vertices(4,2) = EtaKnotEntries
+              
+              
+              !NodeCoord(NodeID, :)
+                        
+              !Element here refers to a knot span... not the computational element
+              if (NDIM ==2) then 
+              ElementCentrePoints(IElement, :, IPatch) = [Xi_ParametricDomain, Eta_ParametricDomain] ! concatenating x-coord and y-coord
+
+              else if (NDIM ==3) then 
+              ElementCentrePoints(IElement, :, IPatch) = [Xi_ParametricDomain, Eta_ParametricDomain, Zeta_ParametricDomain] ! concatenating x-coord and y-coord
+
+              end if 
+              
+
+          end do ! loop over elements
           
-            ElementCentrePoints(IElement, :) = PolyhedronCentrePoint(Vertices)
+          end do ! loop over patches
           
-          end do
+          !Vertices(INode, :) = 
+          
+            !ElementCentrePoints(IElement, :) = PolyhedronCentrePoint(Vertices)
+          !end do
 
         end subroutine DetermineElementCentrePoints
 
@@ -1932,8 +2466,8 @@
      
         implicit none
 
-          integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
-          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          integer(INTEGER_TYPE), dimension(:, :, :), intent(in) :: ICon ! (rank 3 for multipatches)
+          real(REAL_TYPE), dimension(:, :, :), intent(in) :: NodeCoord ! (rank 3 for multipatches)
           
           ! Local variables
           integer(INTEGER_TYPE) :: IElement, IGaussPoint
@@ -1942,39 +2476,93 @@
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac
           real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJacInv
           real(REAL_TYPE) :: DetJac
+          
+          
+          !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: HS ! allocatable,
+          real(REAL_TYPE), dimension(ELEMENTNODES,NDIM) :: dHS  ! allocatable,
+          
+          ! NURBS local functions
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          real(REAL_TYPE) :: Det_dx_dtildexi
+          !real(REAL_TYPE) :: DetJac
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
                   
           ElementSpace = 0.0
-          do IElement = 1, Counters%NEl ! loop nodes of all elements
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop nodes of all elements
             
             if (ELEMENTTYPE == TETRAOLD) then
 
-              do IGaussPoint = 1, 4 ! loop gauss points of each element (previously was N_GAUSSPOINTS_HOE=4)
-                ! determine the location and integration weight of IGaussPoint
-                call GaussTETRA_Q4(IGaussPoint, PosGP, WeiGP)
-                ! calculate the determinante of the Jacobian matrix
-                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac)
-                ! determine element volume
-                ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * DetJac
-              end do
+                !disabled this functionality for now 
+                
+              !do IGaussPoint = 1, 4 ! loop gauss points of each element (previously was N_GAUSSPOINTS_HOE=4)
+              !  ! determine the location and integration weight of IGaussPoint
+              !  call GaussTETRA_Q4(IGaussPoint, PosGP, WeiGP)
+              !  ! calculate the determinante of the Jacobian matrix
+              !  !end if 
+              !  
+              !  call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ICon, NodeCoord, RJac, RJacInv, DetJac) !update Jacob
+              !  ! determine element volume
+              !  ! initially the weiGP is based on isoparametric element but we need to include the correct DetJac so that we have the correct Element Space !update Jacob
+              !  ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * DetJac !update Jacob --> Element surface area need to be correct
+              !end do
             
             else
               
               do IGaussPoint = 1, ELEMENTGAUSSPOINTS ! loop gauss points of each element
                 ! determine the location and integration weight of IGaussPoint
-                call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
+                call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+                
+                !evaluate shape functions here and input into the jacobian evaluation 
+                call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement, IPatch)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)
+                
                 ! calculate the determinante of the Jacobian matrix
-                call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac)
+                !call DetJacob(HS, dHS, &
+                !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+                !    IElement, ElementConnectivities, NodeCoord, RJac, RJacInv, DetJac, &
+                !  dxi_dx, dtildexi_dxi) !update Jacob
+                !call DetJacob(HS, dHS, &
+                !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+                !    IElement, ElementConnectivities(:,:,IPatch), NodeCoord(:,:,IPatch), dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                !    dxi_dx, dtildexi_dxi, &
+                !    IPatch) !update Jacob
+                
+                call DetJacob(HS, dHS, &
+                    PosGP, Counters%NEl(IPatch), Counters%NodTot(IPatch), NVECTOR, &
+                    IElement, ElementConnectivities(:,:,IPatch), NodeCoord, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
+                    dxi_dx, dtildexi_dxi, &
+                    IPatch) !update Jacob
                 
                 if ( ISAXISYMMETRIC ) then ! determine element volume for axisymmetric
                   WeiGP = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement) ! GPGlobalPositionElement is global variable, index 1 is r-direction
                 end if
                 
                 ! determine element volume
-                ElementSpace(IElement) = ElementSpace(IElement) + WeiGP * DetJac
+                ElementSpace(IElement,IPatch) = ElementSpace(IElement,IPatch) + (WeiGP * Det_dx_dtildexi) !update Jacob
+              
+                ! finding the absolute element space <-- Abdelrahman Alsardi debugging
+                !ElementSpace(IElement,IPatch) = abs(ElementSpace(IElement,IPatch))
+              
               end do
               
             end if  
-          end do
+          end do ! loop over elements
+          
+          end do ! loop over patches
         
         end subroutine DetermineElementSpace
         
@@ -2001,13 +2589,17 @@
           integer(INTEGER_TYPE), dimension (ELEMENTNODES) :: NodeID
           integer(INTEGER_TYPE) :: IEl, INode, I, J, K
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
           EleVec = 0.0
           EleMat = 0.0
 
-          do IEl = 1, Counters%NEl   ! Loop over all elements
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          do IEl = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl   ! loop over all elements
               
             do INode = 1, ELEMENTNODES
-              NodeID(INode) = ElementConnectivities(INode, IEl)    ! Global node ID
+              NodeID(INode) = ElementConnectivities(INode, IEl, IPatch)    ! Global node ID
             end do
             
             M = 0.0
@@ -2048,7 +2640,8 @@
               end do
             end do
             
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
           
         end subroutine DetermineElementMatrix
 
@@ -2155,10 +2748,13 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, J
 
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           DetermineNBoundarySides = 0
           do I = 1, NEl
             do J = 1, ELEMENTSIDES
-              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J)==0) .or. (ConsideredBoundarySides(I)==J) ) then
+              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J, IPatch_Temporary)==0) .or. (ConsideredBoundarySides(I)==J) ) then
                 DetermineNBoundarySides = DetermineNBoundarySides + 1
               end if
             end do
@@ -2195,12 +2791,15 @@
           integer(INTEGER_TYPE), dimension(NBoundarySideNodes), intent(out) :: SideNodeID
           ! Local variables
           integer(INTEGER_TYPE) :: IBoundaryNode, I, J, K, LocalNodeID
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           IBoundaryNode = 0
           if (NDIM == 3) then ! 3D functionality, in sprint#2 add 2D functionality
           do I = 1, NEl
             do J = 1, ELEMENTSIDES
-              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J)==0) .or. (ConsideredBoundarySides(I)==J) ) then
+              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J, IPatch_Temporary)==0) .or. (ConsideredBoundarySides(I)==J) ) then
                 do K = 1, NSideNodes
                   IBoundaryNode = IBoundaryNode + 1
                   LocalNodeID = DetermineSideNodesTetrahedronHOE(J, K)
@@ -2284,12 +2883,15 @@
           real(REAL_TYPE), dimension(IDim, NBoundarySideNodes), intent(out) :: SideNodeNormals
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, K, IBoundaryNode
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           IBoundaryNode = 0
           if (IDim == 3) then ! 3D functionality, in sprint#2 add 2D functionality
           do I = 1, NEl
             do J = 1, ELEMENTSIDES
-              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J)==0) .or. (ConsideredBoundarySides(I)==J) ) then
+              if ( (DoConsiderAllSides .and. ElementAdjacencies(I, J, IPatch_Temporary)==0) .or. (ConsideredBoundarySides(I)==J) ) then
                 do K = 1, NSideNodes
                   IBoundaryNode = IBoundaryNode + 1
 
@@ -2425,16 +3027,22 @@
         end subroutine DetermineNodeTangent
         
 
-        subroutine DetermineGlobPosElement(GlobPos, ElementID, IElTyp, NEl, NodTot, IDim, NodeCoord,  &
-                                           ICon, NewElementID, NewLocPos, Success)
+        subroutine DetermineGlobPosElement(GlobPos, UStepArray, ElementID, IElTyp, NEl, NodTot, IDim, NodeCoord,  &
+                                           ICon, NewElementID, NewLocPos, Success, IPatch) ! <- check it works with NURBS 
         !**********************************************************************
         !
         !    Function:  Determine in which element GlobPos is located
         !               starting the checking from element with ElementID.
         !
-
-        !               Checks whether GlobPos lies inside NewElementID. If not, the element
-        !               adjacent to the side, through which GlobPos has left NewElementID is checked ...
+        !               Two recursive algorithms have been implemented:
+        !               Version 1 checks whether GlobPos lies inside elements surrounding one of the
+        !               corner nodes of NewElementID. If no element contains GlobPos the element
+        !               whose centrepoint is closest to GlobPos is checked ... .
+        !               Version 2 checks whether GlobPos lies inside NewElementID. If not, the element
+        !               adjacent to the side, through which GlobPos has left NewElementID is checked ... .
+        !               NOTE: Using Version 2 does not require to check whether GlobPos lies inside the
+        !               original element of the considered particle!
+        !               Version 2 seems to be faster as less elements are checked. Does it always work?
         !
         ! I   GlobPos : Global coordinates of a point inside the mesh
         ! I   ElementID : ID of the element assumed in the vicinity of GlobPos
@@ -2457,42 +3065,200 @@
           integer(INTEGER_TYPE), intent(in) :: ElementID
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           real(REAL_TYPE), dimension(:), intent(inout) :: NewLocPos
           integer(INTEGER_TYPE), intent(out) :: NewElementID
           logical, intent(out) :: Success
           ! Local variables
           logical :: OutsideElement
-          integer(INTEGER_TYPE) :: RecursionDepth
+          integer(INTEGER_TYPE) :: RecursionDepth, CrossedSide
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
           
           NewElementID = ElementID
           Success = .false.
           RecursionDepth = 1
-          NewLocPos = 0.2
+          !NewLocPos = 0.2 ! Abdel commented this as new LocPos is an input
 
           if (ELEMENTTYPE == TETRAOLD) then
             select case (IEltyp)
+                
               case(10) ! 10-noded tetrahedral element (curved boundaries)
-                call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-                                                    RecursionDepth, NewElementID, Success)
+                call CheckElementForGlobPosVersion1(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+                                                     RecursionDepth, NewElementID, NewLocPos, Success)
+                
               case(4) ! 4-noded tetrahedral element
-                call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+                call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                     RecursionDepth, NewElementID, Success)
-            end select
-          else
-            call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
-                                                RecursionDepth, NewElementID, Success)
+                
+              end select
+              
+              
+              
+          elseif (ELEMENTTYPE == QUAD4_NURBS) then 
+              
+              
+              if (.not.IsInsideElementLocPos(NewLocPos) ) then
+                    ! based on which side you crossed you can knot which element you are in
+                    if (NewLocPos(1) <-1 ) then 
+                        CrossedSide = 4!3!side 3
+                    elseif (NewLocPos(1) >1 ) then
+                        CrossedSide = 2!2!side 2
+                    elseif (NewLocPos(2) <-1 ) then 
+                        CrossedSide = 1!6!side 6
+                    elseif (NewLocPos(2) >1 ) then
+                        CrossedSide = 3!5!side 5
+                    !elseif (NewLocPos(3) <-1 ) then
+                    !    CrossedSide = 1!side 1
+                    !elseif (NewLocPos(3) >1 ) then
+                    !    CrossedSide = 4!side 4
+                    end if 
+         
+                    ! assign new element
+                    NewElementID = GetAdjacentElement(NewElementID, CrossedSide, IPatch)
+                    
+                    ! automatically assign success 
+                    Success = .true.
+         
+                    ! reset local position in the new element
+                    NewLocPos = 0.0
+              
+              end if 
+              
+              
+              
+              
+              
+              
+          elseif (ELEMENTTYPE == HEXA_NURBS) then 
+            ! for NURBS we have to make sure that the new element is cast in the NURBS coordinates. 
+            ! so in that sense we have to make sure the physical coordinates are found for the MPs and then 
+            ! we calculate the new 'knot span' and after we do so can tell how to calculate 
+              
+              
+              ! I HARDCODED COMMENTED THIS TO MAKE SURE WE ARE AT SUCCESS AT ALL TIMES 
+              !Success = .TRUE.
+            !call CheckElementForGlobPosVersion2(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+            !                                    RecursionDepth, NewElementID, Success)
+              
+              ! if outside knot span 
+              if (.not.IsInsideElementLocPos(NewLocPos) ) then
+                    ! based on which side you crossed you can knot which element you are in
+                    if (NewLocPos(1) <-1 ) then 
+                        CrossedSide = 3!side 3
+                    elseif (NewLocPos(1) >1 ) then
+                        CrossedSide = 2!side 2
+                    elseif (NewLocPos(2) <-1 ) then 
+                        CrossedSide = 6!side 6
+                    elseif (NewLocPos(2) >1 ) then
+                        CrossedSide = 5!side 5
+                    elseif (NewLocPos(3) <-1 ) then
+                        CrossedSide = 1!side 1
+                    elseif (NewLocPos(3) >1 ) then
+                        CrossedSide = 4!side 4
+                    end if 
+         
+                    ! assign new element
+                    NewElementID = GetAdjacentElement(NewElementID, CrossedSide, IPatch)
+                    
+                    if (NewElementID .le. 0) then 
+                        return 
+                    end if 
+                    
+                    
+                    ! automatically assign success 
+                    Success = .true.
+         
+                    ! reset local position in the new element
+                    NewLocPos = 0.0
+              end if ! if outside knot span 
+              
+         
           end if 
 
           if (Success) then ! Try determining the local particle coordinates from the global ones
-            call GetLocalCoordinates(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
-                                     NewLocPos, OutsideElement, Success)
+            !call GetLocalCoordinates(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+            !                         NewLocPos, OutsideElement, Success)
+            !call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+            !                         NewLocPos, OutsideElement, Success)
+              
+              
+              
+              if (NDIM == 2) then 
+                  
+                  
+                  !call GetLocalCoordinates_2D(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                  !                   NewLocPos, OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                  
+                  ! debugging
+                      if ((NewElementID .le. 0) .or. (NewElementID .gt. Counters%NEl(IPatch)) ) then !.and. (NewElementID .ge. nel_NURBS(IPatch))) then 
+                          Success = .false.
+                        return 
+                      end if 
+                  
+                  
+              !
+              !
+                  if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+                      
+                      
+                      
+                  call GetLocalCoordinates_StructuredMesh(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                                     NewLocPos, OutsideElement, Success, IPatch)
+                  
+                  else 
+                      
+                  call GetLocalCoordinates_2D(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                  
+                  end if 
+                  
+              
+              elseif (NDIM == 3) then 
+                  
+                  !call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                  !                   NewLocPos, OutsideElement, Success)
+             
+                  if ((NewElementID .le. 0) .or. (NewElementID .gt. Counters%NEl(IPatch)) ) then !.and. (NewElementID .ge. nel_NURBS(IPatch))) then 
+                          Success = .false.
+                        return 
+                      end if 
+
+                  if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+
+                      
+                      call GetLocalCoordinates_StructuredMesh_3D(GlobPos,  NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord(1:Counters%NodTot(IPatch),:), ICon, &
+                                     NewLocPos, OutsideElement, Success, IPatch)
+                  
+                  else 
+                                        
+                  call GetLocalCoordinates(GlobPos, UStepArray, NewElementID, IElTyp, NEl,  NodTot, IDim, NodeCoord, ICon, &
+                                     NewLocPos, OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, IncrementalDisplacementSoil)
+                  
+                  end if
+              
+              end if
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
           end if
+          
+          !ElementIDArray(ParticleIndex)= NewElementID
           
         end subroutine DetermineGlobPosElement
 
 
-        recursive subroutine CheckElementForGlobPosVersion1(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+        recursive subroutine CheckElementForGlobPosVersion1(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                          RecursionDepth, NewElementID, NewLocPos, Success)
         !**********************************************************************
         !
@@ -2514,11 +3280,12 @@
         ! O   Success : True, if the element could be detected
         !
         !**********************************************************************
-        
+     
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: NodTot, IDim, IElTyp, NEl
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           integer(INTEGER_TYPE), intent(inout) :: RecursionDepth
@@ -2529,7 +3296,11 @@
           real(REAL_TYPE) :: Distance, MinDistance
           integer(INTEGER_TYPE) :: IElement, NElmOfNode, CheckElement, MinDistanceElement
           logical :: OutsideElement
-        
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+     
           ! Check surrounding elements of corner node with smallest angle whether GlobPos lies inside
           ! and distances between centrepoints of surrounding elements and GlobPos (in case new recursion is necessary)
           MinDistance = 1E30
@@ -2537,18 +3308,89 @@
           NElmOfNode = GetNElmOfElm(NewElementID)
           do IElement = 1, NElmOfNode
             CheckElement = GetElmIOfElm(NewElementID, IElement)
-        
+
             if (CheckElement/=NewElementID) then
-        
+
               ! Check whether GlobPos lies inside CheckElement (also works for curved elements)
-              call GetLocalCoordinates(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
-                                       NewLocPos, OutsideElement, Success)
+              !call GetLocalCoordinates(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
+              !                         NewLocPos, OutsideElement, Success)
+              
+              !call GetLocalCoordinates_StructuredMesh(GlobPos, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
+              !                         NewLocPos, OutsideElement, Success)
+                
+                
+                
+                
+                
+                
+                
+              
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                if (NDIM == 2) then 
+          
+                  !call GetLocalCoordinates_StructuredMesh(GlobPos, &
+                  !                 CheckElement, &
+                  !                 IElTyp, NEl,  &
+                  !                 NodTot, IDim, &
+                  !                 NodeCoord, &
+                  !                 ICon, &
+                  !                 NewLocPos, &
+                  !                 OutsideElement, Success)
+          
+          
+                elseif (NDIM == 3) then 
+          
+                  !call GetLocalCoordinates_StructuredMesh_3D(GlobPos, &
+                  !                 CheckElement, &
+                  !                 IElTyp, NEl,  &
+                  !                 NodTot, IDim, &
+                  !                 NodeCoord, &
+                  !                 ICon, &
+                  !                 NewLocPos, &
+                  !                 OutsideElement, Success)    
+                    
+                    call GetLocalCoordinates(GlobPos, UStepArray, CheckElement, IElTyp, NEl, NodTot, IDim, NodeCoord, ICon, &
+                                       NewLocPos, OutsideElement, Success, ElementAdjacencies(:,:, IPatch_Temporary), IPatch_Temporary)!, IncrementalDisplacementSoil)
+          
+              
+              end if 
+                
+                
+                
+                
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+                
+                
               Success = Success.and.(.not.OutsideElement)
               if (Success) then
                 NewElementID = CheckElement
                 EXIT
               else
-                Distance = Length( ElementCentrePoints(CheckElement, :) - GlobPos, IDim)
+                Distance = Length( ElementCentrePoints(CheckElement, :, IPatch_Temporary) - GlobPos, IDim)
                 if (Distance<MinDistance) then
                   MinDistance = Distance
                   MinDistanceElement = CheckElement
@@ -2557,21 +3399,21 @@
             end if
             
           end do
-        
+     
           if ( (.not.Success).and.(RecursionDepth<NRECURSIONS) ) then ! Look for next element to check, start next recursion
             RecursionDepth = RecursionDepth + 1
             
             ! Proceed with surrounding element with smallest distance to GlobPos
             NewElementID = MinDistanceElement
             ! Recursive call
-            call CheckElementForGlobPosVersion1(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+            call CheckElementForGlobPosVersion1(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                 RecursionDepth, NewElementID, NewLocPos, Success)
           end if ! else the recursion ends
-        
+     
         end subroutine CheckElementForGlobPosVersion1
 
 
-        recursive subroutine CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+        recursive subroutine CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                          RecursionDepth, NewElementID, Success)
         !**********************************************************************
         !
@@ -2599,6 +3441,8 @@
         
           integer(INTEGER_TYPE), intent(in) :: NodTot, IDim, IElTyp, NEl
           real(REAL_TYPE), dimension(:), intent(in) :: GlobPos
+          real(REAL_TYPE), dimension(:), intent(in) :: UStepArray
+
           real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
           integer(INTEGER_TYPE), dimension(:, :), intent(in) :: ICon
           integer(INTEGER_TYPE), intent(inout) :: RecursionDepth
@@ -2608,18 +3452,26 @@
           integer(INTEGER_TYPE) :: CrossedSide
           real(REAL_TYPE), dimension(IDim) :: CoordCentrePoint
           
-          CrossedSide = -1
-          CoordCentrePoint = ElementCentrePoints(NewElementID,:)
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
-          call CheckForGlobPosPointer(GlobPos, NewElementID, CoordCentrePoint, NodeCoord, ICon, CrossedSide, Success)
+          CrossedSide = -1
+          CoordCentrePoint = ElementCentrePoints(NewElementID,:, IPatch_Temporary)
+          
+          call CheckForGlobPosPointer(GlobPos, NewElementID, CoordCentrePoint, NodeCoord, ICon, CrossedSide, Success) !update Jacob
+          !Success = .true.
+          !NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
+          !NewElementID = 2 ... when I hardcoded this, it worked. Need to figure out how this would work in a more automated manner 
           
           if ( (.not.Success).and.(RecursionDepth<NRECURSIONS) ) then ! Start next recursion with adjacent element
             RecursionDepth = RecursionDepth + 1
-            NewElementID = GetAdjacentElement(NewElementID, CrossedSide)
+            NewElementID = GetAdjacentElement(NewElementID, CrossedSide, IPatch_Temporary)
             ! Recursive call
             if (NewElementID>0) then
-              call CheckElementForGlobPos(GlobPos, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
+              call CheckElementForGlobPosVersion2(GlobPos, UStepArray, NodTot, IDim, IElTyp, NEl, NodeCoord, ICon, &
                                                   RecursionDepth, NewElementID, Success)
+              
             end if
           else
             if (RecursionDepth==NRECURSIONS) then
@@ -2627,7 +3479,7 @@
             endif
           end if ! else the recursion ends
 
-        end subroutine CheckElementForGlobPos
+        end subroutine CheckElementForGlobPosVersion2
 
         
         subroutine InterpolateEdgeNodeCoordinates(NodTot, IDim, LOETyings, NodeCoord)
@@ -2675,30 +3527,38 @@
           
           ! local variables
           integer(INTEGER_TYPE) :: NodTot, NEl, IElement
-          real(REAL_TYPE), dimension(:,:), allocatable :: NodeCoord
+          real(REAL_TYPE), dimension(:,:, :), allocatable :: NodeCoord
           real(REAL_TYPE), dimension(:), allocatable :: Lmintry
           real(REAL_TYPE) :: Lmin
           
-          NodTot = Counters%NodTot ! total number of nodes
-          NEl = Counters%NEl ! number of elements
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
           
-          allocate(NodeCoord(NodTot, NDIM), Lmintry(NEl))
-          NodeCoord = NodalCoordinatesUpd ! global nodal coordinates
+          !NodTot = Maximum_NControlPoints!Counters%NodTot ! total number of nodes
+          !NEl = nel_NURBS(IPatch)!Counters%NEl ! number of elements
+          
+          !allocate(NodeCoord(NodTot, NDIM), Lmintry(NEl))
+          allocate( NodeCoord(NURBS%Maximum_NControlPoints, NDIM, Counters%NPatches), Lmintry(NURBS%Maximum_nel_NURBS) )
+
+          NodeCoord = NodalCoordinatesUpd!(:,:,IPatch_Temporary) ! global nodal coordinates
           Lmin = 0.0
           ElementLMin = 0.0
-         
-          do IElement = 1, NEl ! loop over elements
-            call GetMinAltitude(IElement, Lmin, NodeCoord)
-            ElementLMin(IElement) = Lmin
+         do IPatch = 1, Counters%NPatches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch) ! loop over elements
+            call GetMinAltitude(IElement, Lmin, NodeCoord(:,:,IPatch), IPatch)
+            ElementLMin(IElement,IPatch) = Lmin
           end do
 
-          Lmintry = ElementLMin
+          Lmintry = ElementLMin(:,IPatch)
+          
+          end do 
         
         end subroutine DetermineElementLMin
 
         
 
-        subroutine GetMinAltitude(IElement, Lmin, NodeCoord) 
+        subroutine GetMinAltitude(IElement, Lmin, NodeCoord, IPatch) 
                 !**********************************************************************
         !
         !    FUNCTION:  GetMinAltitude
@@ -2719,9 +3579,15 @@
           real(REAL_TYPE), intent (inout):: Lmin
           
           ! local variables
-          integer(INTEGER_TYPE) :: NodeNr(ELEMENTNODES)        
+          !integer(INTEGER_TYPE) :: NodeNr((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1))!ELEMENTNODES)            
+          integer(INTEGER_TYPE) :: NodeNr(ELEMENTNODES)!ELEMENTNODES)  
 
-          NodeNr(:) = ElementConnectivities(:, IElement) ! get global node number
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+
+          NodeNr(:) = ElementConnectivities(:, IElement, IPatch) ! get global node number
           
           call GetMinAltitudePointer(NodeNr, NodeCoord, Lmin)
 
@@ -2882,6 +3748,326 @@
           
         end subroutine
         
+        
+        
+        
+        ! I just created this... not sure what for but I need to make sure it works here when I figure out why we need it... 
+        subroutine GetMinAltitudeQUAD(NodeNr, NodeCoord, Lmin) 
+                !**********************************************************************
+        !
+        !    FUNCTION:  GetMinAltitudeQUAD
+        ! 
+        !    DESCRIPTION:
+        !>   Determines the minimum altitude of a quadilateral element... 
+        !    I would not call it an altitude as it is practically the smallest side of the rectangle. 
+        !
+        !>   @param[in] NodeNr : node number
+        !    @param[in] NodeCoord : Global nodal coordinates
+        !    @param[out] Lmin : minimum altitude of the element
+        !
+        !**********************************************************************
+        ! idea is to input all nodes of a rectangle in the order within which they are supposed to be 
+        ! e.g. 
+        ! 1) node 1, node 2, node 3, node 4 in an anticlockwise fashion
+        ! 2) form lines between node 1 and node 2
+        ! 3) find the magnitude of these lines 
+        ! 4) repeat this process with nodes 2-3, nodes 3-4
+        ! 5) select the minimum out of all of these values. 
+          implicit none
+        
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), intent (inout):: Lmin
+        
+          ! local variables
+          integer(INTEGER_TYPE):: NodeNr(:), I
+          real(INTEGER_TYPE):: Idim
+          real(REAL_TYPE), dimension(2):: node1, node2, node3, node4, n0, n1, n2, n3 !2D for 4 nodes 
+          real(REAL_TYPE) :: d_min, d(4) !d1, d2 and d3 for a triangle
+        
+        
+          do IDim = 1, NDIM 
+            node1(IDim) = NodeCoord(NodeNr(1), IDim)
+            node2(IDim) = NodeCoord(NodeNr(2), IDim)
+            node3(IDim) = NodeCoord(NodeNr(3), IDim)
+            node4(IDim) = NodeCoord(NodeNr(4), IDim)
+          end do
+        
+          d_min = LARGE
+        
+          n0 = node1 
+          n1 = node2
+          d(1) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node2 
+          n1 = node3
+          d(2) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node3 
+          n1 = node4
+          d(3) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node4 
+          n1 = node1
+          d(4) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5)
+          
+          
+          !!the distance of node 0 from line formed by node 1 and node 2
+          !!d = |(x2-x1)*(y1-y0)-(x1-x0)(y2-y1)|/sqrt[(x2-x1)^2+(y2-y1)^2]
+          !!see: http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
+          !
+          !n0 = node1
+          !n1 = node2
+          !n2 = node3          
+          !d(1) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node1
+          !n1 = node3
+          !n2 = node4          
+          !d(2) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node2
+          !n1 = node3
+          !n2 = node4
+          !d(3) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node2
+          !n1 = node4
+          !n2 = node1
+          !d(4) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node3
+          !n1 = node1
+          !n2 = node2
+          !d(5) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node3
+          !n1 = node1
+          !n2 = node4
+          !d(6) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          
+        
+          do I=1,4
+            d_min = min(d(I), d_min)
+          end do
+        
+          Lmin = d_min
+          
+        end subroutine
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        ! I just created this... not sure what for but I need to make sure it works here when I figure out why we need it... 
+        subroutine GetMinAltitudeHEXA(NodeNr, NodeCoord, Lmin) 
+                !**********************************************************************
+        !
+        !    FUNCTION:  GetMinAltitudeQUAD
+        ! 
+        !    DESCRIPTION:
+        !>   Determines the minimum altitude of a quadilateral element... 
+        !    I would not call it an altitude as it is practically the smallest side of the rectangle. 
+        !
+        !>   @param[in] NodeNr : node number
+        !    @param[in] NodeCoord : Global nodal coordinates
+        !    @param[out] Lmin : minimum altitude of the element
+        !
+        !**********************************************************************
+        ! idea is to input all nodes of a rectangle in the order within which they are supposed to be 
+        ! e.g. 
+        ! 1) node 1, node 2, node 3, node 4 in an anticlockwise fashion
+        ! 2) form lines between node 1 and node 2
+        ! 3) find the magnitude of these lines 
+        ! 4) repeat this process with nodes 2-3, nodes 3-4
+        ! 5) select the minimum out of all of these values. 
+          implicit none
+        
+          real(REAL_TYPE), dimension(:, :), intent(in) :: NodeCoord
+          real(REAL_TYPE), intent (inout):: Lmin
+        
+          ! local variables
+          integer(INTEGER_TYPE):: NodeNr(:), I
+          real(INTEGER_TYPE):: Idim
+          real(REAL_TYPE), dimension(3):: node1, node2, node3, node4, n0, n1, n2, n3 !2D for 4 nodes 
+          real(REAL_TYPE), dimension(3):: node5, node6, node7, node8
+          real(REAL_TYPE) :: d_min, d(12) !d1, d2 and d3 for a triangle
+        
+        
+          do IDim = 1, NDIM 
+            node1(IDim) = NodeCoord(NodeNr(1), IDim)
+            node2(IDim) = NodeCoord(NodeNr(2), IDim)
+            node3(IDim) = NodeCoord(NodeNr(3), IDim)
+            node4(IDim) = NodeCoord(NodeNr(4), IDim)
+            node5(IDim) = NodeCoord(NodeNr(5), IDim)
+            node6(IDim) = NodeCoord(NodeNr(6), IDim)
+            node7(IDim) = NodeCoord(NodeNr(7), IDim)
+            node8(IDim) = NodeCoord(NodeNr(8), IDim)
+            
+          end do
+        
+          d_min = LARGE
+        
+          n0 = node1 
+          n1 = node3
+          d(1) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node3
+          n1 = node7
+          d(2) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node7 
+          n1 = node5
+          d(3) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node5 
+          n1 = node1
+          d(4) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5)
+          
+          
+          
+          
+          
+          
+          
+          
+          n0 = node1 
+          n1 = node2
+          d(5) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node5 
+          n1 = node6
+          d(6) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node7 
+          n1 = node8
+          d(7) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node3 
+          n1 = node4
+          d(8) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5)
+          
+          
+          
+          
+          
+          
+          
+          
+          n0 = node2 
+          n1 = node4
+          d(9) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node4 
+          n1 = node8
+          d(10) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node8 
+          n1 = node6
+          d(11) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5) 
+          
+          n0 = node6 
+          n1 = node2
+          d(12) = ( (n0(1) - n1(1))**2 + (n0(2) - n1(2))**2 )**(0.5)
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          !!the distance of node 0 from line formed by node 1 and node 2
+          !!d = |(x2-x1)*(y1-y0)-(x1-x0)(y2-y1)|/sqrt[(x2-x1)^2+(y2-y1)^2]
+          !!see: http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
+          !
+          !n0 = node1
+          !n1 = node2
+          !n2 = node3          
+          !d(1) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node1
+          !n1 = node3
+          !n2 = node4          
+          !d(2) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node2
+          !n1 = node3
+          !n2 = node4
+          !d(3) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node2
+          !n1 = node4
+          !n2 = node1
+          !d(4) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node3
+          !n1 = node1
+          !n2 = node2
+          !d(5) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          !
+          !n0 = node3
+          !n1 = node1
+          !n2 = node4
+          !d(6) = abs((n2(1)-n1(1))*(n1(2)-n0(2))-(n1(1)-n0(1))*(n2(2)-n1(2)))/&
+          !      sqrt((n2(1)-n1(1))*(n2(1)-n1(1))+(n2(2)-n1(2))*(n2(2)-n1(2)))
+          
+        
+          do I=1,4
+            d_min = min(d(I), d_min)
+          end do
+        
+          Lmin = d_min
+          
+          !Lmin = 0.1 !--> hardcoded
+          
+        end subroutine
+        
+        
+        
+        
+        
+        
+        
         subroutine DetermineReactionElements()
     !********************************************************************************
     !
@@ -2889,36 +4075,43 @@
     !
     !********************************************************************************
     implicit none
-    logical, dimension(Counters%NEl) :: IsReactionElm
+    logical, dimension(Counters%Sum_nel) :: IsReactionElm !Counters%NEl
     integer(INTEGER_TYPE) :: Inode, NElemNod, J, IEle, NReactionElem, Ierror, cont
+    
+    
+    integer(INTEGER_TYPE) :: IPatch
     
     IsReactionElm = .false.
     NReactionElem = 0
     
-    do INode = 1, Counters%NodTot
+    do IPatch = 1, Counters%NPatches ! loop over patches
+    do INode = 1, Counters%Sum_NodTot ! loop over control points
       if (IsReactionNode(INode)) then
-        NElemNod = GetNElmOfNode(INode)
+        NElemNod = GetNElmOfNode(INode, IPatch)
         do J=1,NElemNod
-          IEle = GetElmIOfNode(INode,J)
+          IEle = GetElmIOfNode(INode,J, IPatch)
           if (.not.IsReactionElm(IEle)) then
             IsReactionElm (IEle) = .true.
             NReactionElem = NReactionElem + 1
           end if
         end do
        end if
-    end do
+    end do ! loop over control points
+    end do ! loop over patches
       
      Counters%NElemReactions = NReactionElem
      
      allocate(ConsideredElemReaction(NReactionElem), stat = Ierror)
      
      cont = 0
-    do IEle=1,Counters%NEl
+     do IPatch = 1, Counters%NPatches ! Loop over patches
+    do IEle=1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl
       if(IsReactionElm(IEle))then
         cont = cont + 1
         ConsideredElemReaction(cont) = IEle
       end if
-    end do
+    end do ! Loop over elements
+    end do ! Loop over patches
        
       end subroutine DetermineReactionElements
 

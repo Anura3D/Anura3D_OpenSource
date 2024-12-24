@@ -46,39 +46,51 @@
       implicit none
 
         type CounterType
-          integer(INTEGER_TYPE) :: &
-                     NEl = 0, & ! Number of elements
-                     NAEl = 0, & ! Number of active elements
-                     NodTot = 0, & ! Number of nodes
-                     N = 0, & ! Number of degrees of freedom
-                     NEntity = 0, & ! Dynamic contact - set to 1 if no contact model is used, when contact is used = number of entities  CC
-                     NLayers = 0, & ! Number of soil layers/materials
-                     NLoadedElementSidesSolid = 0, & ! Number of distributed loads on element sides (solid)
-                     NLoadedElementSidesWater = 0, & ! Number of distributed loads on element sides (water)
-                     NLoadedElementSidesGas = 0, & ! Number of distributed loads on element sides (gas)
-                     NLoadedElementSidesSolidNodes = 0, & ! Number of distributed loads on element sides (solid, on nodes)
-                     NLoadedElementSidesWaterNodes = 0, & ! Number of distributed loads on element sides (water, on nodes)
-                     NLoadedElementSidesGasNodes = 0, & ! Number of distributed loads on element sides (gas, on nodes)
-                     NLoadedElementSidesSolidNodesB = 0, & ! Number of distributed loads on element sides (solid, on nodes, LOAD SYSTEM B)
-                     NLoadedElementSidesWaterNodesB = 0, & ! Number of distributed loads on element sides (water, on nodes, LOAD SYSTEM B)
-                     NLoadedElementSidesGasNodesB = 0, & ! Number of distributed loads on element sides (gas, on nodes, LOAD SYSTEM B)
-                     NLoadedElementSidesSolidMatPoints = 0, & ! Number of distributed loads on element sides (solid, on material points)
-                     NLoadedElementSidesWaterMatPoints = 0, & ! Number of distributed loads on element sides (water, on material points)
-                     NLoadedElementSidesGasMatPoints = 0, & ! Number of distributed loads on element sides (gas, on material points)
-                     NLoadedElementSidesSolidMatPointsB = 0, & ! Number of distributed loads on element sides (solid, on material points)
-                     NLoadedElementSidesWaterMatPointsB = 0, & ! Number of distributed loads on element sides (water, on material points)
-                     NLoadedElementSidesGasMatPointsB = 0, & ! Number of distributed loads on element sides (gas, on material points)
-                     SoilSurfaceNumberofSides = 0, & ! Number of element side on the soil surface ( on nodes)
-                     PhreaticSurfaceNumberofSides = 0, & ! Number of element side on the phreatic surface ( on nodes)
-                     NParticles = 0, & ! number of initialised material points
-                     SolidMaterialPoints = 0, & ! number of solid material points
-                     LiquidMaterialPoints = 0, & ! number of liquid material points
-                     NReactionSurfaceOutput = 0, & !Number of surfaces for output of reaction forces
-                     NElemReactions = 0, & !number of elements to be considered for the output of reaction surface forces
-                     HydraulicHeadSides = 0,&
-                     NSoilLoadSystems = 1,& !number of load systems (solid)
-                     NWaterLoadSystems = 1,& !number of load systems (water)
-                     NGasLoadSystems = 1 !number of load systems (gas)
+          !integer(INTEGER_TYPE) :: &
+          integer(INTEGER_TYPE), allocatable, dimension(:) ::            NEl ! = 0 ! Number of elements dimension(Counters%NPatches)
+          integer(INTEGER_TYPE) ::            Sum_NEl  = 0 ! Number of elements dimension(Counters%NPatches) !, allocatable, dimension(:)
+          
+          integer(INTEGER_TYPE), allocatable, dimension(:) ::            NAEl ! = 0 ! Number of active elements
+          integer(INTEGER_TYPE) ::            Sum_NAEl ! = 0 ! Number of active elements !, allocatable, dimension(:)
+          
+          ! this needs to be generalized NodTot to replace NControlPoints_NURBS
+          integer(INTEGER_TYPE), allocatable, dimension(:) ::            NodTot ! = 0 ! Number of nodes
+          integer(INTEGER_TYPE) ::            Sum_NodTot = 0 ! Number of nodes
+          
+          integer(INTEGER_TYPE) ::            N = 0 ! Number of degrees of freedom
+          
+          integer(INTEGER_TYPE) ::            N_VolLockSmooth = 0 ! Number of degrees of freedom
+          
+          integer(INTEGER_TYPE) ::            NEntity = 0 ! Dynamic contact - set to 1 if no contact model is used, when contact is used = number of entities  CC
+          integer(INTEGER_TYPE) ::            NLayers = 0 ! Number of soil layers/materials
+          integer(INTEGER_TYPE), allocatable, dimension(:,:) ::            NLoadedElementSidesSolid! = 0 ! Number of distributed loads on element sides (solid)
+          integer(INTEGER_TYPE), allocatable, dimension(:,:) ::            NLoadedElementSidesWater! = 0 ! Number of distributed loads on element sides (water)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGas = 0 ! Number of distributed loads on element sides (gas)
+          integer(INTEGER_TYPE), allocatable, dimension(:,:) ::            NLoadedElementSidesSolidNodes != 0 ! Number of distributed loads on element sides (solid, on nodes)
+          integer(INTEGER_TYPE), allocatable, dimension(:,:) ::            NLoadedElementSidesWaterNodes != 0 ! Number of distributed loads on element sides (water, on nodes)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGasNodes = 0 ! Number of distributed loads on element sides (gas, on nodes)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesSolidNodesB = 0 ! Number of distributed loads on element sides (solid, on nodes, LOAD SYSTEM B)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesWaterNodesB = 0 ! Number of distributed loads on element sides (water, on nodes, LOAD SYSTEM B)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGasNodesB = 0 ! Number of distributed loads on element sides (gas, on nodes, LOAD SYSTEM B)
+          integer(INTEGER_TYPE), allocatable, dimension(:,:) ::            NLoadedElementSidesSolidMatPoints != 0 ! Number of distributed loads on element sides (solid, on material points)
+          integer(INTEGER_TYPE), allocatable, dimension(:,:) ::            NLoadedElementSidesWaterMatPoints != 0 ! Number of distributed loads on element sides (water, on material points)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGasMatPoints = 0 ! Number of distributed loads on element sides (gas, on material points)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesSolidMatPointsB = 0 ! Number of distributed loads on element sides (solid, on material points)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesWaterMatPointsB = 0 ! Number of distributed loads on element sides (water, on material points)
+          integer(INTEGER_TYPE) ::            NLoadedElementSidesGasMatPointsB = 0 ! Number of distributed loads on element sides (gas, on material points)
+          integer(INTEGER_TYPE) ::            SoilSurfaceNumberofSides = 0 ! Number of element side on the soil surface ( on nodes)
+          integer(INTEGER_TYPE) ::            PhreaticSurfaceNumberofSides = 0 ! Number of element side on the phreatic surface ( on nodes)
+          integer(INTEGER_TYPE) ::            NParticles = 0 ! number of initialised material points
+          integer(INTEGER_TYPE) ::            NGaussPoints = 4 ! number of gauss points for each element. Note that this only works for 4 gauss points
+          integer(INTEGER_TYPE) ::            NPatches = 0 ! number of initialised material points
+          integer(INTEGER_TYPE) ::            SolidMaterialPoints = 0 ! number of solid material points
+          integer(INTEGER_TYPE) ::            LiquidMaterialPoints = 0 ! number of liquid material points
+          integer(INTEGER_TYPE) ::            NReactionSurfaceOutput = 0 !Number of surfaces for output of reaction forces
+          integer(INTEGER_TYPE) ::            NElemReactions = 0 !number of elements to be considered for the output of reaction surface forces
+          integer(INTEGER_TYPE) ::            HydraulicHeadSides = 0
+          integer(INTEGER_TYPE) ::            NSoilLoadSystems = 1 !number of load systems (solid)
+          integer(INTEGER_TYPE) ::            NWaterLoadSystems = 1 !number of load systems (water)
+          integer(INTEGER_TYPE) ::            NGasLoadSystems = 1 !number of load systems (gas)
                      
         end type CounterType
         
@@ -102,7 +114,8 @@
                                         NLoadedElementSidesGasMatPointsB, &
                                         SoilSurfaceNumberofSides, &
                                         PhreaticSurfaceNumberofSides, &
-                                        NumberOfMaterials)                                        
+                                        NumberOfMaterials, &
+                                        Maximum_NLoadSystems_Traction_Input)                                        
         !**********************************************************************
         !
         !    Function:  Assigns the provided values to the data of this module.
@@ -124,28 +137,49 @@
      
         implicit none
         
+        
+        ! temporary variables 
+        integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        
+        
           ! Routine parameters
           integer(INTEGER_TYPE), intent(in) :: &
-                                 NEl, NodTot, MaxLayer, &
-                                 NLoadedElementSidesSolidNodes, &
-                                 NLoadedElementSidesSolidNodesB, &
-                                 NLoadedElementSidesWaterNodes, &
+                                 NEl, NodTot, MaxLayer, & !NLoadedElementSidesSolidNodes, &
+                                 NLoadedElementSidesSolidNodesB, & !NLoadedElementSidesWaterNodes, &
                                  NLoadedElementSidesWaterNodesB, &
                                  NLoadedElementSidesGasNodes, &
-                                 NLoadedElementSidesGasNodesB, &
-                                 NLoadedElementSidesSolidMatPoints, &
-                                 NLoadedElementSidesSolidMatPointsB, &
-                                 NLoadedElementSidesWaterMatPoints, &
+                                 NLoadedElementSidesGasNodesB, & !NLoadedElementSidesSolidMatPoints, &
+                                 NLoadedElementSidesSolidMatPointsB, & !NLoadedElementSidesWaterMatPoints, &
                                  NLoadedElementSidesWaterMatPointsB, &
                                  NLoadedElementSidesGasMatPoints, &
                                  NLoadedElementSidesGasMatPointsB, &
                                  NumberOfMaterials, &
                                  SoilSurfaceNumberofSides, &
                                  PhreaticSurfaceNumberofSides
+          
+          integer(INTEGER_TYPE), intent(in) :: Maximum_NLoadSystems_Traction_Input
+          
+          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction_Input, Counters%NPatches) :: NLoadedElementSidesSolidNodes !NURBS%Maximum_NLoadSystems_Traction
+          
+          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction_Input, Counters%NPatches) :: NLoadedElementSidesWaterNodes !NURBS%Maximum_NLoadSystems_Traction
+          
+          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction_Input, Counters%NPatches) :: NLoadedElementSidesSolidMatPoints !NURBS%Maximum_NLoadSystems_Traction
+          
+          integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction_Input, Counters%NPatches) :: NLoadedElementSidesWaterMatPoints !NURBS%Maximum_NLoadSystems_Traction
+          
+          !integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterMatPoints
+          
+          !integer(INTEGER_TYPE), intent(in), dimension(Maximum_NLoadSystems_Traction, Counters%NPatches) :: 
+          
           logical, intent(in) :: ApplyContactAlgorithm
+          
+          
+          
+          
      
-          Counters%NEl = NEl
-          Counters%NodTot = NodTot
+          !Counters%NEl = NEl
+          !Counters%NodTot = NodTot
           Counters%NLayers = MaxLayer
           Counters%NLoadedElementSidesSolidNodes = NLoadedElementSidesSolidNodes
           Counters%NLoadedElementSidesWaterNodes = NLoadedElementSidesWaterNodes
@@ -163,10 +197,11 @@
           Counters%NLoadedElementSidesWaterMatPointsB = NLoadedElementSidesWaterMatPointsB
           Counters%NLoadedElementSidesGasMatPointsB = NLoadedElementSidesGasMatPointsB
           
-          Counters%NLoadedElementSidesSolid = NLoadedElementSidesSolidNodes + NLoadedElementSidesSolidMatPoints &
-              + NLoadedElementSidesSolidNodesB + NLoadedElementSidesSolidMatPointsB
-          Counters%NLoadedElementSidesWater = NLoadedElementSidesWaterNodes + NLoadedElementSidesWaterMatPoints &
-              + NLoadedElementSidesWaterNodesB + NLoadedElementSidesWaterMatPointsB
+          Counters%NLoadedElementSidesSolid = NLoadedElementSidesSolidNodes + NLoadedElementSidesSolidMatPoints !& !(ILoadSystem_Temporary, IPatch_Temporary) (ILoadSystem_Temporary, IPatch_Temporary)
+          ! I commented load system B for now. I need to generalize this to capture the different load systems
+              !+ NLoadedElementSidesSolidNodesB + NLoadedElementSidesSolidMatPointsB ! adding in the number of loaded traction elements
+          Counters%NLoadedElementSidesWater = NLoadedElementSidesWaterNodes + NLoadedElementSidesWaterMatPoints!(ILoadSystem_Temporary, IPatch_Temporary) &
+              !+ NLoadedElementSidesWaterNodesB + NLoadedElementSidesWaterMatPointsB
           Counters%NLoadedElementSidesGas = NLoadedElementSidesGasNodes + NLoadedElementSidesGasMatPoints &
               + NLoadedElementSidesGasNodesB + NLoadedElementSidesGasMatPointsB
           Counters%SoilSurfaceNumberofSides = SoilSurfaceNumberofSides

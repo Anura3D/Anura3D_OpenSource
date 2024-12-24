@@ -203,16 +203,20 @@
                      NVirtualParticles, &
                      ParticleIndex
           logical :: ContainsBoundaryParticle
-        
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
           CheckRemovalParticles = 0
         
-          do IElement = 1, Counters%NEl
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
             
             NVirtualParticles = NVirtualParticlesEle(IElement)
             ContainsBoundaryParticle = HasBoundaryParticle(IElement)
             
             if ((NVirtualParticles > 0) .and. &
-                ((.not.IsActiveElement(IElement)).or.ContainsBoundaryParticle)) then
+                ((.not.IsActiveElement(IElement, IPatch)).or.ContainsBoundaryParticle)) then
               CheckRemovalParticles = CheckRemovalParticles + NVirtualParticles
      
               ! Before removal of virtual particles their stress data should be mapped
@@ -222,14 +226,15 @@
               call AverageElementParticleStateParam(IElement)
 
               ! Mark virtual particles to be removed
-              do IParticle = 1, NPartEle(IElement)
-                ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+              do IParticle = 1, NPartEle(IElement,IPatch)
+                ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch)
                 if (IsVirtualParticle(ParticleIndex) ) then
                   Particles(ParticleIndex)%Kind = REMOVEDPARTICLE
                 end if
               end do
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
         
         end function CheckRemovalParticles
         
@@ -252,7 +257,7 @@
           integer(INTEGER_TYPE), intent(in) :: NUpdateParticles
           ! Local variables
           type(ParticleType(:,:,:)), dimension(:), allocatable :: TempParticles
-          integer(INTEGER_TYPE), allocatable::TempElementIDArray(:), TempIDArray(:), TempEntityIDArray(:), TempMaterialIDArray(:),TempMaterialPointTypeArray(:)
+          integer(INTEGER_TYPE), allocatable::TempElementIDArray(:), TempPatchIDArray(:), TempIDArray(:), TempEntityIDArray(:), TempMaterialIDArray(:),TempMaterialPointTypeArray(:)
           real(REAL_TYPE), allocatable :: TempUArray(:,:), TempUStepArray(:,:), TempShapeValuesArray(:,:), TempUPhaseArray(:,:)
           real(REAL_TYPE), allocatable :: TempGlobPosArray(:,:), TempVelocityArray(:,:)
           real(REAL_TYPE), allocatable :: TempSigmaEffArray(:,:), TempSigmaEff0Array(:,:), TempDShapeValuesArray(:,:,:),TempVelocityWaterArray(:,:) 
@@ -270,6 +275,10 @@
           end do
           
           allocate(TempElementIDArray(Counters%NParticles), stat = IErrorTemp)
+          
+          ! Multipatch generalization
+          allocate(TempPatchIDArray(Counters%NParticles), stat = IErrorTemp)
+          
           allocate(TempIDArray(Counters%NParticles), stat = IErrorTemp)
           allocate(TempEntityIDArray(Counters%NParticles), stat = IErrorTemp)
           allocate(TempMaterialIDArray(Counters%NParticles), stat = IErrorTemp)
@@ -299,6 +308,9 @@
           end do
           
           TempElementIDArray = ElementIDArray
+          
+          TempPatchIDArray = PatchIDArray
+          
           TempIDArray = IDArray
           TempEntityIDArray = EntityIDArray
           TempMaterialIDArray = MaterialIDArray
@@ -323,6 +335,10 @@
           ! Destroy old particle data
           deallocate(Particles, stat = IError)
           deallocate(ElementIDArray, stat = IError)
+          
+          ! Multipatch generalization
+          deallocate(PatchIDArray, stat = IError)
+          
           deallocate(IDArray, stat = IError)
           deallocate(EntityIDArray, stat = IError)
           deallocate(MaterialIDArray, stat = IError)
@@ -332,6 +348,7 @@
           deallocate(ShapeValuesArray, stat = IError)
           deallocate(UPhaseArray, stat = IError)
           deallocate(GlobPosArray, stat = IError)
+          deallocate(GlobPosArray_Arranged, stat = IError)
           deallocate(VelocityArray, stat = IError)
           deallocate(SigmaEffArray, stat = IError)
           deallocate(SigmaEff0Array, stat = IError)
@@ -339,6 +356,7 @@
           deallocate(VelocityWaterArray, stat = IError)
           deallocate(VelocityGasArray, stat = IError)
           deallocate(AccelerationArray, stat = IError)
+          deallocate(AccelerationWaterArray, stat = IError)
           deallocate(MassArray, stat = IError)
           deallocate(ESMstatevArray, stat = IError)
           !deallocate(ESMpropsArray, stat = IError)
@@ -354,6 +372,10 @@
           end do
                     
           allocate(ElementIDArray(Counters%NParticles), stat = IError)
+          
+          ! Multipatch generalization 
+          allocate(PatchIDArray(Counters%NParticles), stat = IError)
+          
           allocate(IDArray(Counters%NParticles), stat = IError)
           allocate(EntityIDArray(Counters%NParticles), stat = IError)
           allocate(MaterialIDArray(Counters%NParticles), stat = IError)
@@ -361,6 +383,37 @@
           allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
           allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+          
+          
+          
+          
+          
+          ! For NURBS debugging can create these functions here 
+          ! ------------------------------------------------------------------------------------
+
+          ! Xi
+          !allocate(ShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) 
+          !allocate(DShapeValuesArray_Xi(Maximum_NXiKnotOrder+1, Counters%NParticles), stat = IError) 
+         
+          
+          ! Eta
+          !allocate(ShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) 
+          !allocate(DShapeValuesArray_Eta(Maximum_NEtaKnotOrder+1, Counters%NParticles), stat = IError) 
+          
+          
+          ! Zeta
+          !allocate(ShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) 
+          !allocate(DShapeValuesArray_Zeta(Maximum_NZetaKnotOrder+1, Counters%NParticles), stat = IError) 
+          
+          
+          ! Weights 
+          !allocate(WeightArray_Xi(Counters%NParticles), stat = IError) 
+          !allocate(WeightArray_Eta(Counters%NParticles), stat = IError) 
+         
+          ! ------------------------------------------------------------------------------------
+          
+          
+          
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
@@ -519,299 +572,306 @@
      
         end subroutine AdjustParticlesArrays
         
-        subroutine AdjustParticlesArraysConstruction(NUpdateParticles,IElement)
-        !**********************************************************************
-        !
-        !    Function : Adjusts the array Particles and updates the counter
-        !               Counters%NParticles to the new number of particles.
-        !               Reset house keeping data structure which contains 
-        !               incorrect and redundant information.
-        !
-        !     NUpdateParticles : Change of number of particles
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-     
-        implicit none
-     
-          integer(INTEGER_TYPE), intent(in) :: NUpdateParticles, IElement
-          ! Local variables
-          type(ParticleType(:,:,:)), dimension(:), allocatable :: TempParticles
-          integer(INTEGER_TYPE), allocatable::TempElementIDArray(:), TempIDArray(:), TempEntityIDArray(:), TempMaterialIDArray(:),TempMaterialPointTypeArray(:)
-          real(REAL_TYPE), allocatable :: TempUArray(:,:), TempUStepArray(:,:), TempShapeValuesArray(:,:), TempUPhaseArray(:,:)
-          real(REAL_TYPE), allocatable :: TempGlobPosArray(:,:), TempVelocityArray(:,:)
-          real(REAL_TYPE), allocatable :: TempSigmaEffArray(:,:), TempSigmaEff0Array(:,:), TempDShapeValuesArray(:,:,:),TempVelocityWaterArray(:,:) 
-          real(REAL_TYPE), allocatable :: TempVelocityGasArray(:,:), TempAccelerationArray(:,:), TempMassArray(:), TempESMstatevArray(:,:), TempMassWaterArray(:)
-          real(REAL_TYPE), allocatable :: TempWaterPressure(:)
- 
-          integer(INTEGER_TYPE) :: IError, I, NewParticleIndex, IErrorTemp, Kind, MaterialID, MaterialPointType, LocalParticle, IMatPart
-		  integer(INTEGER_TYPE), dimension(:) , allocatable   :: MPtrackindex
-
-          ! Allocate temporary copy of particle data
-          allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS) :: TempParticles(Counters%NParticles), stat = IErrorTemp)
-          
-          do i = 1, Counters%NParticles 
-              call SetParticleStructureDefault(TempParticles(i))
-          end do
-          
-          allocate(TempElementIDArray(Counters%NParticles), stat = IErrorTemp)
-          allocate(TempIDArray(Counters%NParticles), stat = IErrorTemp)
-          allocate(TempEntityIDArray(Counters%NParticles), stat = IErrorTemp)
-          allocate(TempMaterialIDArray(Counters%NParticles), stat = IErrorTemp)
-          allocate(TempUArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
-          allocate(TempMaterialPointTypeArray(Counters%NParticles), stat = IErrorTemp)
-          allocate(TempUStepArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
-          allocate(TempShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IErrorTemp)
-          allocate(TempUPhaseArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
-          allocate(TempGlobPosArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
-          allocate(TempVelocityArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
-          allocate(TempSigmaEffArray(Counters%NParticles,NTENSOR), stat = IErrorTemp)
-          allocate(TempSigmaEff0Array(Counters%NParticles,NTENSOR), stat = IErrorTemp)
-          allocate(TempWaterPressure(Counters%NParticles), stat = IErrorTemp)
-          allocate(TempDShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IErrorTemp)
-          allocate(TempVelocityWaterArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
-          allocate(TempVelocityGasArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
-          allocate(TempAccelerationArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
-          allocate(TempMassArray(Counters%NParticles), stat = IErrorTemp)
-          allocate(TempESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IErrorTemp)
-          allocate(TempMassWaterArray(Counters%NParticles), stat = IErrorTemp)
-
-          ! Copy particle data to temporary array
-          
-          ! TempParticles = Particles
-          do i = 1, Counters%NParticles 
-              TempParticles(i) = CopyParticle(Particles(i), i)
-          end do
-          
-          TempElementIDArray = ElementIDArray
-          TempIDArray = IDArray
-          TempEntityIDArray = EntityIDArray
-          TempMaterialIDArray = MaterialIDArray
-          TempUArray = UArray
-          TempMaterialPointTypeArray = MaterialPointTypeArray
-          TempUStepArray = UStepArray
-          TempShapeValuesArray = ShapeValuesArray
-          TempUPhaseArray = UPhaseArray
-          TempGlobPosArray = GlobPosArray
-          TempVelocityArray = VelocityArray
-          TempSigmaEffArray = SigmaEffArray
-          TempSigmaEff0Array = SigmaEff0Array
-          TempDShapeValuesArray = DShapeValuesArray
-          TempVelocityWaterArray = VelocityWaterArray
-          TempVelocityGasArray = VelocityGasArray
-          TempAccelerationArray = AccelerationArray
-          TempMassArray = MassArray
-          TempESMstatevArray = ESMstatevArray
-          TempMassWaterArray = MassWaterArray
-
-          ! Destroy old particle data
-          deallocate(Particles, stat = IError)
-          deallocate(ElementIDArray, stat = IError)
-          deallocate(IDArray, stat = IError)
-          deallocate(EntityIDArray, stat = IError)
-          deallocate(MaterialIDArray, stat = IError)
-          deallocate(UArray, stat = IError)
-          deallocate(MaterialPointTypeArray, stat = IError)
-          deallocate(UStepArray, stat = IError)
-          deallocate(ShapeValuesArray, stat = IError)
-          deallocate(UPhaseArray, stat = IError)
-          deallocate(GlobPosArray, stat = IError)
-          deallocate(VelocityArray, stat = IError)
-          deallocate(SigmaEffArray, stat = IError)
-          deallocate(SigmaEff0Array, stat = IError)
-          deallocate(DShapeValuesArray, stat = IError)
-          deallocate(VelocityWaterArray, stat = IError)
-          deallocate(VelocityGasArray, stat = IError)
-          deallocate(AccelerationArray, stat = IError)
-          deallocate(MassArray, stat = IError)
-          deallocate(ESMstatevArray, stat = IError)
-          deallocate(MassWaterArray, stat = IError)
- 
-          ! Update number of particles
-          Counters%NParticles = Counters%NParticles + NUpdateParticles
-
-          ! Create new particle data array
-          allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS) :: Particles(Counters%NParticles), stat = IError)
-          do i = 1, Counters%NParticles 
-            call SetParticleStructureDefault(Particles(i))
-          end do
-                    
-          allocate(ElementIDArray(Counters%NParticles), stat = IError)
-          allocate(IDArray(Counters%NParticles), stat = IError)
-          allocate(EntityIDArray(Counters%NParticles), stat = IError)
-          allocate(MaterialIDArray(Counters%NParticles), stat = IError)
-          allocate(UArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
-          allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
-          allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
-          allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
-          allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
-          allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
-          allocate(MassArray(Counters%NParticles), stat = IError)
-          allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
-          allocate(MassWaterArray(Counters%NParticles), stat = IError)
-          
-          ! Copy old particle array to new particle array
-          NewParticleIndex = 1
- 
-          do I = 1, Counters%NParticles- NUpdateParticles! Loop over original number of particles
-              Particles(NewParticleIndex) = CopyParticle(TempParticles(I), TempIDArray(I))
-              ElementIDArray(NewParticleIndex) = TempElementIDArray(I) 
-              IDArray(NewParticleIndex) = TempIDArray(I)
-              EntityIDArray(NewParticleIndex) = TempEntityIDArray(I)
-              MaterialIDArray(NewParticleIndex) = TempMaterialIDArray(I)
-              UArray(NewParticleIndex,:) = TempUArray(I,:)
-              MaterialPointTypeArray(NewParticleIndex) = TempMaterialPointTypeArray(I)
-              UStepArray(NewParticleIndex,:) = TempUStepArray(I,:)
-              ShapeValuesArray(NewParticleIndex,:) = TempShapeValuesArray(I,:) 
-              UPhaseArray(NewParticleIndex,:) = TempUPhaseArray(I,:) 
-              GlobPosArray(NewParticleIndex,:) = TempGlobPosArray(I,:)
-              VelocityArray(NewParticleIndex,:) = TempVelocityArray(I,:)
-              SigmaEffArray(NewParticleIndex,:) = TempSigmaEffArray(I,:)
-              SigmaEff0Array(NewParticleIndex,:) = TempSigmaEff0Array(I,:)
-              DShapeValuesArray(NewParticleIndex,:,:) = TempDShapeValuesArray(I,:,:)
-              VelocityWaterArray(NewParticleIndex,:) = TempVelocityWaterArray(I,:)
-              VelocityGasArray(NewParticleIndex,:) = TempVelocityGasArray(I,:)
-              AccelerationArray(NewParticleIndex,:) = TempAccelerationArray(I,:)
-              MassArray(NewParticleIndex) = TempMassArray(I)
-              ESMstatevArray(NewParticleIndex,:) = TempESMstatevArray(I,:)
-              MassWaterArray(NewParticleIndex) = TempMassWaterArray(I)
-              NewParticleIndex = NewParticleIndex + 1
-          end do
-
-          LocalParticle = 1
-          do I = Counters%NParticles- NUpdateParticles + 1, Counters%NParticles ! do over new particles construted
-              IsParticleConstructed(I) = .true.
-              call NewParticles(I,IElement,NUpdateParticles, LocalParticle)
-              IDArray(I) = I
-              UArray(I,:) = 0.0 
-              UStepArray(I,:) = 0.0 
-              UPhaseArray(I,:) = 0.0 
-              call DetermineGlobalFromLocalCoord(I, IElement)
-              VelocityArray(I,:) = 0.0          
-              SigmaEffArray(I,:) = 0.0          
-              SigmaEff0Array(I,:) = 0.0         
-              VelocityWaterArray(I,:) = 0.0     
-              VelocityGasArray(I,:) = 0.0       
-              AccelerationArray(I,:) = 0.0      
-              IMatPart = MaterialIDArray(I)
-              ESMstatevArray(I,:) = 0.0         ! need to be implemented when use USM StateVar = MatParams(IDset)%ESM_Statvar_in
-              ESMstatevArray(I,:) = MatParams(IMatPart)%ESM_Statvar_in
-              LocalParticle = LocalParticle + 1
-              if (CalParams%InitialWaterPressure /= 0.0) then
-                  Particles(I)%WaterPressure = CalParams%InitialWaterPressure
-                  Particles(I)%WaterPressure0 = CalParams%InitialWaterPressure
-              endif
-          end do
-          
-          ! Destroy temporary copies
-          if (allocated(TempParticles)) then
-            deallocate(TempParticles, stat = IError)
-          end if
-
-          if (allocated(TempElementIDArray)) then
-             deallocate(TempElementIDArray, stat = IError)
-          end if
-
-          if (allocated(TempIDArray)) then
-             deallocate(TempIDArray, stat = IError)
-          end if
-
-          if (allocated(TempEntityIDArray)) then
-             deallocate(TempEntityIDArray, stat = IError)
-          end if
-
-          if (allocated(TempMaterialIDArray)) then
-             deallocate(TempMaterialIDArray, stat = IError)
-          end if
-
-          if (allocated(TempUArray)) then
-             deallocate(TempUArray, stat = IError)
-          end if
-
-          if (allocated(TempMaterialPointTypeArray)) then
-             deallocate(TempMaterialPointTypeArray, stat = IError)
-          end if
-
-          if (allocated(TempUStepArray)) then
-             deallocate(TempUStepArray, stat = IError)
-          end if
-
-          if (allocated(TempShapeValuesArray)) then
-             deallocate(TempShapeValuesArray, stat = IError)
-          end if
-
-          if (allocated(TempUPhaseArray)) then
-             deallocate(TempUPhaseArray, stat = IError)
-          end if
-
-          if (allocated(TempGlobPosArray)) then
-             deallocate(TempGlobPosArray, stat = IError)
-          end if
-
-          if (allocated(TempVelocityArray)) then
-             deallocate(TempVelocityArray, stat = IError)
-          end if
-
-          if (allocated(TempSigmaEffArray)) then
-             deallocate(TempSigmaEffArray, stat = IError)
-          end if
-
-          if (allocated(TempSigmaEff0Array)) then
-             deallocate(TempSigmaEff0Array, stat = IError)
-          end if
-
-          if (allocated(TempDShapeValuesArray)) then
-             deallocate(TempDShapeValuesArray, stat = IError)
-          end if
-
-          if (allocated(TempVelocityWaterArray)) then
-             deallocate(TempVelocityWaterArray, stat = IError)
-          end if
-
-          if (allocated(TempVelocityGasArray)) then
-             deallocate(TempVelocityGasArray, stat = IError)
-          end if
-
-          if (allocated(TempAccelerationArray)) then
-             deallocate(TempAccelerationArray, stat = IError)
-          end if
-
-          if (allocated(TempMassArray)) then
-             deallocate(TempMassArray, stat = IError)
-          end if
-
-          if (allocated(TempESMstatevArray)) then
-             deallocate(TempESMstatevArray, stat = IError)
-          end if
-
-          if (allocated(TempMassWaterArray)) then
-             deallocate(TempMassWaterArray, stat = IError)
-          end if
-          !-----
-
-          ! Change size of array EleParticles and initialise it to -1
-          deallocate(EleParticles, stat = IError)
-          allocate(EleParticles(Counters%NParticles), stat = IError)
-          EleParticles = -1
-          
-          ! Reset content of array EleParticlesHelp
-          EleParticlesHelp = -1
-          
-          ! Reset content of array NPartEle
-          NPartEle = 0
-          
-          ! Adjust PartFactor to new number of particles
-          call SetPartFactor(DecimalFactor(Counters%NParticles))
-     
-        end subroutine AdjustParticlesArraysConstruction
+    !    subroutine AdjustParticlesArraysConstruction(NUpdateParticles,IElement)
+    !    !**********************************************************************
+    !    !
+    !    !    Function : Adjusts the array Particles and updates the counter
+    !    !               Counters%NParticles to the new number of particles.
+    !    !               Reset house keeping data structure which contains 
+    !    !               incorrect and redundant information.
+    !    !
+    !    !     NUpdateParticles : Change of number of particles
+    !    !
+    !    ! Implemented in the frame of the MPM project.
+    !    !
+    !    !**********************************************************************
+    ! 
+    !    implicit none
+    ! 
+    !      integer(INTEGER_TYPE), intent(in) :: NUpdateParticles, IElement
+    !      ! Local variables
+    !      type(ParticleType(:,:,:)), dimension(:), allocatable :: TempParticles
+    !      integer(INTEGER_TYPE), allocatable::TempElementIDArray(:), TempIDArray(:), TempEntityIDArray(:), TempMaterialIDArray(:),TempMaterialPointTypeArray(:)
+    !      real(REAL_TYPE), allocatable :: TempUArray(:,:), TempUStepArray(:,:), TempShapeValuesArray(:,:), TempUPhaseArray(:,:)
+    !      real(REAL_TYPE), allocatable :: TempGlobPosArray(:,:), TempVelocityArray(:,:)
+    !      real(REAL_TYPE), allocatable :: TempSigmaEffArray(:,:), TempSigmaEff0Array(:,:), TempDShapeValuesArray(:,:,:),TempVelocityWaterArray(:,:) 
+    !      real(REAL_TYPE), allocatable :: TempVelocityGasArray(:,:), TempAccelerationArray(:,:), TempMassArray(:), TempESMstatevArray(:,:), TempMassWaterArray(:)
+    !      real(REAL_TYPE), allocatable :: TempWaterPressure(:)
+    !
+    !      integer(INTEGER_TYPE) :: IError, I, NewParticleIndex, IErrorTemp, Kind, MaterialID, MaterialPointType, LocalParticle, IMatPart
+		  !integer(INTEGER_TYPE), dimension(:) , allocatable   :: MPtrackindex
+    !
+    !      
+    !      integer(INTEGER_TYPE) :: IPatch_Temporary
+    !      
+    !      ! Allocate temporary copy of particle data
+    !      allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS) :: TempParticles(Counters%NParticles), stat = IErrorTemp)
+    !      
+    !      do i = 1, Counters%NParticles 
+    !          call SetParticleStructureDefault(TempParticles(i))
+    !      end do
+    !      
+    !      allocate(TempElementIDArray(Counters%NParticles), stat = IErrorTemp)
+    !      allocate(TempIDArray(Counters%NParticles), stat = IErrorTemp)
+    !      allocate(TempEntityIDArray(Counters%NParticles), stat = IErrorTemp)
+    !      allocate(TempMaterialIDArray(Counters%NParticles), stat = IErrorTemp)
+    !      allocate(TempUArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
+    !      allocate(TempMaterialPointTypeArray(Counters%NParticles), stat = IErrorTemp)
+    !      allocate(TempUStepArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
+    !      allocate(TempShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IErrorTemp)
+    !      allocate(TempUPhaseArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
+    !      allocate(TempGlobPosArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
+    !      allocate(TempVelocityArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
+    !      allocate(TempSigmaEffArray(Counters%NParticles,NTENSOR), stat = IErrorTemp)
+    !      allocate(TempSigmaEff0Array(Counters%NParticles,NTENSOR), stat = IErrorTemp)
+    !      allocate(TempWaterPressure(Counters%NParticles), stat = IErrorTemp)
+    !      allocate(TempDShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IErrorTemp)
+    !      allocate(TempVelocityWaterArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
+    !      allocate(TempVelocityGasArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
+    !      allocate(TempAccelerationArray(Counters%NParticles,NVECTOR), stat = IErrorTemp)
+    !      allocate(TempMassArray(Counters%NParticles), stat = IErrorTemp)
+    !      allocate(TempESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IErrorTemp)
+    !      allocate(TempMassWaterArray(Counters%NParticles), stat = IErrorTemp)
+    !
+    !      ! Copy particle data to temporary array
+    !      
+    !      ! TempParticles = Particles
+    !      do i = 1, Counters%NParticles 
+    !          TempParticles(i) = CopyParticle(Particles(i), i)
+    !      end do
+    !      
+    !      TempElementIDArray = ElementIDArray
+    !      TempIDArray = IDArray
+    !      TempEntityIDArray = EntityIDArray
+    !      TempMaterialIDArray = MaterialIDArray
+    !      TempUArray = UArray
+    !      TempMaterialPointTypeArray = MaterialPointTypeArray
+    !      TempUStepArray = UStepArray
+    !      TempShapeValuesArray = ShapeValuesArray
+    !      TempUPhaseArray = UPhaseArray
+    !      TempGlobPosArray = GlobPosArray
+    !      TempVelocityArray = VelocityArray
+    !      TempSigmaEffArray = SigmaEffArray
+    !      TempSigmaEff0Array = SigmaEff0Array
+    !      TempDShapeValuesArray = DShapeValuesArray
+    !      TempVelocityWaterArray = VelocityWaterArray
+    !      TempVelocityGasArray = VelocityGasArray
+    !      TempAccelerationArray = AccelerationArray
+    !      TempMassArray = MassArray
+    !      TempESMstatevArray = ESMstatevArray
+    !      TempMassWaterArray = MassWaterArray
+    !
+    !      ! Destroy old particle data
+    !      deallocate(Particles, stat = IError)
+    !      deallocate(ElementIDArray, stat = IError)
+    !      deallocate(IDArray, stat = IError)
+    !      deallocate(EntityIDArray, stat = IError)
+    !      deallocate(MaterialIDArray, stat = IError)
+    !      deallocate(UArray, stat = IError)
+    !      deallocate(MaterialPointTypeArray, stat = IError)
+    !      deallocate(UStepArray, stat = IError)
+    !      deallocate(ShapeValuesArray, stat = IError)
+    !      deallocate(UPhaseArray, stat = IError)
+    !      deallocate(GlobPosArray, stat = IError)
+    !      deallocate(VelocityArray, stat = IError)
+    !      deallocate(SigmaEffArray, stat = IError)
+    !      deallocate(SigmaEff0Array, stat = IError)
+    !      deallocate(DShapeValuesArray, stat = IError)
+    !      deallocate(VelocityWaterArray, stat = IError)
+    !      deallocate(VelocityGasArray, stat = IError)
+    !      deallocate(AccelerationArray, stat = IError)
+    !      deallocate(MassArray, stat = IError)
+    !      deallocate(ESMstatevArray, stat = IError)
+    !      deallocate(MassWaterArray, stat = IError)
+    !
+    !      ! Update number of particles
+    !      Counters%NParticles = Counters%NParticles + NUpdateParticles
+    !
+    !      ! Create new particle data array
+    !      allocate(ParticleType(NTENSOR, NVECTOR, MAX_LOAD_SYSTEMS) :: Particles(Counters%NParticles), stat = IError)
+    !      do i = 1, Counters%NParticles 
+    !        call SetParticleStructureDefault(Particles(i))
+    !      end do
+    !                
+    !      allocate(ElementIDArray(Counters%NParticles), stat = IError)
+    !      allocate(IDArray(Counters%NParticles), stat = IError)
+    !      allocate(EntityIDArray(Counters%NParticles), stat = IError)
+    !      allocate(MaterialIDArray(Counters%NParticles), stat = IError)
+    !      allocate(UArray(Counters%NParticles,NVECTOR), stat = IError)
+    !      allocate(MaterialPointTypeArray(Counters%NParticles), stat = IError)
+    !      allocate(UStepArray(Counters%NParticles,NVECTOR), stat = IError)
+    !      allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
+    !      allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
+    !      
+    !      allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError) 
+    !      ! important for arranging particles accoridng to their element 
+    !      allocate(GlobPosArray_Arranged(Counters%NParticles,NVECTOR), stat = IError) 
+    !      allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
+    !      allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
+    !      allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
+    !      allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
+    !      allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)
+    !      allocate(VelocityGasArray(Counters%NParticles,NVECTOR), stat = IError)
+    !      allocate(AccelerationArray(Counters%NParticles,NVECTOR), stat = IError)
+    !      allocate(AccelerationWaterArray(Counters%NParticles,NVECTOR), stat = IError)
+    !      allocate(MassArray(Counters%NParticles), stat = IError)
+    !      allocate(ESMstatevArray(Counters%NParticles, NSTATEVAR), stat = IError)
+    !      allocate(MassWaterArray(Counters%NParticles), stat = IError)
+    !      
+    !      ! Copy old particle array to new particle array
+    !      NewParticleIndex = 1
+    !
+    !      do I = 1, Counters%NParticles- NUpdateParticles! Loop over original number of particles
+    !          Particles(NewParticleIndex) = CopyParticle(TempParticles(I), TempIDArray(I))
+    !          ElementIDArray(NewParticleIndex) = TempElementIDArray(I) 
+    !          IDArray(NewParticleIndex) = TempIDArray(I)
+    !          EntityIDArray(NewParticleIndex) = TempEntityIDArray(I)
+    !          MaterialIDArray(NewParticleIndex) = TempMaterialIDArray(I)
+    !          UArray(NewParticleIndex,:) = TempUArray(I,:)
+    !          MaterialPointTypeArray(NewParticleIndex) = TempMaterialPointTypeArray(I)
+    !          UStepArray(NewParticleIndex,:) = TempUStepArray(I,:)
+    !          ShapeValuesArray(NewParticleIndex,:) = TempShapeValuesArray(I,:) 
+    !          UPhaseArray(NewParticleIndex,:) = TempUPhaseArray(I,:) 
+    !          GlobPosArray(NewParticleIndex,:) = TempGlobPosArray(I,:)
+    !          VelocityArray(NewParticleIndex,:) = TempVelocityArray(I,:)
+    !          SigmaEffArray(NewParticleIndex,:) = TempSigmaEffArray(I,:)
+    !          SigmaEff0Array(NewParticleIndex,:) = TempSigmaEff0Array(I,:)
+    !          DShapeValuesArray(NewParticleIndex,:,:) = TempDShapeValuesArray(I,:,:)
+    !          VelocityWaterArray(NewParticleIndex,:) = TempVelocityWaterArray(I,:)
+    !          VelocityGasArray(NewParticleIndex,:) = TempVelocityGasArray(I,:)
+    !          AccelerationArray(NewParticleIndex,:) = TempAccelerationArray(I,:)
+    !          MassArray(NewParticleIndex) = TempMassArray(I)
+    !          ESMstatevArray(NewParticleIndex,:) = TempESMstatevArray(I,:)
+    !          MassWaterArray(NewParticleIndex) = TempMassWaterArray(I)
+    !          NewParticleIndex = NewParticleIndex + 1
+    !      end do
+    !
+    !      LocalParticle = 1
+    !      do I = Counters%NParticles- NUpdateParticles + 1, Counters%NParticles ! do over new particles construted
+    !          IsParticleConstructed(I) = .true.
+    !          call NewParticles(I,IElement,NUpdateParticles, LocalParticle)
+    !          IDArray(I) = I
+    !          UArray(I,:) = 0.0 
+    !          UStepArray(I,:) = 0.0 
+    !          UPhaseArray(I,:) = 0.0 
+    !          call DetermineGlobalFromLocalCoord(I, IElement, IPatch_Temporary)
+    !          VelocityArray(I,:) = 0.0          
+    !          SigmaEffArray(I,:) = 0.0          
+    !          SigmaEff0Array(I,:) = 0.0         
+    !          VelocityWaterArray(I,:) = 0.0     
+    !          VelocityGasArray(I,:) = 0.0       
+    !          AccelerationArray(I,:) = 0.0      
+    !          IMatPart = MaterialIDArray(I)
+    !          ESMstatevArray(I,:) = 0.0         ! need to be implemented when use USM StateVar = MatParams(IDset)%ESM_Statvar_in
+    !          ESMstatevArray(I,:) = MatParams(IMatPart)%ESM_Statvar_in
+    !          LocalParticle = LocalParticle + 1
+    !          if (CalParams%InitialWaterPressure /= 0.0) then
+    !              Particles(I)%WaterPressure = CalParams%InitialWaterPressure
+    !              Particles(I)%WaterPressure0 = CalParams%InitialWaterPressure
+    !          endif
+    !      end do
+    !      
+    !      ! Destroy temporary copies
+    !      if (allocated(TempParticles)) then
+    !        deallocate(TempParticles, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempElementIDArray)) then
+    !         deallocate(TempElementIDArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempIDArray)) then
+    !         deallocate(TempIDArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempEntityIDArray)) then
+    !         deallocate(TempEntityIDArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempMaterialIDArray)) then
+    !         deallocate(TempMaterialIDArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempUArray)) then
+    !         deallocate(TempUArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempMaterialPointTypeArray)) then
+    !         deallocate(TempMaterialPointTypeArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempUStepArray)) then
+    !         deallocate(TempUStepArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempShapeValuesArray)) then
+    !         deallocate(TempShapeValuesArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempUPhaseArray)) then
+    !         deallocate(TempUPhaseArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempGlobPosArray)) then
+    !         deallocate(TempGlobPosArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempVelocityArray)) then
+    !         deallocate(TempVelocityArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempSigmaEffArray)) then
+    !         deallocate(TempSigmaEffArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempSigmaEff0Array)) then
+    !         deallocate(TempSigmaEff0Array, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempDShapeValuesArray)) then
+    !         deallocate(TempDShapeValuesArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempVelocityWaterArray)) then
+    !         deallocate(TempVelocityWaterArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempVelocityGasArray)) then
+    !         deallocate(TempVelocityGasArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempAccelerationArray)) then
+    !         deallocate(TempAccelerationArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempMassArray)) then
+    !         deallocate(TempMassArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempESMstatevArray)) then
+    !         deallocate(TempESMstatevArray, stat = IError)
+    !      end if
+    !
+    !      if (allocated(TempMassWaterArray)) then
+    !         deallocate(TempMassWaterArray, stat = IError)
+    !      end if
+    !      !-----
+    !
+    !      ! Change size of array EleParticles and initialise it to -1
+    !      deallocate(EleParticles, stat = IError)
+    !      allocate(EleParticles(Counters%NParticles), stat = IError)
+    !      EleParticles = -1
+    !      
+    !      ! Reset content of array EleParticlesHelp
+    !      EleParticlesHelp = -1
+    !      
+    !      ! Reset content of array NPartEle
+    !      NPartEle = 0
+    !      
+    !      ! Adjust PartFactor to new number of particles
+    !      call SetPartFactor(DecimalFactor(Counters%NParticles))
+    ! 
+    !    end subroutine AdjustParticlesArraysConstruction
         
         subroutine FillParticlesArray(NUpdateParticles, NRemovedParticles)
         !**********************************************************************
@@ -832,9 +892,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: ElementID, ParticleIndex, ICounter, &
                      IParticle
+          integer(INTEGER_TYPE) :: IPatch
         
           ICounter = 1
-          do ElementID = 1, Counters%NEl
+          do IPatch = 1, Counters%NPatches
+          do ElementID = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over all elements belonging to holes
 
               do IParticle = 1, CalParams%NVirtualParticles
@@ -847,6 +909,7 @@
 
                 call CreateParticleData(ElementID, &
                                         ParticleIndex, &
+                                        IPatch, &
                                         NEWVIRTUALPARTICLE)
                 if (CalParams%OutputDebugData) then
                   call WriteInLogFile('Place virtual particle ' // &
@@ -855,7 +918,8 @@
                 end if
               end do
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
 
           if ((ICounter - 1)/= &
               NUpdateParticles + NRemovedParticles) then
@@ -867,6 +931,7 @@
 
         subroutine CreateParticleData(ElementID, &
                                       ParticleIndex, &
+                                      PatchID, &
                                       Kind)
         !**********************************************************************
         !
@@ -891,14 +956,23 @@
           !integer(INTEGER_TYPE) :: IDCounter=0
           real(REAL_TYPE) :: VirtualParticleMass
           integer(INTEGER_TYPE) :: MaterialPointType
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE), intent(in) :: PatchID
+          
+          ! Volumetric strain variables 
+          real(REAL_TYPE), dimension(NTENSOR) :: FDeformationGradient
         
+          FDeformationGradient = 0.0
+          
           ! TODO Consider CalParams%NVirtualParticles particles
           do I = 1, NVECTOR
               LocPos(I) = 0.25
+              FDeformationGradient(I) = 1.0 ! identity matrix
           end do
          
           if (GeoParams%ApplyLocalDampingElement) then
-            DampingFactor = GeoParams%LocalDampingFactorElement(ElementID)
+            DampingFactor = GeoParams%LocalDampingFactorElement(ElementID,PatchID)
           end if    
           
           IsSubmerged = CalParams%ApplySubmergedCalculation
@@ -906,7 +980,7 @@
           VirtualParticleMass = 0.0 ! TODO: Take small fraction of mass from surrounding particles
           MaterialID = 1 !By default select first material 
           do IDMat = 1, Counters%NLayers
-            if (MaterialElements(IDMat, ElementID)==1) then
+            if (MaterialElements(IDMat, ElementID, PatchID)==1) then
               MaterialID = IDMat
               EXIT
             end if
@@ -932,9 +1006,13 @@
                          DampingFactor, &
                          IsSubmerged, &
                          MassArray(ParticleIndex),&
-                         MassWaterArray(ParticleIndex))
+                         MassWaterArray(ParticleIndex), &
+                         FDeformationGradient(ParticleIndex))
           
          ElementIDArray(ParticleIndex) = ElementID
+         
+         PatchIDArray(ParticleIndex) = PatchID
+         
          IDArray(ParticleIndex) = GetIDCounter()
          EntityIDArray(ParticleIndex) = SOFT_ENTITY
          MaterialIDArray(ParticleIndex) = MaterialID
@@ -942,10 +1020,10 @@
           
         
           ! Update ShapeValues, DShapeValues
-          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex)
+          call SetParticleShapeFunctionData(Particles(ParticleIndex), ParticleIndex, ElementID, ElementConnectivities(:,:,PatchID), NodalCoordinates, PatchID) !(:,:,PatchID)
 
           ! Update GlobPos
-          call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID)
+          call DetermineGlobalFromLocalCoord(ParticleIndex, ElementID, PatchID)
           
           ! Update Mass and integration weight
           call CorrectParticleMassAndBodyForceAxisymmetric(ParticleIndex)
@@ -954,7 +1032,8 @@
         end subroutine CreateParticleData
         
         subroutine DetermineGlobalFromLocalCoord(ParticleIndex,  &
-                                                 IElement)
+                                                 IElement, &
+                                                 IPatch)
         !**********************************************************************
         !
         !    Function:  Determines the global coordinates associated with the local
@@ -972,14 +1051,17 @@
           integer(INTEGER_TYPE), intent(in) :: ParticleIndex, IElement
           ! Local variables
           integer(INTEGER_TYPE) :: I, NodeID, IDim
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
         
           GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
           do I = 1, ELEMENTNODES ! Loop over nodes of IElement
-            NodeID = iabs(ElementConnectivities(I, IElement))
+            NodeID = iabs(ElementConnectivities(I, IElement, IPatch))
             do IDim = 1, NVECTOR ! Loop over dimensions of IElement
               GlobPosArray(ParticleIndex,IDim) = &
                 GlobPosArray(ParticleIndex,IDim) + &
-                NodalCoordinatesUpd(NodeID, IDim) *  &
+                NodalCoordinatesUpd(NodeID, IDim,IPatch) *  &
                 ShapeValuesArray(ParticleIndex,I)
             end do
           end do
@@ -1010,7 +1092,12 @@
           end do
 
           ! Sort EleParticles array, update EleParticlesHelp and NPartEle arrays
-          call UpdateParticleHouseKeeping()
+          !if (MP_INIT_FILE) then 
+          !    call UpdateParticleHouseKeeping_MPInitFile()
+          !else ! MP_INIT_GP
+              call UpdateParticleHouseKeeping_MPInitGP()
+          !end if
+          
 
         end subroutine AdjustParticleHouseKeeping
         
@@ -1031,11 +1118,13 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: ConsideredParticles
           integer(INTEGER_TYPE) :: NConsideredParticles, IError, ElementID, &
                      ParticleIndex, IParticle
+          integer(INTEGER_TYPE) :: IPatch
 
-          do ElementID = 1, Counters%NEl
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do ElementID = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl
             if (IsEmptyElement(ElementID)) then ! Loop over elements belonging to holes
-              do IParticle = 1, NPartEle(ElementID)
-                ParticleIndex = GetParticleIndexFunction(IParticle, ElementID)
+              do IParticle = 1, NPartEle(ElementID,IPatch)
+                ParticleIndex = GetParticleIndexFunction(IParticle, ElementID, IPatch)
                   Particles(ParticleIndex)%IsBoundaryParticle = .false.
               end do
 
@@ -1046,7 +1135,8 @@
 
               call FindConsideredParticlesSurroundingElements(ElementID, &
                                                  ConsideredParticles, &
-                                                 NConsideredParticles)
+                                                 NConsideredParticles, &
+                                                 IPatch)
 
               call InterpolateParticleStateParameters(ElementID, &
                                                  ConsideredParticles, &
@@ -1055,7 +1145,8 @@
                                            ConsideredParticles, &
                                            NConsideredParticles)
             end if
-          end do
+          end do ! loop pver elements
+          end do ! loop over patches
 
           if (allocated(ConsideredParticles) ) then
             deallocate(ConsideredParticles, stat = IError)
@@ -1065,7 +1156,8 @@
 
         subroutine FindConsideredParticlesSurroundingElements(ElementID, &
                                                    ConsideredParticles, &
-                                                   NConsideredParticles)
+                                                   NConsideredParticles, &
+                                                   IPatch)
         !**********************************************************************
         !
         !    Function: Determines a list of particles which can be used to
@@ -1095,12 +1187,15 @@
                      AdjacentElement, NSphereParticles
           real(REAL_TYPE) :: SphereRadius, ParticleDistance
           logical :: FoundMaterialParticleInsideSphere, FoundMaterialParticle
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
 
           NConsideredParticles = 0
           NSphereParticles = 0
 
           do IDMat = 1, Counters%NLayers
-            if (MaterialElements(IDMat, ElementID)==1) then
+            if (MaterialElements(IDMat, ElementID, IPatch)==1) then
               MaterialID = IDMat
               EXIT
             end if
@@ -1115,12 +1210,12 @@
           FoundMaterialParticleInsideSphere = .false.
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
-            NElemPart = NPartEle(AdjacentElement)
-            do J = 1, NElemPart
-              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement)
+            NElemPart = NPartEle(AdjacentElement,IPatch)
+            do J = 1, NElemPart ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
+              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch)
               if (MaterialID==MaterialIDArray(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
-                  ParticleDistance = Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
+                  ParticleDistance = Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch), NVECTOR)
                   NConsideredParticles = NConsideredParticles + 1
                   if (ParticleDistance<SphereRadius) then
                     NSphereParticles = NSphereParticles + 1
@@ -1160,14 +1255,15 @@
           NInnerSurroundingElements = GetNElmOfElm(ElementID)
           do I = 1, NInnerSurroundingElements
             AdjacentElement = GetElmIOfElm(ElementID, I)
-            NElemPart = NPartEle(AdjacentElement)
+            NElemPart = NPartEle(AdjacentElement,IPatch) 
             do J = 1, NElemPart
-              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement)
+                ! NElemPart does not need generalization because it stems from NPartEle which is already generalized
+              ParticleIndex = GetParticleIndexFunction(J, AdjacentElement, IPatch)
               if (MaterialID== &
                   MaterialIDArray(ParticleIndex)) then
                 if (.not.IsNewVirtualParticle(ParticleIndex)) then
                   ParticleDistance =  &
-                    Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
+                    Length(GlobPosArray(ParticleIndex,:) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch), NVECTOR)
                   if ((NSphereParticles==0).or.(.not.FoundMaterialParticleInsideSphere)) then
                     Counter = Counter + 1
                     ConsideredParticles(Counter) = ParticleIndex
@@ -1204,10 +1300,13 @@
           real(REAL_TYPE) :: Distance, AverageNodeDistance, MaxNodeDistance
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LocalNodes
           logical :: IsInLocalNodes
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
     
           DetermineMaxSphereRadius = 0.0
           
-          LocalNodes = ElementConnectivities(1:ELEMENTNODES, ElementID)
+          LocalNodes = ElementConnectivities(1:ELEMENTNODES, ElementID, IPatch_Temporary)
           
           NInnerSurroundingElements = GetNElmOfElm(ElementID)
           AverageNodeDistance = 0.0
@@ -1217,7 +1316,7 @@
             AdjacentElement = GetElmIOfElm(ElementID, I)
             do J = 1, ELEMENTNODES
               if (IsCornerNode(J, ELEMENTNODES)) then ! Loop over corner nodes of element
-                NodeID = ElementConnectivities(J, AdjacentElement)
+                NodeID = ElementConnectivities(J, AdjacentElement, IPatch_Temporary)
                 IsInLocalNodes = .false.
                 do K = 1, ELEMENTNODES
                   IsInLocalNodes = (NodeID==LocalNodes(K))
@@ -1226,7 +1325,7 @@
                   end if
                 end do
                 if (.not.IsInLocalNodes) then
-                  Distance = Length(NodalCoordinatesUpd(NodeID, 1:NVECTOR) - ElementCentrePoints(ElementID, 1:NVECTOR), NVECTOR)
+                  Distance = Length(NodalCoordinatesUpd(NodeID, 1:NVECTOR, IPatch_Temporary) - ElementCentrePoints(ElementID, 1:NVECTOR, IPatch_Temporary), NVECTOR)
                   if (Distance>MaxNodeDistance) then
                     MaxNodeDistance = Distance
                   end if
@@ -1281,6 +1380,10 @@
                               AveragePP
           
           real(REAL_TYPE), dimension(NSTATEVAR) :: AverageESMstatev
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+
 
           AverageWeight = 0.0
           NNonZeroIntegrationWeight = 0.0
@@ -1439,8 +1542,8 @@
           end do
 
           ! Assign the average stress, water pressure to particles of ElementID
-          do IPart = 1, NPartEle(ElementID)
-            ParticleIndex = GetParticleIndexFunction(IPart, ElementID) ! Get the particle ID
+          do IPart = 1, NPartEle(ElementID,IPatch_Temporary)
+            ParticleIndex = GetParticleIndexFunction(IPart, ElementID, IPatch_Temporary) ! Get the particle ID
             
             SigmaEffArray(ParticleIndex,:) = StressAverage(:)
             
@@ -1489,6 +1592,9 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IPart, ParticleIndex
           real(REAL_TYPE) :: MassAverage, MassAverageW
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           MassAverage = 0.0 ! Initialise average mass of element IEl
           MassAverageW = 0.0
@@ -1511,8 +1617,8 @@
             MassAverageW / dble(NConsideredParticles)
                      
           ! Assign the average mass to virtual particles of ElementID
-          do IPart = 1, NPartEle(ElementID)
-            ParticleIndex = GetParticleIndexFunction(IPart, ElementID) ! Get the particle ID
+          do IPart = 1, NPartEle(ElementID,IPatch_Temporary)
+            ParticleIndex = GetParticleIndexFunction(IPart, ElementID, IPatch_Temporary) ! Get the particle ID
             MassArray(ParticleIndex) = MassAverage
             MassWaterArray(ParticleIndex) = MassAverageW
           end do
@@ -1537,12 +1643,15 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NConsideredParticles, IError, I
           integer(INTEGER_TYPE), dimension(:), allocatable :: ConsideredParticles
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
-          NConsideredParticles = NPartEle(ElementID)
+          NConsideredParticles = NPartEle(ElementID,IPatch_Temporary)
           allocate(ConsideredParticles(NConsideredParticles),  &
                    stat = IError)
           do I = 1, NConsideredParticles
-            ConsideredParticles(I) = GetParticleIndexFunction(I, ElementID)
+            ConsideredParticles(I) = GetParticleIndexFunction(I, ElementID, IPatch_Temporary)
           end do
 
           call InterpolateParticleStateParameters(ElementID, &
@@ -1553,79 +1662,81 @@
 
         end subroutine AverageElementParticleStateParam
 
-        subroutine NewParticles(ParticleIndex,IElement, NMatPoints, LocalParticle)
-        !**********************************************************************
+        !subroutine NewParticles(ParticleIndex,IElement, NMatPoints, LocalParticle)
+        !!**********************************************************************
+        !!
+        !!  Function : Initialise list of material points and housekeeping arrays
+        !!
+        !!**********************************************************************
         !
-        !  Function : Initialise list of material points and housekeeping arrays
+        !implicit none
         !
-        !**********************************************************************
-
-        implicit none
-
-          ! local variables
-          integer(INTEGER_TYPE), intent(in) :: ParticleIndex, IElement, NMatPoints, LocalParticle
-          integer(INTEGER_TYPE) :: IParticle, EntityID, IDCounter
-          real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
-          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
-          integer(INTEGER_TYPE) :: MaterialPointType
-          
-          IDCounter = 0
-          ! determine decimal factor for material point housekeeping arrays: PartFactor
-          call DetermineDecimalFactor()
-
-          call InitialLocalMaterialPointCoordinatesLoc(LocalParticle, NMatPoints, 0, IntegrationWeight, LocPos)
-          
-          ! determine the determinant of the Jacobian
-          call DetJacob(LocPos, Counters%NEl, Counters%NodTot, NDIM, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)
-          
-          ! determine global integration weight of material point
-          IntegrationWeight = IntegrationWeight * DetJac
-          
-          if (GeoParams%ApplyLocalDampingElement) then
-            DampingFactor = GeoParams%LocalDampingFactorElement(IElement) ! only for absorbing boundaries
-          end if  
-          
-                ! determine type of material point
-                if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
-                  if (MatParams(ElementMaterialID(IElement))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(IElement))%MaterialPhases=='1-phase-liquid') then
-                    MaterialPointType = MaterialPointTypeLiquid
-                  else
-                    MaterialPointType = MaterialPointTypeMixture
-                  end if
-                end if          
-          
-                ! set ENTITY = SOFT_ENTITY
-                EntityID = SOFT_ENTITY
-                
-                ! assign (basic) data to the material point
-                Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(IElement)), & ! Material ID
-                                           MaterialPointType, & ! MaterialPointType: mixture, solid, liquid, 
-                                           IntegrationWeight, & ! integration weight
-                                           LocPos, & ! local coordinate
-                                           MATERIALPARTICLE, & ! material or virtual material point
-                                           -1.0, & !  mass assigned to material point in case of virtual material point
-                                           CalParams%GravityData%GAccel, & ! gravity acceleration
-                                           CalParams%GravityData%GravityVector, & ! direction-vector of gravitational force
-                                           DampingFactor, & ! element based damping factor
-                                           CalParams%ApplySubmergedCalculation,&
-                                           MassArray(ParticleIndex), &
-                                           MassWaterArray(ParticleIndex)) ! submerged calculation
-                ! New ElementIDArray
-                ElementIDArray(ParticleIndex) = IElement
-                EntityIDArray(ParticleIndex) = EntityID
-                MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement))
-                MaterialPointTypeArray(ParticleIndex) = MaterialPointType
-
-              ! set material point shape function values and derivatives
-              call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex)
-
-              ! set material point housekeeping arrays EleParticle and EleParticleHelp               
-              call UpdateEleParticles(IElement, LocalParticle, ParticleIndex, NMatPoints)
-
-              ! determine global position of material points from local material point coordinates
-              call CoordLocalToGlobalConst(IElement, NodalCoordinates)
-
-        end subroutine NewParticles   
+        !  ! local variables
+        !  integer(INTEGER_TYPE), intent(in) :: ParticleIndex, IElement, NMatPoints, LocalParticle
+        !  integer(INTEGER_TYPE) :: IParticle, EntityID, IDCounter
+        !  real(REAL_TYPE) :: IntegrationWeight, DetJac, LocPos(NVECTOR), DampingFactor=0.0
+        !  real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: RJac, InvRJac
+        !  integer(INTEGER_TYPE) :: MaterialPointType
+        !  
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary
+        !  
+        !  IDCounter = 0
+        !  ! determine decimal factor for material point housekeeping arrays: PartFactor
+        !  call DetermineDecimalFactor()
+        !
+        !  call InitialLocalMaterialPointCoordinatesLoc(LocalParticle, NMatPoints, 0, IntegrationWeight, LocPos)
+        !  
+        !  ! determine the determinant of the Jacobian ! --> I commented this out
+        !  !call DetJacob(LocPos, Counters%NEl(IPatch_Temporary), Counters%NodTot(IPatch_Temporary), NDIM, IElement, ElementConnectivities, NodalCoordinates, RJac, InvRJac, DetJac)
+        !  
+        !  ! determine global integration weight of material point
+        !  IntegrationWeight = IntegrationWeight * DetJac
+        !  
+        !  if (GeoParams%ApplyLocalDampingElement) then
+        !    DampingFactor = GeoParams%LocalDampingFactorElement(IElement) ! only for absorbing boundaries
+        !  end if  
+        !  
+        !        ! determine type of material point
+        !        if (NFORMULATION==1) then ! 1-layer formulation, material point is of type MIXTURE
+        !          if (MatParams(ElementMaterialID(IElement))%MaterialType=='1-phase-liquid'.or.MatParams(ElementMaterialID(IElement))%MaterialPhases=='1-phase-liquid') then
+        !            MaterialPointType = MaterialPointTypeLiquid
+        !          else
+        !            MaterialPointType = MaterialPointTypeMixture
+        !          end if
+        !        end if          
+        !  
+        !        ! set ENTITY = SOFT_ENTITY
+        !        EntityID = SOFT_ENTITY
+        !        
+        !        ! assign (basic) data to the material point
+        !        Particles(ParticleIndex) = InitParticle(abs(ElementMaterialID(IElement)), & ! Material ID
+        !                                   MaterialPointType, & ! MaterialPointType: mixture, solid, liquid, 
+        !                                   IntegrationWeight, & ! integration weight
+        !                                   LocPos, & ! local coordinate
+        !                                   MATERIALPARTICLE, & ! material or virtual material point
+        !                                   -1.0, & !  mass assigned to material point in case of virtual material point
+        !                                   CalParams%GravityData%GAccel, & ! gravity acceleration
+        !                                   CalParams%GravityData%GravityVector, & ! direction-vector of gravitational force
+        !                                   DampingFactor, & ! element based damping factor
+        !                                   CalParams%ApplySubmergedCalculation,&
+        !                                   MassArray(ParticleIndex), &
+        !                                   MassWaterArray(ParticleIndex)) ! submerged calculation
+        !        ! New ElementIDArray
+        !        ElementIDArray(ParticleIndex) = IElement
+        !        EntityIDArray(ParticleIndex) = EntityID
+        !        MaterialIDArray(ParticleIndex) = abs(ElementMaterialID(IElement))
+        !        MaterialPointTypeArray(ParticleIndex) = MaterialPointType
+        !
+        !      ! set material point shape function values and derivatives
+        !      call SetParticleShapeFunctionData(Particles(ParticleIndex),ParticleIndex)
+        !
+        !      ! set material point housekeeping arrays EleParticle and EleParticleHelp               
+        !      call UpdateEleParticles(IElement, LocalParticle, ParticleIndex, NMatPoints)
+        !
+        !      ! determine global position of material points from local material point coordinates
+        !      call CoordLocalToGlobalConst(IElement, NodalCoordinates)
+        !
+        !end subroutine NewParticles   
         
         subroutine InitialLocalMaterialPointCoordinatesLoc(IParticle, SolidPointsElement, LiquidPointsElement, WeiGP, PosGP)
         !**********************************************************************
@@ -1651,181 +1762,183 @@
 
         end subroutine InitialLocalMaterialPointCoordinatesLoc     
         
-        subroutine UpdateEleParticles(IElement, IParticle, ParticleIndex, NMatPoints)
-        !**********************************************************************
+        !subroutine UpdateEleParticles(IElement, IParticle, ParticleIndex, NMatPoints)
+        !!**********************************************************************
+        !!
+        !!    Function:  Sets EleParticles(ParticleIndex) and EleParticlesHelp(IElement)
+        !!               if ParticleIndex is larger than 0. Else EleParticlesHelp(IElement)
+        !!               is set to -1 to indicate that IElement is inactive and therefor
+        !!               contains no particles. The particle-element connectivity stored
+        !!               in EleParticles consists of the element ID multiplied by PartFactor
+        !!               and ParticleIndex. EleParticlesHelp contains the ParticleIndex of
+        !!               the first particle located in IElement. The following NPartEle(IElement)
+        !!               particles of EleParticles also belong to IElement.
+        !!
+        !!     IElement : ID of the considered element
+        !!     IParticle : Local ID of the considered particle inside IElement
+        !!     ParticleIndex : Index of the considered particle in the Particles array
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Sets EleParticles(ParticleIndex) and EleParticlesHelp(IElement)
-        !               if ParticleIndex is larger than 0. Else EleParticlesHelp(IElement)
-        !               is set to -1 to indicate that IElement is inactive and therefor
-        !               contains no particles. The particle-element connectivity stored
-        !               in EleParticles consists of the element ID multiplied by PartFactor
-        !               and ParticleIndex. EleParticlesHelp contains the ParticleIndex of
-        !               the first particle located in IElement. The following NPartEle(IElement)
-        !               particles of EleParticles also belong to IElement.
+        !  implicit none
+        !  
+        !    integer(INTEGER_TYPE), intent(in) :: IElement, NMatPoints
+        !    integer(INTEGER_TYPE), intent(in) :: IParticle
+        !    integer(INTEGER_TYPE), intent(in) :: ParticleIndex
+        !    ! Local variables
+        !    integer(INTEGER_TYPE) :: I, IError
+        !    integer(INTEGER_TYPE) :: LocalIElement, PartFactor
+        !    integer(INTEGER_TYPE) :: LocalParticleIndex, CopyEleParticles(Counters%NParticles-NMatPoints)
         !
-        !     IElement : ID of the considered element
-        !     IParticle : Local ID of the considered particle inside IElement
-        !     ParticleIndex : Index of the considered particle in the Particles array
+        !    PartFactor = DecimalFactor(Counters%NParticles)
+        !    !call SetPartFactor(DecimalFactor(Counters%NParticles))
+        !    IError = 0
+        !    
+        !    ! Destroy old particle data
+        !    if (IParticle == 1) then
+        !     CopyEleParticles = EleParticles    
+        !     deallocate(EleParticles, stat = IError)                     ! destroy vector with old size
+        !     allocate(EleParticles(Counters%NParticles), stat = IError)  ! vector with new size
+        !     EleParticles = -1
+        !        do I = 1, Counters%NParticles-NMatPoints
+        !            EleParticles(I) = CopyEleParticles(I)
+        !        end do
+        !    end if
         !
-        ! Implemented in the frame of the MPM project.
+        !    if (ParticleIndex>0) then
+        !      LocalIElement = IElement
+        !      LocalParticleIndex = ParticleIndex
         !
-        !**********************************************************************
+        !      EleParticles(ParticleIndex) = LocalIElement * PartFactor + &
+        !                                    LocalParticleIndex
+        !
+        !  
+        !      if (IParticle==1) then ! First particle of element
+        !        EleParticlesHelp(IElement) = ParticleIndex
+        !      end if
+        !    else ! Inactive element
+        !      EleParticlesHelp(IElement) = -1
+        !    end if
+        !
+        !    if (IParticle==1) then
+        !        call UpdateGetParticleIndex(IParticle, ParticleIndex, IElement)
+        !    end if
+        !    
+        !end subroutine UpdateEleParticles
         
-          implicit none
-          
-            integer(INTEGER_TYPE), intent(in) :: IElement, NMatPoints
-            integer(INTEGER_TYPE), intent(in) :: IParticle
-            integer(INTEGER_TYPE), intent(in) :: ParticleIndex
-            ! Local variables
-            integer(INTEGER_TYPE) :: I, IError
-            integer(INTEGER_TYPE) :: LocalIElement, PartFactor
-            integer(INTEGER_TYPE) :: LocalParticleIndex, CopyEleParticles(Counters%NParticles-NMatPoints)
-
-            PartFactor = DecimalFactor(Counters%NParticles)
-            !call SetPartFactor(DecimalFactor(Counters%NParticles))
-            IError = 0
-            
-            ! Destroy old particle data
-            if (IParticle == 1) then
-             CopyEleParticles = EleParticles    
-             deallocate(EleParticles, stat = IError)                     ! destroy vector with old size
-             allocate(EleParticles(Counters%NParticles), stat = IError)  ! vector with new size
-             EleParticles = -1
-                do I = 1, Counters%NParticles-NMatPoints
-                    EleParticles(I) = CopyEleParticles(I)
-                end do
-            end if
-
-            if (ParticleIndex>0) then
-              LocalIElement = IElement
-              LocalParticleIndex = ParticleIndex
-
-              EleParticles(ParticleIndex) = LocalIElement * PartFactor + &
-                                            LocalParticleIndex
-     
-          
-              if (IParticle==1) then ! First particle of element
-                EleParticlesHelp(IElement) = ParticleIndex
-              end if
-            else ! Inactive element
-              EleParticlesHelp(IElement) = -1
-            end if
+        !subroutine UpdateGetParticleIndex(IParticle, ParticleIndex, IElement)
+        !!**********************************************************************
+        !!
+        !!    Function:  Sets/updates GetParticleIndex.
+        !!
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !integer(INTEGER_TYPE), intent(in) :: IParticle, ParticleIndex, IElement
+        !integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
+        !integer(INTEGER_TYPE) :: size1, size2, Index, i, j
+        !integer(INTEGER_TYPE), dimension(:,:), allocatable :: CopyGetParticleIndex
+        !
+        !maxParticle = 1
+        !maxEl       = 1
+        !do IAEl = 1, Counters%NAEl
+        !  iEl = ActiveElement(IAEl)
+        !  maxEl = max(maxEl, iEl)
+        !  maxParticle = max(maxParticle, NPartEle(iEl))
+        !enddo
+        !
+        !iError = 0
+        !if (IParticle == 1) then
+        !if (allocated(GetParticleIndex)) then
+        !    size1 = size(GetParticleIndex,1)
+        !    size2 = size(GetParticleIndex,2)
+        !    if ((CalParams%IStep==1).and.(min(CalParams%ConstructionStages(1,1),1)==1)) then
+        !        allocate(CopyGetParticleIndex(size1, maxEl), stat = IError)
+        !    else
+        !        allocate(CopyGetParticleIndex(size1, size2), stat = IError)
+        !    endif
+        !    
+        !  CopyGetParticleIndex = GetParticleIndex
+        !  deallocate(GetParticleIndex, stat = IError)
+        !  call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
+        !endif
+        !
+        !allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
+        !call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
+        !GetParticleIndex = -huge(GetParticleIndex)
+        !
+        !if (size2 >= Counters%NAEl) then
+        !    do i = 1, min(maxEl,size2) !cargando la info Copiada en CopyGetParticleIndex que tiene una longitud menor
+        !    !iEl = ActiveElement(IAEl)
+        !        do j = 1, size1
+        !            GetParticleIndex(j, i) = CopyGetParticleIndex(j, i) !GetParticleIndexFunction(int, iEl)
+        !        enddo
+        !    enddo
+        !    !GetParticleIndex = CopyGetParticleIndex
+        !
+        !else
+        !    do IAEl = 1, Counters%NAEl -1 !cargando la info Copiada en CopyGetParticleIndex que tiene una longitud menor
+        !        iEl = ActiveElement(IAEl)
+        !        do int = 1, NPartEle(iEl)
+        !            GetParticleIndex(int, iEl) = CopyGetParticleIndex(int, iEl) !GetParticleIndexFunction(int, iEl)
+        !        enddo
+        !    enddo 
+        !endif
+        !
+        !deallocate(CopyGetParticleIndex, stat = IError)
+        !end if
+        !Index = ParticleIndex
+        !do int = 1, NPartEle(IElement)
+        !    GetParticleIndex(int, IElement) = Index
+        !    Index = Index +1
+        !end do
+        !
+        !end subroutine UpdateGetParticleIndex 
         
-            if (IParticle==1) then
-                call UpdateGetParticleIndex(IParticle, ParticleIndex, IElement)
-            end if
-            
-        end subroutine UpdateEleParticles
-        
-        subroutine UpdateGetParticleIndex(IParticle, ParticleIndex, IElement)
-        !**********************************************************************
+        !subroutine CoordLocalToGlobalConst(IElement, LNodalCoordinates)
+        !!**********************************************************************
+        !!
+        !!    Function:  Determines the global coordinates associated with the local
+        !!               coordinates of particles inside a considered element.
+        !!               Updates the global coordinates of particles inside IElement.
+        !!
+        !!     IElement : ID of the considered element
+        !!     LNodalCoordinates : Nodal coordinates used for updating the integration point locations
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
         !
-        !    Function:  Sets/updates GetParticleIndex.
+        !use ModCounters
         !
+        !implicit none 
         !
-        ! Implemented in the frame of the MPM project.
+        !  integer(INTEGER_TYPE), intent(in) :: IElement
+        !  real(REAL_TYPE), dimension(Counters%Sum_NodTot, NVECTOR) :: LNodalCoordinates
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: NodeID, ParticleIndex
+        !  integer(INTEGER_TYPE) :: I, IParticle, IDim
         !
-        !**********************************************************************
-        
-        implicit none
-        integer(INTEGER_TYPE), intent(in) :: IParticle, ParticleIndex, IElement
-        integer(INTEGER_TYPE) :: maxParticle, iError, IAEl, iEl, int, maxEl
-        integer(INTEGER_TYPE) :: size1, size2, Index, i, j
-        integer(INTEGER_TYPE), dimension(:,:), allocatable :: CopyGetParticleIndex
-
-        maxParticle = 1
-        maxEl       = 1
-        do IAEl = 1, Counters%NAEl
-          iEl = ActiveElement(IAEl)
-          maxEl = max(maxEl, iEl)
-          maxParticle = max(maxParticle, NPartEle(iEl))
-        enddo
-        
-        iError = 0
-        if (IParticle == 1) then
-        if (allocated(GetParticleIndex)) then
-            size1 = size(GetParticleIndex,1)
-            size2 = size(GetParticleIndex,2)
-            if ((CalParams%IStep==1).and.(min(CalParams%ConstructionStages(1,1),1)==1)) then
-                allocate(CopyGetParticleIndex(size1, maxEl), stat = IError)
-            else
-                allocate(CopyGetParticleIndex(size1, size2), stat = IError)
-            endif
-            
-          CopyGetParticleIndex = GetParticleIndex
-          deallocate(GetParticleIndex, stat = IError)
-          call DeAllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
-        endif
-
-        allocate(GetParticleIndex(maxParticle, maxEl), stat = IError)
-        call AllocationError(iError, 'GetParticleIndex', 'SetParticleIndex')
-        GetParticleIndex = -huge(GetParticleIndex)
-        
-        if (size2 >= Counters%NAEl) then
-            do i = 1, min(maxEl,size2) !cargando la info Copiada en CopyGetParticleIndex que tiene una longitud menor
-            !iEl = ActiveElement(IAEl)
-                do j = 1, size1
-                    GetParticleIndex(j, i) = CopyGetParticleIndex(j, i) !GetParticleIndexFunction(int, iEl)
-                enddo
-            enddo
-            !GetParticleIndex = CopyGetParticleIndex
-
-        else
-            do IAEl = 1, Counters%NAEl -1 !cargando la info Copiada en CopyGetParticleIndex que tiene una longitud menor
-                iEl = ActiveElement(IAEl)
-                do int = 1, NPartEle(iEl)
-                    GetParticleIndex(int, iEl) = CopyGetParticleIndex(int, iEl) !GetParticleIndexFunction(int, iEl)
-                enddo
-            enddo 
-        endif
-        
-        deallocate(CopyGetParticleIndex, stat = IError)
-        end if
-        Index = ParticleIndex
-        do int = 1, NPartEle(IElement)
-            GetParticleIndex(int, IElement) = Index
-            Index = Index +1
-        end do
-
-        end subroutine UpdateGetParticleIndex 
-        
-        subroutine CoordLocalToGlobalConst(IElement, LNodalCoordinates)
-        !**********************************************************************
+        !  do IPatch = 1, Counters%NPatches
+        !  do IParticle = 1, NPartEle(IElement, IPatch) ! Loop over particles of IElement
+        !    ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
         !
-        !    Function:  Determines the global coordinates associated with the local
-        !               coordinates of particles inside a considered element.
-        !               Updates the global coordinates of particles inside IElement.
+        !    GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
+        !    do I = 1, ELEMENTNODES ! Loop over nodes of IElement
+        !      NodeID = iabs(ElementConnectivities(I, IElement) )
+        !      do IDim = 1, NVECTOR ! Loop over dimensions of IElement
+        !        GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)
+        !      end do
+        !    end do
+        !    
+        !  end do
+        !  end do 
         !
-        !     IElement : ID of the considered element
-        !     LNodalCoordinates : Nodal coordinates used for updating the integration point locations
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        use ModCounters
-
-        implicit none 
-
-          integer(INTEGER_TYPE), intent(in) :: IElement
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR) :: LNodalCoordinates
-          ! Local variables
-          integer(INTEGER_TYPE) :: NodeID, ParticleIndex
-          integer(INTEGER_TYPE) :: I, IParticle, IDim
-
-          do IParticle = 1, NPartEle(IElement) ! Loop over particles of IElement
-            ParticleIndex = GetParticleIndex(IParticle, IElement)
-
-            GlobPosArray(ParticleIndex,:) = 0.0 ! Reset coordinates to zero
-            do I = 1, ELEMENTNODES ! Loop over nodes of IElement
-              NodeID = iabs(ElementConnectivities(I, IElement) )
-              do IDim = 1, NVECTOR ! Loop over dimensions of IElement
-                GlobPosArray(ParticleIndex,IDim) = GlobPosArray(ParticleIndex,IDim) + LNodalCoordinates(NodeID, IDim) * ShapeValuesArray(ParticleIndex,I)
-              end do
-            end do
-            
-          end do
-
-        end subroutine CoordLocalToGlobalConst
+        !end subroutine CoordLocalToGlobalConst
 
       end module ModAdjustParticleDiscretisation

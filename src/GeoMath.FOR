@@ -700,5 +700,56 @@ module ModGeometryMath
 
         end function CheckInsideSubTriangle        
                 
+        
+        
+        integer function CheckInsideSubQuadrilateral(A, B, C, D, P) result(res)
+        !**********************************************************************
+        !
+        !    Function:  Returns .true. if P lies inside the quadrilateral
+        !               spanned by the vertices A, B, C and D (Note: 2D).
+        !               (Adapted from: Presentation of Prof. Jarek Rossignac, College of Computing, Georgia Institute of Technology, 2008)
+        !
+        !     A, B, C, D : Vertices of a quadrilateral (they are assumed not to be all co-linear!)
+        !     P : Global coordinates of a checked point P
+        !
+        ! O   CheckInsideQuadrilateral : True, if P lies inside the triangle
+        !
+        !**********************************************************************
+
+        implicit none
+
+        integer(INTEGER_TYPE), parameter :: IS_OUTSIDE  = 0
+        integer(INTEGER_TYPE), parameter :: IS_IN_ANGLE = 1
+        integer(INTEGER_TYPE), parameter :: IS_INSIDE   = 2
+
+        real(REAL_TYPE), dimension(:), intent(in) :: A, B, C, D, P
+        logical :: isInside
+        logical :: isInAngleDAB
+        logical :: isInAngleABC
+        logical :: isInAngleBCD
+        logical :: isInAngleCDA
+        integer(INTEGER_TYPE) :: IDim
+        
+        IDim = size(A)
+        res = IS_OUTSIDE
+        
+        isInAngleDAB = isInAngle(P, A, B, D, IDim)
+        isInAngleABC = isInAngle(P, B, C, A, IDim)        
+        isInAngleBCD = isInAngle(P, C, D, B, IDim)
+        isInAngleCDA = isInAngle(P, C, A, D, IDim)
+
+        
+        
+        isInside = isInAngleDAB .and. isInAngleABC .and. isInAngleBCD .and. isInAngleCDA
+
+        if (isInside) then
+          res = IS_INSIDE
+        else
+          !if (isInAngleBCA) then
+          !  res = IS_IN_ANGLE
+          !end if
+        end if
+
+        end function CheckInsideSubQuadrilateral     
 
       end module ModGeometryMath

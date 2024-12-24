@@ -183,7 +183,73 @@
             Depth = 0.0
           end if
 
-          end subroutine DetermineCoordRelativeToSurface
+        end subroutine DetermineCoordRelativeToSurface
+        
+        subroutine DetermineCoordRelativeToSurface_zdirection(SoilPoint, Depth)
+        !**********************************************************************
+        !
+        !    Function: SoilPoint is an arbitrary point of the discretisation
+        !              For the simplified computation of initial stresses the depth of the
+        !              point below the soil surface is required and, in case the soil surface
+        !              has the shape of a wave, also the distance on the soil surface from some
+        !              point specified as an origin for the wave function.
+        !
+        !              While trivial for the case that the gravity direction is aligned with the y-direction,
+        !              here also the case is taken into consideration that the gravity direction is rotated.
+        !              Here, it is assumed that the surface is rotated around the z-axis, so that the direction
+        !              vector of the surface lies in the x-y-plane. Furthermore, it is assumed that the soil surface
+        !              is oriented perpendicular to the gravity direction.
+        !
+        !   SoilPoint : Arbitrary point (material point, node)
+        !
+        ! O Depth : Depth of SoilPoint relative to the surface specified as described above
+        ! 
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint
+          real(REAL_TYPE), intent(out) :: Depth
+          ! Local variables
+          real(REAL_TYPE) :: Determinante, SurfaceCoordinate
+          real(REAL_TYPE), dimension(2) :: SurfaceNormVector, DepthVector, SurfaceVector, SurfacePoint
+          integer(INTEGER_TYPE) :: I
+          logical :: IsZeroGravity
+          
+          IsZeroGravity = .true.
+          do I = 1, NVECTOR
+            IsZeroGravity = IsZeroGravity .and. (CalParams%GravityData%GravityVector(I) == 0.0)
+          end do
+          if (IsZeroGravity) RETURN          
+          
+          Depth = 0.0
+          
+          ! Determine vector parallel to surface (it might not be horizontal) assuming it lies in the x-y-plane
+          ! and is perpendicular to the gravity vector
+          SurfaceNormVector(1) = -1.0 * CalParams%GravityData%GravityVector(3)
+          SurfaceNormVector(2) = CalParams%GravityData%GravityVector(1)
+          
+          ! Compute distance of material column above material point from specified origin
+          SurfaceVector = SoilPoint - CalParams%SoilSurfacePoint
+          SurfaceCoordinate = SurfaceVector(1) * SurfaceNormVector(1) + SurfaceVector(2) * SurfaceNormVector(2)
+          ! Compute height of material column above material point
+          SurfacePoint = CalParams%SoilSurfacePoint + SurfaceCoordinate * SurfaceNormVector
+          DepthVector = SurfacePoint - SoilPoint
+          Depth = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
+          
+          ! Check whether point lies above soil surface (make its depth negative in this case)
+          ! TODO: This does not work yet properly for wave-shaped surfaces (rather exceptional case)
+          Determinante = SurfaceNormVector(1) * (SoilPoint(2) - CalParams%SoilSurfacePoint(2)) -  &
+                         SurfaceNormVector(2) * (SoilPoint(1) - CalParams%SoilSurfacePoint(1))
+          if (Determinante<=0.0) then
+            Depth = -1.0 * Depth
+          end if
+          
+          if ((Depth>=0.0)) then
+            Depth = 0.0
+          end if
+
+          end subroutine DetermineCoordRelativeToSurface_zdirection
           
           subroutine DetermineCoordRelativeToDefinedSurface(SoilPoint,CoordMatrix, Distance, NewSurfaceReference)
         !**********************************************************************
@@ -278,7 +344,106 @@
           Distance = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
           
                
-        end subroutine DetermineCoordRelativeToDefinedSurface
+          end subroutine DetermineCoordRelativeToDefinedSurface
+          
+          
+          
+          subroutine DetermineCoordRelativeToDefinedSurface_zdirection(SoilPoint,CoordMatrix, Distance, NewSurfaceReference)
+        !**********************************************************************
+        !
+        !    Function: SoilPoint is an arbitrary point of the discretisation
+        !              For the simplified computation of initial stresses the depth of the
+        !              point below the soil surface is required.
+        !
+        !   SoilPoint : Arbitrary point (material point, node)
+        !   CoordMatrix: nodes coordinates belonging to Soil Surface or Phreatic surface, defined in the GOM file
+        !   NewSurfaceReference: reference point on the soil/phreatic surface, necessary to compute the distance from the  SoilPoint;
+        !                        it is obtained through linear interpolation
+        !
+        ! Distance : Depth of SoilPoint relative to the surface point, specified as described above
+        ! 
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint
+          real(REAL_TYPE),dimension(:,:), intent(in) :: CoordMatrix
+              real(REAL_TYPE), intent(out) :: Distance
+              real(REAL_TYPE), dimension(2), intent(out):: NewSurfaceReference
+          ! Local variables
+          real(REAL_TYPE) ::  SurfaceCoordinate 
+          
+          real(REAL_TYPE) :: Elevation
+          real(REAL_TYPE), dimension(2) :: SurfaceNormVector, DepthVector, SurfaceVector, SurfacePoint
+          integer(INTEGER_TYPE) :: I, SurfaceNodesCounter
+          logical :: IsZeroGravity
+          
+          IsZeroGravity = .true.
+          do I = 1, NVECTOR
+            IsZeroGravity = IsZeroGravity .and. (CalParams%GravityData%GravityVector(I) == 0.0)
+          end do
+          if (IsZeroGravity) RETURN          
+          
+          Distance = 0.0
+          Elevation = 0.0
+          NewSurfaceReference = 0.0       
+         
+          ! Determine vector parallel to surface (it might not be horizontal) assuming it lies in the x-y-plane
+          ! and is perpendicular to the gravity vector
+          SurfaceNormVector(1) = -1.0 * CalParams%GravityData%GravityVector(3)
+          SurfaceNormVector(2) = CalParams%GravityData%GravityVector(1)
+                        
+          SurfaceNodesCounter = size(CoordMatrix,1)
+          do I = 1,  SurfaceNodesCounter
+              
+                  if (NDIM == 2) then
+                  if (CoordMatrix(I,1) > SoilPoint(1)) then
+                      ! interpolated delta-y value (2D) (INTERPOLATION considering a line)
+                  if (I==1) then
+                  Elevation = CoordMatrix(I,2) 
+                                    else
+                                        Elevation = CoordMatrix(I-1,2) + (CoordMatrix(I,2)-CoordMatrix(I-1,2)) / (CoordMatrix(I,1)- &
+                          CoordMatrix(I-1,1)) * (SoilPoint(1) - CoordMatrix(I-1,1))
+                          end if
+                      exit
+                      else
+                    Elevation = CoordMatrix(SurfaceNodesCounter,2)   
+                 end if
+                   else if (NDIM == 3) then
+                   if (CoordMatrix(I,1) > SoilPoint(1)) then
+                      ! interpolated delta-z value (3D) (INTERPOLATION considering a plane)
+                    if (I==1) then
+                  Elevation =  CoordMatrix(I,3) 
+                                    else
+                      Elevation = CoordMatrix(i-1,3) + & 
+                      ((SoilPoint(2)-CoordMatrix(i-1,2)) * ( (CoordMatrix(i,1)-CoordMatrix(i-1,1)) * (CoordMatrix(i+1,3)-CoordMatrix(i-1,3))- &
+                      (CoordMatrix(i+1,1)-CoordMatrix(i-1,1)) * (CoordMatrix(i,3)-CoordMatrix(i-1,3)))- &
+                      (SoilPoint(1)-CoordMatrix(i-1,1)) *  ( (CoordMatrix(i,2)-CoordMatrix(i-1,2)) * (CoordMatrix(i+1,3)-CoordMatrix(i-1,3))- &
+                      (CoordMatrix(i,3)-CoordMatrix(i-1,3)) *  (CoordMatrix(i+1,2)-CoordMatrix(i-1,2))))/ &
+                      ((CoordMatrix(i,1)-CoordMatrix(i-1,1))*(CoordMatrix(i+1,2)-CoordMatrix(i-1,2))- (CoordMatrix(i,2)-CoordMatrix(i-1,2))*(CoordMatrix(i+1,1)-CoordMatrix(i-1,1)))
+                      end if
+                      exit
+                      else
+                    Elevation = CoordMatrix(SurfaceNodesCounter,3)   
+                  end if
+              end if
+          end do
+          
+          NewSurfaceReference(1) = 0.0
+          NewSurfaceReference(2) = Elevation
+          
+          ! Compute distance of material column above material point from specified origin
+          SurfaceVector = SoilPoint - NewSurfaceReference
+          SurfaceCoordinate = SurfaceVector(1) * SurfaceNormVector(1) + SurfaceVector(2) * SurfaceNormVector(2)
+          ! Compute height of material column above material point
+          SurfacePoint = NewSurfaceReference + SurfaceCoordinate * SurfaceNormVector
+          DepthVector = SurfacePoint - SoilPoint
+          Distance = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
+          
+               
+        end subroutine DetermineCoordRelativeToDefinedSurface_zdirection
+          
+          
           
         subroutine DetermineCoordRelativeToSurfaceDefinedInExternalFile(MaterialIndex, SoilPoint, Depth, LiquidSurfacePoint)
         !**********************************************************************
@@ -442,6 +607,70 @@
           end subroutine DetermineCoordRelativeToSurface2Layers
 
 
+          
+          
+          subroutine DetermineCoordRelativeToSurface2LayersSolid_zdirection(SoilPoint, Depth)
+        !**********************************************************************
+        !
+        !    Function: SoilPoint is an arbitrary point of the discretisation
+        !              For the simplified computation of initial stresses the depth of the
+        !              point below the soil surface is required and, in case the soil surface
+        !              has the shape of a wave, also the distance on the soil surface from some
+        !              point specified as an origin for the wave function.
+        !
+        !              While trivial for the case that the gravity direction is aligned with the y-direction,
+        !              here also the case is taken into consideration that the gravity direction is rotated.
+        !              Here, it is assumed that the surface is rotated around the z-axis, so that the direction
+        !              vector of the surface lies in the x-y-plane. Furthermore, it is assumed that the soil surface
+        !              is oriented perpendicular to the gravity direction.
+        !
+        !   SoilPoint : Arbitrary point (material point, node)
+        !
+        ! O Depth : Depth of SoilPoint relative to the surface specified as described above
+        ! 
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! I changed this to 3D 
+          real(REAL_TYPE), intent(out) :: Depth
+          ! Local variables
+          real(REAL_TYPE) :: Determinante, SurfaceCoordinate
+          real(REAL_TYPE), dimension(2) :: SurfaceNormVector, DepthVector, SurfaceVector, SurfacePoint
+          integer(INTEGER_TYPE) :: I
+          logical :: IsZeroGravity
+          
+          IsZeroGravity = .true.
+          do I = 1, NVECTOR
+            IsZeroGravity = IsZeroGravity .and. (CalParams%GravityData%GravityVector(I) == 0.0)
+          end do
+          if (IsZeroGravity) RETURN 
+          
+          Depth = 0.0
+                 
+              ! Determine vector parallel to surface (it might not be horizontal) assuming it lies in the x-y-plane
+              ! and is perpendicular to the gravity vector
+              SurfaceNormVector(1) = -1.0 * CalParams%GravityData%GravityVector(3)
+              SurfaceNormVector(2) = CalParams%GravityData%GravityVector(1)
+          
+              ! Compute distance of material column above material point from specified origin
+              SurfaceVector = SoilPoint - CalParams%SoilSurfacePoint
+              SurfaceCoordinate = SurfaceVector(1) * SurfaceNormVector(1) + SurfaceVector(2) * SurfaceNormVector(2)
+              ! Compute height of material column above material point
+              SurfacePoint = CalParams%SoilSurfacePoint + SurfaceCoordinate * SurfaceNormVector
+              DepthVector = SurfacePoint - SoilPoint
+              Depth = sqrt(DepthVector(1) * DepthVector(1) + DepthVector(2) * DepthVector(2))
+              Determinante = SurfaceNormVector(1) * (SoilPoint(2) - CalParams%SoilSurfacePoint(2)) -  &
+                         SurfaceNormVector(2) * (SoilPoint(1) - CalParams%SoilSurfacePoint(1))   
+              
+                
+              if (Determinante<=0.0) then
+                Depth = -1.0 * Depth
+              end if
+  
+        end subroutine DetermineCoordRelativeToSurface2LayersSolid_zdirection
+          
+          
           subroutine DetermineCoordRelativeToSurface2LayersSolid(SoilPoint, Depth)
         !**********************************************************************
         !
@@ -465,7 +694,7 @@
         
         implicit none
         
-          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! I changed this to 3D 
           real(REAL_TYPE), intent(out) :: Depth
           ! Local variables
           real(REAL_TYPE) :: Determinante, SurfaceCoordinate
@@ -545,197 +774,7 @@
           end subroutine KernelFunction
           
           
-subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVariable, NewMPVector)
-        
-             !**********************************************************************
-        !
-        !    Function:  Mapping procedure from external file to MP. This subroutine is called 
-        !           into a loop on MPs into an active element
-        !  1. Build a vector of distances from each node to the MP 
-        !  2. Build a vector of interpolation functions (Kernel) for each node
-        !  3. Loop among variables that need to be mapped, and map each variable to the MP, building a vector of mapped variables at the MP        
-        !
-        !   LengthSm : defined based on mesh size and the user specification in CPS 
-        !
-        ! ExtFileMatrix : nodal values from external file 
-        ! 
-        ! IdVariable: vector with ID of those variables actually present in the matrix
-        ! NewMPVector: vector of mapped variables at the MP        
-        !**********************************************************************
-        
-         implicit none
-         
-        
-        ! global values
-        real(REAL_TYPE), dimension (CalParams%MapFromExtFileNumberOfNodes, CalParams%MapFromExtFileNumberOfVariables), intent(in) ::  ExtFileMatrix
-        integer(INTEGER_TYPE), dimension (CalParams%MapFromExtFileNumberOfVariables), intent(in) :: IdVariable
-        real(REAL_TYPE), dimension (:), allocatable, intent(inout) :: NewMPVector
-        real(REAL_TYPE), intent(in) :: LengthSm
-        integer(INTEGER_TYPE), intent(in) :: ParticleID
-       
-       !local variables
-       integer(INTEGER_TYPE) :: NumberofNodes, NumberOfVariables, i, j, IError
-       integer(INTEGER_TYPE), dimension(:), allocatable :: Position
-       real(REAL_TYPE), dimension (NDIM) :: ParticlePos
-       real(REAL_TYPE):: Xnode, Ynode, Znode, DistMPNode, KernelResult, NewMPValue, Dummy
-       real(REAL_TYPE), dimension(CalParams%MapFromExtFileNumberOfNodes):: Distance, KernelVector, Weight
-       
-        NumberofNodes= CalParams%MapFromExtFileNumberOfNodes
-        NumberOfVariables= CalParams%MapFromExtFileNumberOfVariables
-            
-        ParticlePos(:) = GlobPosArray(ParticleID,:)
-        
-        ! calculate vectors for distance between MP and nodes, and calculate Kernel for each node
-        do i=1, NumberofNodes
-            Position = FINDLOC(IdVariable, 1)
-            Xnode= ExtFileMatrix(i,Position(1))
-            Position = FINDLOC(IdVariable, 2)
-            Ynode= ExtFileMatrix(i,Position(1))
-            if (NDIM==3) then
-                Position = FINDLOC(IdVariable, 3)
-                Znode= ExtFileMatrix(i,Position(1))
-                Distance(i) = sqrt((ParticlePos(1)-Xnode)*(ParticlePos(1)-Xnode)+(ParticlePos(2)-Ynode)*(ParticlePos(2)-Ynode)+(ParticlePos(3)-Znode)*(ParticlePos(3)-Znode))
-            else
-                Distance(i) = sqrt((ParticlePos(1)-Xnode)*(ParticlePos(1)-Xnode)+(ParticlePos(2)-Ynode)*(ParticlePos(2)-Ynode))
-            end if
-            DistMPNode= Distance(i)
-            call KernelFunction(DistMPNode,LengthSm, KernelResult)
-            KernelVector(i)= KernelResult
-        end do
-                             
-        if (.not. allocated(NewMPVector)) then
-            allocate (NewMPVector(NumberOfVariables), stat = IError) 
-        end if
-            NewMPVector = 0.0  
-            
-         Dummy=sum(KernelVector) 
-         
-        do j=1, size(NewMPVector) !loop among nodal variable
-            do i=1, NumberofNodes
-              
-                Weight(i)=KernelVector(i)/Dummy
-                NewMPValue = Weight(i)*ExtFileMatrix(i,j)
-                NewMPVector(j) = NewMPVector(j)+ NewMPValue
-                
-            end do
-        end do
-      
-             
-        end subroutine MapNodeVariableExtFileToMP
-          
-          subroutine GenerateBoreholeInfo()
-		!**********************************************************************
-        !
-        !    Function: It fills a system of matrices that will contain compacted information
-        !              about layer thickness, densities, and stresses required for a correct
-        !              K0 initialization.
-        !**********************************************************************
-		  Implicit none
-		  !Variable initialization
-		  integer(INTEGER_TYPE) :: I, MatIndex, Iel, IPart, NodeID, NElemPart, ParticleIndex
-		  real(REAL_TYPE) :: TopCoord, BotCoord, GammaMixture, GammaLiquid
-		  real(REAL_TYPE), Dimension(NDIM) :: PartCoord
-		  logical:: IsUndrEffectiveStress, MatFound
-		  		  
-		   do I = 1 ,CalParams%NumberSoilLayers
-			   CalParams%BoreHoleData(I,1)=CalParams%ThicknessSoilLayer(I)
-			   ! Top Coordinate
-			   if (I==1) then
-			    TopCoord=CalParams%SoilSurfacePoint(2)
-			   else
-				TopCoord=CalParams%BoreHoleData(I-1,2)-CalParams%BoreHoleData(I-1,1)
-			   end if
-			   CalParams%BoreHoleData(I,2)=TopCoord
-			   ! Bottom coordinate
-			   BotCoord=CalParams%BoreHoleData(I,2)-CalParams%BoreHoleData(I,1)
-			   CalParams%BoreHoleData(I,3)=BotCoord
-			   ! Get the Gamma mixture
-			   
-			   !get an element inside the zone of interest
-			   Matfound=.false.
-			   do Iel= 1 , Counters%NEl! loop trough elements
-				   NElemPart = NPartEle(Iel)
-				   do IPart= 1 ,  NElemPart ! loop over material points of the element
-					  ParticleIndex = GetParticleIndex(IPart, Iel)
-					  PartCoord=GlobPosArray(ParticleIndex,1:NVECTOR)
-					  if ( PartCoord(2)<CalParams%BoreHoleData(I,2) .and. &
-						  PartCoord(2)>CalParams%BoreHoleData(I,3) ) then !Node is inside layer
-						  if (EntityIDArray(ParticleIndex) /= CalParams%RigidBody%RigidEntity) then
-						  MatIndex=ElementMaterialID(Iel)
-						  Matfound=.true.
-						  EXIT
-						  end if
-					  end if					  
-				   end do
-				   if (Matfound) EXIT
-			   end do
-			   
-			if(NFORMULATION==1) then
-							  IsUndrEffectiveStress = &
-              !code version 2016 and previous
-              ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(MatIndex)%MaterialType)=='2-phase')) .or. &
-              !code version 2017.1 and following
-              (trim(MatParams(MatIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
-							  
-				if (CalParams%ApplySubmergedCalculation) then
-				GammaMixture = MatParams(MatIndex)%WeightSubmerged
-				GammaLiquid = 0.0
-				else if (MatParams(MatIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MatIndex)%MaterialPhases=='1-phase-liquid') then
-				GammaMixture = MatParams(MatIndex)%WeightLiquid 
-				!GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
-				GammaLiquid = 0.0 !fluid is the only one material and therefore thought as MIXTURE with only 1 material
-				else
-				GammaLiquid = MatParams(MatIndex)%WeightLiquid
-				if ((CalParams%NumberOfPhases==1).and.(.not.IsUndrEffectiveStress)) then
-				 GammaMixture = MatParams(MatIndex)%DryWeight
-				else
-					GammaMixture = MatParams(MatIndex)%WeightMixture
-				end if
-				end if
-			else ! 2 Constituents
-				if(MatParams(MatIndex)%MaterialType=='2-phase'.or.MatParams(MatIndex)%MaterialPhases=='2-phase') then
-					GammaMixture = MatParams(MatIndex)%DryWeight  + MatParams(MatIndex)%WeightLiquid *  &
-							   MatParams(MatIndex)%InitialPorosity   ! Soil Density * SoilConcentrationRatio
-					GammaLiquid = MatParams(MatIndex)%WeightLiquid
-				end if
-				if(MatParams(MatIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MatIndex)%MaterialPhases=='1-phase-liquid') then
-				 GammaMixture = MatParams(MatIndex)%WeightLiquid
-				 GammaLiquid = MatParams(MatIndex)%WeightLiquid
-				end if
-			end if
-			CalParams%BoreHoleData(I,4)=GammaMixture
-			CalParams%BoreHoleData(I,5)=GammaLiquid
-			! compute total effective stress at the interfaces
-			CalParams%BoreHoleData(I,6)=-CalParams%BoreHoleData(I,1) * &
-				GammaMixture * CalParams%Multipliers%GravityRealised
-			CalParams%BoreHoleData(I,7)=-CalParams%BoreHoleData(I,1) * &
-				GammaLiquid * CalParams%Multipliers%GravityRealised
-		   end do
-		   
-		   do I= 1 , CalParams%NumberSoilLayers
-			   ! Total stresses
-			   if (I==1) then
-				   CalParams%BoreHoleData(I,6)=CalParams%BoreHoleData(I,6) + &
-					   CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
-			   else
-				   CalParams%BoreHoleData(I,6)=CalParams%BoreHoleData(I,6)+&
-					   CalParams%BoreHoleData(I-1,6)
-			   end if
-				! Pore pressures
-			   if (I>1) then
-			   CalParams%BoreHoleData(I,7)=CalParams%BoreHoleData(I,7)+&
-				   CalParams%BoreHoleData(I-1,7)
-			   end if
-			   
-			   ! Effective stresses
-			   CalParams%BoreHoleData(I,8)=CalParams%BoreHoleData(I,6)-&
-				   CalParams%BoreHoleData(I,7)
-		   end do		  
-
-  end subroutine GenerateBoreholeInfo
-              
-        
-        subroutine ComputeVerticalStressForK0(MaterialIndex, SoilPoint, UpdatedFluidDensity, SigY, SigWP, SoilSurfCoord, PhreatSurfCoord)
+          subroutine ComputeVerticalStressForK0(MaterialIndex, SoilPoint, UpdatedFluidDensity, SigY, SigWP, SoilSurfCoord, PhreatSurfCoord)
         !**********************************************************************
         !
         !    Function: compute vertical stresses for K0 procedure
@@ -907,7 +946,7 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
          end if
               
           ! Compute vertical total stress for constant load
-          SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
+          SigY = SigY + CalParams%InitialVerticalLoadK0 !* CalParams%Multipliers%SolidARealised(1) ! I commented this to remove load dependency on this multiplier
 
           !Calculate water pressure
           if ((Counters%SoilSurfaceNumberofSides > 0) .or. (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)) then
@@ -927,6 +966,349 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
         end if
 
         end subroutine ComputeVerticalStressForK0
+          
+          
+          
+         
+        
+        
+        
+          
+          
+subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVariable, NewMPVector)
+        
+             !**********************************************************************
+        !
+        !    Function:  Mapping procedure from external file to MP. This subroutine is called 
+        !           into a loop on MPs into an active element
+        !  1. Build a vector of distances from each node to the MP 
+        !  2. Build a vector of interpolation functions (Kernel) for each node
+        !  3. Loop among variables that need to be mapped, and map each variable to the MP, building a vector of mapped variables at the MP        
+        !
+        !   LengthSm : defined based on mesh size and the user specification in CPS 
+        !
+        ! ExtFileMatrix : nodal values from external file 
+        ! 
+        ! IdVariable: vector with ID of those variables actually present in the matrix
+        ! NewMPVector: vector of mapped variables at the MP        
+        !**********************************************************************
+        
+         implicit none
+         
+        
+        ! global values
+        real(REAL_TYPE), dimension (CalParams%MapFromExtFileNumberOfNodes, CalParams%MapFromExtFileNumberOfVariables), intent(in) ::  ExtFileMatrix
+        integer(INTEGER_TYPE), dimension (CalParams%MapFromExtFileNumberOfVariables), intent(in) :: IdVariable
+        real(REAL_TYPE), dimension (:), allocatable, intent(inout) :: NewMPVector
+        real(REAL_TYPE), intent(in) :: LengthSm
+        integer(INTEGER_TYPE), intent(in) :: ParticleID
+       
+       !local variables
+       integer(INTEGER_TYPE) :: NumberofNodes, NumberOfVariables, i, j, IError
+       integer(INTEGER_TYPE), dimension(:), allocatable :: Position
+       real(REAL_TYPE), dimension (NDIM) :: ParticlePos
+       real(REAL_TYPE):: Xnode, Ynode, Znode, DistMPNode, KernelResult, NewMPValue, Dummy
+       real(REAL_TYPE), dimension(CalParams%MapFromExtFileNumberOfNodes):: Distance, KernelVector, Weight
+       
+        NumberofNodes= CalParams%MapFromExtFileNumberOfNodes
+        NumberOfVariables= CalParams%MapFromExtFileNumberOfVariables
+            
+        ParticlePos(:) = GlobPosArray(ParticleID,:)
+        
+        ! calculate vectors for distance between MP and nodes, and calculate Kernel for each node
+        do i=1, NumberofNodes
+            Position = FINDLOC(IdVariable, 1)
+            Xnode= ExtFileMatrix(i,Position(1))
+            Position = FINDLOC(IdVariable, 2)
+            Ynode= ExtFileMatrix(i,Position(1))
+            if (NDIM==3) then
+                Position = FINDLOC(IdVariable, 3)
+                Znode= ExtFileMatrix(i,Position(1))
+                Distance(i) = sqrt((ParticlePos(1)-Xnode)*(ParticlePos(1)-Xnode)+(ParticlePos(2)-Ynode)*(ParticlePos(2)-Ynode)+(ParticlePos(3)-Znode)*(ParticlePos(3)-Znode))
+            else
+                Distance(i) = sqrt((ParticlePos(1)-Xnode)*(ParticlePos(1)-Xnode)+(ParticlePos(2)-Ynode)*(ParticlePos(2)-Ynode))
+            end if
+            DistMPNode= Distance(i)
+            call KernelFunction(DistMPNode,LengthSm, KernelResult)
+            KernelVector(i)= KernelResult
+        end do
+                             
+        if (.not. allocated(NewMPVector)) then
+            allocate (NewMPVector(NumberOfVariables), stat = IError) 
+        end if
+            NewMPVector = 0.0  
+            
+         Dummy=sum(KernelVector) 
+         
+        do j=1, size(NewMPVector) !loop among nodal variable
+            do i=1, NumberofNodes
+              
+                Weight(i)=KernelVector(i)/Dummy
+                NewMPValue = Weight(i)*ExtFileMatrix(i,j)
+                NewMPVector(j) = NewMPVector(j)+ NewMPValue
+                
+            end do
+        end do
+      
+             
+        end subroutine MapNodeVariableExtFileToMP
+          
+          subroutine GenerateBoreholeInfo()
+		!**********************************************************************
+        !
+        !    Function: It fills a system of matrices that will contain compacted information
+        !              about layer thickness, densities, and stresses required for a correct
+        !              K0 initialization.
+        !**********************************************************************
+		  Implicit none
+		  !Variable initialization
+		  integer(INTEGER_TYPE) :: I, MatIndex, Iel, IPart, NodeID, NElemPart, ParticleIndex
+		  real(REAL_TYPE) :: TopCoord, BotCoord, GammaMixture, GammaLiquid
+		  real(REAL_TYPE), Dimension(NDIM) :: PartCoord
+		  logical:: IsUndrEffectiveStress, MatFound
+          
+          integer(INTEGER_TYPE) :: IPatch
+		  		  
+		   do I = 1 ,CalParams%NumberSoilLayers
+			   CalParams%BoreHoleData(I,1)=CalParams%ThicknessSoilLayer(I)
+			   ! Top Coordinate
+			   if (I==1) then
+			    TopCoord=CalParams%SoilSurfacePoint(2)
+			   else
+				TopCoord=CalParams%BoreHoleData(I-1,2)-CalParams%BoreHoleData(I-1,1)
+			   end if
+			   CalParams%BoreHoleData(I,2)=TopCoord
+			   ! Bottom coordinate
+			   BotCoord=CalParams%BoreHoleData(I,2)-CalParams%BoreHoleData(I,1)
+			   CalParams%BoreHoleData(I,3)=BotCoord
+			   ! Get the Gamma mixture
+			   
+			   !get an element inside the zone of interest
+			   Matfound=.false.
+               do IPatch = 1, Counters%NPatches
+			   do Iel= 1 , Counters%NEl(IPatch) ! loop trough elements
+				   NElemPart = NPartEle(Iel, IPatch)
+				   do IPart= 1 ,  NElemPart ! loop over material points of the element
+					  ParticleIndex = GetParticleIndex(IPart, Iel, IPatch)
+					  PartCoord=GlobPosArray(ParticleIndex,1:NVECTOR)
+					  if ( PartCoord(2)<CalParams%BoreHoleData(I,2) .and. &
+						  PartCoord(2)>CalParams%BoreHoleData(I,3) ) then !Node is inside layer
+						  if (EntityIDArray(ParticleIndex) /= CalParams%RigidBody%RigidEntity) then
+						  MatIndex=ElementMaterialID(Iel, IPatch)
+						  Matfound=.true.
+						  EXIT
+						  end if
+					  end if					  
+				   end do
+				   if (Matfound) EXIT
+               end do
+               
+               end do 
+			   
+			if(NFORMULATION==1) then
+							  IsUndrEffectiveStress = &
+              !code version 2016 and previous
+              ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(MatIndex)%MaterialType)=='2-phase')) .or. &
+              !code version 2017.1 and following
+              (trim(MatParams(MatIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
+							  
+				if (CalParams%ApplySubmergedCalculation) then
+				GammaMixture = MatParams(MatIndex)%WeightSubmerged
+				GammaLiquid = 0.0
+				else if (MatParams(MatIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MatIndex)%MaterialPhases=='1-phase-liquid') then
+				GammaMixture = MatParams(MatIndex)%WeightLiquid 
+				!GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
+				GammaLiquid = 0.0 !fluid is the only one material and therefore thought as MIXTURE with only 1 material
+				else
+				GammaLiquid = MatParams(MatIndex)%WeightLiquid
+				if ((CalParams%NumberOfPhases==1).and.(.not.IsUndrEffectiveStress)) then
+				 GammaMixture = MatParams(MatIndex)%DryWeight
+				else
+					GammaMixture = MatParams(MatIndex)%WeightMixture
+				end if
+				end if
+			else ! 2 Constituents
+				if(MatParams(MatIndex)%MaterialType=='2-phase'.or.MatParams(MatIndex)%MaterialPhases=='2-phase') then
+					GammaMixture = MatParams(MatIndex)%DryWeight  + MatParams(MatIndex)%WeightLiquid *  &
+							   MatParams(MatIndex)%InitialPorosity   ! Soil Density * SoilConcentrationRatio
+					GammaLiquid = MatParams(MatIndex)%WeightLiquid
+				end if
+				if(MatParams(MatIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MatIndex)%MaterialPhases=='1-phase-liquid') then
+				 GammaMixture = MatParams(MatIndex)%WeightLiquid
+				 GammaLiquid = MatParams(MatIndex)%WeightLiquid
+				end if
+			end if
+			CalParams%BoreHoleData(I,4)=GammaMixture
+			CalParams%BoreHoleData(I,5)=GammaLiquid
+			! compute total effective stress at the interfaces
+			CalParams%BoreHoleData(I,6)=-CalParams%BoreHoleData(I,1) * &
+				GammaMixture * CalParams%Multipliers%GravityRealised
+			CalParams%BoreHoleData(I,7)=-CalParams%BoreHoleData(I,1) * &
+				GammaLiquid * CalParams%Multipliers%GravityRealised
+		   end do
+		   
+		   do I= 1 , CalParams%NumberSoilLayers
+			   ! Total stresses
+			   if (I==1) then
+				   CalParams%BoreHoleData(I,6)=CalParams%BoreHoleData(I,6) + &
+					   CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
+			   else
+				   CalParams%BoreHoleData(I,6)=CalParams%BoreHoleData(I,6)+&
+					   CalParams%BoreHoleData(I-1,6)
+			   end if
+				! Pore pressures
+			   if (I>1) then
+			   CalParams%BoreHoleData(I,7)=CalParams%BoreHoleData(I,7)+&
+				   CalParams%BoreHoleData(I-1,7)
+			   end if
+			   
+			   ! Effective stresses
+			   CalParams%BoreHoleData(I,8)=CalParams%BoreHoleData(I,6)-&
+				   CalParams%BoreHoleData(I,7)
+		   end do		  
+
+  end subroutine GenerateBoreholeInfo
+              
+        
+        
+        
+        
+        
+        
+        subroutine ComputeVerticalStressForK0_zdirection(MaterialIndex, SoilPoint, UpdatedFluidDensity, SigY, SigWP, SoilSurfCoord, PhreatSurfCoord)
+        !**********************************************************************
+        !
+        !    Function: compute vertical stresses for K0 procedure
+        ! 
+        !**********************************************************************        
+       
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: MaterialIndex ! Material Index 
+          !real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! Global position of material point / node
+          real(REAL_TYPE), dimension(2), intent(in) :: SoilPoint ! Global position of material point / node
+          real(REAL_TYPE), intent(out) :: UpdatedFluidDensity, SigY, SigWP
+          real(REAL_TYPE), dimension(:,:), intent(in) :: SoilSurfCoord, PhreatSurfCoord
+          ! Local variables
+          
+          integer(INTEGER_TYPE) :: I
+          real(REAL_TYPE) :: GammaMixture, GammaLiquid
+          real(REAL_TYPE) :: Depth, SoilSurfDepth, PhreaticSurfDepth
+          real(REAL_TYPE), dimension(2):: NewReferenceSoil, NewReferencePhreatic
+          !real(REAL_TYPE) :: Depth
+          !integer(INTEGER_TYPE) :: SoilSurfaceNumberofSides, PhreaticSurfaceNumberofSides
+          logical :: IsUndrEffectiveStress, IsUndrTotalStress
+          
+          
+          SoilSurfDepth = 0.0
+          PhreaticSurfDepth = 0.0
+          SigY = 0.0
+          SigWP = 0.0
+          
+          IsUndrEffectiveStress = &
+              !code version 2016 and previous
+              ((CalParams%ApplyEffectiveStressAnalysis.and.(trim(MatParams(MaterialIndex)%MaterialType)=='2-phase')) .or. &
+              !code version 2017.1 and following
+              (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
+          
+          IsUndrTotalStress = trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_TOTAL
+    
+          ! Determine depth of point below
+          call DetermineCoordRelativeToSurface_zdirection(SoilPoint, Depth)
+    
+          ! Determine depth of point below a defined (not necessarily perpendicular to gravity vector) soil surface
+          if (Counters%SoilSurfaceNumberofSides > 0) then
+              call DetermineCoordRelativeToDefinedSurface_zdirection(SoilPoint, SoilSurfCoord, SoilSurfDepth,NewReferenceSoil)
+              call DetermineCoordRelativeToDefinedSurface_zdirection(SoilPoint, PhreatSurfCoord, PhreaticSurfDepth,NewReferencePhreatic)
+          end if          
+         
+        
+          ! Determine depth of point below a phreatic surface defined in an external file     
+          if (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)then
+               do I = 1, GeoParams%NumberWaterSurfaceMaterials
+               if (MaterialIndex == GeoParams%WaterSurfaceMaterialID(I))then   
+                   ! I did not change this to zdirection
+			   call DetermineCoordRelativeToSurfaceDefinedInExternalFile(MaterialIndex, SoilPoint, PhreaticSurfDepth,NewReferencePhreatic)
+               end if
+               end do
+		  end if
+          
+          ! Determine depth of point below a defined phreatic surface
+          
+          ! point above phreatic surface (dry/partially sat conditions)
+          if (SoilPoint(2) > NewReferencePhreatic(2)) then
+          PhreaticSurfDepth = - PhreaticSurfDepth
+          end if
+          
+          ! Retrieve possibly depth-dependent material parameters
+          if(NFORMULATION==1) then
+              if (CalParams%ApplySubmergedCalculation) then
+                  GammaMixture = MatParams(MaterialIndex)%WeightSubmerged
+                  GammaLiquid = 0.0
+              else if (MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
+                  GammaMixture = MatParams(MaterialIndex)%WeightLiquid
+                  GammaLiquid = 0.0 !fluid is the only one material and therefore thought as MIXTURE with only 1 material
+              else
+                  GammaLiquid = MatParams(MaterialIndex)%WeightLiquid
+                  if ((CalParams%NumberOfPhases==1).and.(.not.IsUndrEffectiveStress)) then
+                      GammaMixture = MatParams(MaterialIndex)%DryWeight
+                  else
+                      GammaMixture = MatParams(MaterialIndex)%WeightMixture
+                  end if
+              end if
+          end if
+          
+          ! Compute vertical total stress for gravity loading
+          ! Zero stresses for points above the specified material surface (positive depth is point above surface)
+          if(MatParams(MaterialIndex)%MaterialType=='1-phase-liquid'.or.MatParams(MaterialIndex)%MaterialPhases=='1-phase-liquid') then
+              UpdatedFluidDensity  = GammaMixture / CalParams%GravityData%GAccel * &
+                  exp((CalParams%Multipliers%GravityRealised * CalParams%GravityData%GAccel) /  &
+                  MatParams(MaterialIndex)%BulkModulusLiquid * (- Depth))
+
+              SigY = - MatParams(MaterialIndex)%BulkModulusLiquid * ( UpdatedFluidDensity -  &
+                  GammaMixture / CalParams%GravityData%GAccel)
+         end if
+         
+         if (Counters%SoilSurfaceNumberofSides > 0) then 
+             ! case 1: soil surface overlaps phreatic surface
+             if (SoilSurfDepth == PhreaticSurfDepth) then
+                 SigY = - SoilSurfDepth * GammaMixture * CalParams%Multipliers%GravityRealised
+                 ! case 2: phreatic surface is above soil surface ("ponding" or river)
+             else if (SoilSurfDepth < PhreaticSurfDepth) then
+                 SigY = - (SoilSurfDepth * GammaMixture + (PhreaticSurfDepth - SoilSurfDepth)*GammaLiquid) * CalParams%Multipliers%GravityRealised
+                 ! case 3a:   phreatic surface below soil surface and point below phreatic
+             else if ((SoilSurfDepth > PhreaticSurfDepth) .and. (PhreaticSurfDepth > 0)) then
+                 SigY = - (PhreaticSurfDepth * GammaMixture + (SoilSurfDepth - PhreaticSurfDepth ) * MatParams(MaterialIndex)%DryWeight) &
+                     * CalParams%Multipliers%GravityRealised
+                 ! case 3b: phreatic surface below soil surface and point above phreatic
+             else if (PhreaticSurfDepth < 0) then
+                 SigY = - SoilSurfDepth* MatParams(MaterialIndex)%DryWeight * CalParams%Multipliers%GravityRealised
+             end if
+         else
+             SigY = Depth * GammaMixture * CalParams%Multipliers%GravityRealised
+         end if
+              
+          ! Compute vertical total stress for constant load
+          SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
+
+          !Calculate water pressure
+          if ((Counters%SoilSurfaceNumberofSides > 0) .or. (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)) then
+              SigWP = - PhreaticSurfDepth * GammaLiquid * CalParams%Multipliers%GravityRealised
+          else
+              SigWP = Depth * GammaLiquid * CalParams%Multipliers%GravityRealised
+          end if
+         !add initial water pressure
+          SigWP = SigWP + CalParams%InitialWaterPressure*CalParams%Multipliers%WaterARealised(1)
+
+        if (SigWP> CalParams%K0MaxSurfaceSuction) then
+          SigWP = CalParams%K0MaxSurfaceSuction
+        end if
+        
+        if (MatParams(MaterialIndex)%MaterialType==DRY_SOIL) then
+            SigWP = 0.0
+        end if
+
+        end subroutine ComputeVerticalStressForK0_zdirection
         
         
         subroutine ComputeVerticalStressForK02Layers(MatPoint, UpdatedFluidDensity, SigY, SigWP, ParticleIndex, MaterialSetLayer)
@@ -1151,7 +1533,7 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
           
         end subroutine AssignStressStrainToLocalArray 
           
-        subroutine GetBMatrix(IEl, LocalID, Co, B, WtN)
+        subroutine GetBMatrix(IEl, LocalID, Co, B)!, WtN)
         !**********************************************************************
         !
         !    Function: Returns the B matrix and the global weight of the considered
@@ -1172,20 +1554,43 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
         implicit none
         
           integer(INTEGER_TYPE), intent(in) :: IEl, LocalID
-          real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Co
+          !real(REAL_TYPE), dimension(Counters%NodTot, NVECTOR), intent(in) :: Co
+          real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NVECTOR, Counters%NPatches), intent(in) :: Co ! this might need to be generalized so that IPatch is an input and we loop on the outside....
+
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(out) :: B
-          real(REAL_TYPE), intent(out) :: WtN
+          real(REAL_TYPE) :: WtN !, intent(out)
           ! Local variables
           integer(INTEGER_TYPE) :: IParticleIndex
-          real(REAL_TYPE) :: Det
+          !real(REAL_TYPE) :: Det
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEL
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          
+          maxParticle = 1
+          maxEl       = 1
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+             NEl = ActiveElement(IAEl, IPatch)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
+                enddo
+                end do
                                             
-          if (IsParticleIntegration(IEl) ) then ! Particle
-            IParticleIndex = GetParticleIndex(LocalID, IEl)   
+          if (IsParticleIntegration(IEl, IPatch) ) then ! Particle
+            IParticleIndex = GetParticleIndex(LocalID, IEl, IPatch)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
-                         ELEMENTNODES, Counters%NEl,  Counters%NodTot, NVECTOR, IEl, ElementConnectivities, Co, B, Det)
+                         ELEMENTNODES, Counters%NEl(IPatch),  Counters%NodTot(IPatch), NVECTOR, IEl, ElementConnectivities(:,:,IPatch), Co, B, & !NURBS%nel_NURBS(IPatch)
+                         IPatch)!, !Det) !Counters%NEl!Counters%NodTot
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
-            call FormB3(LocalID, IEl, ElementConnectivities, Co, B, Det, WtN)
+            ! I commented this gauss point integration
+            !call FormB3(LocalID, IEl, ElementConnectivities(:,:,IPatch), Co, B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:, IPatch), IPatch)
           end if
             
         end subroutine GetBMatrix
@@ -1232,17 +1637,25 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
           integer(INTEGER_TYPE), intent(in) :: IntGlo, IEl
           integer(INTEGER_TYPE), intent(in) :: PlasticityState
           !local variable
-          integer(INTEGER_TYPE):: NElemPart, IPart, ParticleIndex
+          integer(INTEGER_TYPE) :: NElemPart, IPart, ParticleIndex
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
           
-          if (IsParticleIntegration(IEl) ) then ! Partially filled element
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          
+          if (IsParticleIntegration(IEl, IPatch) ) then ! Partially filled element
             Particles(IntGlo)%IPL = PlasticityState
           else ! full filled element
-            NElemPart = NPartEle(IEl)  ! Number of particles in element
+            NElemPart = NPartEle(IEl, IPatch)  ! Number of particles in element
             do IPart = 1, NElemPart
-              ParticleIndex = GetParticleIndex(IPart, IEl)
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)
               Particles(ParticleIndex)%IPL = PlasticityState
             end do
           end if
+          
+          
+          end do ! loop over patches
         
         end subroutine SetIPL
         
@@ -1373,8 +1786,11 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
           real(REAL_TYPE) :: Value
      
           do I = 1, IDim
+              !if (.not. CalParams%ApplyFBar) then ! let's not add the stress increment if we are doing FBar
               Value = SigmaEff0Array(IntGlo, I) + DSig(I)
               SigmaEffArray(IntGlo, I) = Value
+              !end if 
+              
               if (CalParams%ApplyImplicitQuasiStatic) then
                 call SetEpsStepPreviousI(Particles(IntGlo), I, DEps(I))
               end if
@@ -1975,17 +2391,41 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
           ! Local variables
           integer(INTEGER_TYPE) :: IP
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
-          real(REAL_TYPE) :: WtN, Det
+          real(REAL_TYPE) :: WtN!, Det
           integer(INTEGER_TYPE) :: ElementID, iEntity, INode
           integer(INTEGER_TYPE) :: nn, I, J
           integer(INTEGER_TYPE), dimension(NVECTOR) :: IDof 
           real(REAL_TYPE), intent(inout)  :: DivergenceNAAirInWater 
           real(REAL_TYPE), intent(inout)  :: DivergenceNAVapourInGas 
-            
+          
+          
+               
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEL
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: PatchID
+          integer(INTEGER_TYPE) :: IntGlo_Temporary = 10000
+          
+          maxParticle = 1
+          maxEl       = 1
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+             NEl = ActiveElement(IAEl, IPatch)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl, IPatch))
+                enddo
+              end do ! loop over patches
+              
+            PatchID = PatchIDArray(IP) 
             ElementID = ElementIDArray(IP)
           
-            call FormB3(1, ElementID, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
-
+            call FormB3(1, ElementID, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo_Temporary,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
+            !(:,:,IPatch)
             !get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
               iEntity = EntityIDArray(IP) 
@@ -1998,7 +2438,7 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
                                
             do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
 
-                nn=ElementConnectivities(iNode,ElementID) ! get global node number
+                nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,ElementID,IPatch), IPatch) ! get global node number
                 do I = 1, NVECTOR
                   IDof(I) = ReducedDof(nn) + I  
                 end do  

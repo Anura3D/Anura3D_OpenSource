@@ -102,12 +102,19 @@
           integer(INTEGER_TYPE) :: IEl, IAEl, I, IParticle
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
           logical :: DoSmoothing2Layer, DoSmoothing
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
 
           LI = 0.25D0
           StrainSmooth = 0.0
     
-          do IAEl = 1, Counters%NAEl
-          IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+          IEl = ActiveElement(IAEl, IPatch)
           
             DoSmoothing2Layer = .false. !initialize
                 
@@ -117,48 +124,56 @@
                 end if
             end if
 
-            DoSmoothing = (MaterialElements(IMatSet,IEl)==1).and. &
+            DoSmoothing = (MaterialElements(IMatSet,IEl, IPatch)==1).and. &
                           ((NFORMULATION==1).or.(DoSmoothing2Layer))
      
               if (DoSmoothing) then
                 call BMatrix(LI, &
-                             ELEMENTNODES, Counters%NEl,  &
-                             Counters%NodTot, NVECTOR, &
-                             IEl, ElementConnectivities, &
-                             NodalCoordinatesUpd,  &
-                             BMatrixDeformed, DetJac)
+                             ELEMENTNODES, Counters%NEl(IPatch), &!NURBS%nel_NURBS(IPatch), &!Counters%NEl,  &
+                             Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
+                             IEl, ElementConnectivities(:,:, IPatch), &
+                             NodalCoordinatesUpd, &!(:,:,IPatch),  &
+                             BMatrixDeformed, &
+                             IPatch)!, DetJac)
 				
                 if ( ISAXISYMMETRIC ) then
                   call getNodalVolumesOfAnElement(IEl, volumeElNodes)
 			    end if                
 
                 IParticle = 1
-                call Get_Strain(IEl, IParticle, ElementConnectivities, & ! GetStrain.FOR
+                call Get_Strain(IEl, IParticle, ElementConnectivities(:,:, IPatch), & ! GetStrain.FOR
                                 BMatrixDeformed, DUTot, ReducedDof, &
-                                Eps)
+                                Eps, &
+                                IPatch)
 
               do I = 1, NTENSOR
-                ElementStrain(IEl, I) = Eps(I)
+                ElementStrain(IEl, I, IPatch) = Eps(I)
               end do
 
-              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
         
               EV = Eps(1) + Eps(2) + Eps(3)
               EVD = EV * DetJac
               if ( ISAXISYMMETRIC ) then
-                StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EV * volumeElNodes
-                StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + volumeElNodes
+                StrainSmooth(LJ(:), 1, IPatch) = StrainSmooth(LJ(:), 1, IPatch) + EV * volumeElNodes
+                StrainSmooth(LJ(:), 2, IPatch) = StrainSmooth(LJ(:), 2, IPatch) + volumeElNodes
               else
-                StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-                StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + DetJac
+                StrainSmooth(LJ(:), 1, IPatch) = StrainSmooth(LJ(:), 1, IPatch) + EVD
+                StrainSmooth(LJ(:), 2, IPatch) = StrainSmooth(LJ(:), 2, IPatch) + DetJac
               end if
               end if
-          end do
+                end do
+                end do 
 
-          do I = 1, Counters%NodTot
-            if (StrainSmooth(I, 2)>0.0) then
-              StrainSmooth(I, 1) = StrainSmooth(I, 1) / StrainSmooth(I, 2) ! Only consider active nodes
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
+            if (StrainSmooth(I, 2, IPatch)>0.0) then
+              StrainSmooth(I, 1, IPatch) = StrainSmooth(I, 1, IPatch) / StrainSmooth(I, 2, IPatch) ! Only consider active nodes
             end if
+          end do
           end do
         end subroutine GetEnhancedVolumetricStrain
 
@@ -179,9 +194,15 @@
           real(REAL_TYPE) :: ev
           real(REAL_TYPE), dimension (NTENSOR) :: Eps
           logical :: DoSmoothing2Layer, DoSmoothing
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
   
-          do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
             
             DoSmoothing2Layer = .false. !initialize
                 
@@ -191,19 +212,19 @@
                 end if
             end if
                 
-            DoSmoothing = (MaterialElements(IMatSet,IEl)==1).and. &
+            DoSmoothing = (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1).and. &
                     ((NFORMULATION==1).or.(DoSmoothing2Layer))
      
             if (DoSmoothing) then     !element belongs to the material IMatSet
-              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
               
               EnhancedVolumetricStrain = 0.0
               do I = 1, ELEMENTNODES
-                EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1) / dble(ELEMENTNODES)
+                EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
               end do    
                   
               do I = 1, NTENSOR
-                Eps(I) = ElementStrain(IEl, I)
+                Eps(I) = ElementStrain(IEl, I, IPatch_Temporary)
               end do
 
               if((NDIM==3).or.(ISAXISYMMETRIC)) then
@@ -218,9 +239,9 @@
               
               ! Update particle strains
 
-              NElemPart = NPartEle(IEl)
+              NElemPart = NPartEle(IEl, IPatch)
               do IParticle = 1, NElemPart ! Loop over all particles of the element
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
+                ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                 if ((NFORMULATION==1).or. &
                       (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then !If NumbOfLayers = 1 or Solid MatPoint
                     MaterialID = MaterialIDArray(ParticleIndex)
@@ -233,7 +254,9 @@
                 end if
               end do
             end if
-        end  do
+                end  do
+                
+                end do
        
         end subroutine SmoothenVolumetricStrain
         
@@ -282,14 +305,23 @@
           integer(INTEGER_TYPE) :: IEl, IAEl, I, IParticle
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) ::  LJ
           logical :: FreeWater2Layer, DoSmoothing
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           LI = 0.25D0
           StrainSmooth = 0.0
         
 
-          do IAEl = 1, Counters%NAEl
-          IEl = ActiveElement(IAEl)
-              if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+          IEl = ActiveElement(IAEl, IPatch)
+              if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
                   
               FreeWater2Layer = .false. !initialize
                 
@@ -303,46 +335,56 @@
      
                 if(DoSmoothing) then
                   call BMatrix(LI, &
-                             ELEMENTNODES, Counters%NEl,  &
-                             Counters%NodTot, NVECTOR, &
-                             IEl, ElementConnectivities, &
-                             NodalCoordinatesUpd,  &
-                             BMatrixDeformed, DetJac)
+                             ELEMENTNODES, Counters%NEl(IPatch), & !NURBS%nel_NURBS(IPatch), &!Counters%NEl,  &
+                             Counters%NodTot(IPatch), NVECTOR, & !Counters%NodTot
+                             IEl, ElementConnectivities(:,:, IPatch), &
+                             NodalCoordinatesUpd, &!(:,:,IPatch),  &
+                             BMatrixDeformed, &
+                             IPatch)!, DetJac)
                   
                   if ( ISAXISYMMETRIC ) then
                     call getNodalVolumesOfAnElement(IEl, volumeElNodes)
 			      end if                   
 
                   IParticle = 1
-                  call Get_Strain(IEl, IParticle, ElementConnectivities, & ! GetStrain.FOR
+                  call Get_Strain(IEl, IParticle, ElementConnectivities(:,:, IPatch), & ! GetStrain.FOR
                                 BMatrixDeformed, DULiquid, ReducedDof, &
-                                Eps)
+                                Eps, &
+                                IPatch)
 
                   do I = 1, NTENSOR
-                   ElementStrain(IEl, I) = Eps(I)
+                   ElementStrain(IEl, I, IPatch) = Eps(I)
                   end do
 
-                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
         
                   EV = Eps(1) + Eps(2) + Eps(3)
                   EVD = EV * DetJac
 
                 if ( ISAXISYMMETRIC ) then
-                  StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EV * volumeElNodes
-                  StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + volumeElNodes
+                  StrainSmooth(LJ(:), 1, IPatch) = StrainSmooth(LJ(:), 1, IPatch) + EV * volumeElNodes
+                  StrainSmooth(LJ(:), 2, IPatch) = StrainSmooth(LJ(:), 2, IPatch) + volumeElNodes
                 else
-                  StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-                  StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + DetJac
+                  StrainSmooth(LJ(:), 1, IPatch) = StrainSmooth(LJ(:), 1, IPatch) + EVD
+                  StrainSmooth(LJ(:), 2, IPatch) = StrainSmooth(LJ(:), 2, IPatch) + DetJac
                 end if
                  end if
               end if
-          end do
+                end do
+                
+                end do 
 
-          do I = 1, Counters%NodTot
-            if(StrainSmooth(I, 2)>0.0) then
-              StrainSmooth(I, 1) = StrainSmooth(I, 1) / StrainSmooth(I, 2) ! Only consider active nodes
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
+            if(StrainSmooth(I, 2, IPatch)>0.0) then
+              StrainSmooth(I, 1, IPatch) = StrainSmooth(I, 1, IPatch) / StrainSmooth(I, 2, IPatch) ! Only consider active nodes
             end if
-          end do
+          end do !loop over control points
+          end do !loop over patches
+          
         end subroutine GetEnhancedVolumetricStrainLiquid
 
         subroutine SmoothenVolumetricStrainLiquid(IMatSet)
@@ -362,10 +404,19 @@
           real(REAL_TYPE) :: ev
           real(REAL_TYPE), dimension(NTENSOR) :: Eps
           logical :: FreeWater2Layer, DoSmoothing
-        
-          do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
-            if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          !do IAEl = 1, Counters%NAEl
+              
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+                    
+            IEl = ActiveElement(IAEl, IPatch)
+            if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
                 
               FreeWater2Layer = .false. !initialize
                 
@@ -378,15 +429,15 @@
               DoSmoothing = (NFORMULATION==1).or.(FreeWater2Layer.and.(.not.IsElemWithLiquidFreeSurfMP(IEl)))
                 
               if(DoSmoothing) then
-                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                 
                 EnhancedVolumetricStrain = 0.0
                 do I = 1, ELEMENTNODES
-                  EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1) / dble(ELEMENTNODES)
+                  EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
                 end do    
 
                 do I = 1, NTENSOR
-                  Eps(I) = ElementStrain(IEl, I)
+                  Eps(I) = ElementStrain(IEl, I, IPatch_Temporary)
                 end do
                 
               if((NDIM==3).or.(ISAXISYMMETRIC)) then
@@ -402,9 +453,9 @@
                 
                 ! Update particle strains
 
-                NElemPart = NPartEle(IEl)
+                NElemPart = NPartEle(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
+                  ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                   if ((NFORMULATION==2).and.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
                     ! 2 Constituents
                     MaterialID = MaterialIDArray(ParticleIndex)
@@ -417,7 +468,10 @@
                 end do
               end if
             end if
-        end  do
+                end  do
+                
+                
+                end do ! patches
        
         end subroutine SmoothenVolumetricStrainLiquid
         
@@ -435,20 +489,29 @@
  
           integer(INTEGER_TYPE), intent(in) :: IMatSet
           ! Local variables  
-          real(REAL_TYPE), dimension(Counters%NEl) :: ElementsVolumetricStrain
+          real(REAL_TYPE), dimension(Counters%Sum_NEl) :: ElementsVolumetricStrain
           real(REAL_TYPE) :: EV, EVD, EnhancedVolumetricStrain
           integer(INTEGER_TYPE) :: IEl, IAEl, I, NElemPart, MaterialID, IParticle, ParticleIndex
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
         
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
 
-          do IAEl = 1, Counters%NAEl  ! active element
-            IEl = ActiveElement(IAEl)
-            if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-              NElemPart = NPartEle(IEl)
+          !do IAEl = 1, Counters%NAEl  ! active element
+              
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+            IEl = ActiveElement(IAEl, IPatch)
+            if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
+              NElemPart = NPartEle(IEl, IPatch)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
+                ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                 MaterialID = MaterialIDArray(ParticleIndex)
                 if (MaterialID==IMatSet)then ! This particle belongs to the considered entity (Material)
                   ! The volumetric strain in this element for the considered entity (Material)
@@ -458,30 +521,40 @@
               end do ! particles
 
               ElementsVolumetricStrain(IEl) = EV
-              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
-              EVD = EV * ElementSpace(IEl)
+              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
+              EVD = EV * ElementSpace(IEl,IPatch_Temporary)
 
-              StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-              StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl)
+              StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EVD
+              StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + ElementSpace(IEl,IPatch_Temporary)
 
               end if ! entity
-          end do ! active element
+                end do ! active element
+                end do 
 
 
-          do I = 1, Counters%NodTot
-            if(StrainSmooth(I, 2)>0.0) then
-              StrainSmooth(I, 1) = StrainSmooth(I, 1) / StrainSmooth(I, 2) ! Only consider active nodes
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
+            if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
+              StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
 
-            do IAEl = 1, Counters%NAEl  ! active element 
-              IEl = ActiveElement(IAEl)
-                if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+            !do IAEl = 1, Counters%NAEl  ! active element 
+                
+                do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+              IEl = ActiveElement(IAEl, IPatch)
+                if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
+                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                   
                   EnhancedVolumetricStrain = 0.0
                   do I = 1, ELEMENTNODES
-                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1) / dble(ELEMENTNODES)
+                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
                   end do    
 
 !              EV = ElementsVolumetricStrain (IEl) - EnhancedVolumetricStrain
@@ -490,16 +563,17 @@
         
               ! Update particle strains
 
-                NElemPart = NPartEle(IEl)
+                NElemPart = NPartEle(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
+                  ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                     MaterialID = MaterialIDArray(ParticleIndex)
                       if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                         Particles(ParticleIndex)%WaterVolumetricStrain = EV
                       end if
                 end do ! particles
               end if ! entity
-           end  do ! active eleemnt
+                end  do ! active element
+                end do ! patches
           
         end subroutine SmoothenStrainsWater
      
@@ -516,20 +590,28 @@
  
           integer(INTEGER_TYPE), intent(in) :: IMatSet
           ! Local variables  
-           real(REAL_TYPE), dimension( Counters%NEl) :: ElementsVolumetricStrain
+           real(REAL_TYPE), dimension( Counters%Sum_NEl) :: ElementsVolumetricStrain
           real(REAL_TYPE) :: EV, EVD, EnhancedVolumetricStrain
           integer(INTEGER_TYPE) :: IEl, IAEl, I, NElemPart, MaterialID, IParticle, ParticleIndex
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
         
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
+          
           StrainSmooth = 0.0
           ElementsVolumetricStrain = 0.0
 
-          do IAEl = 1, Counters%NAEl  ! active element
-            IEl = ActiveElement(IAEl)
-            if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-              NElemPart = NPartEle(IEl)
+          !do IAEl = 1, Counters%NAEl  ! active element
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
+            if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
+              NElemPart = NPartEle(IEl, IPatch)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
+                ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                 MaterialID = MaterialIDArray(ParticleIndex)
                 if (MaterialID==IMatSet)then ! This particle belongs to the considered entity (Material)
                   ! The volumetric strain in this element for the considered entity (Material)
@@ -539,31 +621,41 @@
               end do ! particles
 
               ElementsVolumetricStrain(IEl) = EV
-              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
-              EVD = EV * ElementSpace(IEl)
+              LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
+              EVD = EV * ElementSpace(IEl,IPatch_Temporary)
 
-              StrainSmooth(LJ(:), 1) = StrainSmooth(LJ(:), 1) + EVD
-              StrainSmooth(LJ(:), 2) = StrainSmooth(LJ(:), 2) + ElementSpace(IEl)
+              StrainSmooth(LJ(:), 1, IPatch_Temporary) = StrainSmooth(LJ(:), 1, IPatch_Temporary) + EVD
+              StrainSmooth(LJ(:), 2, IPatch_Temporary) = StrainSmooth(LJ(:), 2, IPatch_Temporary) + ElementSpace(IEl,IPatch_Temporary)
 
             end if ! entity
-          end do ! active element
+                end do ! active element
 
+                end do 
 
-          do I = 1, Counters%NodTot
-            if(StrainSmooth(I, 2)>0.0) then
-              StrainSmooth(I, 1) = StrainSmooth(I, 1) / StrainSmooth(I, 2) ! Only consider active nodes
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
+            if(StrainSmooth(I, 2, IPatch_Temporary)>0.0) then
+              StrainSmooth(I, 1, IPatch_Temporary) = StrainSmooth(I, 1, IPatch_Temporary) / StrainSmooth(I, 2, IPatch_Temporary) ! Only consider active nodes
             end if
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
           
 
-            do IAEl = 1, Counters%NAEl  ! active element 
-              IEl = ActiveElement(IAEl)
-                if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+            !do IAEl = 1, Counters%NAEl  ! active element 
+                
+                do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+              IEl = ActiveElement(IAEl, IPatch)
+                if (MaterialElements(IMatSet,IEl, IPatch_Temporary)==1) then     !element belongs to the material IMatSet
+                  LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch_Temporary)
                   
                   EnhancedVolumetricStrain = 0.0
                   do I = 1, ELEMENTNODES
-                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1) / dble(ELEMENTNODES)
+                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
                   end do    
 
 !              EV = ElementsVolumetricStrain (IEl) - EnhancedVolumetricStrain                      
@@ -572,16 +664,18 @@
         
               ! Update particle strains
 
-                NElemPart = NPartEle(IEl)
+                NElemPart = NPartEle(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
+                  ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                     MaterialID = MaterialIDArray(ParticleIndex)
                       if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                         Particles(ParticleIndex)%GasVolumetricStrain = EV
                       end if
                 end do ! particles
               end if ! entity
-           end  do ! active element
+                end  do ! active element
+                
+                end do! patches
           
         end subroutine SmoothenStrainsGas
           
@@ -609,22 +703,61 @@
         real(REAL_TYPE) :: DetJac, weight
         real(REAL_TYPE), dimension(NDIM, NDIM) :: RJac
         real(REAL_TYPE), dimension(NDIM, NDIM) :: RJacInv
+        
+                  !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          !real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+        
+        real(REAL_TYPE), allocatable, dimension(:) :: HS
+        real(REAL_TYPE), allocatable, dimension(:,:) :: dHS 
+        
+        ! NURBS jacobian parameters
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dxi_dx
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dxi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dxi
+          real(REAL_TYPE) :: Det_dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dx_dtildexi
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: dtildexi_dx
+          
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
     
         if ( .not. ISAXISYMMETRIC ) RETURN
       
         volumeElNodes = 0.0
         do IGaussPoint = 1, ELEMENTGAUSSPOINTS ! loop gauss points of each element
           ! determine the location and integration weight of IGaussPoint
-          call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
+          call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, ELEMENTGAUSSPOINTS)
+          
+          
+          !evaluate shape functions here and input into the jacobian evaluation 
+          call ShapeFunctionData(PosGP, ELEMENTNODES, HS, dHS, IElement, IPatch_Temporary)!, &
+                !ELEMENTNODES, ELEMENTBOUNDARYNODES_XI, ELEMENTBOUNDARYNODES_ETA, ELEMENTBOUNDARYNODES_ZETA, &
+                !Maximum_nel_NURBS, Maximum_nen_NURBS, Maximum_nnp_NURBS, &
+                !INN, IEN, &
+                !NXiKnotEntries, NEtaKnotEntries, NZetaKnotEntries, &
+                !XiKnotEntries, EtaKnotEntries, ZetaKnotEntries)
+          
           ! Calculate the determinante of the Jacobian matrix
-          call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac)
+          !call DetJacob(HS, dHS, &
+          !    PosGP, Counters%NEl, Counters%NodTot, NVECTOR, &
+          !    IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac, &
+          !        dxi_dx, dtildexi_dxi)
+          call DetJacob(HS, dHS, &
+              PosGP, Counters%Sum_NEl, Counters%Sum_NodTot, NVECTOR, & 
+              IElement, ElementConnectivities(:,:,IPatch_Temporary), NodalCoordinates, dx_dxi, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, & !(:,:,IPatch_Temporary)
+                  dxi_dx, dtildexi_dxi, &
+              IPatch_Temporary)
+          
           if ( ISAXISYMMETRIC ) then
             weight = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement)
           else
             weight = WeiGP
           end if
           do INode = 1, ELEMENTNODES
-            volumeElNodes(INode) = volumeElNodes(INode) + ShapeValuesArray(IGaussPoint, INode) * weight * DetJac
+            !volumeElNodes(INode) = volumeElNodes(INode) + ShapeValuesArray(IGaussPoint, INode) * weight * DetJac
+            volumeElNodes(INode) = volumeElNodes(INode) + (ShapeValuesArray(IGaussPoint, INode) * weight * Det_dx_dtildexi)
+
           end do
         end do
       

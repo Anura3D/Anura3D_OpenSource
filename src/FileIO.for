@@ -182,11 +182,12 @@
         !    DESCRIPTION: Check if File "FName" exists
         !
         !*************************************************************************************
+      implicit none
       Character FName*(*)
       Logical Tmp
       Tmp=.False.
       goto 2
-
+    
       Goto 1
       Open( 1,file=FName,Status='OLD',Err=1)
       Tmp=.True.
@@ -195,12 +196,48 @@
       Inquire(File=FName,Exist=Tmp)
       FExist=Tmp
       Return
-
+    
     2 Call UniFExist( fName, Tmp )
       FExist=Tmp
       Return
       End
+        
+        
+    !Logical Function FExist(FName)
+    !!*************************************************************************************
+    !! Function: FExist
+    !! Description: Checks if the file "FName" exists.
+    !!*************************************************************************************
+    ! Character(*), Intent(In) :: FName
+    !Logical :: Exists
+    !
+    !! Use INQUIRE to check for file existence
+    !Inquire(File=FName, Exist=Exists)
+    !FExist = Exists
+    !
+    !Return
+    !End Function FExist
 
+        
+        
+        
+        
+  !      Logical Function FExist(FName)
+  !Character(*), Intent(In) :: FName
+  !Logical :: Exists
+  !
+  !! Use standard INQUIRE statement to check file existence
+  !Inquire(File=FName, Exist=Exists)
+  !FExist = Exists
+  !
+  !Return
+  !      End Function FExist
+  !      
+        
+        
+        
+        
+        
       Subroutine FindIO(ioMin,io)
         !*************************************************************************************
         !    Subroutine: FindIO
@@ -301,10 +338,10 @@
         !
         !*************************************************************************************
       Character fName*(*)
-      Logical fExist
+      !Logical fExist
       Call UniEraseFile ( fName )
       Return
-      If (fExist(fName)) Then
+      If (FExist(fName)) Then
         Call FindIO(10,io)
         Open(io,file=fName)
         Close(io,Status='Delete')

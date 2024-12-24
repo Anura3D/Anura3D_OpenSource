@@ -62,6 +62,8 @@
           ! local variables
           integer(INTEGER_TYPE) :: I, IElement ! counters
           integer(INTEGER_TYPE) :: ExcavVolume, IniExcavIStep, EndExcavIStep, Vol
+          
+          integer(INTEGER_TYPE) :: IPatch
         
           if(.not.CalParams%ApplyExcavation) RETURN
                 
@@ -71,19 +73,26 @@
             EndExcavIStep = CalParams%ExcavationStages(I,2)            
             
             if ( (CalParams%IStep >= IniExcavIStep) .and. (CalParams%IStep <= EndExcavIStep) ) then
-              do IElement = 1, Counters%NEl ! loop over all elements
+                do IPatch = 1, Counters%NPatches ! loop over patches
+                do IElement = 1, Counters%NEl(IPatch)!Counters%NEl ! loop over all elements
                 Vol = GeoParams%ExcavatedElements(IElement) ! this matrix comes from GOM file
                 if (Vol == ExcavVolume) then
                   call RemoveParticlesFromExcavationElement(IElement)
                 end if
-              end do
+                end do ! loop over elements
+                end do ! loop over patches
+                
             end if
             
           end do
         
           call UpdateParticleHouseKeepingMock()
-          call SetActiveElementMock()  
-          call SetParticleIndex()
+          call SetActiveElementMock()  !hardcoded
+          !if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+          !   call SetParticleIndex_MPInitFile()
+         !else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+             call SetParticleIndex()
+         !end if 
         
         end subroutine ApplyExcavation
         
@@ -105,19 +114,23 @@
           integer(INTEGER_TYPE) :: NRemovedParticles ! number of material points to be removed 
           integer(INTEGER_TYPE) :: NegativeNRemovedParticles ! NegativeNRemovedParticles = 0 - NRemovedParticles
         
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
           NRemovedParticles = 0
         
-          if (NPartEle(IElement) <= 0) RETURN ! there is no MP
+          if (NPartEle(IElement,IPatch_Temporary) <= 0) RETURN ! there is no MP
   
-          NRemovedParticles = NPartEle(IElement) 
+          NRemovedParticles = NPartEle(IElement,IPatch_Temporary) 
         
-          do IParticle = 1, NPartEle(IElement)
-            ParticleIndex = GetParticleIndexFunction(IParticle, IElement)
+          do IParticle = 1, NPartEle(IElement,IPatch_Temporary)
+            ParticleIndex = GetParticleIndexFunction(IParticle, IElement, IPatch_Temporary)
             Particles(ParticleIndex)%Kind = REMOVEDPARTICLE
           end do
         
-          NPartEle(IElement) = 0 ! partices inside are to be removed, NPartEle(IElement) is set to be 0 
-          IsActiveElement(IElement) = .false. ! deactivate the element 
+          NPartEle(IElement,IPatch_Temporary) = 0 ! partices inside are to be removed, NPartEle(IElement) is set to be 0 
+          IsActiveElement(IElement,IPatch_Temporary) = .false. ! deactivate the element 
         
           NegativeNRemovedParticles = 0 - NRemovedParticles
         

@@ -49,11 +49,12 @@ use ModMeshInfo
 use ModLinearElasticity
 use ModMohrCoulomb
 use ModBingham
+use ModMohrCoulombStrainSoftening
 
 contains
 
 
-subroutine StressSolid(IDpt, IDel, BMatrix,IEntityID)
+subroutine StressSolid(IDpt, IDel, BMatrix,IEntityID, IPatch)
 !**********************************************************************
 !
 !    Function:  calculate stresses at material point using external soil models
@@ -85,6 +86,15 @@ implicit none
     real(REAL_TYPE) :: DSigGP ! Change of gas pressure at integration point 
     real(REAL_TYPE) :: Bulk ! Bulk modulus
     real(REAL_TYPE) :: DEpsVol ! Incremental volumetric strain (water)
+    
+    
+    
+    
+    
+    ! Multipatch variables
+    integer(INTEGER_TYPE), intent(in) :: IPatch
+    
+    
     procedure(DUMMYESM), pointer :: ESM
 
     
@@ -187,7 +197,17 @@ implicit none
     call ESM(IDpt, IDel, IDset, Stress, Eunloading, PlasticMultiplier, StrainIncr, NSTATEVAR, StateVar, nAddVar, AdditionalVar,cmname, NPROPERTIES, props, CalParams%NumberOfPhases, ntens)
     ! save unloading stiffness in Particles array  
     Particles(IDpt)%ESM_UnloadingStiffness = Eunloading
-                 
+    
+    ! Duan Zhang et al. (2011)
+    ! we need to use the full strain and not the strain increment here...
+    !Stress(2) = 2*props(1)*(1-exp(-0.5*strain(2)))
+    !Stress(2) = 2*props(1)*(1-exp(-0.5*Particles(IDpt)%Eps(2)))
+    ! Duan Zhang et al. (2011)
+    !Particles(IDpt)%Density = MatParams(1)%DensitySolid * ((1 - (Stress(2)/(2*Particles(IDpt)%ShearModulus)))**2)/1000
+    !strain(2)))
+    !Particle%Eps
+    
+    
     if (IsUndrEffectiveStress) then
         Particles(IDpt)%BulkWater = AdditionalVar(12)
     end if
@@ -199,20 +219,24 @@ implicit none
     ! to use objective stress definition
     if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
     call Hill(IdEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
-                     ReducedDof, ElementConnectivities, BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
+                     ReducedDof, ElementConnectivities(:,:,IPatch), BMatrix, Sig0(1:NTENSOR), Stress(1:NTENSOR), DEpsVol)
     end if ! objective stress            
             
     ! write new stresses to global array
     do I=1, NTENSOR
         StressIncr(I) = Stress(I) - Sig0(I)
     enddo             
-                               
+               
+    ! Uncomment below line for visco-elastic column problem by 
+    ! Duan Zhang et al. (2011). 
+    !StressIncr(2) = StressIncr(2) - (0.5*Sig0(2)*StrainIncr(2))
+    
     ! save updated state variables and in Particles array
     ESMstatevArray(IDpt,:) = StateVar
           
     call CalculatePrincipalStresses(IDpt, Stress(1:NTENSOR), StressPrinc)
     call AssignStressStrainToGlobalArrayESM(IDpt, NTENSOR, StressIncr, StressPrinc, StrainIncr)
-
+    
     ! write plasticity state to global array
     !  call SetIPL(IDpt, IDel, int(StateVar(50)))
     if (CalParams%ApplyBulkViscosityDamping) then
@@ -243,6 +267,9 @@ end subroutine StressSolid
           real(REAL_TYPE) :: MaterialIndex = 0.0
           real(REAL_TYPE) :: DilationalWaveSpeed = 0.0
           logical :: IsUndrEffectiveStress
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           if (.not.CalParams%ApplyBulkViscosityDamping) return
 
@@ -262,7 +289,7 @@ end subroutine StressSolid
             Density = (1 - MatParams(MaterialIndex)%InitialPorosity) * MatParams(MaterialIndex)%DensitySolid / 1000.0
           end if
 
-          ElementLMinLocal = ElementLMin(IEl)
+          ElementLMinLocal = ElementLMin(IEl,IPatch_Temporary)
           RateVolStrainLocal = RateVolStrain(IEl)
 
           

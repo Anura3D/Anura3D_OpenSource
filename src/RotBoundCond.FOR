@@ -95,6 +95,10 @@
           integer(INTEGER_TYPE), dimension(:, :), allocatable :: BoundaryPlaneNodes ! Stores whether a node lies on one of the defined boundary planes
           real(REAL_TYPE), dimension(:, :), allocatable :: NodeNormalN ! Normal vectors for nodes with rotated boundary conditions
         
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
+          
           NSideNodes = GetNSideNodes(CheckIElTyp)
 
           allocate(AxisNodes(NodTot), stat = IError)
@@ -105,13 +109,13 @@
             allocate(Alpha(NBoundaryPlanes), stat = IError)
             allocate(BoundaryPlaneNodes(NBoundaryPlanes, NodTot), stat = IError)
 
-            call AssembleBoundaryPlaneNodes(NodTot, NodalCoordinates, BoundaryPlaneNodes)
+            call AssembleBoundaryPlaneNodes(NodTot, NodalCoordinates(:,:,IPatch_Temporary), BoundaryPlaneNodes)
           
             call CheckPlaneAxisNodes(NodTot, BoundaryPlaneNodes)
 
             ! Rotate boundary plane nodes
             Alpha = 0
-            call DeterminePlaneRotationAngles(NodTot, NodalCoordinates, Alpha)
+            call DeterminePlaneRotationAngles(NodTot, NodalCoordinates(:,:,IPatch_Temporary), Alpha)
             call YRotationMatrix(Alpha)
 
           end if
@@ -122,7 +126,7 @@
           end if
           
           if (allocated(BoundaryElements)) then
-            call DetermineNodeLocalCS(NodTot, IDim, IElTyp, NEl, NSideNodes, NodalCoordinates, ICon, BoundaryElements, NodeNormalN)
+            call DetermineNodeLocalCS(NodTot, IDim, IElTyp, NEl, NSideNodes, NodalCoordinates(:,:,IPatch_Temporary), ICon, BoundaryElements, NodeNormalN)
             call CheckStructureAxisNodes()
             call ApplyXYZRotationMatrix(NodTot, NodeNormalN)
           end if
@@ -163,9 +167,12 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I
           real(REAL_TYPE), dimension(IDim) :: NormalVector
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
 
           do I = 1, NBoundaryRadiusNodes
-            NormalVector = NodalCoordinates(BoundaryRadiusNodes(I), :)
+            NormalVector = NodalCoordinates(BoundaryRadiusNodes(I), :, IPatch_Temporary)
             NormalVector(2) = 0.0
             NodeNormalN(:, BoundaryRadiusNodes(I)) = VectorNorm(NormalVector, IDim)
           end do
@@ -374,6 +381,9 @@
           real(REAL_TYPE) :: Alpha, Beta, Gamma, RotationAngle, C, S, CosY, CosZ, SinY, SinZ
           integer(INTEGER_TYPE) :: AxisNode
           logical :: SwitchSignX
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
         
           VectorX = 0.0
           VectorX(1) = 1.0
@@ -404,7 +414,7 @@
             Projection = NodeNormal
             Projection(2) = 0.0
 
-            PlanePoint = NodalCoordinates(NodeID, :)
+            PlanePoint = NodalCoordinates(NodeID, :, IPatch_Temporary)
             PlanePoint(2) = 0.0
             
             if (abs(Distance(PlanePoint, AxisPoint, IDim) )>1.0E-5) then
@@ -595,6 +605,9 @@
           integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 3D functionality
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, NodeID
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           BoundarySurfacePrescrDisp = 0.0
           if (allocated(BoundaryNodes) ) then
@@ -608,16 +621,16 @@
 
                   if (AxisNodes(NodeID)==1) then ! Node does not lie on the mesh boundary planes
                     do J = 1, IDim  
-                      NodalPrescibedDisp(NodeID, J) = BoundarySurfacePrescrDisp(1, J) ! 0 = no normal displacement
+                      NodalPrescibedDisp(NodeID, J,IPatch_Temporary) = BoundarySurfacePrescrDisp(1, J) ! 0 = no normal displacement
                     end do
                   else
                     do J = 1, IDim-1
-                      NodalPrescibedDisp(NodeID, J) = BoundarySurfacePrescrDisp(1, J) ! 0 = no normal displacement
+                      NodalPrescibedDisp(NodeID, J,IPatch_Temporary) = BoundarySurfacePrescrDisp(1, J) ! 0 = no normal displacement
                     end do
                   end if
                 else
                   do J = 1, IDim
-                    NodalPrescibedDisp(NodeID, IDim) = 0 ! no displacement
+                    NodalPrescibedDisp(NodeID, IDim,IPatch_Temporary) = 0 ! no displacement
                   end do
                 end if
               else
@@ -766,6 +779,12 @@
 		  real(REAL_TYPE), dimension(2) :: Znodes
 		  real(REAL_TYPE), dimension(2, 4, IDim) :: CornerNodes
 
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
+          
 		  if ( .not.IS3DCYLINDRIC ) RETURN
           if (BoundingBoxDiameter>5.0) then
             Tolerance = 1E-3
@@ -798,14 +817,17 @@
               do I = 1, NBoundaryPlanes
 				do J= 1, 4
 					Point1=CornerNodes(I, J, :)
-					do K=1, Counters%NodTot						
-						Point2=NodalCoordinates(K,:)
+                    do IPatch = 1, Counters%NPatches ! loop over patches
+					do K=1, Counters%NodTot(IPatch)!Counters%NodTot			
+                        
+						Point2=NodalCoordinates(K,:, IPatch_Temporary)
 						Dist=Distance(Point1, Point2, IDim)
 						if (abs(Dist) <= Tolerance) then
 							BoundaryPlanes(I,J)=K
 							Exit
 						end if						
-					end do
+                    end do
+                    end do
 				end do
 			  end do   
             
@@ -815,27 +837,37 @@
             if (BoundaryNodesRadius>0.0) then
               
               NBoundaryRadiusNodes = 0
-              do I = 1, Counters%NodTot
+              do IPatch = 1, Counters%NPatches ! loop over patches
+              do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
                 Radius = dsqrt( &
-                  NodalCoordinates(I, 1) * NodalCoordinates(I, 1) +  &
-                  NodalCoordinates(I, 3) * NodalCoordinates(I, 3))
+                  NodalCoordinates(I, 1, IPatch_Temporary) * NodalCoordinates(I, 1, IPatch_Temporary) +  &
+                  NodalCoordinates(I, 3, IPatch_Temporary) * NodalCoordinates(I, 3, IPatch_Temporary))
                 if ((abs(Radius - BoundaryNodesRadius)<Tolerance) ) then
                   NBoundaryRadiusNodes = NBoundaryRadiusNodes + 1
                 end if 
+              end do
               end do
               
               allocate(BoundaryRadiusNodes(NBoundaryRadiusNodes), stat = IError)
 
               NBoundaryRadiusNodes = 0
-              do I = 1, Counters%NodTot
+              do IPatch = 1, Counters%NPatches ! loop over patches
+              do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
                 Radius = dsqrt( &
-                  NodalCoordinates(I, 1) * NodalCoordinates(I, 1) +  &
-                  NodalCoordinates(I, 3) * NodalCoordinates(I, 3))
+                  NodalCoordinates(I, 1,IPatch_Temporary) * NodalCoordinates(I, 1,IPatch_Temporary) +  &
+                  NodalCoordinates(I, 3,IPatch_Temporary) * NodalCoordinates(I, 3,IPatch_Temporary))
                 if ((abs(Radius - BoundaryNodesRadius)<Tolerance) ) then
                   NBoundaryRadiusNodes = NBoundaryRadiusNodes + 1
                   BoundaryRadiusNodes(NBoundaryRadiusNodes) = I
                 end if 
-			  end do	  
+              end do	
+              end do 
      
             end if  
             
@@ -845,23 +877,33 @@
             
             ! Fill the nodes that are fixed in x-z-plane
             NfixY=0 
-              do I = 1, Counters%NodTot
-                if (NodalPrescibedDisp(I,2) == 0d0) then
+            do IPatch = 1, Counters%NPatches ! loop over patches
+              do I = 1, Counters%NodTot(IPatch)!Counters%NodTot
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
+                if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 				end if
-			  end do
+              end do
+              end do 
 			  
             if (NfixY>0) then              
               allocate(XZFixedNodes(NfixY), stat = IError)              
               ! Search for the nodes IDs with fixities in the y direction
               XZFixedNodes = 0
 			  NfixY=0
-              do I = 1, Counters%NodTot
-                if (NodalPrescibedDisp(I,2) == 0d0) then
+              do IPatch = 1, Counters%NPatches ! loop over patches
+              do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
+                  
+                  GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                  
+                if (NodalPrescibedDisp(I,2,IPatch_Temporary) == 0d0) then
 					NfixY=NfixY+1
 					XZFixedNodes(NfixY)=I
 				end if
-              end do              
+              end do ! loop over control points
+              end do ! loop over patches
             end if            
 	end subroutine Initialise3DCylindricalAnalysis        
                 
@@ -941,7 +983,7 @@
           ! local variables
           integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 3D functionality
           integer(INTEGER_TYPE) :: IError
-          allocate(IRotation(Counters%NodTot), stat = IError)
+          allocate(IRotation(Counters%Sum_NodTot), stat = IError)
           
           IRotation = 0
           NRotNodes = 0
@@ -951,7 +993,7 @@
             RotMat = 0.0
             IRotMat = 0.0
             
-            call InitialiseRotationBC(Counters%NodTot, N_NODES_HOE, Counters%NEl, &
+            call InitialiseRotationBC(Counters%Sum_NodTot, N_NODES_HOE, Counters%Sum_NEl, &
                                       ElementConnectivities10Node, ELEMENTNODES)
           else
             allocate(RotMat(1,1,1), IRotMat(1,1,1), stat = IError)
@@ -1016,19 +1058,26 @@
 
       integer(INTEGER_TYPE), parameter :: IDim = 3 ! fixed dimension as only 3D functionality
       integer(INTEGER_TYPE) :: NRotNodesLoc
-      integer(INTEGER_TYPE), dimension(Counters%NodTot) :: IRot, NDofEx
+      integer(INTEGER_TYPE), dimension(Counters%Sum_NodTot) :: IRot, NDofEx
       real(REAL_TYPE) :: RMat(IDim, IDim, *) ! third dimension can be NRotationMatrices (if ApplyRotBoundCond) or =1 (all other cases)
       real(REAL_TYPE), dimension(Counters%N) :: V_In, V_Out
       ! local variables
       real(REAL_TYPE) :: Rotation(IDim, IDim), F(IDim), FR(IDim)
       integer(INTEGER_TYPE) :: I, J, IDof
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch
+      integer(INTEGER_TYPE) :: GlobalNodeID
       
       ! copy also non-rotated DOFs
        V_Out(1:Counters%N)=V_In(1:Counters%N)
        
       If (NRotNodesLoc == 0) RETURN
       
-      Do I = 1, Counters%NodTot
+      do IPatch = 1, Counters%NPatches ! loop over patches
+      do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
+          
+          GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+          
         IDof = NDofEx(I)
         If (IRot(I) /= 0) Then
           Rotation = RMat(:, :, IRot(I))
@@ -1040,6 +1089,7 @@
             V_Out(IDof+J) = FR(J)
           End Do
         End If
-      End Do
+      End Do ! loop over control points 
+      end do ! loop over patches
  
       end subroutine RotVec

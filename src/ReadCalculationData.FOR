@@ -40,12 +40,16 @@
       !     $Date: 2024-06-25 15:15:53 +0200 (Tue, 25 Jun 2024) $
       !
       !**********************************************************************
+      use ModFileIO
       use ModGlobalConstants
+      !use ModFileIO
       use ModCounters
       use ModString
       use ModGlobalData
       use ModFeedback
-      use ModFileIO
+      !use ModFileIO
+      
+      !External :: FExist
 
       implicit none
 
@@ -57,6 +61,51 @@
         ! Initiating matrices to read prescribed velocity/acceleration from file
         ! These matrices are only allocated if prescribed velocity/acceleration from file feature is used
         real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedVelocityFileMatrix
+        ! Material point intialization file that stores data from file *.MP_INIT
+        real(REAL_TYPE), dimension(:,:), allocatable :: MPInitFileMatrix
+        
+        ! NURBS variables --> changed these to NURBSType variables 
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntriesUNIQUE
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntriesUNIQUE
+        
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntriesUNIQUE
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntriesUNIQUE
+        
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntriesUNIQUE
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntriesUNIQUE
+        
+        
+        !integer(INTEGER_TYPE) :: Maximum_NXiKnotEntriesUNIQUE 
+        !!Maximum_NXiKnotEntriesUNIQUE = 0
+        !integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntriesUNIQUE
+        !!Maximum_NEtaKnotEntriesUNIQUE = 0
+        !integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntriesUNIQUE
+        !Maximum_NZetaKnotEntriesUNIQUE = 0
+       
+        
+        real(REAL_TYPE), allocatable, dimension(:,:, :) :: KnotBezierMesh ! rank 3 corresponds to multipatch
+        integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4 (rank 3 for multipatch)
+
+        real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights
+
+        real(REAL_TYPE), allocatable, dimension(:,:) :: ControlPoint_Weights_VolLockSmooth
+        
+        real(REAL_TYPE), allocatable, dimension(:, :,:) :: ControlPoint_Weights_Traction ! added a rank for load systems ! added a rank for multipatch 
+        
+        !real(REAL_TYPE), allocatable, dimension(:) :: ElementUponWhichLoadIsApplied_NURBS
+        
+        
+        ! points to identify the physical domain... only important for 
+        real(REAL_TYPE), allocatable, dimension(:) :: LowestPointOnASurfaceDefiningPhysicalDomain
+        real(REAL_TYPE), allocatable, dimension(:) :: HighestPointOnASurfaceDefiningPhysicalDomain
+        !real(REAL_TYPE), dimension(NDIM) :: LowestPointOnASurfaceDefiningPhysicalDomain
+        !real(REAL_TYPE), dimension(NDIM) :: HighestPointOnASurfaceDefiningPhysicalDomain
+        
+        
+        !! Number of load systems in each patch 
+        !integer(INTEGER_TYPE), allocatable, dimension(:) :: NLoadSystems_Traction
+        !real(REAL_TYPE), allocatable, dimension(:,:) :: TractionDimensionForEachLoadSystem ! N
+        
         
         type LoadMultiplierType ! Load multipliers
         
@@ -126,26 +175,36 @@
                                 HydraulicHeadType
         end type LoadMultiplierType
         
+        
+        
+        
+        
         type MovingMeshType(dsize)
           integer(INTEGER_TYPE), LEN :: dsize  
-          integer(INTEGER_TYPE), dimension(2, 3, dsize * (dsize - 1) + 2) :: MeshAreas ! Node ID's of corner nodes ! defining the two particle storage and fixed mesh areas
-          integer(INTEGER_TYPE) :: NAreaNodes ! Number of nodes that define an area (6 for triangular shape or 8 for cube)
-          integer(INTEGER_TYPE) :: NMovingMeshDirections ! Number of directions the moving mesh can move (i.e., = 1 means that it can only move parallel to X, Y or Z axis) 
-          integer(INTEGER_TYPE) :: MovingMeshDirection ! Default direction of movement
-          integer(INTEGER_TYPE), dimension(2) :: NStorageAreas ! Number of storage areas
-          integer(INTEGER_TYPE) :: StructureMaterialID ! Material ID of the structure material (-1 if not defined)
-          integer(INTEGER_TYPE) :: MovingMaterialID ! Material ID to follow with the moving mesh
-          integer(INTEGER_TYPE) :: NStructureNodes ! Number of nodes that define the structure
-          integer(INTEGER_TYPE), dimension(:), allocatable :: StructureNodes ! Set of nodes defining the structure
-        
+          !integer(INTEGER_TYPE), dimension(2, 3, dsize * (dsize - 1) + 2, Counters%NPatches) :: MeshAreas ! Node ID's of corner nodes ! defining the two particle storage and fixed mesh areas ! added a rank
+          integer(INTEGER_TYPE), dimension(:, :, :, :), allocatable :: MeshAreas ! Node ID's of corner nodes ! defining the two particle storage and fixed mesh areas ! added a rank
+          integer(INTEGER_TYPE), dimension(:), allocatable :: NAreaNodes ! Number of nodes that define an area (6 for triangular shape or 8 for cube) !Counters%NPatches
+          integer(INTEGER_TYPE), dimension(:), allocatable :: NMovingMeshDirections ! Number of directions the moving mesh can move (i.e., = 1 means that it can only move parallel to X, Y or Z axis)  !Counters%NPatches
+          integer(INTEGER_TYPE), dimension(:), allocatable :: MovingMeshDirection ! Default direction of movement !Counters%NPatches
+          !integer(INTEGER_TYPE), dimension(2) :: NStorageAreas ! Number of storage areas
+          integer(INTEGER_TYPE), dimension(:,:), allocatable :: NStorageAreas ! Number of storage areas 
+
+          !integer(INTEGER_TYPE) :: StructureMaterialID ! Material ID of the structure material (-1 if not defined)          
+          integer(INTEGER_TYPE), dimension(:), allocatable :: StructureMaterialID ! Material ID of the structure material (-1 if not defined)
+
+                    
+          integer(INTEGER_TYPE), dimension(:), allocatable :: MovingMaterialID ! Material ID to follow with the moving mesh
+          integer(INTEGER_TYPE), dimension(:), allocatable :: NStructureNodes ! Number of nodes that define the structure ! Alsardi: Multipatch moving mesh generalization 
+          
+          integer(INTEGER_TYPE), dimension(:, :), allocatable :: StructureNodes ! Set of nodes defining the structure ! Alsardi: Multipatch moving mesh generalization
         end type MovingMeshType
         
         type PrescribedVeloType
           logical :: ApplyPrescribedVelo = .false.
-          integer(INTEGER_TYPE) :: NNodePrescribedVelo = 0 ! Number of nodes on which the velocity is prescribed
-          integer(INTEGER_TYPE), dimension(:), allocatable :: NodePrescribedVelo ! Set of nodes on which the velocity is prescribed
-          real(REAL_TYPE), dimension(:, :), allocatable :: NodalPrescribedVelocityValue ! Prescribed velocity at the nodes
-          real(REAL_TYPE), dimension(:, :), allocatable :: NodalPrescribedVelocityDirection ! 0/1 prescribed direction
+          integer(INTEGER_TYPE), dimension(:), allocatable :: NNodePrescribedVelo != 0 ! Number of nodes on which the velocity is prescribed ! added a rank for multipatch generalization
+          integer(INTEGER_TYPE), dimension(:,:), allocatable :: NodePrescribedVelo ! Set of nodes on which the velocity is prescribed ! added rank for multipatch generalization
+          real(REAL_TYPE), dimension(:,:, :), allocatable :: NodalPrescribedVelocityValue ! Prescribed velocity at the nodes ! added a rank for multipatch generalization
+          real(REAL_TYPE), dimension(:,:, :), allocatable :: NodalPrescribedVelocityDirection ! 0/1 prescribed direction ! added a rank for multipatch generalization
           real(REAL_TYPE) :: FileMultiplier = 0
           character(len=255) :: FileNamePrescribedVelocity = ''
           integer(INTEGER_TYPE) :: PrescribedVelocityFileNumberOfLines = 0 
@@ -155,13 +214,51 @@
         
         end type PrescribedVeloType
         
+        
+        
+        
+        
+        
+        type MPInitializationType
+            integer(INTEGER_TYPE) :: NumberOfMPs = 0
+            integer(INTEGER_TYPE) :: MPInitFormat
+            
+        end type MPInitializationType
+        
+        
+        
+        
+        
+        
+        
          type HydraulicHeadType
           logical :: HydraulicHead  = .false.
           !real(REAL_TYPE) :: FileMultiplier = 0
           character(len=255) :: FileNameHydraulicHead = 'X'
           integer(INTEGER_TYPE) :: HydraulicHeadFileNumberOfLines = 0
           
-        end type HydraulicHeadType
+         end type HydraulicHeadType
+         
+         
+         
+         
+         
+         type ApplyGeneralizedAlphaTimeSchemeType !This type is for numerical parameters associated with the generalized alpha time scheme            
+            logical :: Switch = .false. ! true = activate generalized alpha time scheme; false = deactivate generalized alpha time scheme
+            real(REAL_TYPE) :: Rho_infty = 0.0 ! Rho_infty = desirable value of spectral radius at infinity. This value is user input but usually has value of 0.818. 
+            real(REAL_TYPE) :: Alpha_m = 0.0 ! Alpha = calculated numerical parameter for acceleration as a function of rho_infty. 
+            real(REAL_TYPE) :: Beta = 0.0 ! Beta = calculated numerical parameter for displacement as a function of rho_infty
+            real(REAL_TYPE) :: Gamma = 0.0 ! Gamma = calculated numerical parameter for velocity as a function of rho_infty
+            
+        end type ApplyGeneralizedAlphaTimeSchemeType
+         
+         
+         
+         
+         
+         
+         
+         
             
         type ParabolicTrajectoryType(vsize)
           integer(INTEGER_TYPE), len :: vsize 
@@ -319,8 +416,11 @@
           type(ParabolicTrajectoryType(:)), allocatable :: ParabolicTrajectory
           type(ImplicitIntegrationType) :: ImplicitIntegration
           type(PrescribedVeloType):: PrescribedVelo
+          type(MPInitializationType):: MPInitialization
           type(HydraulicHeadType):: PrescribedHead
           type(BoundaryConditionsType) :: BoundaryConditions !(:,:)), allocatable :: BoundaryConditions
+          type(ApplyGeneralizedAlphaTimeSchemeType):: ApplyGeneralizedAlphaTimeScheme  ! generalized alpha scheme
+
      
           real(REAL_TYPE) :: TimeIncrement, & ! The size of time increment
                               TotalTime, & ! The total time of simulation
@@ -450,6 +550,7 @@
 
           logical :: ApplyContactMeshBoundary, &
                      ApplyQuasiStatic, & ! True - apply quasti-static convergence criteria
+                     ApplyMovingMesh, & ! True - apply moving mesh
                      TwoLayerApplyUpdatePermeability, & ! True - update permeability according to porosity,  False - use initial intrinsic permeability
                      TwoLayerApplyErgunLaw, & !True - use Ergun Flow law,  False - use Darcy law
                      TwoLayerApplyNoTensStressLiqMPwLiqStatus, & ! True - set mean stress to zero in LiquidMP with Liquid Phase Status,  False - allow tensile stress
@@ -492,6 +593,7 @@
                      CorrectNormalsForSlice, &				     
                      ApplyStructureTrajectory, &
                      ApplyPorosityUpdate, &
+                     ApplyDarcyPermeabilityUpdate, &
                      ApplyRigidLoading, &  ! TRUE - apply a rigid load, i.e. fixities in direction which is perpendicular to loading direction
                      ApplyBinghamFluid, & ! treat the material as a Bingham fluid 
                      ApplyFrictionalFluid, & ! like the Bingham fluid but with stress dipendent yield stress     
@@ -502,6 +604,7 @@
                      ApplyCloseBoundaryforDike, &
                      ExternalSoilModel, & ! TRUE - soil model implemented in the NGGS framework is used 
                      ApplyFixedSolidSkeleton, & ! TRUE - solid momentum = 0
+                     ResetParticleDisplacement, &
                      SkipConvection, &
                      AutomaticSkipConvection, &
                      ConsiderTimingProcedures, &
@@ -518,8 +621,19 @@
                      ApplyPartialSaturation = .false.,& !True if partial saturation is taken into account in 2-phase single-point formulation
                      ApplySmootheningLiquidPressureIncrement = .false.,& !True if liquid pressure incement is smoothened, useful in unsaturated formulation
 			         ApplyContactVelocityScaling= .false.,& !True for scaling wrong velocities at the contact
-					 ApplyContactNormalCorrection= .false. !Allows to modify some normal vectors in the contact algorithm
-
+					 ApplyContactNormalCorrection= .false.,& !Allows to modify some normal vectors in the contact algorithm
+                     ApplyStructuredMeshLocPosUpdate= .false., &
+                     ApplyFBar= .false., &
+                     ApplyFBarWater= .false., &   
+                     ApplyFBarLowerOrder= .false., &
+                     ApplyFBarSmoothStrains= .false., &
+                     ApplyFBarSmoothStresses= .false., &   
+                     ApplyFBarSmoothWP= .false., &
+                     ApplyGPSmoothFluidPressure= .false. 
+          
+          
+                        !ApplyBBar= .false.,&
+                     
 
           character(len=64) :: CPSversion = 'not defined'
           character(len=64) :: GOMversion = 'not defined'
@@ -532,6 +646,238 @@
         end type CalParamType
 
         type(CalParamType(:, :)), allocatable, public, save :: CalParams ! Stores variables that manipulate the Dynamic MPM calculation process
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        type NURBSType
+            
+            ! Knot vector variables 
+            ! Xi 
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntriesUNIQUE
+            real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntriesUNIQUE 
+            real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntries ! Xi vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots       != -1 ! number of univariate basis functions for eta direction 
+            integer(INTEGER_TYPE) :: Maximum_NXiKnotEntriesUNIQUE
+
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotOrder_VolLockSmooth             != -1 ! Xi vector number of entries (reduced order)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NXiKnotEntries_VolLockSmooth
+            real(REAL_TYPE), allocatable, dimension(:,:) :: XiKnotEntries_VolLockSmooth ! Xi vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nn_NURBS_NumberOfUnivariateXiKnots_VolLockSmooth       != -1 ! number of univariate basis functions for eta direction
+            
+            
+            ! Eta
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries
+            real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntriesUNIQUE
+            real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntries ! Eta vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots       != -1 ! number of univariate basis functions for eta direction 
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntriesUNIQUE
+            integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntriesUNIQUE
+            
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotOrder_VolLockSmooth             != -1 ! Xi vector number of entries (reduced order)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NEtaKnotEntries_VolLockSmooth
+            real(REAL_TYPE), allocatable, dimension(:,:) :: EtaKnotEntries_VolLockSmooth ! Xi vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: mm_NURBS_NumberOfUnivariateEtaKnots_VolLockSmooth       != -1 ! number of univariate basis functions for eta direction
+            
+            
+            ! Zeta
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries
+            real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntriesUNIQUE
+            real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntries ! Zeta vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots     != -1 ! number of univariate basis functions for zeta direction 
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntriesUNIQUE
+            
+            
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotOrder_VolLockSmooth
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NZetaKnotEntries_VolLockSmooth
+            real(REAL_TYPE), allocatable, dimension(:,:) :: ZetaKnotEntries_VolLockSmooth ! Zeta vector number of entries
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: oo_NURBS_NumberOfUnivariateZetaKnots_VolLockSmooth     != -1 ! number of univariate basis functions for zeta direction 
+            integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntriesUNIQUE
+            
+            ! Control point variables
+            !integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NControlPoints_VolLockSmooth 
+        
+            integer(INTEGER_TYPE), allocatable, dimension(:,:)  :: NControlPoints_Traction 
+            integer(INTEGER_TYPE), allocatable, dimension(:,:)  :: NURBS_Traction_Dimension ! this tells us which dimension we are considering based on the integer
+                                                                                            ! e.g., xi, eta, zeta, xi_eta, ...
+            
+            ! MP Prescribed Material Point Velocity --> MULTIPATCH GENERALIZATION
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NElemMPPrescribedVelocity ! -> MP prescribed velocity
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NNodePrescribedVelocity   ! -> Node prescribed velocity
+            
+            
+            
+            ! Knot connectivity array (multipatch rank)
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN ! NURBS coordinates telling you (early) knots that define an element 
+            !integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: IEN ! Knot connectivity
+        
+            !------- volumetric locking (reduced order)
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: INN_VolLockSmooth ! NURBS coordinates telling you (early) knots that define an element 
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :) :: ElementConnectivities_VolLockSmooth ! Knot connectivity
+        
+            !------- traction
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :,:) :: INN_Traction ! NURBS coordinates telling you (early) knots that define an element 
+            integer(INTEGER_TYPE), allocatable, dimension(:,:, :,:) :: ElementConnectivities_Traction ! Knot connectivity
+            
+            
+            
+            
+            ! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
+            !integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS                        ! number of elements 
+        
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS                        ! number of global basis functions 
+                                                                                ! (global here refers to its global domain within the 'super' element)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS                        ! number of local basis functions
+                                                                                ! (local here refers to a knot span i.e. accross one single element)  
+        
+            
+            ! Miscellaneous (multipatch generalization rank for nel_NURBS, nnp_NURBS, nen_NURBS)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nel_NURBS_VolLockSmooth                        ! number of elements
+        
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nnp_NURBS_VolLockSmooth                        ! number of global basis functions 
+                                                                                ! (global here refers to its global domain within the 'super' element)
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: nen_NURBS_VolLockSmooth                        ! number of local basis functions
+                                                                                ! (local here refers to a knot span i.e. accross one single element)  
+        
+            
+            !------traction
+            integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nel_NURBS_Traction                        ! number of elements 
+            ! Rank 1 --> LoadSystems
+            ! Rank 2 --> NumberOfPatch
+        
+            integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nnp_NURBS_Traction                        ! number of global basis functions 
+            ! Rank 1 --> LoadSystems
+            ! Rank 2 --> NumberOfPatch
+        
+                                                                        ! (global here refers to its global domain within the 'super' element)
+            integer(INTEGER_TYPE), allocatable, dimension(:,:) :: nen_NURBS_Traction                        ! number of local basis functions
+            ! Rank 1 --> LoadSystems
+            ! Rank 2 --> NumberOfPatch
+                                                                                ! (local here refers to a knot span i.e. accross one single element)  
+            
+            integer(INTEGER_TYPE), allocatable, dimension(:,:) :: NLoadSystems_Traction_NumberOfElements                        ! number of local basis functions
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NLoadSystems_Traction
+            
+            ! Number of active elements
+            !integer(INTEGER_TYPE), allocatable, dimension(:) :: nael_NURBS
+        
+            
+            ! Number of load systems in each patch 
+            !integer(INTEGER_TYPE), allocatable, dimension(:) :: NLoadSystems_Traction
+            real(REAL_TYPE), allocatable, dimension(:,:) :: TractionDimensionForEachLoadSystem ! N
+            
+            
+            
+            
+            ! Maximum counters
+            integer(INTEGER_TYPE) :: Maximum_NControlPoints ! temporarily initialized here
+            integer(INTEGER_TYPE) :: Maximum_NControlPoints_Traction ! temporarily initialized here
+
+            integer(INTEGER_TYPE) :: Maximum_NXiKnotEntries ! temporarily initialized here
+            integer(INTEGER_TYPE) :: Maximum_NEtaKnotEntries ! temporarily initialized here
+            integer(INTEGER_TYPE) :: Maximum_NZetaKnotEntries ! temporarily initialized here  
+        
+            integer(INTEGER_TYPE) :: Maximum_NXiKnotOrder
+            integer(INTEGER_TYPE) :: Maximum_NEtaKnotOrder
+            integer(INTEGER_TYPE) :: Maximum_NZetaKnotOrder
+        
+            integer(INTEGER_TYPE) :: Maximum_NElemMPPrescribedVelocity
+            integer(INTEGER_TYPE) :: Maximum_NNodePrescribedVelocity
+            
+            integer(INTEGER_TYPE) :: Maximum_NLoadSystems_Traction
+            
+            integer(INTEGER_TYPE) :: Maximum_nel_NURBS
+            integer(INTEGER_TYPE) :: Maximum_nnp_NURBS
+            integer(INTEGER_TYPE) :: Maximum_nen_NURBS
+        
+        
+            integer(INTEGER_TYPE) :: Maximum_nel_NURBS_Traction
+            integer(INTEGER_TYPE) :: Maximum_nnp_NURBS_Traction
+            integer(INTEGER_TYPE) :: Maximum_nen_NURBS_Traction
+        
+        
+            ! these need to be part of counters --> I commented these so that we can put them in the CountersType
+            !integer(INTEGER_TYPE) :: Sum_nel_NURBS
+            !integer(INTEGER_TYPE) :: Sum_nael_NURBS
+            !integer(INTEGER_TYPE) :: Sum_NControlPoints
+            
+            
+            ! Multipatch variables 
+            integer(INTEGER_TYPE) :: NumberOfGlobalControlPointsUniqueMultipatch
+            integer(INTEGER_TYPE), allocatable, dimension(:) :: NumberOfUniqueNodes
+            
+            !real(REAL_TYPE), allocatable :: NN_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
+            !real(REAL_TYPE), allocatable :: dN_dxi_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
+            !
+            !real(REAL_TYPE), allocatable :: MM_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
+            !real(REAL_TYPE), allocatable :: dM_deta_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
+            !
+            !real(REAL_TYPE), allocatable :: OO_IncludesZeroValues_Print(:,:) !:, --> I removed the rank associated with the gauss point number... always one..
+            !real(REAL_TYPE), allocatable :: dO_dzeta_IncludesZeroValues_Print(:,:) !:,  --> I removed the rank associated with the gauss point number... always one..
+        
+            ! Particle index variables 
+            !integer(INTEGER_TYPE) :: maxParticle_previous =0
+            !integer(INTEGER_TYPE) :: GetParticleIndexCounter        
+            !logical :: FirstTimeGetParticleIndex 
+            !! I added this here from MeshInfo.FOR
+            !integer(INTEGER_TYPE), dimension(:,:, :), allocatable :: GetParticleIndex ! (rank 3 for multipatch implementation)
+            !
+            !!> stores material point indices based on subelements
+            !integer(INTEGER_TYPE), dimension(:,:), allocatable :: SubElementMPOrganization !--> number of MPs in each subzone
+            !integer(INTEGER_TYPE), dimension(:,:,:), allocatable :: GetParticleIndexInSubElement !--> storing the actual indices in the matrix
+            !
+            !
+            !! Bound MP Prescribed Velocity
+            !integer(INTEGER_TYPE) :: NBoundMPPrescVelo_X = 0
+            !integer(INTEGER_TYPE) :: NBoundMPPrescVelo_Y = 0
+            !integer(INTEGER_TYPE) :: NBoundMPPrescVelo_Z = 0
+            !
+            !real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_X
+            !real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_Y
+            !real(REAL_TYPE), allocatable, dimension(:,:) :: BoundPrescVelo_Z
+            !
+            !! Moving mesh variables 
+            !integer(INTEGER_TYPE) :: ExtendingMeshPatchID = 0
+            !integer(INTEGER_TYPE) :: CompressingMeshPatchID = 0
+            !integer(INTEGER_TYPE) :: MovingMeshPatchID = 0
+            
+            
+        end type NURBSType
+        
+        
+        type(NURBSType) :: NURBS ! Stores variables that manipulate the Dynamic MPM calculation process
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         character(len=255), dimension(999), public, save :: ActiveParams = 'not defined' ! stores the labels of calculation parameters that are active (dimension = number of lines in CPS file, len = number of columns in CPS file)
            
@@ -727,7 +1073,7 @@
         CalParams%ImplicitIntegration%LimitJacobianChange = 0.0
 
         ! reals
-        CalParams%TimeIncrement = 1.0e-15
+        CalParams%TimeIncrement = 1.0e-15 ! hardcoded !Abdelrahman Alsardi !0.0001!
         CalParams%TotalTime = 0.5
         CalParams%OverallRealTime = 0.0
         CalParams%DampingFactor = 0.0
@@ -881,6 +1227,7 @@
         CalParams%ApplyFillEmptyElements = .false.
         CalParams%ExternalSoilModel = .false.
         CalParams%ApplyFixedSolidSkeleton = .false.
+        CalParams%ResetParticleDisplacement = .false.
         CalParams%SkipConvection  = .false.
         CalParams%AutomaticSkipConvection = .false.
         CalParams%ApplyBulkViscosityDamping = .false.
@@ -929,6 +1276,10 @@
         logical function IsMPMWithMixedIntegration()
           IsMPMWithMixedIntegration = CalParams%ComputationMethod==MPM_MIXED_INTEGRATION
         end function IsMPMWithMixedIntegration
+        
+        logical function IsGPSmoothFluidPressure()
+          IsGPSmoothFluidPressure = CalParams%ApplyGPSmoothFluidPressure !CalParams%ComputationMethod==MPM_MIXED_INTEGRATION
+        end function IsGPSmoothFluidPressure
 
         logical function IsFollowUpPhase()
           IsFollowUpPhase = (CalParams%IStep/=1)
@@ -958,11 +1309,13 @@
         
         implicit none
         
-          !  local variables       
+          ! local variables       
           character(len=MAX_FILENAME_LENGTH) :: FileName, FileVersion
           integer(INTEGER_TYPE) :: FileUnit
           character(len=255) :: BName
           integer(INTEGER_TYPE) :: ios
+          
+          !External :: FExist
 
           FileName = trim(CalParams%FileNames%ProjectName)//CPS_FILE_EXTENSION//CalParams%FileNames%LoadStepExt
           FileUnit = TMP_UNIT
@@ -1090,6 +1443,35 @@
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be larger than 0.0.' )
               CalParams%CourantNumber = DumR(1) 
+              
+              
+            else if (trim(BName)=='$$STRUCTURED_MESH') then 
+              read(FileUnit, *, iostat=ios) DumI(1) 
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if (DumI(1) == 1) then ! turn switch on
+                  CalParams%ApplyStructuredMeshLocPosUpdate = .true.
+              else
+                  CalParams%ApplyStructuredMeshLocPosUpdate = .false.
+              end if 
+   
+              
+            else if (trim(BName)=='$$MOVING_MESH') then ! I [ 0, 1 ]
+              read(FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ApplyMovingMesh = .true.
+              
+              
+            else if (trim(BName)=='$$GP_SMOOTHING_FLUID') then 
+              read(FileUnit, *, iostat=ios) DumI(1) 
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumR(1) > 0.0, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if (DumI(1) == 1) then ! turn switch on
+                  CalParams%ApplyGPSmoothFluidPressure = .true.
+              else
+                  CalParams%ApplyGPSmoothFluidPressure = .false.
+              end if   
 
             ! CALCULATION DATA  
             else if (trim(BName)=='$$COMPUTATION_METHOD') then ! S [ MPM-MIXED, MPM-MP, FEM, UL-FEM ]
@@ -1109,6 +1491,94 @@
               end if
               if (IsFollowUpPhase()) call CheckChangeFEMtoMPM()
               
+              
+            ! MP initialization can be from 'file' or 'gauss_point'
+            else if (trim(BName)=='$$MP_INITIALIZATION') then ! S [GaussPoint, File]
+                ! this was developed so that you can choose your material point locations,
+                ! and the local position is back caluclated from the global position.
+                read(FileUnit, *, iostat=ios) DumS
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                
+                if (trim(DumS)==MP_INITIALIZATION_GAUSSPOINT_SPECIFIER) then
+                    CalParams%MPInitialization%MPInitFormat = MP_INIT_GAUSSPT
+                else if (trim(DumS)==MP_INITIALIZATION_FILE_SPECIFIER) then
+                    CalParams%MPInitialization%MPInitFormat = MP_INIT_FILE
+                else
+                    call GiveError( 'CPS file: ' //trim(BName)// ' must be ' //MP_INITIALIZATION_GAUSSPOINT_SPECIFIER// ' or ' &
+                                 //MP_INITIALIZATION_FILE_SPECIFIER// '.' )
+                end if
+                
+                
+                
+                
+
+            ! B-bar volumetric locking technique 
+            !else if (trim(BName)=='$$B_BAR_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
+            !    ! I need to reconstruct the knot vectors for the lower order shape functions 
+            !    read(FileUnit, *, iostat=ios) DumI(1)
+            !    call Assert( ios == 0, messageIOS//trim(BName) )
+            !    call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+            !    if ( DumI(1) == 1 ) CalParams%ApplyBBar = .true.
+                
+                
+                
+            ! F-bar flags -----------------------------------------------------------------------------------------    
+            ! F-bar volumetric locking technique 
+            else if (trim(BName)=='$$F_BAR_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBar = .true.
+                
+                
+            else if (trim(BName)=='$$F_BAR_VOLLOCK_SMOOTHING_WATER') then ! S [GaussPoint, File]
+                
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarWater = .true.
+                
+                
+            ! F-bar volumetric locking technique --> if this is turn on, then we need a lower order background mesh 
+            else if (trim(BName)=='$$F_BAR_LOWER_ORDER_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarLowerOrder = .true.
+                
+                
+                
+                ! F-bar volumetric locking technique --> if this is turn on, then we are mapping and remapping strains 
+            else if (trim(BName)=='$$F_BAR_SMOOTH_STRAINS') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothStrains = .true.
+                
+            
+            else if (trim(BName)=='$$F_BAR_SMOOTH_STRESSES') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothStresses = .true.
+            
+                
+                
+                ! F-bar volumetric locking technique --> if this is turn on, then we are mapping and remapping water pressures 
+            else if (trim(BName)=='$$F_BAR_SMOOTH_LIQUID_PRESSURE') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothWP = .true.
+                
+              
+            !----------------------------------------------------------------------------------------------------------    
             ! GRAVITY DATA
             else if (trim(BName)=='$$GRAVITY_ACCELERATION') then ! R [ 0.0 <= R ]
               read(FileUnit, *, iostat=ios) DumR(1)
@@ -1291,6 +1761,33 @@
                 CalParams%Multipliers%VelocitySolidRealised = DumR(1)
                 CalParams%Multipliers%VelocitySolidFinal = DumR(2)
               end if
+              
+              
+              
+              
+              
+              
+
+            !! LOCAL POSITION CALCULATION OPTION 
+            !else if (trim(BName)=='$$APPLY_LOCALPOS_STRUCTURED_MESH') then 
+            !    read(FileUnit, *, iostat=ios) DumI(1)
+            !    call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+            !    if ( DumI(1) == 1 ) CalParams%ApplyLocalPosStructuredMesh = .true.
+            !    
+              
+              
+              
+              ! GENERALIZED ALPHA TIME SCHEME 
+            else if (trim(BName)=='$$GENERALIZED_ALPHA_TIME_SCHEME') then
+                read(FileUnit, *, iostat=ios) DumI(1), DumR(1) ! DumI = switch on/off; DumR = rho_infty 
+                CalParams%ApplyGeneralizedAlphaTimeScheme%Switch = DumI(1)
+                CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty = DumR(1)
+                
+                call CalculateGeneralizedAlphaTimeSchemeParameters()
+              
+              
+              
+              
               
                           
             ! QUASI-STATIC CALCULATION
@@ -1610,6 +2107,14 @@
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%ApplyFixedSolidSkeleton = .true.
  
+              ! RESET DISPLACEMENT --> keep UArray zero
+            else if (trim(BName)=='$$RESET_PARTICLE_DISPLACEMENT') then ! Input is an integer either [ 0 = false (solid MPs are allowed to move), 1 = true (solid MP position update is skipped)]
+              read(FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ResetParticleDisplacement = .true.
+ 
+              
             ! STRAIN SMOOTHING
             else if (trim(BName)=='$$STRAIN_SMOOTHING') then ! I [ 0, 1 ]
               read(FileUnit, *, iostat=ios) DumI(1)
@@ -1779,6 +2284,13 @@
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%ApplyPorosityUpdate = .true.
 
+              
+            else if (trim(BName)=='$$APPLY_DARCY_PERMEABILITY_UPDATE') then
+              read (FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ApplyDarcyPermeabilityUpdate = .true.
+
         
             else if (trim(BName)=='$$SUBMERGED_CALCULATION') then
               read (FileUnit, *, iostat=ios) DumI(1:2)
@@ -1814,8 +2326,10 @@
               call Assert( DumR(1) >= 0.0, 'CPS file: ' //trim(BName)// ' must be greater than or equal to 0.')
               if ( CalParams%IStep==1 ) then 
                 Counters%NAEl = 0
+                !NAEL_NURBS(IPatch) = 0
               else
                 Counters%NAEl = DumI(1)
+                !NAEL_NURBS(IPatch) = DumI(1)
               end if   
 
             ! EMPTY ELEMENTS
@@ -1937,6 +2451,33 @@
 
         
         end subroutine ReadCPS
+        
+        
+        
+        
+        subroutine CalculateGeneralizedAlphaTimeSchemeParameters()
+        ! subroutine to calculate calculation parameters for the generalized alpha time scheme. 
+        ! rho_inty is an input parameter and it is recommended to use rho_infty = (9/11) = 0.818 
+        ! --> Kontoe (2006)
+        implicit none
+        
+        CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m = &
+            (2.0*CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty - 1.0)/& !numerator
+            (1.0 + CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty) !denominator 
+        CalParams%ApplyGeneralizedAlphaTimeScheme%Beta = &
+            (5.0 - 3.0*CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty)& !numerator
+            /( ((1.0 + CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty)**2.0) * (2.0 - CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty) ) !denominator 
+        CalParams%ApplyGeneralizedAlphaTimeScheme%Gamma = &
+            1.5 - CalParams%ApplyGeneralizedAlphaTimeScheme%Alpha_m 
+        
+        end subroutine CalculateGeneralizedAlphaTimeSchemeParameters
+        
+        
+        
+        
+        
+        
+        
   
         subroutine CheckChangeFEMtoMPM()
         !**********************************************************************
@@ -1952,6 +2493,8 @@
             implicit none
             integer(INTEGER_TYPE) :: prev_unit, PreviousComputationalMethod
             character(len = 255) :: FileName, TName, BName, InputString
+            
+            !External :: FExist
 
         !   The new computational method is checked to be MPM
             if((CalParams%ComputationMethod /= MPM_MIXED_INTEGRATION)  &
@@ -2445,6 +2988,8 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
         character(len=255) :: PVFileName
         real(REAL_TYPE), dimension(1,2) :: Temp ! temporary variable for reading number of lines
         
+        !External :: FExist
+        
         !PVFunit = 70
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2495,6 +3040,309 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
 
 
         end subroutine ReadPrescribedAccelerationOrVelocityFromFile
+        
+        
+        
+        
+        
+        subroutine ReadMPInitializationFile()
+        !**********************************************************************
+        !   Reading the material points from file with the following format: 
+        !   XCoord[m] 		YCoord[m]		Material
+        !   real no.        real no.        integer no. 
+        ! 
+        !   This subroutine tells you Counters%NParticles and stores 
+        !   MPInitFileMatrix from the table. 
+        !
+        !**********************************************************************
+        
+        implicit none 
+        
+        
+        
+        ! local variables 
+        integer(INTEGER_TYPE) :: ios, ii
+        character(len=255) :: MP_INIT_FileName
+        real(REAL_TYPE), dimension(1,NDIM+1) :: Temp ! temporary variable for reading number of lines
+                                                     ! dimension correspond to global positions (2D or 3D + Material assignment)   
+        !External :: FExist
+        ! real variables 
+        !integer(INTEGER_TYPE), intent(out) :: InitialSolidMaterialPoints
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+        ! initialize
+        CalParams%MPInitialization%NumberOfMPs = 0 ! removing to eliminate count due to the header in the file *.MP_INIT
+        !InitialSolidMaterialPoints = 0
+        
+        ! Open Prescribed Velocity File 
+        if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+             
+            ! Prepare file name for opening
+            MP_INIT_FileName = trim(CalParams%FileNames%ProjectName)//MPINIT_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+        
+            
+
+            !if ((.not. allocated(PrescribedVelocityFileMatrix))) then
+                ! Check if PVF file exists in project folder, otherwise give error and stop execution
+                if ( FExist(trim(MP_INIT_FileName)) ) then
+                    call GiveMessage('Reading material point initialization file: ' // trim(MP_INIT_FileName) )                     
+                    call FileOpen(MPInitUnit,trim(MP_INIT_FileName))
+                else    
+                    ! Give warning if file is not available
+                    call GiveError('Material point initialization file does not exist!' // NEW_LINE('A') // &
+                        'required MP_INIT file: ' // trim(MP_INIT_FileName) )      
+                end if
+                
+                ! Read Material Point File in the matrix line by line
+                do
+                    read(MPInitUnit,*,iostat=ios) Temp ! Reading each row
+                    if (ios/=0 .and. CalParams%MPInitialization%NumberOfMPs/=0) then 
+                        exit ! ios becomes non-zero when end of file was reached
+                    end if 
+                    CalParams%MPInitialization%NumberOfMPs = &
+                        CalParams%MPInitialization%NumberOfMPs + 1 ! Counting the number of lines 
+                end do
+                
+                
+                ! assign the number of particles in the simulation
+                Counters%NParticles = CalParams%MPInitialization%NumberOfMPs-1
+            
+                ! Rewind file for reading in allocated matrix 
+                rewind(MPInitUnit) 
+            
+                ! Allocate and read the matrix of velocity time history 
+                allocate (MPInitFileMatrix(Counters%NParticles,NDIM+1)) ! Allocate the size of the matrix (specifying 2 columns)
+                
+                do ii = 1,CalParams%MPInitialization%NumberOfMPs !CalParams%MPInitialization%NumberOfMPs
+                    read(MPInitUnit,*,iostat=ios) Temp(1,:)
+                    if (ii ==1) cycle
+                    MPInitFileMatrix(ii-1,:) = Temp(1,:)
+                end do 
+                close(MPInitUnit)
+            !end if 
+        end if
+        
+        
+        
+        
+        
+        end subroutine ReadMPInitializationFile
+        
+        
+        
+        
+        !subroutine AssignMPInitializationFile()
+        !!**********************************************************************
+        !!   Reading the material points from file with the following format: 
+        !!   XCoord[m] 		YCoord[m]		Material
+        !!   real no.        real no.        integer no. 
+        !!
+        !!**********************************************************************
+        !
+        !implicit none 
+        !
+        !
+        !integer(INTEGER_TYPE) :: IError
+        !integer(INTEGER_TYPE) :: iMP
+        !! assume all solid material points
+        !
+        !! I need to loop over the material points with their corresponding 
+        !
+        !! allocate variables now that we know the number of material points we have 
+        !!allocate(GlobPosArray(Counters%NParticles, NVECTOR), stat = IError)
+        !!GlobPosArray = 0.0
+        !!
+        !!
+        !!! loop over all material points initialized from file
+        !!do IMP = 1, Counters%NParticles ! loop over material points
+        !!
+        !!    ! assign material point global coordinate
+        !!    GlobPosArray(IMP, 1:NVECTOR) = MPInitFileMatrix(IMP, 1:NVECTOR) 
+        !!    
+        !!    do IPatch = 1, Counters%NPatches ! loop over patches
+        !!        
+        !!        do IEl = 1, nel_NURBS(IPatch) ! loop over number of elements in patch
+        !!            
+        !!            
+        !!            if (NDIM ==2 ) then 
+        !!                
+        !!                call GetLocalCoordinates_2D(GlobPosArray(IMP,:), &
+        !!                           UStepArray(IMP,:), &
+        !!                           IEl, &
+        !!                           ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+        !!                           NControlPoints(IPatch), NDIM, & !Counters%NodTot
+        !!                           NodalCoordinates(:,:,IPatch), &
+        !!                           ElementConnectivities(:,:,IPatch), &
+        !!                           NewLocPos, &
+        !!                           OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+        !!                
+        !!                
+        !!            elseif (NDIM ==3) then 
+        !!                
+        !!            call GetLocalCoordinates(GlobPosArray(IMP,:), &
+        !!                           UStepArray(IMP,:), &
+        !!                           IEl, &
+        !!                           ELEMENTNODES, nel_NURBS(IPatch),  & !Counters%NEl
+        !!                           NControlPoints(IPatch), NDIM, & !Counters%NodTot
+        !!                           NodalCoordinates(:,:,IPatch), &
+        !!                           ElementConnectivities(:,:,IPatch), &
+        !!                           NewLocPos, &
+        !!                           OutsideElement, Success, ElementAdjacencies(:,:, IPatch), IPatch)!, &
+        !!                
+        !!            end if 
+        !!            
+        !!                if (success) then 
+        !!                    ElementIDArray(IMP)= IEl !NewElementID
+        !!                    PatchIDArray(IMP)= IPatch
+        !!                    NewElementID = IEl
+        !!                    ! remove it from old patch
+        !!                    !do IParticle = 1, Counters%NParticles
+        !!                    !    if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+        !!                    !        GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+        !!                    !        !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !!                    !        exit
+        !!                    !    end if 
+        !!                    !end do 
+        !!                    !! add it in new patch
+        !!                    !!do IParticle = 1, Counters%NParticles
+        !!                    !!    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+        !!                    !        GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !!                    !!        exit
+        !!                    !!    end if 
+        !!                    !!end do 
+        !!                    !        GetParticleIndexCounter = GetParticleIndexCounter-1
+        !!                     
+        !!                            
+        !!                    
+        !!                    !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !!                    
+        !!                    !call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+        !!                    !      ' moved from element'  // trim(String(OldElementID))      // &
+        !!                    !      ' in patch '  // trim(String(IPatch)) // &   
+        !!                    !      ' to '          // trim(String(ElemTrial))      // &
+        !!                    !      ' in patch '  // trim(String(PatchTrial)) // &   
+        !!                    !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+        !!                    !      'TimeStep '     // trim(String(Calparams%Timestep))  )
+        !!                    
+        !!                    
+        !!                    exit
+        !!                    
+        !!                end if 
+        !!                
+        !!    
+        !!        
+        !!        
+        !!        end do ! loop over number of elements in patch 
+        !!        
+        !!    end do ! loop over patches 
+        !!    
+        !!end do ! loop over material points
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !
+        !!**********************************************************************************************
+        !
+        !			!do PatchTrial = 1, Counters%NPatches ! loop over patches
+        !   !     do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
+        !   !     
+        !   !     !--------------------------------------------------------------------
+        !   !     ! Abdel: repeat again to see if we can catch it in the new element
+        !   !     !call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+        !   !     !                         UStepArray(ParticleID,:), &
+        !   !     !                         ElemTrial, &
+        !   !     !                         ELEMENTNODES,  &
+        !   !     !                         Counters%NEl,  &
+        !   !     !                         Counters%NodTot,  &
+        !   !     !                         NDIM, &
+        !   !     !                         NodalCoordinates,  &
+        !   !     !                         ElementConnectivities, &
+        !   !     !                         NewElementID, &
+        !   !     !                         NewLocPos, &
+        !   !     !                         Success)
+        !   !     !ElementIDArray(ParticleID)= NewElementID
+        !   !         if (NDIM ==2 ) then 
+        !   !             
+        !   !             call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+        !   !                        UStepArray(ParticleID,:), &
+        !   !                        ElemTrial, &
+        !   !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+        !   !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+        !   !                        NodalCoordinates(:,:,PatchTrial), &
+        !   !                        ElementConnectivities(:,:,PatchTrial), &
+        !   !                        NewLocPos, &
+        !   !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+        !   !             
+        !   !             
+        !   !         elseif (NDIM ==3) then 
+        !   !             
+        !   !         call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+        !   !                        UStepArray(ParticleID,:), &
+        !   !                        ElemTrial, &
+        !   !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+        !   !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+        !   !                        NodalCoordinates(:,:,PatchTrial), &
+        !   !                        ElementConnectivities(:,:,PatchTrial), &
+        !   !                        NewLocPos, &
+        !   !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+        !   !             
+        !   !         end if 
+        !   !         
+        !   !             if (success) then 
+        !   !                 ElementIDArray(ParticleID)= ElemTrial!NewElementID
+        !   !                 PatchIDArray(ParticleID)= PatchTrial
+        !   !                 NewElementID = ElemTrial
+        !   !                 ! remove it from old patch
+        !   !                 do IParticle = 1, Counters%NParticles
+        !   !                     if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+        !   !                         GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+        !   !                         !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !   !                         exit
+        !   !                     end if 
+        !   !                 end do 
+        !   !                 ! add it in new patch
+        !   !                 !do IParticle = 1, Counters%NParticles
+        !   !                 !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+        !   !                         GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !   !                 !        exit
+        !   !                 !    end if 
+        !   !                 !end do 
+        !   !                         GetParticleIndexCounter = GetParticleIndexCounter-1
+        !   !                  
+        !   !                         
+        !   !                 
+        !   !                 !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+        !   !                 
+        !   !                 call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+        !   !                       ' moved from element'  // trim(String(OldElementID))      // &
+        !   !                       ' in patch '  // trim(String(IPatch)) // &   
+        !   !                       ' to '          // trim(String(ElemTrial))      // &
+        !   !                       ' in patch '  // trim(String(PatchTrial)) // &   
+        !   !                       ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+        !   !                       'TimeStep '     // trim(String(Calparams%Timestep))  )
+        !   !                 
+        !   !                 
+        !   !                 exit
+        !   !                 
+        !   !             end if 
+        !   !             
+        !   !     !--------------------------------------------------------------------------
+        !   !     end do ! loop over elements
+        !   !         
+        !   ! end do ! loop over patches
+        !
+        !!**********************************************************************************************
+        !
+        !
+        !
+        !end subroutine AssignMPInitializationFile
+        
         
         
         subroutine GetPrescribedVelocityOrAccelerationForTimeStep()
@@ -2601,6 +3449,7 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
         real(REAL_TYPE), dimension(1,2) :: Temp ! temporary variable for reading number of lines
         integer(INTEGER_TYPE) :: NumberOfLines
         
+        !External :: FExist
 
         
         if ((CalParams%PrescribedHead%HydraulicHead == .false.) .and. (.not.(CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE))) RETURN
@@ -2718,6 +3567,7 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
         integer(INTEGER_TYPE), dimension(:), allocatable, intent (out) :: UniqueIdMapVar
         real(REAL_TYPE), dimension (:,:), allocatable, intent (out) :: MPMapFromExtFileMatrix
        
+        !External :: FExist
 
         if (.not.(CalParams%ApplyMapMPStressFromExtFile == .true.)) RETURN
 
@@ -2938,7 +3788,10 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           call WriteReal(FileUnit, '$$TIME_PER_LOADSTEP', [CalParams%TotalTime], 1, .true.)
           call WriteReal(FileUnit, '$$TOTAL_TIME', [CalParams%OverallRealTime], 1, .true.)
           call WriteReal(FileUnit, '$$COURANT_NUMBER', [CalParams%CourantNumber], 1, .true.)
+          call WriteLogic(FileUnit, '$$STRUCTURED_MESH', [CalParams%ApplyStructuredMeshLocPosUpdate], 1, .true.) 
 
+          call WriteLogic(FileUnit, '$$GP_SMOOTHING_FLUID', [CalParams%ApplyGPSmoothFluidPressure], 1, .true.)
+          
           ! CALCULATION DATA
           select case(CalParams%ComputationMethod)
             case(MPM_MIXED_INTEGRATION) 
@@ -2949,7 +3802,29 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
               call WriteString(FileUnit, '$$COMPUTATION_METHOD', FEM_SPECIFIER, 1, .true.)
             case(UL_FEM) 
               call WriteString(FileUnit, '$$COMPUTATION_METHOD', UL_FEM_SPECIFIER, 1, .true.)
-          end select
+            end select
+            
+          
+          ! MATERIAL POINT GENERATION   
+            select case(CalParams%MPInitialization%MPInitFormat)
+                ! Both of these are the same. Consider removing the case dependency. 
+            case(MP_INIT_GAUSSPT) 
+              call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_GAUSSPOINT_SPECIFIER, 1, .true.)
+            case(MP_INIT_FILE)
+                call WriteString(FileUnit, '$$MP_INITIALIZATION', MP_INITIALIZATION_FILE_SPECIFIER, 1, .true.)
+            end select 
+            
+            
+
+            ! VOLUMETRIC LOCKING 
+            !call WriteLogic(FileUnit, '$$B_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyBBar], 1, .true.) 
+            call WriteLogic(FileUnit, '$$F_BAR_VOLLOCK_SMOOTHING', [CalParams%ApplyFBar], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_VOLLOCK_SMOOTHING_WATER', [CalParams%ApplyFBarWater], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_LOWER_ORDER_VOLLOCK_SMOOTHING', [CalParams%ApplyFBarLowerOrder], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_STRAINS', [CalParams%ApplyFBarSmoothStrains], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_STRESSES', [CalParams%ApplyFBarSmoothStresses], 1, .true.)
+            call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_LIQUID_PRESSURE', [CalParams%ApplyFBarSmoothWP], 1, .true.)
+            
 
           ! GRAVITY DATA
           call WriteReal(FileUnit, '$$GRAVITY_ACCELERATION', [CalParams%GravityData%GAccel], 1, .true.)
@@ -2968,7 +3843,12 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           call WriteLogic(FileUnit, '$$APPLY_SEEPAGE_FACE', [CalParams%BoundaryConditions%UseSeepageFace], 1, .true.) 
           call WriteLogic(FileUnit, '$$APPLY_INFILTRATION', [CalParams%BoundaryConditions%UseInfiltration], 1, .true.) 
           call WriteStringReal(FileUnit, '$$PRESCRIBED_VELOCITY', CalParams%Multipliers%VelocitySolidLoadType, [CalParams%Multipliers%VelocitySolidCurrent, CalParams%Multipliers%VelocitySolidFinal], .true.)
+          
+          call WriteLogicReal(FileUnit, '$$GENERALIZED_ALPHA_TIME_SCHEME', [CalParams%ApplyGeneralizedAlphaTimeScheme%Switch], [CalParams%ApplyGeneralizedAlphaTimeScheme%Rho_infty], 1,.true.)
 
+          ! MOVING MESH 
+          call WriteLogic(FileUnit, '$$MOVING_MESH', [CalParams%ApplyMovingMesh], 1, .true.)
+          
           ! QUASI-STATIC CALCULATION
           call WriteLogic(FileUnit, '$$QUASISTATIC_CONVERGENCE', [CalParams%ApplyQuasiStatic], 1, .true.)
           call WriteReal(FileUnit, '$$TOLERATED_ERROR_SOLID', [CalParams%ToleratedErrorEnergy, CalParams%ToleratedErrorForce], 2, .true.)
@@ -3051,6 +3931,9 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           ! FIXED SOLID SKELETON
           call WriteLogic(FileUnit, '$$FIX_SOLID_SKELETON', [CalParams%ApplyFixedSolidSkeleton], 1, .true.) 
 
+          ! RESET PARTICLE DISPLACEMENT
+          call WriteLogic(FileUnit, '$$RESET_PARTICLE_DISPLACEMENT', [CalParams%ResetParticleDisplacement], 1, .true.) 
+
           ! STRAIN SMOOTHING
           call WriteLogic(FileUnit, '$$STRAIN_SMOOTHING', [CalParams%ApplyStrainSmoothing], 1, .true.)
           
@@ -3101,7 +3984,9 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           ! MATERIAL DATA
           call WriteLogic(FileUnit, '$$APPLY_MATERIAL_UPDATE', [.false.], 1, .true.)
           call WriteLogic(FileUnit, '$$APPLY_POROSITY_UPDATE', [CalParams%ApplyPorosityUpdate], 1, .true.)
-                   
+          call WriteLogic(FileUnit, '$$APPLY_DARCY_PERMEABILITY_UPDATE', [CalParams%ApplyDarcyPermeabilityUpdate], 1, .true.)
+
+          
           call WriteLogicInteger(FileUnit, '$$SUBMERGED_CALCULATION', [CalParams%ApplySubmergedCalculation], [CalParams%NumberSubmergedCalculation], 1, .true.)
                    
           ! INITIAL VELOCITY ON MATERIAL POINTS
@@ -3174,6 +4059,8 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           character(len = MAX_FILENAME_LENGTH) :: FileName
           character(len = MAX_EXTENSION_LENGTH) :: StepString
           integer(INTEGER_TYPE) :: CheckedStep
+          
+          !External :: FExist
        
           CheckedStep = 1
           CalParams%PreviouslyRealisedLoadStep = 0

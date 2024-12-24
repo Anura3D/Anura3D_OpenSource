@@ -39,15 +39,20 @@
       !
       !**********************************************************************
 
-      
+      use ModFileIO  
       use ModGlobalConstants
+      !use ModFileIO
       use ModReadCalculationData
       use ModString
       use kernel32
-      use ModFileIO
+      !use ModFileIO
       use ModLinearElasticity
       use ModMohrCoulomb
       use ModBingham
+      use ModMohrCoulombStrainSoftening
+      
+      !External :: FExist
+      
       implicit none
 
 
@@ -166,23 +171,42 @@
           integer(INTEGER_TYPE) :: FileUnit
           character(len=255) :: BName
           integer(INTEGER_TYPE) :: ios
-
-          FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
-          FileUnit = TMP_UNIT
           
-          ! check if GOM file exists in project folder, otherwise give error and stop execution
-          if ( FExist(trim(FileName)) ) then
-            call GiveMessage('Reading GOM file (Materials): ' // trim(FileName) )  
-          else
-            call GiveError('GOM file does not exist!' // NEW_LINE('A') // 'required GOM file: ' // trim(FileName) )
-          end if
+          !External :: FExist
+          
+          if (CalParams%MPInitialization%MPInitFormat == MP_INIT_GAUSSPT) then 
+          
+              FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+              FileUnit = TMP_UNIT
+              
+              ! check if GOM file exists in project folder, otherwise give error and stop execution
+              if ( FExist(trim(FileName)) ) then
+                  call GiveMessage('Reading GOM file (Materials): ' // trim(FileName) )  
+              else
+                  call GiveError('GOM file does not exist!' // NEW_LINE('A') // 'required GOM file: ' // trim(FileName) )
+               end if
+          
+          else if (CalParams%MPInitialization%MPInitFormat == MP_INIT_FILE) then 
+              
+              FileName = trim(CalParams%FileNames%ProjectName)//MATINFO_FILE_EXTENSION
+              FileUnit = TMP_UNIT
+              
+              ! check if GOM file exists in project folder, otherwise give error and stop execution
+              if ( FExist(trim(FileName)) ) then
+                  call GiveMessage('Reading MAT_INFO file (Materials): ' // trim(FileName) )  
+              else
+                  call GiveError('MAT_INFO file does not exist!' // NEW_LINE('A') // 'required MAT_INFO file: ' // trim(FileName) )
+               end if
+              
+          end if 
+          
           
           ! open GOM file
           call FileOpen(FileUnit, trim(FileName))
           
           ! determine current version of GOM file 
           read(FileUnit, '(A)', iostat=ios) BName ! NB: if no version is specified in the header of the GOM file, the default case will be chosen
-          call Assert( ios == 0, 'GOM file: Can''t read flag from GOM file.' )
+          call Assert( ios == 0, 'GOM/MAT_INFO file: Can''t read flag from GOM/MAT_INFO file.' )
           FileVersion = trim(BName)
           
           ! read GOM data 
@@ -240,12 +264,20 @@ end select
           integer(INTEGER_TYPE) :: DumI
           character(len=255) :: DumS
           real(REAL_TYPE) :: DumR
+          
+          real(REAL_TYPE) :: LowerBoundBulkModulusWater 
+          real(REAL_TYPE) :: UpperBoundBulkModulusWater 
+          
           integer(INTEGER_TYPE), dimension(:), allocatable :: NumberofPhases
           real(REAL_TYPE) :: n, nu_u, nu_eff, E
           integer :: umat
           integer(handle) :: lib_handle
           pointer (p, umat)
           integer(INTEGER_TYPE) :: K = 1          
+          
+          
+          LowerBoundBulkModulusWater = 2.1e6
+          UpperBoundBulkModulusWater = 2.2e6
           
           ! set GOM version number          
             select case (FileVersion)
@@ -382,10 +414,21 @@ end select
                   call AssertWarning( DumR < 10000.0, 'GOM file: Unrealistic value for ' //trim(BName)// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   MatParams(I)%DensityLiquid = DumR
 
+                  
+                  call ReadReal(FileUnit, BName, DumR) ! read bulk modulus liquid, K_l, $$BULK_MODULUS_LIQUID
+                  call Assert( DumR > 0.0, 'GOM file: ' //trim(BName)// ' must be larger than 0.0 (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
+                  call AssertWarning( DumR < LowerBoundBulkModulusWater, 'GOM file: Non-default value for ' //trim(BName)// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
+                  call AssertWarning( DumR > UpperBoundBulkModulusWater, 'GOM file: Non-default value for ' //trim(BName)// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
+                  MatParams(I)%BulkModulusLiquid = DumR
+                  
+                  
                   call ReadReal(FileUnit, BName, DumR) ! read K0-value, K0, $$K0_VALUE_SOLID
                   call Assert( DumR >= 0.0, 'GOM file: ' //trim(BName)// ' must be larger than or equal to 0.0 (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   call Assert( DumR <= 1.0, 'GOM file: ' //trim(BName)// ' must be smaller than or equal to 1.0 (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   MatParams(I)%K0Value = DumR
+                  
+                  
+                  
                   
                   ! calculate density of the mixture
                   MatParams(I)%DensityMixture = ( 1 - MatParams(I)%InitialPorosity ) * MatParams(I)%DensitySolid + MatParams(I)%InitialPorosity * MatParams(I)%DensityLiquid 
@@ -470,6 +513,8 @@ end select
                   MatParams(I)%HydraulicConductivityLiquid = MatParams(I)%DensityLiquid * CalParams%GravityData%GAccel * &
                                                              MatParams(I)%IntrinsicPermeabilityLiquid / &
                                                              (1000 * MatParams(I)%ViscosityLiquid)
+                  
+                  
 
                   call GiveMessage('Darcy permeability is ' //trim(String(MatParams(I)%HydraulicConductivityLiquid))// ' (MATERIAL: ' //trim(MatParams(I)%MaterialName)// ').' )
                   call Assert(.not.(MatParams(I)%BulkModulusLiquid < 0), 'bulk modulus of liquid must be positive')
@@ -587,7 +632,7 @@ end select
                   if ( DumI == 1 ) CalParams%ApplyDetectLiquidFreeSurface = .true.
                   
                   ! set some necessary standard parameters
-                  MatParams(I)%PoissonRatio = 0.45 ! set Poisson ratio, relevant for calculation of shear modulus
+                  MatParams(I)%PoissonRatio = 0.49 ! set Poisson ratio, relevant for calculation of shear modulus
                   MatParams(I)%ShearModulus = 3.0 * MatParams(I)%BulkModulusLiquid * (1.0 - 2.0 * MatParams(I)%PoissonRatio) / &
                                                  (2 * (1.0 + MatParams(I)%PoissonRatio)) ! shear modulus computed from Poisson ratio and specified bulk modulus
                   MatParams(I)%K0Value = 1.0
@@ -596,12 +641,13 @@ end select
                   MatParams(I)%FluidThresholdDensity = MatParams(I)%DensityLiquid * &
                            ( 1 - CalParams%LiquidPressureCavitationThreshold / MatParams(I)%BulkModulusLiquid ) ! temporary if p=0 (at 1atm) 
 
-                  if ((IsMPMComputation()).and.(MatParams(I)%FluidThresholdDensity<=0.0)) then
-                    call GiveError('FluidThresholdDensity is zero or negative!'           // NEW_LINE('A') // &
-                                   '$$LIQUID_PRESSURE_CAVITATION_THRESHOLD is too large,' // &
-                                   ' or $$BULK_MODULUS_LIQUID is too small.'              // NEW_LINE('A') // &
-                                   'Note the requirement: Cavitation pressure < Bulk modulus, and change accordingly.')
-                  end if
+                  ! I am commenting this for now because I do not need cavitation
+                  !if ((IsMPMComputation()).and.(MatParams(I)%FluidThresholdDensity<=0.0)) then
+                  !  call GiveError('FluidThresholdDensity is zero or negative!'           // NEW_LINE('A') // &
+                  !                 '$$LIQUID_PRESSURE_CAVITATION_THRESHOLD is too large,' // &
+                  !                 ' or $$BULK_MODULUS_LIQUID is too small.'              // NEW_LINE('A') // &
+                  !                 'Note the requirement: Cavitation pressure < Bulk modulus, and change accordingly.')
+                  !end if
 
                   ! calculate density of the mixture (temporary solution)
                   MatParams(I)%DensitySolid = MatParams(I)%DensityLiquid
@@ -851,7 +897,8 @@ end select
                 case (ESM_EXTERNAL_SOIL_MODEL)
                     
                   !if (MatParams(I)%MaterialName=="MyModel")  MatParams(I)%ESM_POINTER => ESM_Mymodel  !Example of the pointer definition
-                    
+                     if (MatParams(I)%MaterialName=="ESM_MCSS") MatParams(I)%ESM_POINTER => ESM_MohrCoulombStrainSoftening
+                     
                   call ReadString(FileUnit, BName, DumS) ! soil model DLL, $$SOIL_MODEL_DLL
                   MatParams(I)%SoilModelDLL = DumS
 
@@ -1190,6 +1237,5 @@ end select
             call GiveError('UMAT-ERROR: UMAT not found in: ' // trim(name))
 
         end subroutine Error_NoUMAT
-
-   
+        
       end module ModReadMaterialData

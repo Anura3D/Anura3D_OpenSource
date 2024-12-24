@@ -47,6 +47,7 @@
       !
       !**********************************************************************
 
+      use ModFileIO
       use ModCounters
       use ModReadCalculationData
       use ModElementEvaluation
@@ -56,7 +57,7 @@
       use ModString
       use ModIsort
       use ModGlobalConstants
-      use ModFileIO
+      !use ModFileIO
       
       implicit none
 
@@ -91,6 +92,9 @@
         real(REAL_TYPE) :: a_crit, b_crit, d_crit
         character(len=64) :: SoilModel ! name of the constitutive model
         logical :: IsUndrEffectiveStress = .false. 
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
         WaveSpeed = 0.0
         consolidationcoeff = 0.0
@@ -167,7 +171,7 @@
          ! consolidationcoeff = hydraulic_conductivity/(gravity* rho_liquid*(1/EUnloading + Sr*porosity/bulk_modulus-porosity*dSrdp(1)))
           consolidationcoeff = hydraulic_conductivity/(gravity* rho_liquid*(1/EUnloading + porosity/bulk_modulus))
           
-          dx = ElementLMin(IEl)
+          dx = ElementLMin(IEl,IPatch_Temporary)
 
           ! calculate a,b and d for wavespeed
           a_crit = porosity * rho_mixture * gravity / (1.0 - porosity) / rho_solid / hydraulic_conductivity
@@ -293,10 +297,56 @@
           ! local variables
           real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
           real(REAL_TYPE), dimension(NTENSOR) :: Eps
+          
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: RelativeDeformationGradient
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: RelativeDeformationGradientInverse
+          
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: DeformationGradientPreviousInverse
+          
+          real(REAL_TYPE) :: RelativeDeformationGradientJacobian
+          real(REAL_TYPE) :: RelativeDeformationGradientInverseJacobian
+          
+          
+          real(REAL_TYPE) :: DeformationGradientPreviousJacobian
+          real(REAL_TYPE) :: DeformationGradientPreviousInverseJacobian
+          
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
 
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          ! Volumetric locking variables 
+          integer(INTEGER_TYPE) :: IDim
+          real(REAL_TYPE), allocatable, dimension(:,:) :: &
+              WeightedUpdatedDeformationGradientJacobian
+          real(REAL_TYPE), allocatable, dimension(:,:) :: &
+              UpdatedDeformationGradientJacobian
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: TensorialStrainIncrement
+          
+          !real(REAL_TYPE), dimension(Maximum_NControlPoints,Counters%nEntity) :: &
+          !    WeightedUpdatedDeformationGradientJacobian
+          !real(REAL_TYPE), dimension(Maximum_NControlPoints,Counters%nEntity) :: &
+          !    UpdatedDeformationGradientJacobian
+          
+          if (CalParams%ApplyFBarLowerOrder) then 
+              ! lower order grid
+              allocate( WeightedUpdatedDeformationGradientJacobian(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )   
+                WeightedUpdatedDeformationGradientJacobian = 0.0
+              allocate( UpdatedDeformationGradientJacobian(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )
+                UpdatedDeformationGradientJacobian = 0.0
+          else 
+              ! same higher order grid
+              allocate( WeightedUpdatedDeformationGradientJacobian(NURBS%Maximum_NControlPoints, Counters%nEntity) )  
+              WeightedUpdatedDeformationGradientJacobian = 0.0
+              allocate( UpdatedDeformationGradientJacobian(NURBS%Maximum_NControlPoints, Counters%nEntity) )    
+              UpdatedDeformationGradientJacobian = 0.0  
+          end if
+                      
+          
           ! set the nodal displacement increments to the first entity
           ! only need to change if the contact model is used and the next particle belongs to a different entity
           iEntityDefault = 1 ! set default to first entity
@@ -304,28 +354,33 @@
             DUTotEnt(I) = IncrementalDisplacementSoil(I,iEntityDefault)
           end do
 
-          do IActiveElement = 1, Counters%NAEl ! loop over all active elements
-            
-              IElement = ActiveElement(IActiveElement) ! get element number of the active element
-              NElemPart = NPartEle(IElement) ! get number of particles in the active element
+          
+          !do IActiveElement = 1, Counters%NAEl ! loop over all active elements
+           
+          do IPatch = 1, Counters%NPatches ! loop over all patches
+          do IActiveElement = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
+
+              IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
+              NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
               
-              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if  
               
               do IParticle = 1, NElemPart ! loop over all particles of the active element
               
-                ParticleIndex = GetParticleIndex(IParticle, IElement) ! get global particle ID
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) ! get global particle ID
                 
                 if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
-
+                    
                   ! determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
-                               ELEMENTNODES, Counters%NEl, &
-                               Counters%NodTot, NDIM, &
-                               IElement, ElementConnectivities, &
-                               NodalCoordinatesUpd,  &
-                               BMatrixDeformed, DetJac)
+                               ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
+                               Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
+                               IElement, ElementConnectivities(:,:,IPatch), &
+                               NodalCoordinatesUpd,  & !(:,:,IPatch)
+                               BMatrixDeformed, &
+                               IPatch)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
                   ! get the nodal displacement increments for the specific entity
                   if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
@@ -336,25 +391,1109 @@
                     end if
                   end if
 
+                  if (.not.CalParams%ApplyFBar) then 
+                      
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
-                  call Get_Strain(IElement, IParticle, &
-                                ElementConnectivities, & 
+                  call Get_Strain(IElement, ParticleIndex, &!IParticle, &
+                                ElementConnectivities(:,:,IPatch), & 
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
-                                Eps) ! Eps = strain increment at material point
-     
+                                Eps, &
+                                IPatch) ! Eps = strain increment at material point
+                  
+                  else
+                  
+                      ! Relative deformation gradient --> DeltaF_MP
+                      call Get_RelativeDeformationGradient(IElement, ParticleIndex, &
+                                ElementConnectivities(:,:,IPatch), & 
+                                BMatrixDeformed, DUTotEnt, ReducedDof, &
+                                RelativeDeformationGradient, &
+                                IPatch) ! RelativeDeformationGradient = relative deformation gradient at material point
+                        
+                      ! Evaluate the jacobian of the relative deformation gradient --> DeltaJ
+                      call RJacInv(NDIM, RelativeDeformationGradient, RelativeDeformationGradientInverse, &
+                      RelativeDeformationGradientJacobian, RelativeDeformationGradientInverseJacobian)
+                        
+                      ! Evaluate the jacobian of the previous deformation gradient --> Jn
+                      call RJacInv(NDIM, Particles(ParticleIndex)%DeformationGradientPrevious, DeformationGradientPreviousInverse, &
+                      DeformationGradientPreviousJacobian, DeformationGradientPreviousInverseJacobian)
+                      
+                      ! Set Relative deformation gradient in particles type --> 
+                      call SetRelDefGradient(Particles(ParticleIndex), RelativeDeformationGradient) 
+                        
+                      ! Set Relative deformation gradient jacobian in particles type 
+                      call SetRelDefGradientJacobian(Particles(ParticleIndex), RelativeDeformationGradientJacobian) 
+                  
+                      ! Set Previous  deformation gradient in particles type
+                      call SetDefGradientJacobianPrevious(Particles(ParticleIndex), DeformationGradientPreviousJacobian) 
+                  
+                      
+                  end if
+                  
+                  ! We don't want to increase the strain yet  if we are in F-bar. 
+                  ! We still need to calcualte the tensorial strain if we are in F-bar. 
                   ! Update particle strains
-                  call SetEpsStep(Particles(ParticleIndex), Eps)
-                  if (.not.CalParams%ApplyImplicitQuasiStatic) then
+                  !if (.not.CalParams%ApplyBBar) then 
+                  if (.not.CalParams%ApplyFBar) then 
+                  call SetEpsStep(Particles(ParticleIndex), Eps) 
+                  
+                  
+                  ! if Applying BBar then add in the total strain later on
+                  if (.not.CalParams%ApplyImplicitQuasiStatic) then !.and. .not.CalParams%ApplyBBar
                     call IncreaseEps(Particles(ParticleIndex), Eps)
                   end if
+                  
+                  end if 
 
                 end if ! Material Point can be MIXTURE or SOLID
 
               end do ! particle loop
 
           end do ! active element loop
-
+          
+          end do ! patch loop
+          
+          
+          
+          ! Apply F-bar  
+          if (CalParams%ApplyFBar) then 
+              
+              if (.not.CalParams%ApplyFBarLowerOrder) then 
+          
+              ! we map the jacobian of the updated deformation gradient times the lumped mass to the background mesh
+              call MapWeightedUpdDefGradJacobToNodes(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
+          
+              ! we divide by the lumped mass to get the nodal updated deformation gradient
+              call NormWeightedUpdDefGradJacobAtNodes(UpdatedDeformationGradientJacobian, &
+                                                    WeightedUpdatedDeformationGradientJacobian)
+                      
+              ! we map the updated deformation gradient to the material points
+              call MapUpdatedDeformationGradientJacobianAtNodesToMPs(UpdatedDeformationGradientJacobian)
+                      
+              else 
+              
+              call MapWeightedUpdDefGradJacobToNodes_VolLockSmooth(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
+          
+          
+              call NormWeightedUpdDefGradJacobAtNodes_VolLockSmooth(UpdatedDeformationGradientJacobian, &
+                                                    WeightedUpdatedDeformationGradientJacobian)
+                      
+              call MapUpdatedDeformationGradientJacobianAtNodesToMPs_VolLockSmooth(UpdatedDeformationGradientJacobian)
+              
+                  
+                  
+                  
+              end if 
+              
+          
+              do IParticle = 1, Counters%NParticles
+                  ! Update deformation gradients
+                  call UpdateRelativeDeformationGradient(Particles(IParticle))
+                  call UpdateDeformationGradientPrevious(Particles(IParticle)) 
+                  
+                  ! Update strains 
+                  call CalculateTensorialInfinitesimalStrain(Particles(IParticle), TensorialStrainIncrement)
+                  call CalculateEpsVoigt(Particles(IParticle), TensorialStrainIncrement, Eps)
+                  call SetEpsStep(Particles(IParticle), Eps) 
+                  if (.not.CalParams%ApplyFBarSmoothStrains) then 
+                  call IncreaseEps(Particles(IParticle), Eps)
+                  end if 
+              end do 
+          
+          end if 
+          
         end subroutine UpdateParticleStrains
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+         
+       !-----------------------------------------------------------------------
+       
+       
+       
+       
+       subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs(UpdatedDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        ! hardcoded on the first patch
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
+          
+          
+        ! Local variables
+        integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+        integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: Nodes_Element
+          
+        real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: NodUpdatedDefGradientJacobian !NodStrain NTENSOR, 
+        real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch
+       
+        !!CC - changed to function call - needs to be set to zero here
+        NoEn = Counters%nEntity
+       
+          
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+                IEl = ActiveElement(IAEl, IPatch)
+              
+                Nodes_Element(1:ELEMENTNODES) = &
+                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
+                
+                !do I = 1, NTENSOR
+              
+                    
+                        !ReducedDof_VolLockSmooth(&!Multipatch_Connecting_Local_To_Global_ControlPoints( &
+                        !IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)) + I !,IPatch) !ElementConnectivities
+       
+                    ! start here 
+                      NodUpdatedDefGradientJacobian(1:ELEMENTNODES, 1:Counters%nEntity) = &
+                          UpdatedDeformationGradientJacobian(Nodes_Element(1:ELEMENTNODES), 1:NoEn) 
+            
+                !end do
+           
+                  
+                do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 
+                        !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
+                        Particles(ParticleIndex)%DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
+                        ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 
+                        if (CalParams%ApplyContactAlgorithm) then
+                            iEntity = EntityIDArray(ParticleIndex)
+                        else
+                            iEntity = 1  
+                        end if 
+                 
+                        do INode = 1, ELEMENTNODES
+       
+                            !do I = 1, NTENSOR!NVECTOR  
+       
+                                ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
+                                ! Particle strain 
+                                
+                            !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
+                            Particles(ParticleIndex)%DeformationGradientJacobian = Particles(ParticleIndex)%DeformationGradientJacobian + &
+                                ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(INode, iEntity) )
+                            !end do    
+                        
+                        end do !Loop over nodes
+                      
+                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                  
+                    
+                    !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
+                    
+                end do !Loop over particles
+              
+            end do !elements    
+          
+        end do ! patches
+        
+       
+       end subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs !MapVolumetricStrainToMPs_VolLockSmooth  
+       
+        
+       !------------------------------
+       
+       
+       
+       
+       !----------------------------------------------------------------------------------------------------
+       
+       
+       
+       
+       
+       
+       subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs_VolLockSmooth(UpdatedDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        ! hardcoded on the first patch
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
+          
+          
+        ! Local variables
+        integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+        integer(INTEGER_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: Nodes_Element
+          
+        real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth, Counters%nEntity) :: NodUpdatedDefGradientJacobian !NodStrain NTENSOR, 
+        real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: ParticleShape
+          
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch
+       
+        !!CC - changed to function call - needs to be set to zero here
+        NoEn = Counters%nEntity
+       
+          
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+                IEl = ActiveElement(IAEl, IPatch)
+              
+                Nodes_Element(1:ELEMENTNODES_VolLockSmooth) = &
+                        NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)
+                
+                !do I = 1, NTENSOR
+              
+                    
+                        !ReducedDof_VolLockSmooth(&!Multipatch_Connecting_Local_To_Global_ControlPoints( &
+                        !IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)) + I !,IPatch) !ElementConnectivities
+       
+                    ! start here 
+                      NodUpdatedDefGradientJacobian(1:ELEMENTNODES_VolLockSmooth, 1:Counters%nEntity) = &
+                          UpdatedDeformationGradientJacobian(Nodes_Element(1:ELEMENTNODES_VolLockSmooth), 1:NoEn) 
+            
+                !end do
+           
+                  
+                do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 
+                        !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
+                        Particles(ParticleIndex)%DeformationGradientJacobian = 0.0
+                        ParticleShape = ShapeValuesArray_VolLockSmooth(ParticleIndex,:)
+                 
+                        if (CalParams%ApplyContactAlgorithm) then
+                            iEntity = EntityIDArray(ParticleIndex)
+                        else
+                            iEntity = 1  
+                        end if 
+                 
+                        do INode = 1, ELEMENTNODES_VolLockSmooth
+       
+                            !do I = 1, NTENSOR!NVECTOR  
+       
+                                ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
+                                ! Particle strain 
+                                
+                            !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
+                            Particles(ParticleIndex)%DeformationGradientJacobian = Particles(ParticleIndex)%DeformationGradientJacobian + &
+                                ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(INode, iEntity) )
+                            !end do    
+                        
+                        end do !Loop over nodes
+                      
+                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                  
+                    
+                    !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
+                    
+                end do !Loop over particles
+              
+            end do !elements    
+          
+        end do ! patches
+        
+       
+       end subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs_VolLockSmooth !MapVolumetricStrainToMPs_VolLockSmooth  
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       !----------------------------------------------------------------------------------------------------
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        subroutine UpdateRelativeDeformationGradient(Particle) 
+        !----------------------------------------------------------------
+        ! To update the relative deformation gradient after smoothing the jacobians
+        !----------------------------------------------------------------
+        implicit none 
+        
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+        
+        integer(INTEGER_TYPE) :: IParticle
+        
+        real(REAL_TYPE) :: Exponent 
+        
+        Exponent = real(1)/real(NDIM)
+        
+        ! Calculate an assumed relative deformation gradient
+        Particle%RelativeDeformationGradient = &
+              (( Particle%DeformationGradientJacobian / (Particle%RelativeDeformationGradientJacobian * Particle%DeformationGradientPreviousJacobian) )**Exponent) &
+              * Particle%RelativeDeformationGradient
+        
+        ! Set previous deformation gradient
+        !Particle%DeformationGradientPrevious = matmul(Particle%RelativeDeformationGradient,&
+        !                                    Particle%DeformationGradientPrevious)
+        
+        end subroutine UpdateRelativeDeformationGradient
+        
+       
+       
+       
+       
+       
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine UpdateDeformationGradientPrevious(Particle) 
+        !----------------------------------------------------------------
+        ! To update the relative deformation gradient after smoothing the jacobians
+        !----------------------------------------------------------------
+        implicit none 
+        
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+
+        integer(INTEGER_TYPE) :: IParticle
+        
+        ! Set previous deformation gradient
+        Particle%DeformationGradientPrevious = matmul(Particle%RelativeDeformationGradient,&
+                                            Particle%DeformationGradientPrevious)
+        
+        end subroutine UpdateDeformationGradientPrevious
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       
+       
+        subroutine CalculateTensorialInfinitesimalStrain(Particle, TensorialStrainIncrement)
+        !----------------------------------------------------------------
+        ! To calculate infinitesimal strains from relative deformation gradient
+        !----------------------------------------------------------------
+        implicit none 
+        
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+        
+        real(REAL_TYPE), dimension(NDIM, NDIM) :: RelativeDeformationGradientTransposed
+        real(REAL_TYPE), dimension(NDIM, NDIM) :: IdentityMatrix
+        real(REAL_TYPE), dimension(NDIM, NDIM), intent(out) :: TensorialStrainIncrement
+
+        integer(INTEGER_TYPE) :: IParticle, IDim
+        
+        ! initialize 
+        TensorialStrainIncrement = 0.0
+        IdentityMatrix = 0.0
+        
+        do IDim = 1, NDIM
+            IdentityMatrix(IDim, IDim) = 1.0
+        end do
+        
+        
+        RelativeDeformationGradientTransposed = transpose(Particle%RelativeDeformationGradient)
+        
+        TensorialStrainIncrement = (0.5 * ( Particle%RelativeDeformationGradient + RelativeDeformationGradientTransposed )) &
+             - IdentityMatrix 
+        
+        
+        
+        end subroutine CalculateTensorialInfinitesimalStrain
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       
+       
+        subroutine CalculateEpsVoigt(Particle, TensorialStrainIncrement, Eps)
+        !----------------------------------------------------------------
+        ! To calculate infinitesimal strains from relative deformation gradient
+        !----------------------------------------------------------------
+        implicit none 
+        
+        type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+        
+        real(REAL_TYPE), dimension(NDIM, NDIM) :: RelativeDeformationGradientTransposed
+        !real(REAL_TYPE), dimension(NDIM, NDIM) :: IdentityMatrix
+        real(REAL_TYPE), dimension(NDIM, NDIM), intent(in) :: TensorialStrainIncrement
+        real(REAL_TYPE), dimension(NTENSOR), intent(out) :: Eps
+
+        integer(INTEGER_TYPE) :: IParticle, IDim
+        
+        ! initialize 
+        Eps = 0.0
+        
+        
+        !TensorialStrainIncrement = 0.5 * ( Particle%RelativeDeformationGradient + RelativeDeformationGradientTransposed ) &
+        !     - IdentityMatrix 
+        
+        if (NDIM == 2) then 
+            
+            Eps(1) = TensorialStrainIncrement(1,1)
+            Eps(2) = TensorialStrainIncrement(2,2)
+            Eps(3) = 0.0
+            Eps(4) = TensorialStrainIncrement(1,2) + TensorialStrainIncrement(2,1) !2.0*(0.5*(
+            
+        elseif (NDIM == 3) then 
+            
+            Eps(1) = TensorialStrainIncrement(1,1)
+            Eps(2) = TensorialStrainIncrement(2,2)
+            Eps(3) = TensorialStrainIncrement(3,3)
+            Eps(4) = TensorialStrainIncrement(1,2) + TensorialStrainIncrement(2,1)
+            Eps(5) = TensorialStrainIncrement(2,3) + TensorialStrainIncrement(3,2)
+            Eps(6) = TensorialStrainIncrement(3,1) + TensorialStrainIncrement(1,3)
+        
+        end if 
+        
+        
+        end subroutine CalculateEpsVoigt
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        subroutine MapWeightedUpdDefGradJacobToNodes(WeightedUpdatedDeformationGradientJacobian) !(Momentum)
+        !**********************************************************************
+        !
+        !    Function:  To map weighted deformation gradient to the nodes. 
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+       
+        implicit none
+        
+        !integer(INTEGER_TYPE), intent(in) :: IPatch
+        ! this is a scalar for each node
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
+        
+        ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
+          !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: INode !NVECTOR, 
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          real(REAL_TYPE) :: ParticleVolStrain
+          real(REAL_TYPE) :: Time, PartilceMass
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: aa 
+        
+          ! Lower order mapping generalization
+          !integer(INTEGER_TYPE), intent(in) :: ELEMENTNODES_input
+          !integer(INTEGER_TYPE), intent(in) :: nen_NURBS_input
+          !integer(INTEGER_TYPE), intent(in) :: nel_NURBS_input
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
+          !integer(INTEGER_TYPE), dimension(nen_NURBS_input, nel_NURBS_input, Counters%NPatches), intent(in) :: IEN 
+          
+          
+          !!CC - changed to function call - needs to be set to zero here
+          WeightedUpdatedDeformationGradientJacobian = 0.0
+          NoEn = Counters%nEntity
+       
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
+                  
+                  ! the background grid should have the same exact active element discretization 
+                  IEl = ActiveElement(IAEl, IPatch)
+            
+                  !IDof(I, 1:ELEMENTNODES) = &
+                  !    ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) ) + I
+
+                      ! degree of freedom for active element 
+                      INode(1:ELEMENTNODES) = &
+                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+              
+                      
+                      
+                  !end do
+            
+                  do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                      ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+       
+                          PartilceMass = MassArray(ParticleIndex) ! particle mass
+                          ParticleShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
+                 
+                          ! reset volumetric strain 
+                          !Particles(ParticleIndex)%VolumetricStrain = 0.0 
+                 
+                          if (CalParams%ApplyContactAlgorithm) then
+                             iEntity = EntityIDArray(ParticleIndex) 
+                          else
+                             iEntity = 1
+                          end if 
+                 
+                          
+                          
+                          !do I = 1, NTENSOR ! nodal i-momentum
+                              WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES), iEntity) = &
+                                  WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES), iEntity ) &
+                                  + ( PartilceMass * ParticleShape * &
+                                  Particles(ParticleIndex)%RelativeDeformationGradientJacobian * &
+                                  Particles(ParticleIndex)%DeformationGradientPreviousJacobian )
+                          !end do     
+       
+                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+            
+                  end do !Loop over particles
+              
+              end do !elements    
+          
+          end do ! patches
+       
+          
+        end subroutine MapWeightedUpdDefGradJacobToNodes !MapWeightedUpdatedDeformationGradientJacobianToNodes  
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        subroutine MapWeightedUpdDefGradJacobToNodes_VolLockSmooth(WeightedUpdatedDeformationGradientJacobian) !(Momentum)
+        !**********************************************************************
+        !
+        !    Function:  To map weighted deformation gradient to the nodes. 
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+       
+        implicit none
+        
+        !integer(INTEGER_TYPE), intent(in) :: IPatch
+        ! this is a scalar for each node
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1),Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
+        ! --> above hardcoded to 1... we need better multipatch generalization for this
+        
+        ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
+          !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: INode !NVECTOR, 
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES_VolLockSmooth) :: ParticleShape
+          real(REAL_TYPE) :: ParticleVolStrain
+          real(REAL_TYPE) :: Time, PartilceMass
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: aa 
+        
+          ! Lower order mapping generalization
+          !integer(INTEGER_TYPE), intent(in) :: ELEMENTNODES_input
+          !integer(INTEGER_TYPE), intent(in) :: nen_NURBS_input
+          !integer(INTEGER_TYPE), intent(in) :: nel_NURBS_input
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
+          !integer(INTEGER_TYPE), dimension(nen_NURBS_input, nel_NURBS_input, Counters%NPatches), intent(in) :: IEN 
+          
+          
+          !!CC - changed to function call - needs to be set to zero here
+          WeightedUpdatedDeformationGradientJacobian = 0.0
+          NoEn = Counters%nEntity
+       
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
+                  
+                  ! the background grid should have the same exact active element discretization 
+                  IEl = ActiveElement(IAEl, IPatch)
+            
+                  !IDof(I, 1:ELEMENTNODES) = &
+                  !    ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) ) + I
+
+                      ! degree of freedom for active element 
+                      INode(1:ELEMENTNODES_VolLockSmooth) = &
+                          NURBS%ElementConnectivities_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+              
+                      
+                      
+                  !end do
+            
+                  do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                      ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+       
+                          PartilceMass = MassArray(ParticleIndex) ! particle mass
+                          ParticleShape = ShapeValuesArray_VolLockSmooth(ParticleIndex,:) ! particle shape values array on the lower order grid
+                 
+                          ! reset volumetric strain 
+                          !Particles(ParticleIndex)%VolumetricStrain = 0.0 
+                 
+                          if (CalParams%ApplyContactAlgorithm) then
+                             iEntity = EntityIDArray(ParticleIndex) 
+                          else
+                             iEntity = 1
+                          end if 
+                 
+                          
+                          
+                          !do I = 1, NTENSOR ! nodal i-momentum
+                              WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES_VolLockSmooth), iEntity) = &
+                                  WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES_VolLockSmooth), iEntity ) &
+                                  + ( PartilceMass * ParticleShape * &
+                                  Particles(ParticleIndex)%RelativeDeformationGradientJacobian * &
+                                  Particles(ParticleIndex)%DeformationGradientPreviousJacobian )
+                          !end do     
+       
+                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+            
+                  end do !Loop over particles
+              
+              end do !elements    
+          
+          end do ! patches
+       
+        end subroutine MapWeightedUpdDefGradJacobToNodes_VolLockSmooth  
+        
+        
+        
+        
+        !-----------------------------------------------------------------
+        
+        
+        !NormWeightedUpdDefGradJacobAtNodes
+        !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
+        
+        subroutine NormWeightedUpdDefGradJacobAtNodes(UpdatedDeformationGradientJacobian, & !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
+            WeightedUpdatedDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  To calculate the nodal velocities from nodal mass and momentum
+        !
+        !    Momentum : Nodal momentum vector
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        
+        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
+        integer(INTEGER_TYPE) :: INode, ITens
+        
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobian
+        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobian
+        
+        
+        IPatch_Temporary = 1
+        ! initialisation --> not necessary here
+        UpdatedDeformationGradientJacobian = 0.0
+        
+        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        
+            do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
+            
+                IDOF = ReducedDof(INode)+1 ! obtain the x dof so that we can find the mass. 
+                                           ! It does not matter what dof you choose (here x-direction), 
+                                           ! because mass is scalar. 
+                
+                !do ITens = 1, NTENSOR
+                
+                    if (LumpedMassDry(IDOF,J)/=0) then
+                        UpdatedDeformationGradientJacobian(INode,J) = ( WeightedUpdatedDeformationGradientJacobian(INode,J) &
+                                                                            / LumpedMassDry(IDOF,J) )
+                    else
+                        UpdatedDeformationGradientJacobian(INode,J) = 0.0 
+                    end if
+                
+                !end do 
+            
+            end do
+          
+        end do
+        
+        
+            end subroutine NormWeightedUpdDefGradJacobAtNodes !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            !-----------------------------------------------------------------------------------------------
+            
+            
+            
+            subroutine NormWeightedUpdDefGradJacobAtNodes_VolLockSmooth(UpdatedDeformationGradientJacobian, & !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
+            WeightedUpdatedDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  To calculate the nodal velocities from nodal mass and momentum
+        !
+        !    Momentum : Nodal momentum vector
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        
+        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
+        integer(INTEGER_TYPE) :: INode, ITens
+        
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobian
+        real(REAL_TYPE), dimension(NURBS%NControlPoints_VolLockSmooth(1), Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobian
+        
+        
+        IPatch_Temporary = 1
+        ! initialisation --> not necessary here
+        UpdatedDeformationGradientJacobian = 0.0
+        
+        do INode = 1, NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        
+            do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
+            
+                IDOF = ReducedDof_VolLockSmooth(INode)+1 ! obtain the x dof so that we can find the mass. 
+                                           ! It does not matter what dof you choose (here x-direction), 
+                                           ! because mass is scalar. 
+                
+                !do ITens = 1, NTENSOR
+                
+                    if (LumpedMassDry_VolLockSmooth(IDOF,J)/=0) then
+                        UpdatedDeformationGradientJacobian(INode,J) = ( WeightedUpdatedDeformationGradientJacobian(INode,J) &
+                                                                            / LumpedMassDry_VolLockSmooth(IDOF,J) )
+                    else
+                        UpdatedDeformationGradientJacobian(INode,J) = 0.0 
+                    end if
+                
+                !end do 
+            
+            end do
+          
+        end do
+        
+        
+            end subroutine NormWeightedUpdDefGradJacobAtNodes_VolLockSmooth !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            !-------------------------------------------------------------------------------------------------
+            
+            
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        !subroutine UpdateParticleStrains_VolLockSmooth()
+        !!**********************************************************************
+        !!
+        !!    Function:  Updates the total and incremental particle strains before mesh resetting
+        !!
+        !!**********************************************************************
+        !
+        !  implicit none
+        !
+        !  ! local variables
+        !  real(REAL_TYPE), dimension(Counters%N_VolLockSmooth) :: DUTotEnt
+        !  real(REAL_TYPE), dimension(NTENSOR) :: Eps
+        !  real(REAL_TYPE), dimension(NDIM, ELEMENTNODES_VolLockSmooth) :: BMatrixDeformed
+        !  real(REAL_TYPE) :: DetJac
+        !  integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+        !
+        !  
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        !  integer(INTEGER_TYPE) :: IPatch
+        !  
+        !  ! Volumetric locking variables 
+        !  integer(INTEGER_TYPE) :: IDim 
+        !  
+        !  ! set the nodal displacement increments to the first entity
+        !  ! only need to change if the contact model is used and the next particle belongs to a different entity
+        !  iEntityDefault = 1 ! set default to first entity
+        !  do I = 1,Counters%N_VolLockSmooth
+        !    DUTotEnt(I) = IncrementalDisplacementSoil_VolLockSmooth(I,iEntityDefault)
+        !  end do
+        !
+        !  
+        !  !do IActiveElement = 1, Counters%NAEl ! loop over all active elements
+        !   
+        !  do IPatch = 1, Counters%NPatches ! loop over all patches
+        !  do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+        !
+        !      IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
+        !      NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
+        !      
+        !      if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch) ) then
+        !        NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+        !      end if  
+        !      
+        !      do IParticle = 1, NElemPart ! loop over all particles of the active element
+        !      
+        !        ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) ! get global particle ID
+        !        
+        !        if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
+        !            
+        !          ! determine B matrix of deformed element at the particle local position
+        !          call BMatrix_VolLockSmooth(Particles(ParticleIndex)%LocPos, &
+        !                       ELEMENTNODES_VolLockSmooth, nel_NURBS(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
+        !                       NControlPoints_VolLockSmooth(IPatch), NDIM, & !Counters%NodTot
+        !                       IElement, IEN_VolLockSmooth(:,:,IPatch), &
+        !                       NodalCoordinates_VolLockSmooth(:,:,IPatch),  & !            NodalCoordinatesUpd(:,:,IPatch),  &
+        !                       BMatrixDeformed, &
+        !                       IPatch)     !, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
+        !          
+        !          ! only in UL FEM do we update the mesh --> NodalCoordinatesUpd
+        !          
+        !          ! get the nodal displacement increments for the specific entity
+        !          !if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
+        !          !  iEntity = EntityIDArray(ParticleIndex) ! get the entity ID for the current particle
+        !          !  if (iEntity /= iEntityDefault) then ! the particle belongs to a different entity from the previous entity
+        !          !    DUTotEnt(:) = IncrementalDisplacementSoil(1:Counters%N,iEntity)
+        !          !    iEntityDefault = iEntity !set the entity ID for the next particle loop
+        !          !  end if
+        !          !end if
+        !            
+        !          ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+        !          call Get_Strain_VolLockSmooth(IElement, ParticleIndex, &!IParticle, &
+        !                        IEN_VolLockSmooth(:,:,IPatch), & 
+        !                        BMatrixDeformed, DUTotEnt, ReducedDof_VolLockSmooth, &
+        !                        Eps, &
+        !                        IPatch) ! Eps = strain increment at material point
+        !          
+        !          
+        !          !call Get_Strain(IElement, ParticleIndex, &!IParticle, &
+        !          !              ElementConnectivities(:,:,IPatch), & 
+        !          !              BMatrixDeformed, DUTotEnt, ReducedDof, &
+        !          !              Eps, &
+        !          !              IPatch) ! Eps = strain increment at material point
+        !          
+        !          
+        !          !! we have the strain increment Eps --> VolLockSmooth_BOOKMARK
+        !          !! - get deviatoric strain increment 
+        !          !! - get volumetric strain increment 
+        !          !! - project the volumetric strain into the lower order shape functions 
+        !          !! - project the volumetric strain back to the material points using the lower order shape functions 
+        !          !! - sum the projected volumetric strain with the original deviatoric strain to get the total strain 
+        !          !
+        !          !if (NDIM == 2) then 
+        !          !    
+        !          !    ! ( sigma_xx + sigma_yy )/2
+        !          !    MeanStrainIncrement = ( Eps(1) + Eps(2) ) * (1.0/2.0)
+        !          !    
+        !          !    ! volumetric strain = mean effective stress on the diagonals
+        !          !    VolumetricStrainIncrement = 0.0
+        !          !    VolumetricStrainIncrement(1) = MeanStrainIncrement
+        !          !    VolumetricStrainIncrement(2) = MeanStrainIncrement
+        !          !    
+        !          !    ! deviatoric strain = total strain - volumetric strain
+        !          !    DevStrainIncrement = Eps - VolumetricStrainIncrement
+        !          !    
+        !          !    ! 
+        !          !    call MapVolStrainToNodesLowerOrderShapeFunctions
+        !          !     
+        !          !elseif (NDIM == 3) then 
+        !          !    
+        !          !    ! ( sigma_xx + sigma_yy + sigma_zz )/3
+        !          !    HydrostaticStressIncrement = ( Eps(1) + Eps(2) + Eps(3) ) * (1.0/3.0)
+        !          !
+        !          !end if 
+        !          
+        !          
+        !          ! Update particle strains
+        !          call SetEpsStep_VolLockSmooth(Particles(ParticleIndex), Eps)
+        !          
+        !          
+        !          ! calculate volumetric strain 
+        !          Particles(ParticleIndex)%VolumetricStrainIncrement_VolLockSmooth = 0.0
+        !          do IDim = 1, NVECTOR 
+        !              Particles(ParticleIndex)%VolumetricStrainIncrement_VolLockSmooth = &
+        !                  Particles(ParticleIndex)%VolumetricStrainIncrement_VolLockSmooth + & 
+        !                  Particles(ParticleIndex)%EpsStep_VolLockSmooth(IDim)
+        !          end do 
+        !          
+        !          !if (.not.CalParams%ApplyImplicitQuasiStatic .and. .not.CalParams%ApplyBBar) then
+        !          !  call IncreaseEps(Particles(ParticleIndex), Eps)
+        !          !end if
+        !
+        !        end if ! Material Point can be MIXTURE or SOLID
+        !
+        !      end do ! particle loop
+        !
+        !  end do ! active element loop
+        !  
+        !  end do ! patch loop
+        !
+        !end subroutine UpdateParticleStrains_VolLockSmooth
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !subroutine UpdateNodalStressGradient()
+        !!**********************************************************************
+        !!
+        !!    Function:  Updates the total and incremental particle strains before mesh resetting
+        !!
+        !!**********************************************************************
+        !
+        !  implicit none
+        !
+        !  ! local variables
+        !  !real(REAL_TYPE), dimension(Counters%N) :: DUTotEnt
+        !  real(REAL_TYPE), dimension(NVECTOR) :: MPStressGradient !Eps
+        !  real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
+        !  real(REAL_TYPE) :: DetJac
+        !  integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
+        !
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        !  integer(INTEGER_TYPE) :: IPatch
+        !  
+        !  ! set the nodal displacement increments to the first entity
+        !  ! only need to change if the contact model is used and the next particle belongs to a different entity
+        !  iEntityDefault = 1 ! set default to first entity
+        !   
+        !  do IPatch = 1, Counters%NPatches ! loop over all patches
+        !  do IActiveElement = 1, NAEl_NURBS(IPatch) !Counters%NAEl ! loop over all elements
+        !
+        !      IElement = ActiveElement(IActiveElement, IPatch) ! get element number of the active element
+        !      NElemPart = NPartEle(IElement,IPatch) ! get number of particles in the active element
+        !      
+        !      if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement, IPatch) ) then
+        !        NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
+        !      end if  
+        !      
+        !      do IParticle = 1, NElemPart ! loop over all particles of the active element
+        !      
+        !        ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) ! get global particle ID
+        !        
+        !        if( (NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) ) then 
+        !            
+        !          ! determine B matrix of deformed element at the particle local position
+        !          call BMatrix(Particles(ParticleIndex)%LocPos, &
+        !                       ELEMENTNODES, nel_NURBS(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
+        !                       NControlPoints(IPatch), NDIM, & !Counters%NodTot
+        !                       IElement, ElementConnectivities(:,:,IPatch), &
+        !                       NodalCoordinatesUpd(:,:,IPatch),  &
+        !                       BMatrixDeformed, &
+        !                       IPatch)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
+        !          
+        !          !subroutine Get_StressGradient(IEl, IPoint, ICon, B,  NDofEx, IPatch) !Eps, !Disp,
+        !          ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+        !          call Get_StressGradient(IElement, ParticleIndex, &!IParticle, &
+        !                        ElementConnectivities(:,:,IPatch), & 
+        !                        BMatrixDeformed,  ReducedDof, & !DUTotEnt,
+        !                        IPatch, &
+        !                        MPStressGradient) ! Eps = strain increment at material point
+        !          
+        !          call SetStressGradient(Particles(ParticleIndex), MPStressGradient)
+        !
+        !        end if ! Material Point can be MIXTURE or SOLID
+        !
+        !      end do ! particle loop
+        !
+        !  end do ! active element loop
+        !  
+        !  end do ! patch loop
+        !
+        !end subroutine UpdateNodalStressGradient
+        
+        
         
         
         subroutine UpdateParticleStrainsLiquidTwoLayer()
@@ -380,6 +1519,10 @@
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, &
                      ParticleIndex,iEntityDefault    !!CC
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
           !--------------------------------------------------------
 
           !========================================================             !!CC
@@ -391,32 +1534,35 @@
           !=======================================================
 
          !----------------------------------------------------
-          do IElement = 1, Counters%NEl     !loop over all elements
-            if (IsActiveElement(IElement)) then  !active elements only
+          do IPatch = 1, Counters%NPatches
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl     !loop over all elements
+            if (IsActiveElement(IElement, IPatch)) then  !active elements only
               
-                NElemPart = NPartEle(IElement)    !number of particles in element
-              if ( ISAXISYMMETRIC .and. .not.IsParticleIntegration(IElement) ) then
+                NElemPart = NPartEle(IElement,IPatch)    !number of particles in element
+              if ( ISAXISYMMETRIC .and. .not. IsParticleIntegration(IElement, IPatch) ) then
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
               do IParticle = 1, NElemPart       !loop over all particles of the element
-                ParticleIndex = GetParticleIndex(IParticle, IElement)   !particle global ID
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)   !particle global ID
                 if((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid).and. &
                          (.not.(NFORMULATION==1))) then !Material Point LIQUID
 
                   ! Determine B matrix of deformed element at the particle local position
                   call BMatrix(Particles(ParticleIndex)%LocPos, &
-                             ELEMENTNODES, Counters%NEl,  &
-                             Counters%NodTot, NDIM, &
-                             IElement, ElementConnectivities, &
-                             NodalCoordinatesUpd, &
-                             BMatrixDeformed, DetJac)
+                             ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl,  &
+                             Counters%NodTot(IPatch), NDIM, & ! Counters%NodTot
+                             IElement, ElementConnectivities(:,:,IPatch), &
+                             NodalCoordinatesUpd, &!NodalCoordinatesUpd, & !(:,:,IPatch)
+                             BMatrixDeformed, &
+                             IPatch)!, DetJac)
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &
-                                ElementConnectivities, & 
+                                ElementConnectivities(:,:,IPatch), & 
                                 BMatrixDeformed, DULiqEnt, ReducedDof, &
-                                Eps)
+                                Eps, &
+                                IPatch)
 
                   ! Update particle strains
                   call SetEpsStep(Particles(ParticleIndex), Eps)
@@ -428,7 +1574,8 @@
                 end if !Material Point LIQUID
               end do
             end if
-          end  do
+          end  do ! loop over elements
+          end do ! loop over patches
 
         end subroutine UpdateParticleStrainsLiquidTwoLayer
 
@@ -454,111 +1601,137 @@
           real(REAL_TYPE), dimension(NVECTOR) :: LocPos, GlopPos0
           logical :: Success, IsInside
           real(REAL_TYPE) :: diff, sumLocPos
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: PatchID
+          integer(INTEGER_TYPE) :: ParticleID
+          
+          GetParticleIndexCounter = Counters%NParticles
 
            do IParticle = 1, Counters%NParticles ! Loop over particles
 
-            ElementID = ElementIDArray(IParticle)
+               
+               
+               
+            PatchID = PatchIDArray(IParticle)    ! look up patch ID 
+            ElementID = ElementIDArray(IParticle)! loop up local element ID in the PatchID
+            
+            
+            !ParticleID = GetParticleIndex(IParticle, ElementID, PatchID)
+            
 
             ! Calculate particle displacements from nodal displacements
-            call CalcParticleDisplacements(IParticle, ElementID)
+            call CalcParticleDisplacements(IParticle, ElementID, PatchID) !IParticle
 
-            GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle
+            GlopPos0 =  GlobPosArray(IParticle,:)  ! store the initial global position of the particle !IParticle
 
             ! Calculate new particle global positions
-            GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:)
+            GlobPosArray(IParticle,:) = GlobPosArray(IParticle,:) + UStepArray(IParticle,:) ! IParticle
 
            if (CalParams%ApplyFixParticlesK0) then ! only 3D functionality
-             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only
-                 GlobPosArray(IParticle,1) = GlopPos0(1)
-                 GlobPosArray(IParticle,3) = GlopPos0(3)
+             if (GlobPosArray(IParticle,1) >= (CalParams%Fix(1))) then ! allow sliding along y-axis only ! IParticle
+                 GlobPosArray(IParticle,1) = GlopPos0(1) ! IParticle
+                 GlobPosArray(IParticle,3) = GlopPos0(3) ! IParticle
              end if
-             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then
-                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed
+             if (GlobPosArray(IParticle,2) <= (CalParams%Fix(2))) then ! IParticle
+                GlobPosArray(IParticle,:) = GlopPos0 ! particles along the bottom are fixed ! IParticle
              end if
            end if ! ApplyFixParticlesK0
 
-          IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
-          ! Check whether particle moved outside the mesh
-          if (.not.IsInside ) then
-             if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
-                            ' from element '// trim(String(ElementID)) // ' lies '// &
-                            'outside the mesh. '// &
-                            'X, Y, Z ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2))) // trim(String(GlobPosArray(IParticle,3))) )
-             if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
-                            ' from element '// trim(String(ElementID)) // ' lies '// &
-                            'outside the mesh. '// &
-                            'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
-            end if
+          !IsInside = IsInBoundingBox(GlobPosArray(IParticle,:))
+          !! Check whether particle moved outside the mesh
+          !if (.not.IsInside ) then
+          !   if (NDIM==3) call GiveError('  Particle '// trim(String(IParticle)) // & 
+          !                  ' from element '// trim(String(ElementID)) // ' lies '// &
+          !                  'outside the mesh. '// &
+          !                  'X, Y, Z ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2))) // trim(String(GlobPosArray(IParticle,3))) )
+          !   if (NDIM==2) call GiveError('  Particle '// trim(String(IParticle)) // & 
+          !                  ' from element '// trim(String(ElementID)) // ' lies '// &
+          !                  'outside the mesh. '// &
+          !                  'X, Y ='// trim(String(GlobPosArray(IParticle,1))) // trim(String(GlobPosArray(IParticle,2)))  )
+          !  end if
             ! Determine new local particle position from global position
-            call DetermineLocPosIterative(IParticle, &
+            call DetermineLocPosIterative (IParticle, & !IParticle
                                  ElementID, GlopPos0, &
-                                 Particles(IParticle)%LocPos, &
-                                 NewElementID, LocPos, Success)
+                                 Particles(IParticle)%LocPos, & ! IParticle
+                                 NewElementID, LocPos, Success, &
+                                 PatchID)
         
             ! Correct if local particle position is outside element due to rounding
-            if (LocPos(1)<0.0) then
-                LocPos(1) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(1))))
-                end if
-            end if
-            
-            if (LocPos(2)<0.0) then
-                LocPos(2) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(2))))
-                end if
-            end if
-            
-            if (NDIM == 3) then ! only for 3D case
-              if (LocPos(3)<0.0) then
-                LocPos(3) = 0.0
-                
-                if (CalParams%OutputDebugData) then
-                  call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
-                                                                trim(String(NewElementID)) //' '// &
-                                                                trim(String(LocPos(3))))
-                end if
-              end if  
-            end if
- 
-           sumLocPos = 0.0
-           do I = 1, NVECTOR
-             sumLocPos = sumLocPos + LocPos(I)
-           end do
-
-           if (sumLocPos > 1.0) then
-             diff = sumLocPos - 1.0
-             do I = 1, NVECTOR
-               LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
-             end do
-           end if
+            !if (LocPos(1)<0.0) then
+            !    LocPos(1) = 0.0
+            !    
+           !     if (CalParams%OutputDebugData) then
+           !       call WriteInLogFile('Particle neg loc pos (x) '// trim(String(IParticle))    //' '// &
+           !                                                     trim(String(NewElementID)) //' '// &
+           !                                                     trim(String(LocPos(1))))
+           !     end if
+           ! end if
+           ! 
+           ! if (LocPos(2)<0.0) then
+           !     LocPos(2) = 0.0
+           !     
+           !     if (CalParams%OutputDebugData) then
+           !       call WriteInLogFile('Particle neg loc pos (y) '// trim(String(IParticle))    //' '// &
+           !                                                     trim(String(NewElementID)) //' '// &
+           !                                                     trim(String(LocPos(2))))
+           !     end if
+           ! end if
+           ! 
+           !if (NDIM == 3) then ! only for 3D case
+           !   if (LocPos(3)<0.0) then
+           !     LocPos(3) = 0.0
+           !     
+           !     if (CalParams%OutputDebugData) then
+           !       call WriteInLogFile('Particle neg loc pos (z) '// trim(String(IParticle))    //' '// &
+           !                                                     trim(String(NewElementID)) //' '// &
+           !                                                     trim(String(LocPos(3))))
+           !     end if
+           !   end if  
+           ! end if
+ 		   !	
+           !sumLocPos = 0.0
+           !do I = 1, NVECTOR
+           !  sumLocPos = sumLocPos + LocPos(I)
+           !end do
+		   !	
+           !if (sumLocPos > 1.0) then
+           !  diff = sumLocPos - 1.0
+           !  do I = 1, NVECTOR
+           !    LocPos(I) = LocPos(I) - diff/ sqrt(real(NVECTOR, REAL_TYPE))
+           !  end do
+           !end if
             
             ! Update Particle%LocPos, Particle%ElementID and EleParticles array
             if (Success) then
-              Particles(IParticle)%LocPos = LocPos
-              call SetParticleElementID(IParticle, IParticle, NewElementID)
+              Particles(IParticle)%LocPos = LocPos ! IParticle
+              call SetParticleElementID(IParticle, IParticle, NewElementID) ! IParticle
+              !! I added this to see how this is going to go... 
+              !GetParticleIndex(IParticle, ElementIDArray(IParticle), PatchIDArray(IParticle)) = IParticle
 
             else ! Error in determining the new location of the particle
               call GiveError('  Error in determining the local ' // &
-                             'coordinate of particle '// trim(String(IParticle)) // &
-                             ' in element '// trim(String(NewElementID)))
+                             'coordinate of particle '// trim(String(IParticle)) // & ! IParticle
+                             ' in element '// trim(String(NewElementID)) // &
+                             ' in patch ' // trim(String(PatchID)))
             end if
 
-            ! Calculate new particle shape function values
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle)
-
-          end do
+            ! Calculate new particle shape function values -> after updating position 
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,PatchIDArray(IParticle)), NodalCoordinates, PatchIDArray(IParticle)) ! -> this needs to be for singular MP !(:,:,PatchIDArray(IParticle))
+            ! Calculate new particle shape function values -> after updating position --> Volumetric locking smoothing
+            if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then
+                call SetParticleShapeFunctionData_VolLockSmooth(Particles(IParticle), IParticle, ElementIDArray(IParticle), NURBS%ElementConnectivities_VolLockSmooth(:,:,PatchIDArray(IParticle)), NodalCoordinates_VolLockSmooth, PatchIDArray(IParticle)) ! -> this needs to be for singular MP !(:,:,PatchIDArray(IParticle))
+            end if 
+            
+                 
+           end do
+           
+           
 
         end subroutine UpdateParticlePos
 
-        subroutine CalcParticleDisplacements(ParticleIndex, ElementID)
+        subroutine CalcParticleDisplacements(ParticleIndex, ElementID, IPatch)
         !**********************************************************************
         !
         !    Function:  Calculate particle displacements from nodal displacements
@@ -580,6 +1753,10 @@
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
 
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
             !!get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
               iEntity = EntityIDArray(ParticleIndex) 
@@ -588,26 +1765,67 @@
             end if
 
             ParticleDisplacement = 0.0
+            
+            !if (Particles(ParticleIndex)%MPPrescribedVeloSwitch == .true.) then 
+            !      !ParticleDisplacement = 0.0
+            !     do IDof = 1, NVECTOR
+            !         ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+            !             (Particles(ParticleIndex)%MPPrescribedVelo(IDof) * CalParams%TimeIncrement ) !GetParticlePrescribedVelocityI(IDir, ParticleIndex)
+            !         !if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+            !         !    !VelocityWaterArray(ParticleIndex,IDir) = Particles(IParticle)%MPPrescribedVelo(IDir)!GetParticlePrescribedVelocityI(IDir, ParticleIndex)                    
+            !         !end if
+            !     end do
+            !  
+            !else
+                
 
             if ((NFORMULATION==1) .or. (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then
               if (.not.CalParams%SkipConvection) then
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                  do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! Loop over all nodes in element
+                    NodeID = &
+                        Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID,IPatch)), IPatch)
                     DofID = ReducedDof(NodeID) + IDof
+                    
+                    if ( (CalParams%ApplyGeneralizedAlphaTimeScheme%Switch == .TRUE.) .and. (CalParams%TimeStep /= 1) ) then 
+                    
+                        
+                        ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                                                     (ShapeValuesArray(ParticleIndex,INode)*TotalVelocitySoil(DofID,iEntity)*CalParams%TimeIncrement) + &
+                                                     ( (CalParams%TimeIncrement**2) * &
+                                                     (ShapeValuesArray(ParticleIndex,INode)* &
+                        ( (0.5-CalParams%ApplyGeneralizedAlphaTimeScheme%Beta)*AccelerationSoilGeneralizedAlpha(DofID,iEntity) + CalParams%ApplyGeneralizedAlphaTimeScheme%Beta*AccelerationSoil(DofID,iEntity) ) ) )
+                        
+                        
+                    else
+                        
+                    
                       ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
-                                                   ShapeValuesArray(ParticleIndex,INode) * &
-                                                   IncrementalDisplacementSoil(DofID,iEntity)
+                                                   ( ShapeValuesArray(ParticleIndex,INode) * &
+                                                   IncrementalDisplacementSoil(DofID,iEntity) )
+                      
+                      
+                      end if 
+                      !ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
+                      !                             ( VelocityArray(ParticleIndex,IDof) * &
+                      !                              CalParams%TimeIncrement )
+                      
+                      ! reset particle displacement for gravity initiation purposes
+                      if (CalParams%ResetParticleDisplacement) then 
+                          ParticleDisplacement(IDof) = 0.0
+                      end if 
+                      
+                      
                   enddo
                 enddo
               else
                 do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
-                  do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                    NodeID = iabs(ElementConnectivities(INode, ElementID))
+                  do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES  ! Loop over all nodes in element
+                    NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch)), IPatch)
                     DofID = ReducedDof(NodeID) + IDof
                     ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + &
-                                                 ShapeValuesArray(ParticleIndex,INode) * &
-                                                 AccumulatedIncDisplacementSoil(DofID,iEntity)
+                                                 ( ShapeValuesArray(ParticleIndex,INode) * &
+                                                 AccumulatedIncDisplacementSoil(DofID,iEntity) )
                   enddo
                 enddo
               endif
@@ -617,7 +1835,7 @@
                          (.not.(NFORMULATION==1))) then !Material Point LIQUID
               do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
                 do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
-                  NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+                  NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch) ), IPatch )
                   DofID = ReducedDof(NodeID) + IDof
 
                   ParticleDisplacement(IDof) = ParticleDisplacement(IDof) +  &
@@ -625,7 +1843,14 @@
                                                IncrementalDisplacementWater(DofID,iEntity)
                 end do
               end do
-           end if
+                         
+            end if
+                         
+              
+                  
+            !end if ! prescribed velocity for the material points
+                  
+                         
 
             ! Incremental particle displacement
             UStepArray(ParticleIndex,:) = ParticleDisplacement
@@ -639,118 +1864,29 @@
         end subroutine CalcParticleDisplacements
         
          subroutine DetermineLocPosIterative(ParticleID, OldElementID, GlobPos0, &
-                       OldLocPos, NewElementID, NewLocPos, Success)
-        !**********************************************************************
-        !
-        !    Function:  Determine local coordinates and, eventually, the
-        !               element in which particle is located.
-        !
-        !               This subroutine checks if the MP global coordinates can 
-        !               be expressed as local coordinates of the element in which 
-        !               the MP was in the previous time step. If it fails, it has 
-        !               to find the new element for the MP.
-        !               The search consists on an exhaustive algorithm around adjacent elements. If the 
-        !               local coordinates can be determined in one of the adjacent 
-        !               elements the search ends. 
-        !               If the MP is not in the adjacent elements, a more time expensive 
-        !               combinatorial algorithm capable of determining the location of the MP is called
-        !               (subroutine DetermineLocPosIterative2).
-        !
-        ! I   ParticleID : ID of the particle which moved to another element
-        ! I   OldElementID : Current ID of the element the particle was located in
-        ! I   OldLocPos : Current local position of the particle
-        !
-        ! O   NewElementID : ID of the element, the particle moved into
-        ! O   NewLocPos : New local coordinates of the particle with GlobPos
-        ! O   Success : false, if the local coordinate and element could not be determined 
-        !               in a maximum number of tries
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
-
-        implicit none
-
-          integer(INTEGER_TYPE), intent(in) :: ParticleID
-          integer(INTEGER_TYPE), intent(in) :: OldElementID
-          real(REAL_TYPE), dimension(:), intent(in) :: OldLocPos
-          real(REAL_TYPE), dimension(:), intent(in) :: GlobPos0
-          integer(INTEGER_TYPE), intent(out) :: NewElementID
-          real(REAL_TYPE), dimension(NVECTOR), intent(out) :: NewLocPos
-          logical, intent(out) :: Success
-          ! Local variables
-          logical :: Fixed
-          logical :: OutsideElement !true if LocPos can not be found in element 
-          integer(INTEGER_TYPE) :: NAdjEl, I
-          
-          NewElementID = OldElementID
-          NewLocPos = OldLocPos
-          Success = .true.
-          OutsideElement = .true.
-
-          ! Try determining the local particle coordinates from the global ones in the previous time step element
-          call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
-                                   OldElementID, &
-                                   ELEMENTNODES, Counters%NEl,  &
-                                   Counters%NodTot, NDIM, &
-                                   NodalCoordinates, &
-                                   ElementConnectivities, &
-                                   NewLocPos, &
-                                   OutsideElement, Success)
-           if (OutsideElement) then ! Particle moved to another element
-               NAdjEl = GetNElmOfElm(OldElementID) ! Get adjacent elements to the previous element
-               
-               do I = 1, NAdjEl      ! Try to determine the local position in adjacent elements
-                   
-               NewElementID = GetElmIOfElm(OldElementID, I)
-               
-                call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
-                                   NewElementID, &
-                                   ELEMENTNODES, Counters%NEl,  &
-                                   Counters%NodTot, NDIM, &
-                                   NodalCoordinates, &
-                                   ElementConnectivities, &
-                                   NewLocPos, &
-                                   OutsideElement, Success)
-          
-                    if (.not.OutsideElement) then       
-                        if (CalParams%OutputDebugData) then ! If new element is found write debug data if required
-                                                call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
-                                            ' moved from '  // trim(String(OldElementID))      // &
-                                              ' to '          // trim(String(NewElementID))      // &
-                                              ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
-                                             'TimeStep '     // trim(String(Calparams%Timestep))  )
-                        end if
-                        exit ! Exit the adjacent elements loop if new element is found
-                    end if
-               end do
-               !If new local position is not found in adjacent elements, try to find the new element with a combinatorial search algorithm
-               if (OutsideElement) then     
-                   call DetermineLocPosIterative2(ParticleID, OldElementID, GlobPos0, &
-                       OldLocPos, NewElementID, NewLocPos, Success)
-              end if
-            end if
-
-     end subroutine DetermineLocPosIterative
-                       
-                 subroutine DetermineLocPosIterative2(ParticleID, OldElementID, GlobPos0, &
-                       OldLocPos, NewElementID, NewLocPos, Success)
+                       OldLocPos, NewElementID, NewLocPos, Success, IPatch)
         !**********************************************************************
         !
         !    Function:  Determine local coordinates and, eventually, the
         !               element, that belong to GlobPos.
         !
-        !               Checks whether GlobPos lies inside NewElementID. If not, the element
-        !               adjacent to the side, through which GlobPos has left NewElementID is checked.
+        !               Two recursive algorithms have been implemented:
+        !               Version 1 checks whether GlobPos lies inside elements surrounding one of the
+        !               corner nodes of NewElementID. If no element contains GlobPos the element
+        !               whose centrepoint is closest to GlobPos is checked ... .
+        !               Version 2 checks whether GlobPos lies inside NewElementID. If not, the element
+        !               adjacent to the side, through which GlobPos has left NewElementID is checked ... .
+        !               NOTE: Using Version 2 does not require to check whether GlobPos lies inside the
+        !               original element of the considered particle!
+        !               Version 2 seems to be faster as less elements are checked. Does it always work?
         !
-        ! I   ParticleID : ID of the particle which moved to another element
-        ! I   OldElementID : Current ID of the element the particle was located in
-        ! I   OldLocPos : Current local position of the particle
-        ! I
+        !     ParticleID : ID of the particle which moved to another element
+        !     OldElementID : Current ID of the element the particle was located in
+        !     OldLocPos : Current local position of the particle
+        !
         ! O   NewElementID : ID of the element, the particle moved into
         ! O   NewLocPos : New local coordinates of the particle with GlobPos
-        ! O   Success : false, if the local coordinate and element could not be determined 
-        !                in a maximum number of tries
+        ! O   Success : True, if the local coordinate and element could be determined
         !
         ! Implemented in the frame of the MPM project.
         !
@@ -765,59 +1901,452 @@
           integer(INTEGER_TYPE), intent(out) :: NewElementID
           real(REAL_TYPE), dimension(NVECTOR), intent(out) :: NewLocPos
           logical, intent(out) :: Success
+          integer(INTEGER_TYPE):: ElemTrial
           ! Local variables
           logical :: OutsideElement, Fixed
+          
+          integer(INTEGER_TYPE) :: while_counter 
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(inout) :: IPatch
+          integer(INTEGER_TYPE) :: PatchTrial
+          integer(INTEGER_TYPE) :: IParticle
           
           NewElementID = OldElementID
           NewLocPos = OldLocPos
           Success = .true.
 
-          ! Try determining the local particle coordinates from the global ones
-          call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+          
+          if (NDIM ==2 ) then 
+              
+              ! TODO: I commented this temporarily 5/13/2024
+              !call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+              !                     UStepArray(ParticleID,:), &
+              !                     OldElementID, &
+              !                     ELEMENTNODES, &
+              !                     nel_NURBS(IPatch),  & 
+              !                     NControlPoints(IPatch), NDIM, & 
+              !                     NodalCoordinates(:,:,IPatch), & 
+              !                     ElementConnectivities(1:ELEMENTNODES,1:nel_NURBS(IPatch),IPatch), &
+              !                     NewLocPos, &
+              !                     OutsideElement, Success, ElementAdjacencies(1:nel_NURBS(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
+                  
+                  if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+                      
+                      ! debugging
+                      if (OldElementID .le. 0 ) then !.and. OldElementID .ge. nel_NURBS(IPatch)) then 
+                          Success = .false.
+                        return 
+                      end if 
+
+                  call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, Counters%NEl(IPatch),  Counters%NodTot(IPatch), NDIM, NodalCoordinates(:,:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), &
+                                     NewLocPos, OutsideElement, Success, IPatch)
+                  
+                  else 
+                      
+                                    call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
                                    OldElementID, &
-                                   ELEMENTNODES, Counters%NEl,  &
-                                   Counters%NodTot, NDIM, &
-                                   NodalCoordinates, &
-                                   ElementConnectivities, &
+                                   ELEMENTNODES, &
+                                   Counters%NEl(IPatch),  & 
+                                   Counters%NodTot(IPatch), NDIM, & 
+                                   NodalCoordinates(:,:,IPatch), & 
+                                   ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), & !NURBS%nel_NURBS
                                    NewLocPos, &
-                                   OutsideElement, Success)
-           if (OutsideElement) then ! Particle moved to another element
-           ! Determine new element and new local position of the particle
+                                   OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
+                      
+                  end if 
+                  
+                  
+          elseif (NDIM ==3 ) then 
+              
+              ! debugging
+                      if ((OldElementID .le. 0) .or. (OldElementID .gt. Counters%NEl(IPatch) )) then !.and. OldElementID .ge. nel_NURBS(IPatch)) then 
+                          Success = .false.
+                        return 
+                      end if 
+              
+                  
+              if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+
+                      
+                      call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  OldElementID, ELEMENTNODES, Counters%NEl(IPatch),  Counters%NodTot(IPatch), NDIM, NodalCoordinates(1:Counters%NodTot(IPatch),:,IPatch), ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), &
+                                     NewLocPos, OutsideElement, Success, IPatch)
+                
+              
+              else
+                      
+          
+          call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
+                                   OldElementID, &
+                                   ELEMENTNODES, &
+                                   Counters%NEl(IPatch),  & 
+                                   Counters%NodTot(IPatch), NDIM, & 
+                                   NodalCoordinates, &  !(:,1:NDIM,IPatch)
+                                   ElementConnectivities(:,:,IPatch), & 
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)
+          
+          
+                  end if 
+                  
+          end if 
+          
+          !--------------------------------------------------
+
+           !if (OutsideElement) then ! Particle moved to another element
+           !
+           !     
+           !     do PatchTrial = 1, Counters%NPatches ! loop over patches
+           !     do ElemTrial = 1, nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
+           !     
+           !
+           !         if (NDIM ==2 ) then 
+           !             
+           !             call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+           !                        UStepArray(ParticleID,:), &
+           !                        ElemTrial, &
+           !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+           !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+           !                        NodalCoordinates(:,:,PatchTrial), &
+           !                        ElementConnectivities(:,:,PatchTrial), &
+           !                        NewLocPos, &
+           !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+           !             
+           !             
+           !         elseif (NDIM ==3) then 
+           !             
+           !         call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+           !                        UStepArray(ParticleID,:), &
+           !                        ElemTrial, &
+           !                        ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+           !                        NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+           !                        NodalCoordinates(:,:,PatchTrial), &
+           !                        ElementConnectivities(:,:,PatchTrial), &
+           !                        NewLocPos, &
+           !                        OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+           !             
+           !         end if 
+           !         
+           !             if (success) then 
+           !                  ElementIDArray(ParticleID)= ElemTrial!NewElementID
+           !                 PatchIDArray(ParticleID)= PatchTrial
+           !                 NewElementID = ElemTrial
+           !                 ! remove it from old patch
+           !                 do IParticle = 1, Counters%NParticles
+           !                     if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+           !                         GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+           !                         !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+           !                         exit
+           !                     end if 
+           !                 end do 
+           !                 
+           !                 ! add it in new patch  
+           !                 GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID    
+           !                 GetParticleIndexCounter = GetParticleIndexCounter-1
+           !                  
+           !                 call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+           !                       ' moved from element'  // trim(String(OldElementID))      // &
+           !                       ' in patch '  // trim(String(IPatch)) // &   
+           !                       ' to '          // trim(String(ElemTrial))      // &
+           !                       ' in patch '  // trim(String(PatchTrial)) // &   
+           !                       ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+           !                       'TimeStep '     // trim(String(Calparams%Timestep))  )
+           !                 
+           !                 
+           !                 exit
+           !                 
+           !             end if 
+           !             
+           !     !--------------------------------------------------------------------------
+           !     end do ! loop over elements
+           !     
+           !     if (success) then 
+           !                 !ElementIDArray(ParticleID)= ElemTrial!NewElementID
+           !                 !PatchIDArray(ParticleID)= PatchTrial
+           !                 !NewElementID = ElemTrial
+           !                 !
+           !                 !call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+           !                 !      ' moved from element'  // trim(String(OldElementID))      // &
+           !                 !      ' in patch '  // trim(String(IPatch)) // &   
+           !                 !      ' to '          // trim(String(ElemTrial))      // &
+           !                 !      ' in patch '  // trim(String(PatchTrial)) // &   
+           !                 !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+           !                 !      'TimeStep '     // trim(String(Calparams%Timestep))  )
+           !                 ! I added this to see how this is going to go... 
+           !     
+           !         
+           !                 
+           !                 exit
+           !                 
+           !             end if 
+           !     
+           !     end do ! loop over patches
+           !     
+           !     
+           !     if (.not.Success) then
+           !   Fixed = .false.
+           !
+           !   if (.not.Fixed) then
+           !     call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
+           !                    ' in element '  // trim(String(OldElementID)) // &
+           !                    ' in patch '  // trim(String(IPatch)) // & 
+           !                    ' at position ' // trim(String(GlobPosArray(ParticleID,:),1,NVECTOR)) // &
+           !                    ' in time step '// trim(String(CalParams%TimeStep)) )
+           !   end if
+           !     end if
+           !     
+           ! end if
+          !end if
+          
+          !--------------------------------------------------
+          
+          if (OutsideElement) then ! Particle moved to another element
+           
+               !while_counter = 0 
+               !do while ( (Success == .false.) .and. (while_counter <5))  
+               ! Determine new element and new local position of the particle
             call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+                                         UStepArray(ParticleID,:), &
                                          OldElementID, &
                                          ELEMENTNODES,  &
-                                         Counters%NEl,  &
-                                         Counters%NodTot,  &
+                                         Counters%NEl(PatchIDArray(ParticleID)), &!Counters%NEl,  &
+                                         Counters%NodTot(PatchIDArray(ParticleID)), &!Counters%NodTot,  &
                                          NDIM, &
-                                         NodalCoordinates,  &
-                                         ElementConnectivities, &
+                                         NodalCoordinates(1:Counters%NodTot(IPatch),1:NDIM,IPatch),  &
+                                         ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), & !NURBS%nel_NURBS
                                          NewElementID, &
                                          NewLocPos, &
-                                         Success)
+                                         Success, &
+                                         IPatch)
+            
+            ElementIDArray(ParticleID)= NewElementID
+            PatchIDArray(ParticleID)= IPatch!NewPatchID
+            
+            !while_counter = while_counter + 1
+            
+               !end do 
+               
             if (Success) then
+                
+                ! I added this to see how this is going to go... 
+                !GetParticleIndex(ParticleID, OldElementID, PatchIDArray(ParticleID)) = 0
+                !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                !GetParticleIndex(IParticle, ElementIDArray(IParticle), PatchIDArray(IParticle)) = IParticle
+                
+                ! remove it from old patch
+                            do IParticle = 1, Counters%NParticles
+                                if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+                                    GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+                                    !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                                    exit
+                                end if 
+                            end do 
+                            ! add it in new patch
+                            !do IParticle = 1, Counters%NParticles
+                            !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+                                    GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !        exit
+                            !    end if 
+                            !end do 
+                                    GetParticleIndexCounter = GetParticleIndexCounter-1
+
+                
               if (CalParams%OutputDebugData) then
               call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
-                                  ' moved from '  // trim(String(OldElementID))      // &
-                                  ' to '          // trim(String(NewElementID))      // &
+                                  ' moved from element '  // trim(String(OldElementID))      // &
+                                  ' in patch '  // trim(String(IPatch)) // &   
+                                  ' to element '          // trim(String(NewElementID))      // &
+                                  ' in patch '  // trim(String(IPatch)) // &   
                                   ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
                                   'TimeStep '     // trim(String(Calparams%Timestep))  )
+              
+              
               end if
             else ! New element could not be found
-              Fixed = .false.
+                ! loop accross all elements and check if it would fit into an element 
+                
+                do PatchTrial = 1, Counters%NPatches ! loop over patches
+                do ElemTrial = 1, Counters%NEl(PatchTrial) !NURBS%nel_NURBS(PatchTrial) !NURBS%nel_NURBS(PatchTrial)!CalParams%NElem ! loop over elements
+                
+                !--------------------------------------------------------------------
+                ! Abdel: repeat again to see if we can catch it in the new element
+                !call DetermineGlobPosElement(GlobPosArray(ParticleID,:), &
+                !                         UStepArray(ParticleID,:), &
+                !                         ElemTrial, &
+                !                         ELEMENTNODES,  &
+                !                         Counters%NEl,  &
+                !                         Counters%NodTot,  &
+                !                         NDIM, &
+                !                         NodalCoordinates,  &
+                !                         ElementConnectivities, &
+                !                         NewElementID, &
+                !                         NewLocPos, &
+                !                         Success)
+                !ElementIDArray(ParticleID)= NewElementID
+                    if (NDIM ==2 ) then 
+                        
+                        !call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+                        !           UStepArray(ParticleID,:), &
+                        !           ElemTrial, &
+                        !           ELEMENTNODES, nel_NURBS(PatchTrial),  & !Counters%NEl
+                        !           NControlPoints(PatchTrial), NDIM, & !Counters%NodTot
+                        !           NodalCoordinates(:,:,PatchTrial), &
+                        !           ElementConnectivities(:,:,PatchTrial), &
+                        !           NewLocPos, &
+                        !           OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+                        
+                            if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
+                                
+                                ! debugging
+                
+                            call GetLocalCoordinates_StructuredMesh(GlobPosArray(ParticleID,:),  ElemTrial, ELEMENTNODES, &
+                                Counters%NEl(PatchTrial),  Counters%NodTot(PatchTrial), NDIM, NodalCoordinates(:,:,PatchTrial),&
+                                ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(PatchTrial),PatchTrial), & !NURBS%nel_NURBS
+                                     NewLocPos, OutsideElement, Success, PatchTrial)
+                            
+                            else
+                                
+                                call GetLocalCoordinates_2D(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
+                                   ElemTrial, &
+                                   ELEMENTNODES, Counters%NEl(PatchTrial),  & !Counters%NEl
+                                   Counters%NodTot(PatchTrial), NDIM, & !Counters%NodTot
+                                   NodalCoordinates(:,:,PatchTrial), &
+                                   ElementConnectivities(:,:,PatchTrial), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+                        
+                                
+                            end if 
+                            
+                        
+                    elseif (NDIM ==3) then 
+                        
+                        
+                        if ((ElemTrial .le. 0) .or. (ElemTrial .gt. Counters%NEl(PatchTrial) )) then !.and. OldElementID .ge. nel_NURBS(IPatch)) then 
+                          Success = .false.
+                        return 
+                      end if 
+                        
+                    if (CalParams%ApplyStructuredMeshLocPosUpdate) then 
 
+                                                        
+                        call GetLocalCoordinates_StructuredMesh_3D(GlobPosArray(ParticleID,:),  ElemTrial, ELEMENTNODES, &
+                                Counters%NEl(PatchTrial),  Counters%NodTot(PatchTrial), NDIM, NodalCoordinates(1:Counters%NodTot(PatchTrial),:,PatchTrial),& !(1:Counters%NodTot(IPatch),:) !
+                                ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(PatchTrial),PatchTrial), &
+                                     NewLocPos, OutsideElement, Success, PatchTrial)
+                        
+                                                        
+                                                        
+                    else
+                                                        
+                    call GetLocalCoordinates(GlobPosArray(ParticleID,:), &
+                                   UStepArray(ParticleID,:), &
+                                   ElemTrial, &
+                                   ELEMENTNODES, Counters%NEl(PatchTrial),  & !Counters%NEl
+                                   Counters%NodTot(PatchTrial), NDIM, & !Counters%NodTot
+                                   NodalCoordinates, & !(:,:,PatchTrial)
+                                   ElementConnectivities(:,:,PatchTrial), &
+                                   NewLocPos, &
+                                   OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+                        
+                        
+                                                    end if 
+                                                    
+                    end if 
+                    
+                        if (success) then 
+                            ElementIDArray(ParticleID)= ElemTrial!NewElementID
+                            PatchIDArray(ParticleID)= PatchTrial
+                            NewElementID = ElemTrial
+                            ! remove it from old patch
+                            do IParticle = 1, Counters%NParticles
+                                if (GetParticleIndex(IParticle,OldElementID,IPatch) == ParticleID) then 
+                                    GetParticleIndex(IParticle, OldElementID, IPatch) = 0
+                                    !GetParticleIndex(Counters%NParticles-IParticle, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                                    exit
+                                end if 
+                            end do 
+                            ! add it in new patch
+                            !do IParticle = 1, Counters%NParticles
+                            !    if (GetParticleIndex(IParticle,ElementIDArray(ParticleID),PatchIDArray(ParticleID)) == ParticleID) then 
+                                    GetParticleIndex(GetParticleIndexCounter, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            !        exit
+                            !    end if 
+                            !end do 
+                                    GetParticleIndexCounter = GetParticleIndexCounter-1
+                             
+                                    
+                            
+                            !GetParticleIndex(ParticleID, ElementIDArray(ParticleID), PatchIDArray(ParticleID)) = ParticleID
+                            
+                            call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                                  ' moved from element'  // trim(String(OldElementID))      // &
+                                  ' in patch '  // trim(String(IPatch)) // &   
+                                  ' to '          // trim(String(ElemTrial))      // &
+                                  ' in patch '  // trim(String(PatchTrial)) // &   
+                                  ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                                  'TimeStep '     // trim(String(Calparams%Timestep))  )
+                            
+                            
+                            exit
+                            
+                        end if 
+                        
+                !--------------------------------------------------------------------------
+                end do ! loop over elements
+                
+                if (success) then 
+                            !ElementIDArray(ParticleID)= ElemTrial!NewElementID
+                            !PatchIDArray(ParticleID)= PatchTrial
+                            !NewElementID = ElemTrial
+                            !
+                            !call WriteInLogFile('  Particle '   // trim(String(ParticleID))        // &
+                            !      ' moved from element'  // trim(String(OldElementID))      // &
+                            !      ' in patch '  // trim(String(IPatch)) // &   
+                            !      ' to '          // trim(String(ElemTrial))      // &
+                            !      ' in patch '  // trim(String(PatchTrial)) // &   
+                            !      ' at local pos:'// trim(String(NewLocPos, 1, 3))   // &
+                            !      'TimeStep '     // trim(String(Calparams%Timestep))  )
+                            ! I added this to see how this is going to go... 
+                
+                    
+                            
+                            exit
+                            
+                        end if 
+                
+                end do ! loop over patches
+                
+                
+                if (.not.Success) then
+              Fixed = .false.
+          
               if (.not.Fixed) then
                 call GiveError('  Failed finding new element for particle ' // trim(String(ParticleID)) // &
                                ' in element '  // trim(String(OldElementID)) // &
+                               ' in patch '  // trim(String(IPatch)) // & 
                                ' at position ' // trim(String(GlobPosArray(ParticleID,:),1,NVECTOR)) // &
                                ' in time step '// trim(String(CalParams%TimeStep)) )
               end if
+                end if
+                
             end if
           end if
+          
+          
+          !--------------------------------------------------
+          
+          
+          
+          
 
-        end subroutine DetermineLocPosIterative2
+        end subroutine DetermineLocPosIterative
 
-
-        subroutine UpdateParticleHouseKeeping()
+        subroutine UpdateParticleHouseKeeping_MPInitFile()
         !**********************************************************************
         !
         !    Function:  Update the particle house-keeping lists (particle-element assignment)
@@ -833,34 +2362,114 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
+          
           NPartEle = 0
-          call IHpSortKind8(EleParticles, Counters%NParticles)
+          !I commented this because it was sorting things in a manner that was breaking the code 
+          !call IHpSortKind8(EleParticles, Counters%NParticles)
           ! Count the particles in element, update NPartEle
           do IParticle = 1, Counters%NParticles ! Loop over all particles
-            IElement = GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
-            NPartEle(IElement) = NPartEle(IElement) + 1 ! Increase the particle counter for IElement
+              
+            IPatch = PatchIDArray(IParticle)  
+            IElement = ElementIDArray(IParticle)!GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
+            NPartEle(IElement,IPatch) = NPartEle(IElement,IPatch) + 1 ! Increase the particle counter for IElement
           end do
 
 
           ! Update the helper array and element switches
-          FirstParticle = 1
-          counters%NAEl = 0
-          do IElement = 1, Counters%NEl ! Loop over all elements
-            if (NPartEle(IElement)==0) then ! Empty element
-              EleParticlesHelp(IElement) = -1
+          
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+              
+              !FirstParticle = 1!GetParticleIndex(1, )!1
+              counters%NAEl = 0
+              Counters%NAEl(IPatch) = 0
+              
+          do IElement = 1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
+            
+              FirstParticle = GetParticleIndex(1, IElement, IPatch)!1
+              
+              if (NPartEle(IElement,IPatch)==0) then ! Empty element
+              EleParticlesHelp(IElement, IPatch) = -1
 
-              IsActiveElement(IElement) = .false. ! Switch off the element
+              IsActiveElement(IElement, IPatch) = .false. ! Switch off the element
             else  ! Element contains particles
-              counters%NAEl = counters%NAEl + 1
-              EleParticlesHelp(IElement) = FirstParticle
-              FirstParticle = FirstParticle + NPartEle(IElement)
+              !counters%NAEl = counters%NAEl + 1
+              Counters%NAEl(IPatch) = Counters%NAEl(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
+              EleParticlesHelp(IElement, IPatch) = FirstParticle
+              FirstParticle = FirstParticle + NPartEle(IElement,IPatch)
 
-              IsActiveElement(IElement) = .true. ! Switch on the element
+              IsActiveElement(IElement, IPatch) = .true. ! Switch on the element
             end if
+          end do ! loop over elements
+          end do ! loop over patches
+
+        end subroutine UpdateParticleHouseKeeping_MPInitFile
+        
+        
+        
+        subroutine UpdateParticleHouseKeeping_MPInitGP()
+        !**********************************************************************
+        !
+        !    Function:  Update the particle house-keeping lists (particle-element assignment)
+        !               and element switches (activation of newly filled and deactivation of 
+        !               empty element).
+        !               NOTE: EleParticles and Particle%ElementID are already updated!!
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+
+          ! Local variables
+          integer(INTEGER_TYPE) :: IParticle, IElement, FirstParticle
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+
+          
+          NPartEle = 0
+          !I commented this because it was sorting things in a manner that was breaking the code 
+          call IHpSortKind8(EleParticles, Counters%NParticles)
+          ! Count the particles in element, update NPartEle
+          do IParticle = 1, Counters%NParticles ! Loop over all particles
+              
+            IPatch = PatchIDArray(IParticle)  
+            IElement = ElementIDArray(IParticle)!GetElementIDFromList(IParticle) ! Determine the element that IParticle is located in
+            NPartEle(IElement,IPatch) = NPartEle(IElement,IPatch) + 1 ! Increase the particle counter for IElement
           end do
 
-        end subroutine UpdateParticleHouseKeeping
+
+          ! Update the helper array and element switches
+          
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+              
+              FirstParticle = 1!GetParticleIndex(1, )!1
+              !counters%NAEl = 0
+              Counters%NAEl(IPatch) = 0
+              
+          do IElement = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! Loop over all elements
+              if (NPartEle(IElement,IPatch)==0) then ! Empty element
+              EleParticlesHelp(IElement, IPatch) = -1
+
+              IsActiveElement(IElement, IPatch) = .false. ! Switch off the element
+            else  ! Element contains particles
+              !counters%NAEl = counters%NAEl + 1
+              Counters%NAEl(IPatch) = Counters%NAEl(IPatch) + 1 ! <-- might need to find the sum of this to know the total number of active elements
+              EleParticlesHelp(IElement, IPatch) = FirstParticle
+              FirstParticle = FirstParticle + NPartEle(IElement,IPatch)
+
+              IsActiveElement(IElement, IPatch) = .true. ! Switch on the element
+            end if
+          end do ! loop over elements
+          end do ! loop over patches
+
+        end subroutine UpdateParticleHouseKeeping_MPInitGP
        
 
         subroutine SetUpEntityElements()
@@ -874,19 +2483,28 @@
         
           ! local variables
           integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, IEntity
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
          
           EntityElements = 0      !reset
 
-          do IAEl = 1,Counters%NAel                                      !loop through all elements
-            IEl = ActiveElement(IAEl)
-            NElemPart = NPartEle(IEl)
+          !do IAEl = 1,Counters%NAel                                      !loop through all elements
+      
+              
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements
+            IEl = ActiveElement(IAEl, IPatch)
+            NElemPart = NPartEle(IEl,IPatch)
             do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl)         !Get the particle ID
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)         !Get the particle ID
               IEntity = EntityIDArray(ParticleIndex)               !entity to which particle belong
-              EntityElements(IEntity,IEl) = 1
+              EntityElements(IEntity,IEl,IPatch) = 1
             end do
-          end do
-         
+          end do ! loop over elements
+          end do ! loop over patches
+          
         end subroutine SetUpEntityElements
         
         
@@ -902,17 +2520,27 @@
           ! local variables
           integer(INTEGER_TYPE) :: IAEl, IEl, NElemPart, IPart, ParticleIndex, MaterialID
          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          
           MaterialElements = 0      !reset
           
-                do IAEl = 1,Counters%NAel                                      !loop through all elements
-            IEl = ActiveElement(IAEl)
-            NElemPart = NPartEle(IEl)
+                
+          !do IAEl = 1,Counters%NAel                                      !loop through all elements
+      
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements
+            IEl = ActiveElement(IAEl, IPatch)
+            !if (IEl == 0) cycle ! if no active element then cycle to the next patch
+            NElemPart = NPartEle(IEl,IPatch)
             do IPart= 1, NElemPart                                 !loop through particles in element
-              ParticleIndex = GetParticleIndex(IPart, IEl)        ! Get the particle ID
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch)        ! Get the particle ID
               MaterialID = MaterialIDArray(ParticleIndex)       !material ID to which particle belong
-              MaterialElements(MaterialID,IEl) = 1
+              MaterialElements(MaterialID,IEl, IPatch) = 1
             end do
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
                   
         end subroutine SetUpMaterialElements
 
@@ -925,24 +2553,42 @@
         !  ActiveElement: Active element vector
         !
         !**********************************************************************
+        
+        ! Abdelrahman Alsardi: Stamp of approval for multipatch generlization
+        
         implicit none
         
           integer(INTEGER_TYPE) :: IAEl, IEl, IError
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
         
           if (allocated(ActiveElement) ) then
             deallocate(ActiveElement, stat = IError)
           end if
           
-          allocate(ActiveElement(counters%NAEl), stat = IError)
+          !NURBS%sum_nael_NURBS = 0
+          Counters%Sum_NAEl = 0
+          do IPatch = 1, Counters%NPatches
+          !NURBS%sum_nael_NURBS = NURBS%sum_nael_NURBS + Counters%NAEl(IPatch)
+          Counters%Sum_NAEl = Counters%Sum_NAEl + Counters%NAEl(IPatch)
+          end do 
+          
+          !allocate(ActiveElement(counters%NAEl, Counters%NPatches), stat = IError) ! this needs to be the sum of all active elements
+          allocate(ActiveElement(Counters%Sum_NAEl, Counters%NPatches), stat = IError) ! this needs to be the sum of all active elements
           ActiveElement = 0
 
           IAEl = 0
-          do IEl=1, counters%NEl
-            if (IsActiveElement(IEl)) then ! Active elements
+          do IPatch = 1, Counters%NPatches ! loop over patches
+              IAEl = 0
+          do IEl=1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch) !counters%NEl ! loop over elements
+            if (IsActiveElement(IEl, IPatch)) then ! Active elements
               IAEl = IAEl + 1
-              ActiveElement(IAEl) = IEl
+              ActiveElement(IAEl, IPatch) = IEl
             end if
-          end do
+          end do ! loop over elements
+          end do ! loop over patches
  
           call DetermineActiveNodes()
           
@@ -976,21 +2622,29 @@
           logical :: ContainsBoundaryParticle, IsMixedElement
           real(REAL_TYPE) :: SummedParticleWeights, &
                               RequiredFilledVolume
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           if (.not.IsMPMWithMixedIntegration()) RETURN
             IsParticleIntegration = .false.
 
-            do IAElement = 1, Counters%NAEl
-             IElement = ActiveElement(IAElement)
+            !do IAElement = 1, Counters%NAEl
+            do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+   
+              IElement = ActiveElement(IAElement, IPatch)
               ContainsBoundaryParticle = .false.
               SummedParticleWeights = 0.0
 
-              ParticleIndex = GetParticleIndex(1, IElement)
+              ParticleIndex = GetParticleIndex(1, IElement, IPatch)
               CheckMaterialID = MaterialIDArray(ParticleIndex)
               IsMixedElement = .false.
 
-              do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
-                ParticleIndex = GetParticleIndex(IParticle, IElement)
+              do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles in IElement
+                ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
                 ! Sum up volumes occupied by particles
                 SummedParticleWeights = SummedParticleWeights + &
                   Particles(ParticleIndex)%IntegrationWeight
@@ -1009,16 +2663,18 @@
                 ! Only elements which contain at least one boundary particle can be considered as partially filled.
                 ! If less than CalParams%RequiredDegreeOfFilling percent of the element volume is filled,
                 ! the element is partially filled
-                RequiredFilledVolume = ElementSpace(IElement) * CalParams%RequiredDegreeOfFilling
+                RequiredFilledVolume = ElementSpace(IElement,IPatch) * CalParams%RequiredDegreeOfFilling
                 if (SummedParticleWeights<=RequiredFilledVolume) then
-                  IsParticleIntegration(IElement) = .true. ! Consider the element as partially filled
+                  IsParticleIntegration(IElement, IPatch) = .true. ! Consider the element as partially filled
                 end if
               end if
 
               if (IsMixedElement) then ! Elements with particles of different material
-                IsParticleIntegration(IElement) = .true.
+                IsParticleIntegration(IElement, IPatch) = .true.
               end if
-          end do
+                end do
+                
+                end do 
 
         end subroutine CheckFillingOfElements
         
@@ -1045,27 +2701,32 @@
           real(REAL_TYPE) :: FirstDBulkViscousPressure
           real(REAL_TYPE), dimension(NTENSOR) :: FirstParticleStress
           
+          integer(INTEGER_TYPE) :: IPatch
+          
           FirstParticleWaterPressure = 0.0
           FirstParticleGasPressure = 0.0
           FirstParticleStress = 0.0
           FirstDBulkViscousPressure = 0.0
     
-          do IAElement = 1, Counters%NAEl
-            IElement = ActiveElement(IAElement)
-            if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
+          !do IAElement = 1, Counters%NAEl
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IElement = ActiveElement(IAElement, IPatch)
+            if ( (.not.IsParticleIntegration(IElement, IPatch) ) ) then ! Loop over all active fully filled elements
      
-             FirstParticleIndex = GetParticleIndex(1, IElement)
+             FirstParticleIndex = GetParticleIndex(1, IElement, IPatch)
      
              FirstParticleStress = SigmaEffArray(FirstParticleIndex,:)
              FirstParticleWaterPressure = Particles(FirstParticleIndex)%WaterPressure
              FirstParticleGasPressure =  Particles(FirstParticleIndex)%GasPressure
              FirstDBulkViscousPressure = Particles(FirstParticleIndex)%DBulkViscousPressure
      
-             NElemPart = NPartEle(IElement)  ! Number of particles in element
+             NElemPart = NPartEle(IElement,IPatch)  ! Number of particles in element
              
              do IPart = 2, NElemPart ! loop over particles. The stress of the first particle is already assigned.
                
-               ParticleIndex = GetParticleIndex(IPart, IElement)
+               ParticleIndex = GetParticleIndex(IPart, IElement, IPatch)
              
                SigmaEffArray(ParticleIndex,:) = FirstParticleStress
                Particles(ParticleIndex)%WaterPressure = FirstParticleWaterPressure
@@ -1074,9 +2735,140 @@
              end do
                    
             end if
-          end do
+                end do
+                
+                end do 
       
-        end subroutine AssignStressesToParticles
+         end subroutine AssignStressesToParticles
+         
+         
+         
+         
+         
+         
+         
+         !------------------------------------------------------------------------------------------------------------------------
+         
+         
+         
+         subroutine AssignStressesToParticles_4GaussPoints()
+      !**********************************************************************
+      !
+      !    Function: Map data from first particle to other particles in the element using
+      !              interpolation functions.
+      !              At the moment only stresses are mapped. This routine can be
+      !              easily extended for arbitrary information passed on as
+      !              additional parameters.
+      !
+      ! Implemented in the frame of the MPM project.
+      !
+      !**********************************************************************
+
+      implicit none
+
+      ! Local variables
+      integer(INTEGER_TYPE) :: IElement, IPart, FirstParticleIndex, NElemPart,  &
+         ParticleIndex, IAElement
+      real(REAL_TYPE) :: GaussPointWaterPressure
+      real(REAL_TYPE) :: GaussPointGasPressure
+      real(REAL_TYPE) :: GaussPointDBulkViscousPressure
+      real(REAL_TYPE), dimension(NTENSOR) :: GaussPointStress
+      
+      ! 4 GP smoothing local parameters 
+      integer(INTEGER_TYPE) :: IGaussPoint
+      
+      ! Multipatch temporary variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary
+      
+      ! initialize 
+      IPatch_Temporary = 1
+      
+      GaussPointWaterPressure = 0.0
+      GaussPointGasPressure = 0.0
+      GaussPointStress = 0.0
+      GaussPointDBulkViscousPressure = 0.0
+
+      do IAElement = 1, Counters%NAEl(IPatch_Temporary)!Counters%NAEl ! loop over active elements
+         IElement = ActiveElement(IAElement,IPatch_Temporary)
+         !if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
+
+             
+             ! loop over gauss points  in each subzone (4 gauss points in 4 subzones in one element)
+             do IGaussPoint = 1, Counters%NGaussPoints
+             
+            !FirstParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint)!GetParticleIndex(1, IElement)
+
+            !GaussPointStress = SigmaEffArrayGaussPoints(IElement, IGaussPoint, :)!SigmaEffArray(FirstParticleIndex,:)
+            GaussPointWaterPressure = SigmaEffArrayGaussPointsWaterPressure(IElement, IGaussPoint)!Particles(FirstParticleIndex)%WaterPressure
+            GaussPointGasPressure =  SigmaEffArrayGaussPointsGasPressure(IElement, IGaussPoint)!Particles(FirstParticleIndex)%GasPressure
+            GaussPointDBulkViscousPressure = SigmaEffArrayGaussPointsBulkViscousPressure(IElement, IGaussPoint)!Particles(FirstParticleIndex)%DBulkViscousPressure
+
+            ! this tells you how many material points in one subzone
+            NElemPart = SubElementMPOrganization(IElement, IGaussPoint) !NumberOfElements, NumberOfSubZones)!NPartEle(IElement)  ! Number of particles in element
+
+            do IPart = 1, NElemPart !2, NElemPart ! loop over particles. The stress of the first particle is already assigned.
+
+               ParticleIndex = GetParticleIndexInSubElement(IElement, IGaussPoint, IPart) !GetParticleIndex(IPart, IElement)
+
+               !SigmaEffArray(ParticleIndex,:) = GaussPointStress
+               Particles(ParticleIndex)%WaterPressure = GaussPointWaterPressure
+               Particles(ParticleIndex)%GasPressure = GaussPointGasPressure
+               Particles(ParticleIndex)%DBulkViscousPressure = GaussPointDBulkViscousPressure
+            end do ! loop over particles
+            
+             end do ! loop over gauss points
+             
+
+         !end if ! if not particle integration
+      end do ! loop over active elements
+
+   end subroutine AssignStressesToParticles_4GaussPoints
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         !-------------------------------------------------------------------------------------------------------------
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
         
           subroutine AssignStateParametersToParticles()
         !**********************************************************************
@@ -1104,8 +2896,10 @@
                                FirstParticleSigmaPrin(NTENSOR)
           real(REAL_TYPE) :: FirstParticlePP
           real(REAL_TYPE) :: FirstParticleESMstatev(NSTATEVAR)
+          
+          integer(INTEGER_TYPE) :: IPatch
      
-         if (.not.IsMPMComputation()) RETURN ! FEM...no need ..already one particle
+         !if (.not.IsMPMComputation()) RETURN ! FEM...no need ..already one particle --> 21 October 2024 --> I commented this so that we can have multipoint FEM
           
           FirstParticleHPStateVariables   = 0.0
           FirstParticleModifiedHPStateVariables = 0.0
@@ -1117,11 +2911,16 @@
           FirstParticlePsiStSoft = 0.0
           FirstParticlePP = 0.0
         
-          do IAElement = 1, Counters%NAEl
-            IElement = ActiveElement(IAElement)
-            if ( (.not.IsParticleIntegration(IElement) ) ) then ! Loop over all active fully filled elements
+          !do IAElement = 1, Counters%NAEl
+              
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+            IElement = ActiveElement(IAElement, IPatch)
+            if ( (.not.IsParticleIntegration(IElement, IPatch) ) ) then ! Loop over all active fully filled elements
      
-             FirstParticleIndex = GetParticleIndex(1, IElement)
+             FirstParticleIndex = GetParticleIndex(1, IElement, IPatch)
      
 
              FirstParticleHPStateVariables = GetHPStateVariables(Particles(FirstParticleIndex))
@@ -1138,11 +2937,11 @@
              !ESM
              FirstParticleESMstatev = ESMstatevArray(FirstParticleIndex,:)
      
-             NElemPart = NPartEle(IElement)  ! Number of particles in element
+             NElemPart = NPartEle(IElement,IPatch)  ! Number of particles in element
              
              do IPart = 2, NElemPart ! loop ove particles. The state variables of the first particle are assigned.
                
-               ParticleIndex = GetParticleIndex(IPart, IElement)
+               ParticleIndex = GetParticleIndex(IPart, IElement, IPatch)
                
                 
                call SetHPStateVariables(Particles(ParticleIndex), FirstParticleHPStateVariables)
@@ -1165,7 +2964,10 @@
              end do
                    
             end if
-          end do
+                end do
+                
+              end do ! loop over patches
+              
       
          end subroutine AssignStateParametersToParticles
                 
@@ -1202,11 +3004,20 @@
           ! Local variables
           integer(INTEGER_TYPE) :: IAElement, IElement, IParticle, ParticleIndex
           real(REAL_TYPE), dimension(NTENSOR) :: SigmaEffStep, SigmaEff
+          
+          integer(INTEGER_TYPE) :: IPatch
 
-           do IAElement = 1, Counters%NAEl
-             IElement = ActiveElement(IAElement)
-                do IParticle = 1, NPartEle(IElement) ! Loop over particles in IElement
-                  ParticleIndex = GetParticleIndex(IParticle, IElement)
+           !do IAElement = 1, Counters%NAEl
+               
+               do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+                do IAElement = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+             
+                    IElement = ActiveElement(IAElement, IPatch)
+      
+                    do IParticle = 1, NPartEle(IElement,IPatch) ! Loop over particles in IElement
+                  ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)
                   
                   SigmaEffStep = SigmaEffArray(ParticleIndex,:) - SigmaEff0Array(ParticleIndex,:) 
                   call SetSigmaEffStep(Particles(ParticleIndex), SigmaEffStep)
@@ -1218,7 +3029,8 @@
                   Particles(ParticleIndex)%GasPressure0 = Particles(ParticleIndex)%GasPressure
                   
                 end do
-          end do
+                end do ! loop over active elements
+                end do ! loop over patches
      
         end subroutine SetInitialParticleStressForNextLoadStep
 
@@ -1235,18 +3047,21 @@
           
           ! local variables        
           integer(INTEGER_TYPE) :: IParticle, ElementID
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: PatchID
           
           if (.not.CalParams%ApplyFEMtoMPM) RETURN
 
           do IParticle = 1, Counters%NParticles ! loop over material points
             
             ElementID = ElementIDArray(IParticle)
+            PatchID = PatchIDArray(IParticle)
 
             ! Calculate particle displacements from nodal displacements
-            call MapTotalDisplacementsToParticles(IParticle, ElementID)
+            call MapTotalDisplacementsToParticles(IParticle, ElementID, PatchID)
 
             ! Calculate particle velocities from nodal displacements
-            call MapTotalVelocityToParticles(IParticle, ElementID)
+            call MapTotalVelocityToParticles(IParticle, ElementID, PatchID)
           
           end do
           
@@ -1254,7 +3069,8 @@
 
 
         subroutine MapTotalDisplacementsToParticles(ParticleIndex, &
-                                                    ElementID)
+                                                    ElementID, &
+                                                    PatchID)
         !**********************************************************************
         !
         !    Function:  Calculate particle displacements from nodal displacements
@@ -1275,13 +3091,17 @@
           integer(INTEGER_TYPE) :: IDof, INode
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleDisplacement
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE), intent(in) :: PatchID
 
            ParticleDisplacement = 0.0
 
            do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
              do INode = 1, ELEMENTNODES  ! Loop over all nodes in element
 
-               NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+               NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, PatchID) ) , PatchID)
                DofID = ReducedDof(NodeID) + IDof
                ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(ParticleIndex,INode) * TotalDisplacementSoil(DofID)
                
@@ -1293,7 +3113,7 @@
 
         end subroutine MapTotalDisplacementsToParticles
 
-        subroutine MapTotalVelocityToParticles(ParticleIndex, ElementID)
+        subroutine MapTotalVelocityToParticles(ParticleIndex, ElementID, IPatch)
         !**********************************************************************
         !
         !    Function:  Calculate particle velocities from nodal displacements
@@ -1314,6 +3134,11 @@
           integer(INTEGER_TYPE) :: IDof, INode, iEntity
           integer(INTEGER_TYPE) :: NodeID, DofID
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary 
+          integer(INTEGER_TYPE), intent(in) :: IPatch
+          
 
             !!get particle entity ID
             if (CalParams%ApplyContactAlgorithm) then
@@ -1327,7 +3152,7 @@
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
                   
-                NodeID = iabs(ElementConnectivities(INode, ElementID) ) 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, IPatch) ) , IPatch)
                 DofID = ReducedDof(NodeID) + IDof
                 ParticleVelocity(IDof) = ParticleVelocity(IDof) + ShapeValuesArray(ParticleIndex,INode) * TotalVelocitySoil(DofID,iEntity)
                 
@@ -1414,9 +3239,16 @@
       !    Function:  update housekeepting of material points
       !
       !*********************************************************************     
-      use ModConvectivePhase, only: UpdateParticleHouseKeeping
+      use ModConvectivePhase, only: UpdateParticleHouseKeeping_MPInitGP!UpdateParticleHouseKeeping
       implicit none
-      call UpdateParticleHouseKeeping()
+      !call UpdateParticleHouseKeeping()
+      !if (MP_INIT_FILE) then 
+      !        call UpdateParticleHouseKeeping_MPInitFile()
+      !    else ! MP_INIT_GP
+              
+      call UpdateParticleHouseKeeping_MPInitGP()
+      !    end if
+      
       end subroutine UpdateParticleHouseKeepingMock
       
       subroutine SetActiveElementMock()
@@ -1427,5 +3259,6 @@
       !*********************************************************************  
       use ModConvectivePhase, only: SetActiveElement
       implicit none
-      call SetActiveElement()
+      ! hardcoded to remove active element error
+      !call SetActiveElement()
       end subroutine SetActiveElementMock

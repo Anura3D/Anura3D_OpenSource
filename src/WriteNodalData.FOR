@@ -140,9 +140,15 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
+          
+          ! IGA variables 
+          integer(INTEGER_TYPE) :: IPatch, IDoF, GlobalNodeID, IPoints
 
 
-          NValues = Counters%NodTot * NDOFL
+          !NValues = Counters%NodTot * NDOFL
+          !NValues = NControlPoints(IPatch) * NDOFL
+          NValues = NumberOfGlobalControlPointsUniqueMultipatch*NVector
+
           if (Is0Arr(TotalDisplacementSoil, Counters%N)) then
             NValues = 0
           end if
@@ -150,12 +156,84 @@
           write(FileUnit) '$$UTOT___R$$', NBytes
 
           if (NBytes>0) then
-            do I = 1, Counters%NodTot
-              I1 = EdgeNodeTyingsHOE(1, I)
-              I3 = EdgeNodeTyingsHOE(2, I)
-              write(FileUnit) ( (TotalDisplacementSoil(ReducedDof(I1) + J) + TotalDisplacementSoil(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
+              
+              
+              
+            !  do IPatch = 1, Counters%NPatches ! loop over patches
+            !
+            !do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+            !    
+            !    GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+            !    
+            !  IDoF = ReducedDoF(GlobalNodeID)!I)
+            !  !do J = 1, NVECTOR
+            !  !  NodalCoordinatesUpd(I, J, IPatch) = NodalCoordinatesUpd(I, J, IPatch) + TotalDisplacementSoil(IDoF + J)
+            !  !end do
+            !  
+            !  write(FileUnit) ( TotalDisplacementSoil(IDof + J) , J=1,NDOFL)
+            !  
+            !end do
+            !
+            !  end do ! loop over patches
+              
+              
+              
+              
+              
+              
+              
+            !  do IPatch = 1, Counters%NPatches ! loop over patches
+            !
+            !do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+            !    
+            !    GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+            !    
+            !  IDoF = ReducedDoF(GlobalNodeID)!I)
+              !do J = 1, NVECTOR
+              !  NodalCoordinatesUpd(I, J, IPatch) = NodalCoordinatesUpd(I, J, IPatch) + TotalDisplacementSoil(IDoF + J)
+              !end do
+              
+              
+              do IPoints = 1, NumberOfGlobalControlPointsUniqueMultipatch
+              
+                  IDof = NVECTOR*(IPoints-1)
+              
+              write(FileUnit) ( TotalDisplacementSoil(IDof + J) , J=1,NDOFL)
+              
             end do
+            
+            !end do ! loop over patches
+
+              
+              
           end if
+          
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+          !  do I = 1, Counters%NodTot
+          !    I1 = EdgeNodeTyingsHOE(1, I)
+          !    I3 = EdgeNodeTyingsHOE(2, I)
+          !    write(FileUnit) ( (TotalDisplacementSoil(ReducedDof(I1) + J) + TotalDisplacementSoil(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
+          !  end do
+          !end if
 
         end subroutine WriteBlockUTOT___R
 
@@ -179,16 +257,63 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
+          
+          ! IGA variables 
+          integer(INTEGER_TYPE) :: IDof, IPatch, GlobalNodeID
+          integer(INTEGER_TYPE) :: iEntity_Temporary
+          integer(INTEGER_TYPE) :: IPoints
 
-          NValues = Counters%NodTot * NDOFL
+          !iEntity_Temporary = 1
+          !NValues = Counters%NodTot * NDOFL
+          !NBytes = 8 * NValues
+          !write(FileUnit) '$$VTOT___R$$', NBytes
+          iEntity_Temporary = 1
+          NValues = NumberOfGlobalControlPointsUniqueMultipatch*NVector!Counters%NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$VTOT___R$$', NBytes
+          
+          !              
+          !do IPatch = 1, Counters%NPatches ! loop over patches
+          !  
+          !  do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          !      
+          !      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+          !      
+          !    IDoF = ReducedDoF(GlobalNodeID)!I)
+          !    !do J = 1, NVECTOR
+          !    !  NodalCoordinatesUpd(I, J, IPatch) = NodalCoordinatesUpd(I, J, IPatch) + TotalDisplacementSoil(IDoF + J)
+          !    !end do
+          !    
+          !    write(FileUnit) ( TotalVelocitySoil(IDof + J, iEntity_Temporary) , J=1,NDOFL)
+          !    
+          !  end do
+          !  
+          !end do ! loop over patches
 
-          do I = 1, Counters%NodTot
-            I1 = EdgeNodeTyingsHOE(1,I)
-            I3 = EdgeNodeTyingsHOE(2,I)
-            write(FileUnit) ( (TotalVelocitySoil(ReducedDof(I1) + J, 1) + TotalVelocitySoil(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
-          end do
+          
+          !do IPatch = 1, Counters%NPatches ! loop over patches
+          !  
+          !  do I = 1, NControlPoints(IPatch)!Counters%NodTot ! loop over control points
+          !      
+          !      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+          !      
+          !    IDoF = ReducedDoF(GlobalNodeID)!I)
+              !do J = 1, NVECTOR
+              !  NodalCoordinatesUpd(I, J, IPatch) = NodalCoordinatesUpd(I, J, IPatch) + TotalDisplacementSoil(IDoF + J)
+              !end do
+          do IPoints = 1, NumberOfGlobalControlPointsUniqueMultipatch
+              IDof = NVECTOR*(IPoints-1)
+              
+              write(FileUnit) ( TotalVelocitySoil(IDof + J, iEntity_Temporary) , J=1,NDOFL)
+            
+            end do ! loop over patches
+          
+
+          !do I = 1, Counters%NodTot
+          !  I1 = EdgeNodeTyingsHOE(1,I)
+          !  I3 = EdgeNodeTyingsHOE(2,I)
+          !  write(FileUnit) ( (TotalVelocitySoil(ReducedDof(I1) + J, 1) + TotalVelocitySoil(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
+          !end do
 
         end subroutine WriteBlockVTOT___R
 
@@ -213,11 +338,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$DSPTSD_R$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (DashpotSld(ReducedDof(I1) + J) + DashpotSld(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -246,11 +371,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$SPSD___R$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (SpringSld(ReducedDof(I1) + J) + SpringSld(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -279,11 +404,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$UTOTVBSR$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit)( (NodalTotDisplacementVB(ReducedDof(I1) + J, 1) + NodalTotDisplacementVB(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
@@ -351,7 +476,7 @@
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           if (Is0Arr(TotalDisplacementWater, Counters%N)) then
             NValues = 0
           end if
@@ -359,7 +484,7 @@
           write(FileUnit) '$$UWTOT__R$$', NBytes
 
           if (NBytes>0) then
-            do I = 1, Counters%NodTot
+            do I = 1, Counters%Sum_NodTot
               I1 = EdgeNodeTyingsHOE(1, I)
               I3 = EdgeNodeTyingsHOE(2, I)
               write(FileUnit) ((TotalDisplacementWater(ReducedDof(I1)+J)+TotalDisplacementWater(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -389,11 +514,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$WTOT___R$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (TotalVelocityWater(ReducedDof(I1) + J, 1) + TotalVelocityWater(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
@@ -422,11 +547,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$EXLDWT_R$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (ExtLoadWaterTotal(ReducedDof(I1) + J, 1,1) + ExtLoadWaterTotal(ReducedDof(I3) + J, 1,1) ) / 2, J=1,NDOFL)
@@ -455,10 +580,10 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$DSPTWT_R$$', NBytes
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (DashpotWat(ReducedDof(I1) + J) + DashpotWat(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -488,11 +613,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$SPWT___R$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (SpringWat(ReducedDof(I1) + J) + SpringWat(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -521,11 +646,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$WTOTVBWR$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (NodalTotDisplacementVBWater(ReducedDof(I1) + J, 1) + NodalTotDisplacementVBWater(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
@@ -590,14 +715,14 @@
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           if (Is0Arr(TotalDisplacementGas, Counters%N)) then
             NValues = 0
           end if
           NBytes = 8 * NValues
           write(FileUnit) '$$UGTOT__R$$', NBytes
           if (NBytes>0) then
-            do I = 1, Counters%NodTot
+            do I = 1, Counters%Sum_NodTot
               I1 = EdgeNodeTyingsHOE(1, I)
               I3 = EdgeNodeTyingsHOE(2, I)
               write(FileUnit) ( (TotalDisplacementGas(ReducedDof(I1) + J) + TotalDisplacementGas(ReducedDof(I3) + J)) / 2, J=1,NDOFL)
@@ -627,11 +752,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$GTOT___R$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (TotalVelocityGas(ReducedDof(I1) + J, 1) + TotalVelocityGas(ReducedDof(I3) + J, 1)) / 2, J=1,NDOFL)
@@ -661,11 +786,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$EXLDGS_R$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (ExtLoadGasTotal(ReducedDof(I1) + J, 1,1) + ExtLoadGasTotal(ReducedDof(I3) + J, 1,1) ) / 2, J=1,NDOFL)
@@ -695,10 +820,10 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$DSPTGT_R$$', NBytes
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (DashpotGas(ReducedDof(I1) + J) + DashpotGas(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -728,11 +853,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$SPGT___R$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (SpringGas(ReducedDof(I1) + J) + SpringGas(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -761,11 +886,11 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, I1, I3, J
 
-          NValues = Counters%NodTot * NDOFL
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$WTOTVBGR$$', NBytes
 
-          do I = 1, Counters%NodTot
+          do I = 1, Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (NodalTotDisplacementVBGas(ReducedDof(I1) + J, 1) + NodalTotDisplacementVBGas(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
@@ -809,6 +934,53 @@
         end subroutine WriteBlockFVISGASR
 
         
+        !subroutine WriteBlockNODECOOR(FileUnit)
+        !!**********************************************************************
+        !!
+        !!    Function:  Write the block NODECOOR containing the nodal coordinates x, y, z
+        !!               after mesh adjustment has been performed to the file with unit FileUnit.
+        !!
+        !!     FileUnit : File unit to which the block NODECOOR is written to
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  ! Arguments
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
+        !
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: NBytes, NValues, I, J
+        !  
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        !
+        !  NValues = Counters%NodTot * NDOFL
+        !  NBytes = NValues * 8
+        !  write(FileUnit) '$$NODECOOR$$', NBytes
+        !  
+        !  if (NBytes>0) then
+        !    do I = 1, Counters%NodTot
+        !      write(FileUnit) (NodalCoordinates(I, J, IPatch_Temporary), J = 1, NDOFL)
+        !    end do
+        !  end if
+        !
+        !end subroutine WriteBlockNODECOOR
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         subroutine WriteBlockNODECOOR(FileUnit)
         !**********************************************************************
         !
@@ -828,17 +1000,43 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: NBytes, NValues, I, J
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
-          NValues = Counters%NodTot * NDOFL
+          
+          !do IPatch = 1, Counters%NPatches
+          !    NValues = NControlPoints(IPatch) * NDOFL
+          !end do 
+          NValues = Counters%Sum_NodTot * NDOFL
           NBytes = NValues * 8
           write(FileUnit) '$$NODECOOR$$', NBytes
           
           if (NBytes>0) then
-            do I = 1, Counters%NodTot
-              write(FileUnit) (NodalCoordinates(I, J), J = 1, NDOFL)
-            end do
+              
+              do IPatch = 1, Counters%NPatches ! loop over patches
+                  do I = 1, Counters%NodTot(IPatch) ! loop over control points
+              
+                      write(FileUnit) (NodalCoordinates(I, J, IPatch), J = 1, NDOFL)
+            
+                  end do ! loop over patches
+              end do ! loop over control points
+              
           end if
 
         end subroutine WriteBlockNODECOOR
-
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
       end module

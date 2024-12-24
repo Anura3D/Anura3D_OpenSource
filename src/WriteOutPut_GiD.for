@@ -39,6 +39,7 @@
     !**********************************************************************
     !***************Mesh: .mesh archive extension**************************
    
+    use ModFileIO
     use ModReadCalculationData
     use ModReadGeometryData
     use ModReadMaterialData
@@ -48,11 +49,11 @@
     use ModMPMData
     use ModWriteVTKASCII
     use ModWriteVTKBinary
-    use ModFileIO
+    !use ModFileIO
 	use ModMPMInit
     use ModMPMStresses
       
-    !#pragma comment(lib, "gidpost.lib")
+    !#pragma comment(lib, "gidpost.lib") ! I commented this because this did not work on LANL computer
 
     use gidpost
     contains 
@@ -77,10 +78,14 @@
     integer(INTEGER_TYPE), dimension(4) :: MatType = 0.0
     real(REAL_TYPE), dimension(3) :: MPCo = 0.0 ! dimensions 3D and 2D
    
+    ! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    
+    
     NumberMaterialPoints = Counters%NParticles      ! Total number of material points
     TimeStep = CalParams%IStep                      ! Time step
-    NumberElements = Counters%NEl                   ! Total number of elements
-    NNodes = Counters%NodTot                        ! Total number of nodes
+    NumberElements = Counters%Sum_NEl                   ! Total number of elements
+    NNodes = Counters%Sum_NodTot                        ! Total number of nodes
     NVECTOR = NDIM                                  ! Dimension
     NoMPs = Counters%NParticles                     ! Number of MPs
 
@@ -114,7 +119,7 @@
     CALL GID_BEGINCOORDINATES  
       do I=1, NNodes
 	    do IDim = 1, NVECTOR 
-             MPCo(IDim) = NodalCoordinates(I, IDim)     
+             MPCo(IDim) = NodalCoordinates(I, IDim, IPatch_Temporary)     
         end do
         CALL GID_WRITECOORDINATES(I+NoMPs,  MPCo(1), MPCo(2), MPCo(3))
       end do
@@ -124,10 +129,10 @@
       CALL GID_BEGINELEMENTS
       
       do J = 1, NumberElements ! Elements empty and filled
-          MatType(1) = ElementConnectivities(1, J)+NoMPs  
-          MatType(2) = ElementConnectivities(2, J)+NoMPs   
-          MatType(3) = ElementConnectivities(3, J)+NoMPs  
-          MatType(4) = ElementMaterialID(J)
+          MatType(1) = ElementConnectivities(1, J, IPatch_Temporary)+NoMPs  
+          MatType(2) = ElementConnectivities(2, J, IPatch_Temporary)+NoMPs   
+          MatType(3) = ElementConnectivities(3, J, IPatch_Temporary)+NoMPs  
+          MatType(4) = ElementMaterialID(J,IPatch_Temporary)
           if (MatType(4)<=0.0) then 
               MatType(4)=0
           endif
@@ -844,14 +849,18 @@
                                      Vliquid = 0.0, &
                                      Vsolid = 0.0, &
                                      Vgas = 0.0
+    
     Logical :: Hasvalue
     Character (len=200) :: ARCH_POST_RES, statevar_name
     Character (len=5) :: J_str
+	! Multipatch variables 
+    integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+    
     
     NumberMaterialPoints = Counters%NParticles   
     TimeStep = CalParams%IStep                   
-    NumberElements = Counters%NEl                   
-    NNodes = Counters%NodTot                        
+    NumberElements = Counters%Sum_NEl                   
+    NNodes = Counters%Sum_NodTot                        
     NVECTOR = NDIM                                 
     NoMPs = Counters%NParticles                     
     
@@ -925,7 +934,7 @@
     CALL GID_BEGINCOORDINATES  
       do I=1, NNodes 
 	    do IDim = 1, NVECTOR ! Loop over dimensions of IElement
-             MPCo(IDim) = NodalCoordinates(I, IDim) 
+             MPCo(IDim) = NodalCoordinates(I, IDim, IPatch_Temporary) 
         end do
         CALL GID_WRITECOORDINATES(I+NoMPs,  MPCo(1), MPCo(2), MPCo(3))
       end do
@@ -935,10 +944,10 @@
       CALL GID_BEGINELEMENTS
       
       do J = 1, NumberElements 
-          MatType(1) = ElementConnectivities(1, J)+NoMPs  
-          MatType(2) = ElementConnectivities(2, J)+NoMPs   
-          MatType(3) = ElementConnectivities(3, J)+NoMPs  
-          MatType(4) = ElementMaterialID(J)
+          MatType(1) = ElementConnectivities(1, J, IPatch_Temporary)+NoMPs  
+          MatType(2) = ElementConnectivities(2, J, IPatch_Temporary)+NoMPs   
+          MatType(3) = ElementConnectivities(3, J, IPatch_Temporary)+NoMPs  
+          MatType(4) = ElementMaterialID(J,IPatch_Temporary)
           if (MatType(4)<=0.0) then 
               MatType(4)=0
           endif
@@ -979,7 +988,7 @@
     CALL GID_BEGINCOORDINATES  
       do I=1, NNodes
 	    do IDim = 1, NVECTOR 
-             MPCo(IDim) = NodalCoordinates(I, IDim)  
+             MPCo(IDim) = NodalCoordinates(I, IDim, IPatch_Temporary)  
         end do
         CALL GID_WRITECOORDINATES(I+NoMPs,  MPCo(1), MPCo(2), MPCo(3))
       end do
@@ -989,11 +998,11 @@
       CALL GID_BEGINELEMENTS
       
       do J = 1, NumberElements 
-          MatType3D(1) = ElementConnectivities(1, J)+NoMPs  
-          MatType3D(2) = ElementConnectivities(2, J)+NoMPs   
-          MatType3D(3) = ElementConnectivities(3, J)+NoMPs  
-          MatType3D(4) = ElementConnectivities(4, J)+NoMPs 
-          MatType3D(5) = ElementMaterialID(J)
+          MatType3D(1) = ElementConnectivities(1, J, IPatch_Temporary)+NoMPs  
+          MatType3D(2) = ElementConnectivities(2, J, IPatch_Temporary)+NoMPs   
+          MatType3D(3) = ElementConnectivities(3, J, IPatch_Temporary)+NoMPs  
+          MatType3D(4) = ElementConnectivities(4, J, IPatch_Temporary)+NoMPs 
+          MatType3D(5) = ElementMaterialID(J,IPatch_Temporary)
           
           CALL GID_WRITEELEMENT(J, MatType3D)
       enddo 
@@ -1630,117 +1639,117 @@
      CALL GID_CLOSEPOSTRESULTFILE() ! Close the file
     End Subroutine WriteGiDResultsBIN
     
-    Subroutine WriteGiDResultsBINGP    
-    !**********************************************************************
-    !    This subroutine write the results in Binary format using GiD 
-    !    posprocess module. Results are printed in Gauss Points
-    !    Scalars, vectors, and tensor
-    !**********************************************************************   
- 
-	implicit none 
-	
-	!Local variables
-    integer(INTEGER_TYPE) :: I,J, K, NumberMaterialPoints       
-    integer(INTEGER_TYPE) :: IDim, NVECTOR, NumberElements, NNodes
-	real(REAL_TYPE) :: TimeStep, TimeStepEnd
-    real(REAL_TYPE) :: EpsD, SigD, EpsI, MLiquid, MSolid, PWP, Wvolstrain, Liqw, Solidw
-    real(REAL_TYPE) :: EpsD_Vol, Eps(3), mean_stress, Strain(6), Stress(6)
-    integer(INTEGER_TYPE), dimension(3) :: NMATElem
-    integer(INTEGER_TYPE), dimension(4) :: MatType = 0.0 
-    integer(INTEGER_TYPE), dimension(5) :: MatType3D = 0.0 
-    Real(REAL_TYPE), dimension(2) :: MPCo = 0.0
-    Logical :: Hasvalue
-    Character (len=200) :: ARCH_POST_RES
-    
-    NumberMaterialPoints = Counters%NParticles   
-    TimeStep = CalParams%IStep                   
-    NumberElements = Counters%NEl                   
-    NNodes = Counters%NodTot                        
-    NVECTOR = NDIM                                                   
-    
-    ARCH_POST_RES = trim(CalParams%FileNames%ProjectName)//'GP'//'.POST.lst'
-
-
-    CALL GID_OPENPOSTRESULTFILE(trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'GP'//'.POST.bin',GiD_PostBinary)    
-    
-    ! ***** Opening list for print results ***** 
-    If ((CalParams%IStep==1).and.(CalParams%TimeStep==1)) then
-        OPEN (10,FILE=ARCH_POST_RES, STATUS ='UNKNOWN')
-        WRITE(10,12)
-        WRITE(10,14)
-        WRITE(10,'(A)') trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'GP'//'.POST.bin'
-        CLOSE (10) 
-    else
-
-        OPEN (10,FILE=ARCH_POST_RES, STATUS ='OLD', POSITION = 'APPEND')   ! Open the exixting post-proccesing file
-        WRITE(10,'(A)') trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'GP'//'.POST.bin'
-        CLOSE (10) ! close post-proccesing file
-
-    endif
-
-    
-    ! ********** PRINTING THE 2D MESH **********
-    ! ***************************************
-     CALL GiD_BeginMesh('Material Points', GiD_2D,GiD_Triangle,3)
-        CALL GiD_BeginMeshColor('Material Points',GiD_2D,GiD_Triangle,3,0.7d0,0.7d0,0.4d0)
-        CALL GID_MESHUNIT('m')
-        
-        CALL GID_BEGINCOORDINATES  
-        do I=1, NNodes 
-	        do IDim = 1, NVECTOR 
-                MPCo(IDim) = NodalCoordinates(I,IDim) ! GlobPosArray(I,IDim)    
-            end do
-            CALL GID_WRITECOORDINATES2D(I,  MPCo(1), MPCo(2)) !GiD_WriteCoordinates2D
-        end do
-      CALL GID_ENDCOORDINATES
-           
-      ! ***** printing elements *****
-      CALL GID_BEGINELEMENTS
-      
-      do J = 1, NumberElements 
-          MatType(1) = ElementConnectivities(1, J)  
-          MatType(2) = ElementConnectivities(2, J)   
-          MatType(3) = ElementConnectivities(3, J)  
-          MatType(4) = ElementMaterialID(J)
-          if (MatType(4)<=0.0) then 
-              MatType(4)=0
-          endif
-          
-          CALL GID_WRITEELEMENTMAT(J, MatType)
-      enddo 
-      CALL GID_ENDELEMENTS
-      
-      CALL GID_ENDMESH  
-      
-      
-      
-      
-     12    FORMAT('Multiple')
-     14    FORMAT('# postprocess files')
-           
-    ! **********************************************************************
-    ! ************************ SCALAR RESULTS ******************************
-    ! **********************************************************************
-    
-    ! ***** Degree_Saturation_Liquid *****
-    !CALL GID_BEGINRESULTHEADER('Degree_Saturation','Scalar Results',TimeStep,GiD_Scalar,GiD_onNodes,'Material_Points_Mesh')
-    !CALL GID_BEGINSCALARRESULT('Degree_Saturation','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL)
-    !!CALL GiD_BeginScalarResult(Result,Analysis,Step,Where,GaussPointsName,RangeTable,Comp)
-    !CALL GiD_BeginGaussPoint('Degree_Saturation',GiD_Triangle,'Material Points',1,nodeincluded,internalcoord) 
-    !    DO I=1,NumberMaterialPoints                    
-	   !  CALL GID_WRITESCALAR(I,Particles(I)%DegreeSaturation)         
-    !    END DO
-    !CALL GID_ENDRESULT
-    !
-    !! ***** Density_Liquid *****
-    !CALL GID_BEGINSCALARRESULT('Density_Liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL)
-    !    DO I=1,NumberMaterialPoints                    ! loop over material points
-	   !  CALL GID_WRITESCALAR(I,Particles(I)%Density)         
-    !    END DO
-    !CALL GID_ENDRESULT
-    !  CALL GID_CLOSEPOSTRESULTFILE() ! Close the file
-      
-      
-    End Subroutine WriteGiDResultsBINGP    
+ !   Subroutine WriteGiDResultsBINGP    
+ !   !**********************************************************************
+ !   !    This subroutine write the results in Binary format using GiD 
+ !   !    posprocess module. Results are printed in Gauss Points
+ !   !    Scalars, vectors, and tensor
+ !   !**********************************************************************   
+ !
+	!implicit none 
+	!
+	!!Local variables
+ !   integer(INTEGER_TYPE) :: I,J, K, NumberMaterialPoints       
+ !   integer(INTEGER_TYPE) :: IDim, NVECTOR, NumberElements, NNodes
+	!real(REAL_TYPE) :: TimeStep, TimeStepEnd
+ !   real(REAL_TYPE) :: EpsD, SigD, EpsI, MLiquid, MSolid, PWP, Wvolstrain, Liqw, Solidw
+ !   real(REAL_TYPE) :: EpsD_Vol, Eps(3), mean_stress, Strain(6), Stress(6)
+ !   integer(INTEGER_TYPE), dimension(3) :: NMATElem
+ !   integer(INTEGER_TYPE), dimension(4) :: MatType = 0.0 
+ !   integer(INTEGER_TYPE), dimension(5) :: MatType3D = 0.0 
+ !   Real(REAL_TYPE), dimension(2) :: MPCo = 0.0
+ !   Logical :: Hasvalue
+ !   Character (len=200) :: ARCH_POST_RES
+ !   
+ !   NumberMaterialPoints = Counters%NParticles   
+ !   TimeStep = CalParams%IStep                   
+ !   NumberElements = Counters%NEl                   
+ !   NNodes = Counters%NodTot                        
+ !   NVECTOR = NDIM                                                   
+ !   
+ !   ARCH_POST_RES = trim(CalParams%FileNames%ProjectName)//'GP'//'.POST.lst'
+ !
+ !
+ !   CALL GID_OPENPOSTRESULTFILE(trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'GP'//'.POST.bin',GiD_PostBinary)    
+ !   
+ !   ! ***** Opening list for print results ***** 
+ !   If ((CalParams%IStep==1).and.(CalParams%TimeStep==1)) then
+ !       OPEN (10,FILE=ARCH_POST_RES, STATUS ='UNKNOWN')
+ !       WRITE(10,12)
+ !       WRITE(10,14)
+ !       WRITE(10,'(A)') trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'GP'//'.POST.bin'
+ !       CLOSE (10) 
+ !   else
+ !
+ !       OPEN (10,FILE=ARCH_POST_RES, STATUS ='OLD', POSITION = 'APPEND')   ! Open the exixting post-proccesing file
+ !       WRITE(10,'(A)') trim(CalParams%FileNames%ProjectName)//trim(CalParams%FileNames%LoadStepExt)//'GP'//'.POST.bin'
+ !       CLOSE (10) ! close post-proccesing file
+ !
+ !   endif
+ !
+ !   
+ !   ! ********** PRINTING THE 2D MESH **********
+ !   ! ***************************************
+ !    CALL GiD_BeginMesh('Material Points', GiD_2D,GiD_Triangle,3)
+ !       CALL GiD_BeginMeshColor('Material Points',GiD_2D,GiD_Triangle,3,0.7d0,0.7d0,0.4d0)
+ !       CALL GID_MESHUNIT('m')
+ !       
+ !       CALL GID_BEGINCOORDINATES  
+ !       do I=1, NNodes 
+	!        do IDim = 1, NVECTOR 
+ !               MPCo(IDim) = NodalCoordinates(I,IDim) ! GlobPosArray(I,IDim)    
+ !           end do
+ !           CALL GID_WRITECOORDINATES2D(I,  MPCo(1), MPCo(2)) !GiD_WriteCoordinates2D
+ !       end do
+ !     CALL GID_ENDCOORDINATES
+ !          
+ !     ! ***** printing elements *****
+ !     CALL GID_BEGINELEMENTS
+ !     
+ !     do J = 1, NumberElements 
+ !         MatType(1) = ElementConnectivities(1, J)  
+ !         MatType(2) = ElementConnectivities(2, J)   
+ !         MatType(3) = ElementConnectivities(3, J)  
+ !         MatType(4) = ElementMaterialID(J)
+ !         if (MatType(4)<=0.0) then 
+ !             MatType(4)=0
+ !         endif
+ !         
+ !         CALL GID_WRITEELEMENTMAT(J, MatType)
+ !     enddo 
+ !     CALL GID_ENDELEMENTS
+ !     
+ !     CALL GID_ENDMESH  
+ !     
+ !     
+ !     
+ !     
+ !    12    FORMAT('Multiple')
+ !    14    FORMAT('# postprocess files')
+ !          
+ !   ! **********************************************************************
+ !   ! ************************ SCALAR RESULTS ******************************
+ !   ! **********************************************************************
+ !   
+ !   ! ***** Degree_Saturation_Liquid *****
+ !   !CALL GID_BEGINRESULTHEADER('Degree_Saturation','Scalar Results',TimeStep,GiD_Scalar,GiD_onNodes,'Material_Points_Mesh')
+ !   !CALL GID_BEGINSCALARRESULT('Degree_Saturation','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL)
+ !   !!CALL GiD_BeginScalarResult(Result,Analysis,Step,Where,GaussPointsName,RangeTable,Comp)
+ !   !CALL GiD_BeginGaussPoint('Degree_Saturation',GiD_Triangle,'Material Points',1,nodeincluded,internalcoord) 
+ !   !    DO I=1,NumberMaterialPoints                    
+	!   !  CALL GID_WRITESCALAR(I,Particles(I)%DegreeSaturation)         
+ !   !    END DO
+ !   !CALL GID_ENDRESULT
+ !   !
+ !   !! ***** Density_Liquid *****
+ !   !CALL GID_BEGINSCALARRESULT('Density_Liquid','Scalar Results',TimeStep,GiD_onNodes,GiD_NULL,GiD_NULL,GiD_NULL)
+ !   !    DO I=1,NumberMaterialPoints                    ! loop over material points
+	!   !  CALL GID_WRITESCALAR(I,Particles(I)%Density)         
+ !   !    END DO
+ !   !CALL GID_ENDRESULT
+ !   !  CALL GID_CLOSEPOSTRESULTFILE() ! Close the file
+ !     
+ !     
+ !   End Subroutine WriteGiDResultsBINGP    
     
   End Module WriteOutPut_GiD

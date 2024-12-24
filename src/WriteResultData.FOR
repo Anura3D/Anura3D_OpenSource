@@ -41,8 +41,9 @@
       !     $Date: 2022-04-14 14:56:02 +0200 (Thu, 14 Apr 2022) $
       !
       !**********************************************************************
-
+      use ModFileIO  
       use ModGlobalConstants
+      !use ModFileIO
       use ModMPMData
       use ModCounters
       use ModReadCalculationData
@@ -55,7 +56,7 @@
       use WriteOutput_GiD
       use ModString
       use kernel32
-      use ModFileIO
+      !use ModFileIO
       
 #ifdef __INTEL_COMPILER
       use IFPORT
@@ -232,7 +233,7 @@
               if (CalParams%Visualization=='GiD-ASCII') then
                   call WriteGiDMeshASCII
                   call WriteGiDResultsASCII
-              else if (CalParams%Visualization=='GiD-Binary') then
+              elseif (CalParams%Visualization=='GiD-Binary') then
                   call WriteGiDResultsBIN()
               elseif (CalParams%Visualization=='Paraview-GiD') then
                   call WriteResultsOfOneStep(Filename)
@@ -274,6 +275,7 @@
 
           write(BRFunit)  CalParams%FileNames%ResultFileHeader
 
+          ! Abdelrahman Alsardi (8/11/2023) : I commented below for a second and I need to uncomment this... HARDCODED
           call AppendNodalData(BRFunit)
           call AppendMPMData(BRFunit)
 
@@ -310,7 +312,7 @@
           do I = 1, MAXOUTPUTNODES
             if (CalParams%OutputNodes(I)==-1) EXIT
 
-            IDoF = ReducedDof(CalParams%OutputNodes(I))
+            IDoF = ReducedDof(CalParams%OutputNodes(I)) ! needs generalization
             do J = 1, NVECTOR
               Values(NColumns + J) = TotalDisplacementSoil(IDoF + J)
 
@@ -371,6 +373,13 @@
         call WriteInLogFile('Capacity, available  Byte:'// trim(String(I8_Total)) // trim(String(I8_Avail)))
         call WriteInLogFile('Capacity, available KByte:'// trim(String(I8_Total/1024d0**1)) // trim(String(I8_Avail/1024d0**1)))
         call WriteInLogFile('Capacity, available GByte:'// trim(String(I8_Total/1024d0**3)) // trim(String(I8_Avail/1024d0**3)))
+        
+        ! TODO: if using a large hard drive (e.g., 4 TB) then it gives a floating point error 
+        ! in kBSpace. We are capping I8_Total because function nint (and kBSpace) overflows. 
+        if (I8_Total > 2147483647d0 * 1024d0) then 
+            I8_Total = 2147483647 * 1024
+        end if 
+        
         kBSpace = nint(I8_Total/1024d0**1)
         RETURN
       else

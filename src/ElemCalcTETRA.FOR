@@ -1543,6 +1543,84 @@
         
         end subroutine DetermineCheckEdgeNodesTETRA10
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine DetermineCheckEdgeNodesHEXA10(CheckEdgeNodes) 
+        !**********************************************************************
+        !
+        !    Function:  Determines which edge nodes of each side to check in order
+        !               to detect an adjacent element for each side.
+        !     Note : 3D function
+        !
+        ! O   CheckEdgeNodes : Array containing for each side of the element, 2 local number of edge nodes
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), dimension(:, :), intent(inout) :: CheckEdgeNodes ! size(2, 4), NumberOfEdgeNodes=2, NumberOfSides=4
+        
+          
+          
+          
+          !SideConnectivities = &
+          !    reshape( (/ 1, 2, 4, 3, &! 6, 7, & ! side 1
+          !               2, 6, 8, 4, &! 9, 5, & ! side 2 
+          !               1, 5, 7, 3, &!10, 8, & ! side 3
+          !               5, 6, 8, 7, & ! side 4
+          !               4, 3, 7, 8, & ! side 5
+          !               1, 2, 6, 5/), & ! side 6
+          !              (/ 4, 6 /) )
+          
+          
+          
+          CheckEdgeNodes = &
+              reshape( (/ 1, 2, & 
+                        2, 6, & 
+                        6, 5, & 
+                        5, 1, &
+                        1, 3, &
+                        2, 4, &
+                        6, 8, &
+                        5, 7, &
+                        3, 4, &
+                        4, 8, &
+                        8, 7, &
+                        7, 3 /), &
+                        (/ 2, 12 /) ) ! 
+          
+          
+          !CheckEdgeNodes = &
+          !  reshape( (/ 1, 2, & 
+          !              2, 3, & 
+          !              3, 4, & 
+          !              4, 5, &
+          !              5, 6, &
+          !              6, 7, &
+          !              7, 8, &
+          !              8, 1/), & 
+          !           (/ 2, 8 /) ) ! Only two edge nodes need to be checked on each of the four sides
+          
+          
+          
+        
+        end subroutine DetermineCheckEdgeNodesHEXA10
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         integer(INTEGER_TYPE) function DetermineSideNodesTetrahedronHOE(SideID, LocalNodeID) 
         !**********************************************************************

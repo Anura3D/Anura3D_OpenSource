@@ -74,19 +74,24 @@
       use ModWriteResultData
       use ModTwoLayerFormulation
       use ModDynamicExplicit
+      !use ModQuasiStaticImplicit
       use ModString
       use ModTiming
+      use ModNURBS
 
       implicit none
 
       logical(4) :: UserPressedKey
-      integer :: IDTimerInitialisation, IDTimerLoadStep, IDTimerWriteResults
+      integer :: IDTimerInitialisation, IDTimerLoadStep, IDTimerWriteResults, IPatch_Temporary
+      
+      IPatch_Temporary = 1
 
       UserPressedKey = .false.
 
       !********** 1 - kernel initialisation ******************************
       call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
-      call InitialiseElementType() ! initialises the element type in global variables
+      !call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
+      call InitialiseElementType() ! initialises the element type in global variables ! -> NURBS implementation
       call OpenTextOutputFiles() ! open TextOutputFiles
       call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
       call ShowDisclaimer() ! shows disclaimer on screen
@@ -109,9 +114,41 @@
 #endif      
 
       !********** 2 - mesh data initialisation ******************************
-      call InitialiseShapeFunctions() ! initialise shape functions
-      call InitialiseMeshData() ! allocate and assign mesh related arrays by reading GOM file
       call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
+      call InitialiseMeshData() ! allocate and assign mesh related arrays by reading GOM file
+      !call Build_INC_IEN_Array() ! IEN and INN arrays for NUBS implementation
+      
+      
+      !if (NDIM ==2) then 
+      !    
+      !    !1D --> needed
+      !    
+      !    !2D
+      !    call Build_INC_IEN_Array(IPatch_Temporary) ! IEN and INN arrays for NUBS implementation
+      !elseif (NDIM ==3) then 
+      !    
+      !    !2D
+      !    call Build_INC_IEN_Array_2D_TRACTION!(IPatch_Temporary)
+      !    
+      !    !3D
+      !    call Build_INC_IEN_Array_3D(IPatch_Temporary)
+      !end if 
+      
+      
+      ! we do not really need this InitialiseShapeFunctions()
+      !call InitialiseShapeFunctions() ! initialise shape functions  ! -> NURBS implementation ! -> checked to be working fine
+      
+      if (NDIM == 2) then 
+      
+          call InitialiseShapeFunctions_2D()
+          
+      else if (NDIM == 3) then 
+      
+          call InitialiseShapeFunctions_3D()   
+          
+      end if 
+      
+      !call ReadGeometryParameters() ! read geometry data from GOM-file and assign data into GeoParams%...
       call DetermineAdjacencies() ! determine mesh and element properties
       call ReadSHE() ! only if ApplyEmptyElements
       call Initialise3DCylindricalAnalysis() ! only for 3D Cylindrical Analysis
@@ -127,18 +164,26 @@
       call InitialiseAbsorbingBoundaryData() ! allocate and assign arrays for absorbing boundaries
       call InitialiseNodalArrays() ! allocate (zero) nodal arrays (load, displacment, velocity, acceleration, momentum, etc.)
       call ReadNodalDataFromFile() ! assign data from previous load step (only if IsFollowUpPhase)
-      call ReinitialiseUpdatedNodes() ! for updated mesh, only if IsFollowUpPhase
-      call DetermineElementLMin() ! calulate minimum element altitude
+      ! I commented below subroutine... this needs to be uncommented if we were to use the moving mesh 
+      !call ReinitialiseUpdatedNodes() ! for updated mesh, only if IsFollowUpPhase
+      call DetermineElementLMin() ! calulate minimum element altitude ! --> Abdelrahman Alsardi (8/11/2023): I commented this 
 
       ! ********** 3 - material point data initialisation ******************************
       call InitialiseMaterialPointHousekeeping() ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
+
+      !call InitialiseFDefGradient() ! initialise the particle
+
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
       call TwoLayerData%Initialise() !For Double Point formulation
       call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements
       call InitialiseMaterialPointOutputFiles() ! create PAR_XXX files for data output 
       call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
       call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
+      ! I commented this because it was causing problems when running simulation from a follow up phase.
+      ! This is because we loop through patches number of elements
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
+      
+        
       call InitialiseTractionLoad() ! if traction load is applied (only if NLoadedElementSides>0)
       call AssignTractionToEntity() ! distribute traction load to entities
       call CalculateNodeElement() ! only if ApplyContactAlgorithm
@@ -147,8 +192,15 @@
       call InitialiseAbsorbingBoundaryDashpotSpring() ! only if ApplyAbsorbingBoundary
       call MapDataFromNodesToParticles() ! only if ApplyFEMtoMPM: map velocity and displacement to particles
       !call InitialiseConstantWaterPressure() ! only if InitialWaterPressure and .not.IsFollowUpPhase
-      call InitialiseMaterialPointFromExtFile() ! only if results from external FEM/FDM software are given
+      !call InitialiseMaterialPointFromExtFile() ! only if results from external FEM/FDM software are given
+      if (NDIM == 2) then 
+      ! assuming y-direction as the vertical direction 
       call InitialiseMaterialPointsForK0Stresses() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      else if (NDIM == 3) then 
+      ! assuming z-direction as the vertical direction
+      call InitialiseMaterialPointsForK0Stresses_zdirection() ! only if ApplyK0Procedure and .not.IsFollowUpPhase
+      end if 
+      
       call InitialiseAbsorbingBoundariesForcesAndStiffness() ! only if ApplyAbsorbingBoundary
       call TwoLayerData%DetermineConcentrationRatios() !For Double Point formulation
       call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP
@@ -156,6 +208,8 @@
       call InitialiseRigidBody() ! only if IsRigidBody
       call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
       call InitialiseSurfaceReactionOutputFiles() ! create RSurf_XXX files for output of reaction surfaces
+      
+      call NumberOfMaterialPointsInSubElement() ! 4GP mixed integration initialization
 
       !********** 4a - LOAD PHASE LOOP ******************************
       do while(NotFinishedComputation().and.(.not.CalParams%ConvergenceCheck%DoesDiverge))
@@ -178,11 +232,14 @@
         end if
 
         call ApplyExcavation()
-		call ApplyConstruction()
+		!call ApplyConstruction()
 
         !********** 4b - TIME STEP / ITERATION LOOP ******************************
-
+        !if (CalParams%ApplyImplicitQuasiStatic) then ! Iteration loop quasi-static MPM
+          !call RunImplicitQuasiStaticLoadStep()
+        !else ! Time step loop dynamic MPM
           call RunExplicitDynamicLoadStep()
+        !end if
 
 #ifdef __INTEL_COMPILER        
         UserPressedKey = PeekCharQQ()
@@ -201,7 +258,7 @@
         CalParams%IStep = CalParams%IStep + 1
 
         call GetStepExt(CalParams%IStep, CalParams%FileNames%LoadStepExt)
-        call WriteCalculationParameters() !always output this
+        call WriteCalculationParameters() !always output this <-- CPS writing
         call finishTimer(IDTimerWriteResults)
         call finishTimer(IDTimerLoadStep)
 

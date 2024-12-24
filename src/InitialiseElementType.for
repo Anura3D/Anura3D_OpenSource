@@ -40,6 +40,7 @@
     !**********************************************************************
       
     use ModGlobalConstants
+    use ModElementEvaluationQUAD
     use ModElementEvaluationTETRA
     use ModElementEvaluationTRI
     use ModMeshAdjacencies
@@ -60,6 +61,9 @@
  
       select case (ELEMENTTYPE)
             
+          
+          !Assigning pointers to target for each element type 
+          
           case(TRI3) ! 'triangular_3-noded' 
               CheckForGlobPosPointer => CheckTRIForGlobPos
               Gauss_Q1Pointer => GaussTRI_Q1         
@@ -70,6 +74,7 @@
               InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesTRI
               ShapeLocPosPointer => ShapeLocPosTRI3
               RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
+              
           case(TETRAOLD) ! 'tetrahedral_old' 
               CheckForGlobPosPointer => CheckTetrahedronForGlobPos
               Gauss_Q1Pointer => GaussTETRA_Q1
@@ -79,6 +84,74 @@
               GetMinAltitudePointer => GetMinAltitudeTetra
               InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesTETRA
               RearrangeConnectivitiesPointer => RearrangeConnectivitiesTRI6
+              
+          case(QUAD4) ! 'quadrilateral_4-noded' 
+              CheckForGlobPosPointer => CheckQUADForGlobPos !subroutine exists 
+              ! -> above subroutine should determine whether GlobPos lies inside the element  
+              !Gauss_Q1Pointer => GaussQUAD_Q1 !subroutine exists
+              ! -> above subroutine should return "local" coordinates and weight for gauss point (1 per element)
+              InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2 !subroutine exists... 
+                                                                                       !it is placed in the triangle element... 
+                                                                                       !not sure why we would need this
+              ! -> above subroutine used to initialize shapefunction value at the gauss point at xi=0.0
+              InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD4 !subroutine does NOT exist for QUAD
+                                                                               !subroutine ShapeLocPosQUAD4 is similar... why can't we use? 
+              IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD !subroutine exists for QUAD
+              GetMinAltitudePointer => GetMinAltitudeQUAD !subroutine does NOT exist... is this necessary 
+              InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
+              ShapeLocPosPointer => ShapeLocPosQUAD4
+              RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
+              
+          ! the goal of this is to have a NURBS super element here which can be augmented with multiple patches
+          case(QUAD4_NURBS) ! 'quadrilateral_4-noded_NURBS'
+              CheckForGlobPosPointer => CheckQUADForGlobPos ! this one should be okay
+              !Gauss_Q1Pointer => GaussQUAD_Q4 ! this one should be okay --> hardcoded: we have to have a way where we can automatically go from 1 GP to 2 GP per dimension 
+              !InitialiseShapeFunctionsBoundaryPointer_NURBS => InitialiseShapeFunctionsLINE2_NURBS !1D ! this one should be okay
+              !InitialiseShapeFunctionsPointer_NURBS => InitialiseShapeFunctionsQUAD4_NURBS !2D 
+              IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD
+              GetMinAltitudePointer => GetMinAltitudeQUAD ! -> check if this works for NURBS
+              InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
+              !ShapeLocPosPointer => ShapeLocPosQUAD4_NURBS
+              !RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
+              
+              
+              
+ 
+          case(HEXA_NURBS) ! 'hexahedral_20-noded'
+              CheckForGlobPosPointer => CheckHexahedronForGlobPos
+              Gauss_Q1Pointer => GaussHEXA_Q1 ! --> 8 GPs per element (might need generalization)
+              !boundary pointer is always one order less than the actual pointer
+              !InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsQUAD4_NURBS !InitialiseShapeFunctionsQUAD8 !--> to be added
+              !InitialiseShapeFunctionsPointer_NURBS_3D => InitialiseShapeFunctionsHEXA_NURBS  !--> to be added
+              IsInsideElementLocPosPointer => IsInsideElementLocPosHEXA
+              GetMinAltitudePointer => GetMinAltitudeHEXA
+              ! need to edit the below to make sure it is compatible 
+              InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesHEXA
+              !RearrangeConnectivitiesPointer => RearrangeConnectivitiesQUAD4_NURBS !QUAD8 !--> why is this even needed?
+              
+              
+              ! CheckForGlobPosPointer => CheckTRIForGlobPos
+              !Gauss_Q1Pointer => GaussTRI_Q1         
+              !InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE2
+              !InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsTRI3
+              !IsInsideElementLocPosPointer => IsInsideElementLocPosTRI 
+              !GetMinAltitudePointer => GetMinAltitudeTri
+              !InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesTRI
+              !ShapeLocPosPointer => ShapeLocPosTRI3
+              !RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
+              
+          
+        ! the goal of this is to have a NURBS super element here which can be augmented with multiple patches
+        !case(QUAD8_NURBS) ! 'quadrilateral_8-noded'    
+          !    CheckForGlobPosPointer => CheckQUADForGlobPos
+          !    Gauss_Q1Pointer => GaussQUAD_Q1 
+          !    InitialiseShapeFunctionsBoundaryPointer => InitialiseShapeFunctionsLINE3  --> to be added
+          !    InitialiseShapeFunctionsPointer => InitialiseShapeFunctionsQUAD8  --> to be added
+          !    IsInsideElementLocPosPointer => IsInsideElementLocPosQUAD 
+          !    GetMinAltitudePointer => GetMinAltitudeQUAD
+          !    InitialLocalMaterialPointCoordinatesPointer => InitialLocalMaterialPointCoordinatesQUAD
+          !    ShapeLocPosPointer => ShapeLocPosQUAD4
+          !    RearrangeConnectivitiesPointer => RearrangeConnectivitiesLINE2
          
           !**************************NOT AVAILABLE***************************
           !case(TRI6) ! 'triangular_6-noded'
@@ -150,7 +223,8 @@
           case default  ! not defined
             call GiveError('Element type not defined. [subroutine SetElementType()].')
             
-      end select
+          end select
+          
           
       end subroutine InitialiseElementType
  end module ModInitialiseElementType

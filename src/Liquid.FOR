@@ -61,20 +61,23 @@
           ! local variables
           integer :: IError, NMaterialSets, IMatSet
           
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch
+          
           NMaterialSets = Counters%NLayers
           do IMatSet = 1, NMaterialSets 
               if (NFORMULATION == 1) then ! 1 Constituent
                 if (MatParams(IMatSet)%MaterialType == '1-phase-liquid'.or.MatParams(IMatSet)%MaterialPhases == '1-phase-liquid') then
           
-                  allocate(NodalDensity(Counters%NodTot), stat = IError)
+                  allocate(NodalDensity(Counters%Sum_NodTot), stat = IError)
                   NodalDensity = 0.0
 
-                  allocate(ActiveNodeElementVolume(Counters%NodTot), stat = IError)
+                  allocate(ActiveNodeElementVolume(Counters%Sum_NodTot), stat = IError)
                   ActiveNodeElementVolume = 0.0
           
                   ActiveNode = .false.
                   
-                  allocate(IsElemWithLiquidFreeSurfMP(Counters%NEl), stat = IError)
+                  allocate(IsElemWithLiquidFreeSurfMP(Counters%Sum_NEl), stat = IError)
                   IsElemWithLiquidFreeSurfMP = .false. ! Initially liquid free surface material points are not detected since all elements are fully filled, and IsElemWithLiquidFreeSurfMP is false                  
               
                 end if
@@ -83,15 +86,15 @@
               
               if (.not.(NFORMULATION == 1)) then ! 2 constituents
           
-                  allocate(NodalDensity(Counters%NodTot), stat = IError)
+                  allocate(NodalDensity(Counters%Sum_NodTot), stat = IError)
                   NodalDensity = 0.0
 
-                  allocate(ActiveNodeElementVolume(Counters%NodTot), stat = IError)
+                  allocate(ActiveNodeElementVolume(Counters%Sum_NodTot), stat = IError)
                   ActiveNodeElementVolume = 0.0
           
                   ActiveNode = .false.
                   
-                  allocate(IsElemWithLiquidFreeSurfMP(Counters%NEl), stat = IError)
+                  allocate(IsElemWithLiquidFreeSurfMP(Counters%Sum_NEl), stat = IError)
                   IsElemWithLiquidFreeSurfMP = .false. ! Initially liquid free surface material points are not detected since all elements are fully filled, and IsElemWithLiquidFreeSurfMP is false
               
               end if
@@ -173,6 +176,12 @@
           integer, dimension(ELEMENTNODES) :: NodeIDs
           real(REAL_TYPE) :: LiquidMass
           
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
+          
+          
           NMaterialSets = Counters%NLayers
           do IMatSet = 1, NMaterialSets 
               if (MatParams(IMatSet)%MaterialType == '1-phase-liquid'.or.MatParams(IMatSet)%MaterialPhases == '1-phase-liquid') then ! only for liquid material
@@ -180,12 +189,16 @@
                   ! Determine nodal mass from material points of activated elements connected to respective nodes
                   NodalDensity = 0.0
                   ActiveNode = .false.
-                  do IAEl = 1, Counters%NAEl 
-                    IEl = ActiveElement(IAEl)
-                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl)
-                    ActiveNode(NodeIDs) = .true.
-                    do I = 1, NPartEle(IEl)
-                      ParticleIndex = GetParticleIndex(I, IEl)
+                  !do IAEl = 1, Counters%NAEl 
+                  
+                  do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over all patches
+                      do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
+                      
+                    IEl = ActiveElement(IAEl,IPatch)
+                    NodeIDs = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
+                    ActiveNode(NodeIDs, IPatch) = .true.
+                    do I = 1, NPartEle(IEl,IPatch)
+                      ParticleIndex = GetParticleIndex(I, IEl, IPatch)
                       if (MaterialIDArray(ParticleIndex) == IMatSet) then 
                         LiquidMass = MassArray(ParticleIndex)
                       else ! not the whole element is filled by liquid, but also solid body is partly in the element
@@ -194,31 +207,50 @@
                       end if
                       NodalDensity(NodeIDs) = NodalDensity(NodeIDs) + LiquidMass * ShapeValuesArray(ParticleIndex,:)
                     end do
-                  end do
+                      end do
+                      end do ! loop over all patches
            
                   ActiveNodeElementVolume = 0.0
-                  do I = 1, Counters%NodTot
-                    if (ActiveNode(I)) then
-                      NAdjacentElements = GetNElmOfNode(I)
+                  do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
+                  do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points 
+                      
+                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                      
+                    if (ActiveNode(I, IPatch)) then
+                      NAdjacentElements = GetNElmOfNode(I, IPatch)
                       do J = 1, NAdjacentElements
-                        IEl = GetElmIOfNode(I, J)
-                        if (IsActiveElement(IEl)) then
-                          ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl)
+                        IEl = GetElmIOfNode(I, J, IPatch)
+                        if (IsActiveElement(IEl, IPatch)) then
+                          ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) + ElementSpace(IEl,IPatch)
                         end if
                       end do
                     end if
-                  end do
-                  do I = 1, Counters%NodTot
-                    if (ActiveNode(I)) then
+                  end do ! loop over control points 
+                  end do ! loop over patches
+                  
+                  do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
+                  do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
+                      
+                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                      
+                    if (ActiveNode(I, IPatch)) then
                       ActiveNodeElementVolume(I) = ActiveNodeElementVolume(I) / 4.0 ! 4-noded tetrahedral element
                     end if
-                  end do
+                  end do ! loop over control points 
+                  end do ! loop over patches
           
-                  do I = 1, Counters%NodTot
-                    if (ActiveNode(I)) then
+                  do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over patches
+                  do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
+                      
+                      
+                      GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+                      
+                      
+                    if (ActiveNode(I, IPatch)) then
                       NodalDensity(I) = NodalDensity(I) / ActiveNodeElementVolume(I)
                     end if
-                  end do
+                  end do ! loop over control points
+                  end do ! loop over patches
                   
               end if
           end do
@@ -456,6 +488,9 @@
           real(REAL_TYPE) :: DilationalWaveSpeed, Density, BulkModulusLiquid
           real(REAL_TYPE) :: ElementLMinLocal
           logical ::  DoComputeUpdatedPressure
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
             
           if (NFORMULATION == 1) then ! 1 constituent
 
@@ -473,11 +508,11 @@
                   + SigmaEffArray(ParticleID,2) + SigmaEffArray(ParticleID,3))/3
 
               !Determine interpolated density
-              call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
+              !call CalculateRatioDensity(IElement,ParticleID,RatioDensity)
 
-              call CheckComputeUpdatedPressure(ParticleID,IElement,LiquidPressure,DoComputeUpdatedPressure)
+              !call CheckComputeUpdatedPressure(ParticleID,IElement,LiquidPressure,DoComputeUpdatedPressure)
 
-              if(DoComputeUpdatedPressure) then
+              !if(DoComputeUpdatedPressure) then
 
                   LiquidPressureIncrement = MatParams(MaterialIndex)%BulkModulusLiquid  * VolStrainIncrement
 
@@ -485,9 +520,10 @@
 
                   Particles(ParticleID)%WaterPressure = LiquidPressure
 
-                  if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
-                      Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
-                  end if
+                  ! I commented this for now because I do not need cavitation
+                  !if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
+                  !    Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
+                  !end if
 
                   !calculate bulk viscosity
                   if (CalParams%ApplyBulkViscosityDamping) then
@@ -496,7 +532,7 @@
                       Density = MatParams(MaterialIndex)%DensityLiquid/1000
                       BulkModulusLiquid = MatParams(MaterialIndex)%BulkModulusLiquid
                       DilationalWaveSpeed = sqrt(BulkModulusLiquid/Density)
-                      ElementLMinLocal = ElementLMin(IElement)
+                      ElementLMinLocal = ElementLMin(IElement,IPatch_Temporary)
 
                       ViscousDampingPressure = CalParams%BulkViscosityDamping1 *  &
                           Density * DilationalWaveSpeed * ElementLMinLocal * VolStrainRate
@@ -508,7 +544,7 @@
 
                       Particles(ParticleID)%DBulkViscousPressure = ViscousDampingPressure
                   end if
-              end if
+              !end if
 
           end if ! 1 constituent
           
@@ -537,9 +573,9 @@
 
                   Particles(ParticleID)%WaterPressure = LiquidPressure
 
-                  if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
-                      Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
-                  end if
+                  !if(Particles(ParticleID)%WaterPressure > CalParams%LiquidPressureCavitationThreshold) then
+                  !    Particles(ParticleID)%WaterPressure = CalParams%LiquidPressureCavitationThreshold
+                  !end if
 
                   !--------------------------------------
                   ! Correction for MPL in LIQUID Status in which the (traction) mean pressure is set to zero
@@ -636,16 +672,22 @@
           integer :: MaterialIndex, ParticleID, IParticle, IElement
           integer :: IAEl
           real(REAL_TYPE) :: RatioDensity
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
          
           if(.not.CalParams%ApplyDetectLiquidFreeSurface) RETURN
           
-          do IAEl = 1, Counters%NAEl
-              IElement = ActiveElement(IAEl)
+          
+          do IPatch = 1, Counters%NPatches!Counters%NPatches ! loop over all patches
+          do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
+          !do IAEl = 1, Counters%NAEl
+              IElement = ActiveElement(IAEl, IPatch)
 
               IsElemWithLiquidFreeSurfMP(IElement) = .false. !initialize
 
-              do IParticle = 1, NPartEle(IElement) ! loop over all material points in element
-                  ParticleID = GetParticleIndex(IParticle, IElement)
+              do IParticle = 1, NPartEle(IElement,IPatch) ! loop over all material points in element
+                  ParticleID = GetParticleIndex(IParticle, IElement, IPatch)
 
                   if (MaterialPointTypeArray(ParticleID) /= MaterialPointTypeLiquid) CYCLE
 
@@ -679,7 +721,9 @@
                   end if ! 2 constituent
 
               end do
-          end do
+          end do ! loop over all elements
+          
+          end do ! loop over all patches
 
 
                                           
@@ -698,12 +742,17 @@
               integer(INTEGER_TYPE) :: MaterialIndex, INode, ParticleID, IElement
               real(REAL_TYPE) :: PDensity, PartShape, RatioDensity
               integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: NodeIDs
+              
+              ! Multipatch variables 
+              integer(INTEGER_TYPE) :: IPatch_Temporary
+              
+              IPatch_Temporary = 1
 
               MaterialIndex = MaterialIDArray(ParticleID)
               
               !Determine interpolated density
               PDensity = 0.0  !initialize the interpolated density field for the element
-              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement)
+              NodeIDs = ElementConnectivities(1:ELEMENTNODES, IElement, IPatch_Temporary)
               do INode = 1,ELEMENTNODES
                   PartShape = ShapeValuesArray(ParticleID,INode)
                   PDensity = PDensity + PartShape * NodalDensity(NodeIDs(INode))

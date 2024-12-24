@@ -48,6 +48,7 @@
       use ModReadCalculationData
       use ModElementEvaluationTETRA
       use ModElementEvaluationTRI
+      use ModElementEvaluationQUAD
       use ModMPMData
       use ModMPMInit
       use ModMeshInfo
@@ -58,7 +59,7 @@
       
       contains
 
-        subroutine MPMDYNBTSig(ExternalLD, InternalLD, GravityLD, Reactions, ReactionsWater, BulkViscousLD)
+        subroutine MPMDYNBTSig(ExternalLD, InternalLD, GravityLD, Reactions, ReactionsWater, BulkViscousLD, DShapeValuesArray)
         !**********************************************************************
         !
         ! Function:  Calculation of the equivalent nodal forces due to
@@ -78,18 +79,44 @@
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: Reactions
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: ReactionsWater
           real(REAL_TYPE), dimension(Counters%N, Counters%NEntity), intent(inout) :: BulkViscousLD
+          real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES, NVECTOR), intent(in) :: DShapeValuesArray
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
           real(REAL_TYPE), dimension(NTENSOR) :: S
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
-          real(REAL_TYPE) :: WtN, Det, WPP, TotIntWeightLiqMP
+          real(REAL_TYPE) :: WtN, WPP, TotIntWeightLiqMP !Det, 
           real(REAL_TYPE) :: VPressure = 0.0
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
           integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, IPart, IAEl, NElemPart, iEntityID, iNode, iDof, ParticleIndex, NodeID, GlobDof, iEntity, MaterialIndex,ILoadSystem
-          logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity, IsLoadOnMP
-                   
+          logical :: DoConsiderReactionForces, IsUndrEffectiveStress, IsPrescribedVelocity 
+           
+          logical, dimension(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) :: IsLoadOnMP
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          ! Multipatch variables 
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+          
+          ! these are needed to have GetParticleIndex into the the subroutine FormB3()
+          maxParticle = 1
+          maxEl       = 1
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+             NEl = ActiveElement(IAEl, IPatch)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
+                enddo
+              end do
+              
+          
           !reset the needed variables
           IntGlo = 0
           S = 0.0
@@ -99,18 +126,26 @@
           Reactions = 0.0
           ReactionsWater = 0.0
           BulkViscousLD = 0.0
-          IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
-
+          !IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem_Temporary, IPatch_Temporary)+Counters%NLoadedElementSidesSolidMatPointsB)>0
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+              do ILoadSystem = 1, NURBS%NLoadSystems_Traction(IPatch)
+          IsLoadOnMP(ILoadSystem, IPatch) =(Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem, IPatch))>0
+                            !+Counters%NLoadedElementSidesSolidMatPointsB
+              end do 
+          end do 
           
-          do IAEl = 1, Counters%NAEl ! loop over all active elements
-           IEl = ActiveElement(IAEl)
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+                    
+          !do IAEl = 1, Counters%NAEl ! loop over all active elements
+           IEl = ActiveElement(IAEl, IPatch)
            !========================================================================
            !========================================================================
            if(NFORMULATION==1) then !1 Constituents
                
                !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
+            do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the material point ID
               PartLoad = 0.0
               PartGravity = 0.0
               if (CalParams%ApplyContactAlgorithm) then
@@ -119,19 +154,24 @@
                 iEntity = 1
               endif
 
-              do INode = 1, ELEMENTNODES
-                NodeID = ElementConnectivities(INode, IEl)  ! nodal global ID
+              do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
+                  ! we always need to be careful when reading from ElementConnectivities as it 
+                  ! refers to the local node ID
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(INode, IEl, IPatch), IPatch )  ! nodal global ID
                 GlobDof = ReducedDof(NodeID)
 
-                if (IsLoadOnMP) then
-                  do ILoadSystem =1, Counters%NSoilLoadSystems
+                ! This needs to be generalized in a better way 
+                
+                do ILoadSystem =1, NURBS%NLoadSystems_Traction(IPatch)!Counters%NSoilLoadSystems
+                if (IsLoadOnMP(ILoadSystem, IPatch)) then
+                  !do ILoadSystem =1, Counters%NSoilLoadSystems
                   !  ILoadSystem=1
                     PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                       ExternalLD(GlobDof + I, iEntity) = ExternalLD(GlobDof + I, iEntity) + PartLoad(I) 
                     end do
-                  end do
                 end if
+                end do
 
                 if (CalParams%ApplySubmergedCalculation) then
                   PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBodyMixed
@@ -140,12 +180,7 @@
                 end if
      
                 do I = 1, NVECTOR
-                    if ((IsParticleConstructed(ParticleIndex)).and. &
-                       (CalParams%Multipliers%GravityLoadType == LOAD_TYPE_LINEAR)) then
-                    	GravityLD(GlobDof + I, iEntity) = GravityLD(GlobDof + I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrentConstruction
-                    else
-                        GravityLD(GlobDof + I, iEntity) = GravityLD(GlobDof + I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
-                    endif
+                  GravityLD(GlobDof + I, iEntity) = GravityLD(GlobDof + I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
                 end do
                 
                 end do
@@ -153,20 +188,32 @@
 
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
-            if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl)  ! Number of material points in element
+            if (IsParticleIntegration(IEl, IPatch) ) then ! True - material point based integration, false - Gauss point based integration
+              NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
-        
+            
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points if MIXED Intgration or material points if MP Integration per element IEl
               
-              ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
+                ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
               MaterialIndex = MaterialIDArray(IntGlo)
+                
+              ! We moved the calculation in the integration loop when using B-Splines because 
+              ! for each material point, the global/local location in a different place and 
+              ! thus we need to find its own particular shape function derivatives (DShapeValuesArray)
+              ! Get the B-matrix once per element is no longer valid. 
+              !call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) 
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)  !(:,:,IPatch)
+ 
+              !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
+                
+              !! Determine global ID of integration point 
+              !IntGlo = GetParticleIndex(Int, IEl, IPatch)
+              !MaterialIndex = MaterialIDArray(IntGlo)
               
               IsUndrEffectiveStress = &
               !code version 2016 and previous
@@ -174,16 +221,19 @@
               !code version 2017.1 and following
               (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
               
+              ! I removed this from the if statement
+              WTN = Particles(IntGlo)%IntegrationWeight
+              
               ! Set the integration weight
-              if (IsParticleIntegration(IEl) ) then
+              if (IsParticleIntegration(IEl, IPatch) ) then
                 if ( ISAXISYMMETRIC ) then
                   ! the integration weight of the MP is not corrected due to the axisymmetry
                   Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                   ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 end if
                 ! use the integration weight of material point if it is partially filled,
-                ! otherwise the weight of gauss point is used
-                WTN = Particles(IntGlo)%IntegrationWeight
+                ! otherwise the weight of gauss point is used --> from FormB3() subroutine
+                !WTN = Particles(IntGlo)%IntegrationWeight
               else
                 if ( ISAXISYMMETRIC ) then
                   Position = GPGlobalPositionElement(1, Int, IEl) ! index 1 is radial direction
@@ -194,7 +244,6 @@
 
               ! Determine stress vector for integration point (material point or Gauss point)
               ! = effective stresses + pore pressure
-              
               if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) &
                   .or.IsUndrEffectiveStress) then
                 WPP = Particles(IntGlo)%WaterPressure * WTN 
@@ -221,12 +270,19 @@
                 iEntityID = 1
               end if
 
-              do iNode = 1, ELEMENTNODES ! loop over element nodes
+              do iNode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES ! loop over element nodes
 
-                nn=ElementConnectivities(iNode,iel) ! get global node number
+                nn = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(iNode,iel,IPatch) , IPatch)! get global node number
                 IDof = ReducedDof(nn) ! get dof number
 
                 if ( NVECTOR == 2 ) then ! 2D
+                    
+                  ! In 2D, we use S(1) - S(4)   
+                  ! Assuming stress tensor setup, the following are the numberings. 
+                  ! S(1) = Sigma_xx     S(4) = Sigma_xy     
+                  !                     S(2) = Sigma_yy     
+                  !                                         S(3) = Sigma_zz
+                    
                   ! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
                   InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) 
                   ! nodal y-load 
@@ -237,12 +293,19 @@
                     InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + S(3) * ShapeValues(iNode) / Position
                   end if
                 else if ( NVECTOR == 3 ) then ! 3D
+                  
+                  ! In 3D, we use S(1) - S(6)   
+                  ! Assuming stress tensor setup, the following are the numberings.   
+                  ! S(1) = Sigma_xx     S(4) = Sigma_xy     S(6) = Sigma_xz
+                  !                     S(2) = Sigma_yy     S(5) = Sigma_yz
+                  !                                         S(3) = Sigma_zz
+                    
                   ! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
-                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6)
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + ( B(1,iNode)*S(1) ) + ( B(2,iNode)*S(4) ) + ( B(3,iNode)*S(6) ) 
                   ! nodal y-load 
-                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5)
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + ( B(1,iNode)*S(4) ) + ( B(2,iNode)*S(2) ) + ( B(3,iNode)*S(5) )
                   ! nodal z-load 
-                  InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3)
+                  InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + ( B(1,iNode)*S(6) ) + ( B(2,iNode)*S(5) ) + ( B(3,iNode)*S(3) )
                 else
                     call GiveError('Dimension is not correct. It must be 2 or 3.')
                 end if
@@ -291,11 +354,12 @@
            end if ! 1 Constituent
            !========================================================================
            !========================================================================
+           ! START OF DOUBLE POINT FORMULATION INTERNAL FORCE CALCULATION
            if(NFORMULATION==2) then !2 Constituents
                
                 !//////////////////// External force calculation //////////////////////// 
-            do IPart = 1, NPartEle(IEl) ! loop over all material points in element
-              ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the material point ID
+            do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the material point ID
               
              if (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) then
                ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
@@ -304,18 +368,20 @@
                iEntity = 1
 
                do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl)  ! nodal global ID
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(INode, IEl, IPatch), IPatch ) ! nodal global ID
                 IDof = ReducedDof(NodeID)
                 
-                if (IsLoadOnMP) then
+                
                   do ILoadSystem=1, Counters%NSoilLoadSystems
+                      if (IsLoadOnMP(ILoadSystem, IPatch)) then
                   ! ILoadSystem=1
                     PartLoad = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FExt(:,ILoadSystem) * CalParams%Multipliers%SolidACurrent(ILoadSystem)
                     do I = 1, NVECTOR
                       ExternalLD(IDof+I, iEntity) = ExternalLD(IDof+I, iEntity) + PartLoad(I) 
-                    end do  
+                    end do 
+                    end if
                   end do
-                end if
+                
 
                 PartGravity = ShapeValuesArray(ParticleIndex,INode) * Particles(ParticleIndex)%FBody
                 do I = 1, NVECTOR                     
@@ -329,33 +395,39 @@
 
             !//////////////////// Internal force calculation ////////////////////////
             ! Determine number of integration points inside element
-            if (IsParticleIntegration(IEl) ) then ! True - material point based integration, false - Gauss point based integration
-              NElemPart = NPartEle(IEl)  ! Number of material points in element
+            if (IsParticleIntegration(IEl, IPatch) ) then ! True - material point based integration, false - Gauss point based integration
+              NElemPart = NPartEle(IEl,IPatch)  ! Number of material points in element
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
             
             TotIntWeightLiqMP = 0.0
-            do J = 1, NPartEle(IEl)
-              ParticleIndex = GetParticleIndex(J, IEl)
+            do J = 1, NPartEle(IEl,IPatch)
+              ParticleIndex = GetParticleIndex(J, IEl, IPatch)
               if(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) then
                 TotIntWeightLiqMP = TotIntWeightLiqMP + Particles(ParticleIndex)%IntegrationWeight
               end if
             end do
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN) ! get the B-matrix once per element
         
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
               
-              ! Determine global ID of integration point 
-              IntGlo = GetParticleIndex(Int, IEl)
+                
+                ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)
+                
+
+              call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
+
+                
+              
               
               if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) then
                 ! Only SOLID material Point or TwoLayerApplyMixtureLiquidApproach
 
                 ! Set the integration weight
-                if (IsParticleIntegration(IEl) ) then
+                if (IsParticleIntegration(IEl, IPatch) ) then
                   ! use the integration weight of material point if it is partially filled,
                   ! otherwise the weight of gauss point is used
                   WTN = Particles(IntGlo)%IntegrationWeight
@@ -373,7 +445,7 @@
                 iEntityID = 1
 
                 do iNode=1,ELEMENTNODES ! loop over element nodes
-                  nn=ElementConnectivities(iNode,iel) ! get global node number
+                  nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch )! get global node number
                   IDof = ReducedDof(nn)
 
                   if ( NVECTOR == 2 ) then ! 2D
@@ -409,9 +481,9 @@
                   ! Set the integration weight
                   WTN = Particles(IntGlo)%IntegrationWeight
                   if (TwoLayerData%Elements(IEl)%ConcentrationRatioSolidL>0.0) then
-                    WTN = ElementSpace(IEl) / TotIntWeightLiqMP * Particles(IntGlo)%IntegrationWeight
+                    WTN = ElementSpace(IEl,IPatch_Temporary) / TotIntWeightLiqMP * Particles(IntGlo)%IntegrationWeight
                     if (TwoLayerData%Elements(IEl)%IsBoundaryOfLiquidElements) then ! Boundary of Liquid domain
-                      if ((TotIntWeightLiqMP/ElementSpace(IEl))<CalParams%RequiredDegreeOfFilling) then
+                      if ((TotIntWeightLiqMP/ElementSpace(IEl,IPatch_Temporary))<CalParams%RequiredDegreeOfFilling) then
                         WTN = Particles(IntGlo)%IntegrationWeight 
                       end if
                     end if
@@ -424,7 +496,7 @@
                   iEntityID = 1
 
                   do iNode = 1, ELEMENTNODES ! loop over element nodes
-                    nn=ElementConnectivities(iNode,iel) ! get global node number
+                    nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch )! get global node number
                     IDof = ReducedDof(nn) 
 
                     if ( NVECTOR == 2 ) then ! 2D
@@ -448,8 +520,15 @@
             end do ! Loop over 1 .. NElemPart
             !------------------------------------ END INTEGRATION POINT LOOP ----------------------------- 
             
-            end if !2 Constituents
-          end do ! Loop over elements
+           end if !2 Constituents
+           
+           ! START OF DOUBLE POINT FORMULATION INTERNAL FORCE CALCULATION 
+           !========================================================================
+           !========================================================================
+          
+                end do ! Loop over elements
+                
+                end do ! Loop over patches
 
         end subroutine MPMDYNBTSig
 
@@ -471,15 +550,28 @@
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
           logical :: IsLoadOnMP
                    
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          
+          ! Multipatch variables 
+          !integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+          
+          ILoadSystem_Temporary = 1
+          IPatch_Temporary = 1
+          
           ExternalLD = 0.0
           GravityLD = 0.0
-          IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
+          IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints(ILoadSystem_Temporary, IPatch_Temporary)+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
-          do IAEl = 1, Counters%NAEl
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
                
-            do IPart = 1, NPartEle(IEl)
-              ParticleIndex = GetParticleIndex(IPart, IEl) 
+            do IPart = 1, NPartEle(IEl,IPatch)
+              ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) 
               PartLoad = 0.0
               PartGravity = 0.0
               if (CalParams%ApplyContactAlgorithm) then
@@ -488,8 +580,8 @@
                 iEntity = 1
               endif  
 
-              do INode = 1, ELEMENTNODES 
-                NodeID = ElementConnectivities(INode, IEl) 
+              do INode = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES 
+                NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode, IEl, IPatch) ,IPatch)
                 IDof = ReducedDof(NodeID)
 
                 if (IsLoadOnMP) then 
@@ -508,19 +600,15 @@
                 end if
      
                 do I = 1, NVECTOR
-                    if ((IsParticleConstructed(ParticleIndex)).and. &
-                       (CalParams%Multipliers%GravityLoadType == LOAD_TYPE_LINEAR)) then
-                        GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrentConstruction
-                    else
-                        GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + PartGravity(I) * CalParams%Multipliers%GravityCurrent
-                    endif
-                    
+                  GravityLD(IDof+I, iEntity) = GravityLD(IDof+I, iEntity) + ( PartGravity(I) * CalParams%Multipliers%GravityCurrent )
                 end do  
 
                 end do
             end do
         
-          end do 
+                end do ! loop over active elements
+                
+                end do ! loop over patches
 
         end subroutine MPMDYNLoad       
 
@@ -544,8 +632,25 @@
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, J, NN, IAEl, NElemPart, iEntityID, iNode, IDof, MaterialIndex
-          real(REAL_TYPE) :: WtN, Det, WPP, VPressure = 0.0
+          real(REAL_TYPE) :: WtN, WPP, VPressure = 0.0 !Det, 
           logical :: DoConsiderReactionForces, IsUndrEffectiveStress
+          
+          integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          maxParticle = 1
+          maxEl       = 1
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+             NEl = ActiveElement(IAEl, IPatch)
+             maxEl = max(maxEl, NEl)
+             maxParticle = max(maxParticle, NPartEle(NEl,IPatch))
+                enddo ! loop over active elements
+                end do ! loop over patches
  
           IntGlo = 0
           S = 0.0
@@ -553,23 +658,35 @@
           Reactions = 0.0
           BulkViscousLD = 0.0
 
-          do IAEl = 1, Counters%NAEl
-           IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+           IEl = ActiveElement(IAEl, IPatch)
 
            if(NFORMULATION==1) then
                
-            if (IsParticleIntegration(IEl) ) then
-              NElemPart = NPartEle(IEl)
+            if (IsParticleIntegration(IEl, IPatch) ) then
+              NElemPart = NPartEle(IEl,IPatch)
             else
               NElemPart = ELEMENTGAUSSPOINTS
             end if
              
-            call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN)
+            
+              
+            !! calculate B matrix for every material point depending on where it is located in the element  
+            !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
         
             do Int = 1, NElemPart
+                
+                IntGlo = GetParticleIndex(Int, IEl, IPatch)
+                MaterialIndex = MaterialIDArray(IntGlo)
+                
+                ! calculate B matrix for every material point depending on where it is located in the element  
+                call FormB3(IntGlo, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)! , NElemPart) !(:,:,IPatch)
               
-              IntGlo = GetParticleIndex(Int, IEl)
-              MaterialIndex = MaterialIDArray(IntGlo)
+              !  IntGlo = GetParticleIndex(Int, IEl, IPatch)
+              !MaterialIndex = MaterialIDArray(IntGlo)
+              
               
               IsUndrEffectiveStress = &
               !code version 2016 and previous
@@ -577,13 +694,16 @@
               !code version 2017.1 and following
               (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
               
-              if (IsParticleIntegration(IEl) ) then
+              ! I moved this out of the if statement
+              WTN = Particles(IntGlo)%IntegrationWeight
+              
+              if (IsParticleIntegration(IEl, IPatch) ) then
                 if ( ISAXISYMMETRIC ) then
                   ! the integration weight of the MP is not corrected due to the axisymmetry
                   Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
                   ShapeValues(:) = ShapeValuesArray(IntGlo, :)
                 end if
-                WTN = Particles(IntGlo)%IntegrationWeight
+                !WTN = Particles(IntGlo)%IntegrationWeight
               else
                 if ( ISAXISYMMETRIC ) then
                   Position = GPGlobalPositionElement(1, Int, IEl) !(GaussPointGlobalCoord(INDEX_X)
@@ -617,8 +737,8 @@
                 iEntityID = 1
               end if        
                 
-              DO iNode=1,ELEMENTNODES
-                nn=ElementConnectivities(iNode,iel)
+              DO iNode=1,ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES
+                nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch)
                 IDof = ReducedDof(nn)
                
                 if ( NVECTOR == 3 ) then ! 3D
@@ -626,8 +746,10 @@
                   InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5)
                   InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + B(1,iNode)*S(6) + B(2,iNode)*S(5) + B(3,iNode)*S(3)
                 else if ( NVECTOR == 2 ) then ! 2D  
-                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) 
-                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2)
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) ! X direction 
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) ! Y direction
+                  ! B does not seem to changing much... maybe the problem is not in the InternalLD calculation --> B has to change
+                  ! but in the gravity stresses which are generating S values
                   if ( ISAXISYMMETRIC ) then
                     ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912 
                     InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + S(3) * ShapeValues(iNode) / Position
@@ -672,7 +794,8 @@
               end do
             end do
            end if
-          end do
+                end do ! loop over active elements
+                end do ! loop over patches
 
 
         end subroutine MPMDYNBTSigOnly

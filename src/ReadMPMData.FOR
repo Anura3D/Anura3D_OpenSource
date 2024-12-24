@@ -43,7 +43,9 @@
       !
       !**********************************************************************
 
+      use ModFileIO
       use ModCounters
+      !use ModFileIO
       use ModReadCalculationData
       use ModMPMData
       use ModParticle
@@ -53,7 +55,9 @@
       use ModMPMDYN2PhaseSP
       use ModMPMDYN3PhaseSP
       use ModGlobalConstants, only: INTEGER_TYPE, REAL_TYPE
-      use ModFileIO
+      !use ModFileIO
+      
+      !External :: FExist
       
       implicit none
 
@@ -197,13 +201,15 @@
         
           integer(INTEGER_TYPE), intent(in) :: NodTot, IDim
           character(len = *), intent(in) :: BRFfilename
-          real(REAL_TYPE), dimension(NodTot, IDim), intent(inout) :: InitialNodalCoord
+          real(REAL_TYPE), dimension(NodTot, IDim, Counters%NPatches), intent(inout) :: InitialNodalCoord
           
           ! Local variables
           integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 1
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
           character(len = 80) :: Header
           character(len = 12) :: BlockName
+          
+          !External :: FExist
 
           call FileOpenAction(BRFunit, BRFfilename, 'R')
           
@@ -221,8 +227,9 @@
                 
                   if (BlockName=='$$NODECOOR$$') then ! Read nodal coordinates
                     call ReadBlockNODECOORtobechanged(BRFunit, NBytes, BlockCheck, NodTot, IDim, InitialNodalCoord)
+                    exit ! I added this 
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -260,23 +267,29 @@
           integer(INTEGER_TYPE), intent(in) :: FileUnit
           integer(INTEGER_TYPE), intent(in) :: NBytes
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
-          real(REAL_TYPE), dimension(NodTot, IDim),  &
+          real(REAL_TYPE), dimension(NodTot, IDim, Counters%NPatches),  &
             intent(inout) :: NodeCoord
           ! Local variables
           integer(INTEGER_TYPE) :: I, J
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch
 
           if ( (NBytes / 8 / IDim)==NodTot) then
 
-            do I = 1, NodTot
-              read(FileUnit) (NodeCoord(I, J), J = 1, IDim)
-            end do
+              do IPatch = 1, Counters%NPatches
+                  do I = 1, Counters%NodTot(IPatch) !NodTot
+              
+                      read(FileUnit) (NodeCoord(I, J, IPatch), J = 1, IDim)
+            
+                  end do
+              end do 
+              
           
             BlockCheck = BlockCheck + 1
             
           end if
          
         end subroutine ReadBlockNODECOORtobechanged
-
 
         subroutine ReadHouseKeepingCountersFromFile(BRFfilename)
         !**********************************************************************
@@ -298,6 +311,8 @@
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
           character(len = 80) :: Header
           character(len = 12) :: BlockName
+          
+          !External :: FExist
 
           call FileOpenAction(BRFunit, BRFfilename, 'R')
           
@@ -316,7 +331,7 @@
                   if (BlockName=='$$PARTIC_I$$') then ! Read number of particles
                     call ReadBlockPARTIC_I(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -347,11 +362,22 @@
         
           character(len = *), intent(in) :: BRFfilename
           ! Local variables
-          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 6
+          integer(INTEGER_TYPE) :: RELEVANTBLOCKS != 5 , parameter
+          integer(INTEGER_TYPE) :: NumberOfPatchRepitions = 3
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
+          
+          integer(INTEGER_TYPE) :: PatchCounter
+          
           character(len = 80) :: Header
           character(len = 12) :: BlockName
+          
+          !External :: FExist
+          
+          ! we loop over patches so we have to increase RelevantBlocks accordings
+          RELEVANTBLOCKS = 5 + (NumberOfPatchRepitions*(Counters%NPatches-1))
 
+          PatchCounter = 1
+          
           call FileOpenAction(BRFunit, BRFfilename, 'R')
           
           BlockCheck = 0 ! No relevant blocks found yet
@@ -371,15 +397,14 @@
                   else if (BlockName=='$$ELPART_I$$') then ! Read element-particle assignment
                     call ReadBlockELPART_I(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$ELPARTHI$$') then ! Read element-particle assignment helper array
-                    call ReadBlockELPARTHI(BRFunit, NBytes, BlockCheck)
+                    call ReadBlockELPARTHI(BRFunit, NBytes, BlockCheck, PatchCounter)
                   else if (BlockName=='$$USEPARTI$$') then ! Read element integration type
-                    call ReadBlockUSEPARTI(BRFunit, NBytes, BlockCheck)
+                    call ReadBlockUSEPARTI(BRFunit, NBytes, BlockCheck, PatchCounter)
                   else if (BlockName=='$$NUMPARTI$$') then ! Read number of particles per element
-                    call ReadBlockNUMPARTI(BRFunit, NBytes, BlockCheck)
-                  else if (BlockName=='$$ININPART$$') then ! Read initial number of particles per element
-                    call ReadBlockININUMPARTI(BRFunit, NBytes, BlockCheck)
+                    call ReadBlockNUMPARTI(BRFunit, NBytes, BlockCheck, PatchCounter)
+                    !EXIT ! I ADDED THIS
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -412,6 +437,8 @@
           integer(INTEGER_TYPE) :: BlockCheck, NBytes, BlockUnchecked
           character(len = 80) :: Header
           character(len = 12) :: BlockName
+          
+          !External :: FExist
 
           call FileOpenAction(BRFunit, BRFfilename, 'R')
          
@@ -456,8 +483,10 @@
                     call ReadBlockMATPAR_I(BRFunit, NBytes, BlockUnchecked)
                   else if (BlockName=='$$MATTYPEI$$') then
                     call ReadBlockMATTYPEI(BRFunit, NBytes, BlockUnchecked)
+                  !else if (BlockName=='$$FPREV___$$') then ! Read Damping
+                  !  call ReadBlockFPREV(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
                 
                 end if
@@ -485,10 +514,12 @@
         
           character(len = *), intent(in) :: BRFfilename
           ! Local variables
-          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 24
+          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 25 !24
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
           character(len = 80) :: Header
           character(len = 12) :: BlockName
+          
+          !External :: FExist
 
           call FileOpenAction(BRFunit, BRFfilename, 'R')
 
@@ -550,10 +581,14 @@
                     call ReadBlockPIPL___I(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$DIDL___R$$') then ! Read Damping
                     call ReadBlockDIDL___R(BRFunit, NBytes, BlockCheck)
+                  else if (BlockName=='$$FPREV___$$') then ! Read previous deformation gradient
+                    call ReadBlockFPREV(BRFunit, NBytes, BlockCheck)
+                  else if (BlockName=='$$FPREV__W$$') then ! Read previous deformation gradient of water phase
+                    call ReadBlockFPREVWATER(BRFunit, NBytes, BlockCheck)  
                   else if (BlockName=='$$PADU___R$$') then ! Read particle incremental displacements
                     call ReadBlockPADU___R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if
                  
                 end if
@@ -584,6 +619,8 @@
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
           character(len = 80) :: Header
           character(len = 12) :: BlockName
+          
+          !External :: FExist
 
           call FileOpenAction(BRFunit, BRFfilename, 'R')
 
@@ -606,7 +643,7 @@
                   else if (BlockName=='$$PAPU___R$$') then ! Read particle phase displacements
                     call ReadBlockPAPU___R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if
                  
                 end if
@@ -637,6 +674,8 @@
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
           character(len = 80) :: Header
           character(len = 12) :: BlockName
+          
+          !External :: FExist
 
           call FileOpenAction(BRFunit, BRFfilename, 'R')
 
@@ -659,7 +698,7 @@
                   else if (BlockName=='$$PADUW__R$$') then ! Read particle incremental displacements
                     call ReadBlockPADUW__R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if
                  
                 end if
@@ -690,6 +729,8 @@
           integer(INTEGER_TYPE) :: BlockCheck, NBytes
           character(len = 80) :: Header
           character(len = 12) :: BlockName
+          
+          !External :: FExist
 
           call FileOpenAction(BRFunit, BRFfilename, 'R')
 
@@ -708,7 +749,7 @@
                   if (BlockName=='$$PADGAS_R$$') then ! Read consolidation unsaturated data (gas data) 
                     call ReadBlockPADGAS_R(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
-                    call Skip(BRFunit, NBytes)
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if
                  
                 end if
@@ -719,6 +760,57 @@
           end if
         
         end subroutine ReadConsolidationDataGasFromFile
+        
+        
+        subroutine ReadGetParticleIndexFromFile(BRFfilename)
+        !**********************************************************************
+        !
+        !  Function : Fills the GetParticleIndex data with 
+        !             data from the BFR file of the previous load phase
+        !
+        !  BRFfilename : Name of the BRF file of the previous load phase
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          character(len = *), intent(in) :: BRFfilename
+          ! Local variables
+          integer(INTEGER_TYPE), parameter :: RELEVANTBLOCKS = 1
+          integer(INTEGER_TYPE) :: BlockCheck, NBytes
+          character(len = 80) :: Header
+          character(len = 12) :: BlockName
+          
+          !External :: FExist
+
+          call FileOpenAction(BRFunit, BRFfilename, 'R')
+
+          BlockCheck = 0 ! No relevant blocks found yet
+          if (FExist(BRFfilename) ) then
+            read(BRFunit) Header
+
+            do
+              read(BRFunit) BlockName, NBytes
+
+              if ( (BlockName=='$$ENDOFFII$$').or.(BlockCheck==RELEVANTBLOCKS) ) then ! Close file
+                EXIT
+              else
+                if (NBytes>0) then ! The block is not empty
+                
+                  if (BlockName=='$$GETPINDX$$') then ! Read GetParticleIndex 
+                    call ReadBlockGETPARTICLEINDEX(BRFunit, NBytes, BlockCheck)
+                  else ! Skip bytes of block
+                    call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
+                  end if
+                 
+                end if
+              end if
+            end do
+          
+            close(BRFunit)
+          end if
+        
+        end subroutine ReadGetParticleIndexFromFile
 
         subroutine ReadBlockPARTIC_I(FileUnit, NBytes, BlockCheck)
         !**********************************************************************
@@ -1121,12 +1213,13 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, NVals
         
-          NVals = 4
+          NVals = 5 ! --> this means that we have to read 5 values which is good
           
           if ( (NBytes / NVals / 4)==Counters%NParticles) then
           
             do I = 1, Counters%NParticles
               read(FileUnit) IDArray(I)
+              read(FileUnit) PatchIDArray(I)
               read(FileUnit) ElementIDArray(I)
               read(FileUnit) EntityIDArray(I)
               read(FileUnit) MaterialIDArray(I)
@@ -1147,16 +1240,22 @@
           integer(INTEGER_TYPE), intent(in) :: NBytes
 
           integer(INTEGER_TYPE) :: I, NVals
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch, PatchID
 
           NVals = 1
 
-          if ( (NBytes / NVals / 8)==(Counters%NParticles + Counters%NEl)) then
+          if (( (NBytes ) / NVals / 8)==(Counters%NParticles + Counters%Sum_NEl)) then !- (4*Counters%NPatches)
             do I = 1, Counters%NParticles
               read(FileUnit) Particles(I)%DBulkViscousPressure
             end do
-            do I = 1, Counters%NEl
+            do IPatch = 1, Counters%NPatches! loop over patches
+            !read(FileUnit) PatchID
+            do I = 1, Counters%NEl(IPatch) !NURBS%nel_NURBS(IPatch)!Counters%NEl ! loop over elements
               read(FileUnit) RateVolStrain(I)
-            end do
+            end do ! loop over elements
+            end do ! loop over patches
           end if
  
         end subroutine ReadBlockDPBVD__R
@@ -1203,7 +1302,58 @@
           
         end subroutine ReadBlockPARTFACI
 
-        subroutine ReadBlockNUMPARTI(FileUnit, NBytes, BlockCheck)
+        !subroutine ReadBlockNUMPARTI(FileUnit, NBytes, BlockCheck)
+        !!**********************************************************************
+        !!
+        !!    Function:  Reads data from the block NUMPARTI containing the number of particles per element
+        !!               from the file with unit FileUnit.
+        !!
+        !!   FileUnit : File unit from which the block NUMPARTI is read
+        !!   NBytes : Number of bytes inside the block
+        !!
+        !! O BlockCheck : Increase by 1, if the block was successfully read
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
+        !  integer(INTEGER_TYPE), intent(in) :: NBytes
+        !  integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: I
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary, IPatch
+        !
+        !  !if ( (NBytes / 4)==Counters%NEl) then
+        !  !  
+        !  !  read(FileUnit) (NPartEle(I, IPatch_Temporary), I = 1, Counters%NEl)
+        !  !  
+        !  !  BlockCheck = BlockCheck + 1
+        !  !  
+        !  !end if
+        !  
+        !  read(FileUnit) (IPatch)  
+        !  
+        !  !do IPatch = 1, Counters%NPatches
+        !  if ( ((NBytes-4) / 4)==nel_NURBS(IPatch)) then
+        !    
+        !    
+        !    read(FileUnit) (NPartEle(I, IPatch), I = 1, NEl_NURBS(IPatch))
+        !  
+        !    BlockCheck = BlockCheck + 1
+        !    
+        !  end if
+        !  !end do
+        !  
+        !  
+        !
+        !end subroutine ReadBlockNUMPARTI
+        
+        
+        subroutine ReadBlockNUMPARTI(FileUnit, NBytes, BlockCheck, PatchCounter)
         !**********************************************************************
         !
         !    Function:  Reads data from the block NUMPARTI containing the number of particles per element
@@ -1223,20 +1373,48 @@
           integer(INTEGER_TYPE), intent(in) :: FileUnit
           integer(INTEGER_TYPE), intent(in) :: NBytes
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          
+          integer(INTEGER_TYPE), intent(inout) :: PatchCounter
+          
           ! Local variables
           integer(INTEGER_TYPE) :: I
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary, IPatch
         
-          if ( (NBytes / 4)==Counters%NEl) then
+          !if ( (NBytes / 4)==Counters%NEl) then
+          !  
+          !  read(FileUnit) (NPartEle(I, IPatch_Temporary), I = 1, Counters%NEl)
+          !  
+          !  BlockCheck = BlockCheck + 1
+          !  
+          !end if
+          
+          if (PatchCounter  == Counters%NPatches +1) then 
+    
+              PatchCounter = 1
+
+          end if
+          
+          !read(FileUnit) (IPatch)  
+          
+          !do IPatch = 1, Counters%NPatches
+          if ( ((NBytes) / 4)==Counters%NEl(PatchCounter)) then !-4 !NURBS%nel_NURBS(IPatch)
             
-            read(FileUnit) (NPartEle(I), I = 1, Counters%NEl)
             
+            read(FileUnit) (NPartEle(I, PatchCounter), I = 1, Counters%NEl(PatchCounter)) !NURBS%NEl_NURBS
+          
             BlockCheck = BlockCheck + 1
             
+            PatchCounter = PatchCounter +1
+            
           end if
+          !end do
+          
+          
  
         end subroutine ReadBlockNUMPARTI
         
-        subroutine ReadBlockININUMPARTI(FileUnit, NBytes, BlockCheck)
+        subroutine ReadBlockININUMPARTI(FileUnit, NBytes, BlockCheck, PatchCounter)
         !**********************************************************************
         !
         !    Function :  Reads data from the block ININUMPARTI containing the initial 
@@ -1256,20 +1434,24 @@
           integer(INTEGER_TYPE), intent(in) :: FileUnit
           integer(INTEGER_TYPE), intent(in) :: NBytes
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          
+          integer(INTEGER_TYPE), intent(inout) :: PatchCounter
           ! Local variables
           integer(INTEGER_TYPE) :: I
         
-          if ( (NBytes / 4)==Counters%NEl) then
+          if ( (NBytes / 4)==Counters%NEl(PatchCounter)) then
             
-            read(FileUnit) (InitialNPartEle(I), I = 1, Counters%NEl)
+            read(FileUnit) (InitialNPartEle(I,PatchCounter), I = 1, Counters%NEl(PatchCounter))
             
             BlockCheck = BlockCheck + 1
+            
+            PatchCounter = PatchCounter +1
             
           end if
  
         end subroutine ReadBlockININUMPARTI    
 
-        subroutine ReadBlockINIINDPARTI(FileUnit, NBytes, BlockCheck)
+        subroutine ReadBlockINIINDPARTI(FileUnit, NBytes, BlockCheck, PatchCounter)
         !**********************************************************************
         !
         !    Function :  Reads data from the block ININUMPARTI containing the initial 
@@ -1289,13 +1471,16 @@
           integer(INTEGER_TYPE), intent(in) :: FileUnit
           integer(INTEGER_TYPE), intent(in) :: NBytes
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          
+          integer(INTEGER_TYPE), intent(inout) :: PatchCounter
+          
           ! Local variables
           integer(INTEGER_TYPE), dimension(4) :: dum
           integer(INTEGER_TYPE) :: I, NVals, id
           NVals = 4
-          if ( (NBytes / NVals/ 4)==Counters%NEl) then
+          if ( (NBytes / NVals/ 4)==Counters%NEl(PatchCounter)) then
               
-            do I = 1, Counters%NEl
+            do I = 1, Counters%NEl(PatchCounter)
                 read(FileUnit) (dum(id), id = 1, NVals)
                 InitialParticleIndex(:,I) = dum
             end do            
@@ -1338,7 +1523,54 @@
                   
         end subroutine ReadBlockELPART_I
 
-        subroutine ReadBlockELPARTHI(FileUnit, NBytes, BlockCheck)
+        !subroutine ReadBlockELPARTHI(FileUnit, NBytes, BlockCheck)
+        !!**********************************************************************
+        !!
+        !!    Function:  Reads data from the block ELPARTHI containing the helper array used for
+        !!               storing the particle - element connectivities
+        !!               from the file with unit FileUnit.
+        !!
+        !!   FileUnit : File unit from which the block ELPARTHI is read
+        !!   NBytes : Number of bytes inside the block
+        !!
+        !! O BlockCheck : Increase by 1, if the block was successfully read
+        !!
+        !! Implemented in the frame of the MPM project.
+        !!
+        !!**********************************************************************
+        !
+        !implicit none
+        !
+        !  integer(INTEGER_TYPE), intent(in) :: FileUnit
+        !  integer(INTEGER_TYPE), intent(in) :: NBytes
+        !  integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+        !  ! Local variables
+        !  integer(INTEGER_TYPE) :: I
+        !  
+        !  ! Multipatch variables 
+        !  integer(INTEGER_TYPE) :: IPatch
+        !  integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+        !  
+        !  
+        !  read(FileUnit) IPatch  
+        !  
+        !!do IPatch = 1, Counters%NPatches
+        !  if ( ((NBytes-4) / 4)==nel_NURBS(IPatch)) then ! remove 4 byts associated with patch number writing
+        !    
+        !    read(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, nel_NURBS(IPatch))!Counters%NEl)
+        !    
+        !    BlockCheck = BlockCheck + 1
+        !    
+        !  end if
+        !  
+        !!end do 
+        !
+        ! 
+        !end subroutine ReadBlockELPARTHI
+        
+        
+        
+        subroutine ReadBlockELPARTHI(FileUnit, NBytes, BlockCheck, PatchCounter)
         !**********************************************************************
         !
         !    Function:  Reads data from the block ELPARTHI containing the helper array used for
@@ -1361,16 +1593,54 @@
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
           ! Local variables
           integer(INTEGER_TYPE) :: I
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          
+          integer(INTEGER_TYPE), intent(inout) :: PatchCounter
+          
+          
+          !read(FileUnit) IPatch  
+          
+        !do IPatch = 1, Counters%NPatches
+        !  if ( ((NBytes) / 4)==Counters%NEl(IPatch)) then !-4 ! remove 4 byts associated with patch number writing !NURBS%nel_NURBS(IPatch)
+        !    
+        !    read(FileUnit) (EleParticlesHelp(I, IPatch), I = 1, Counters%NEl(IPatch))!Counters%NEl) !nel_NURBS(IPatch)
+        !    
+        !    BlockCheck = BlockCheck + 1
+        !    
+        !  end if
+        !  
+        !end do 
         
-          if ( (NBytes / 4)==Counters%NEl) then
+        if (PatchCounter  == Counters%NPatches +1) then 
+    
+            PatchCounter = 1
+    
+        end if
+        
+        
+        
+        
+        
+        !do IPatch = 1, Counters%NPatches
+          if ( ((NBytes) / 4)==Counters%NEl(PatchCounter)) then !-4 ! remove 4 byts associated with patch number writing !NURBS%nel_NURBS(IPatch)
             
-            read(FileUnit) (EleParticlesHelp(I), I = 1, Counters%NEl)
+            read(FileUnit) (EleParticlesHelp(I, PatchCounter), I = 1, Counters%NEl(PatchCounter))!Counters%NEl) !nel_NURBS(IPatch)
             
             BlockCheck = BlockCheck + 1
             
+            PatchCounter = PatchCounter + 1
+            
           end if
+          
+        !end do 
+        
          
         end subroutine ReadBlockELPARTHI
+        
+        
 
         subroutine ReadBlockVELOC__R(FileUnit, NBytes, BlockCheck)
         !**********************************************************************
@@ -1653,6 +1923,54 @@
           end if
  
         end subroutine ReadBlockPADGAS_R
+        
+        
+        
+        subroutine ReadBlockGETPARTICLEINDEX(FileUnit, NBytes, BlockCheck)
+        !**********************************************************************
+        !
+        !    Function:  Reads data from the block PAUTOT_R containing the total particle displacements
+        !               from the file with unit FileUnit.
+        !
+        !   FileUnit : File unit from which the block PAUTOT_R is read
+        !   NBytes : Number of bytes inside the block
+        !
+        ! O BlockCheck : Increase by 1, if the block was successfully read
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+          integer(INTEGER_TYPE), intent(in) :: NBytes
+          integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          ! Local variables
+          integer(INTEGER_TYPE) :: I, NVals, J, IPatch, IElement, IParticle
+
+          NVals = NURBS%Maximum_nel_NURBS * Counters%NPatches
+
+          if ( (NBytes / NVals / 4)==Counters%NParticles) then
+          
+            do IPatch = 1, Counters%NPatches
+                do IElement = 1, NURBS%Maximum_nel_NURBS
+
+                    do IParticle = 1, Counters%NParticles 
+                        
+                        read(FileUnit) (GetParticleIndex(IParticle, IElement, IPatch))
+            
+                    end do 
+                    
+                end do
+            end do 
+            
+          
+            BlockCheck = BlockCheck + 1
+            
+          end if
+ 
+        end subroutine ReadBlockGETPARTICLEINDEX
         
 
         subroutine ReadBlockPAUTOT_R(FileUnit, NBytes, BlockCheck)
@@ -2174,7 +2492,7 @@
         
         end subroutine ReadBlockGPRESS_R
 
-        subroutine ReadBlockUSEPARTI(FileUnit, NBytes, BlockCheck)
+        subroutine ReadBlockUSEPARTI(FileUnit, NBytes, BlockCheck, PatchCounter)!, IPatch)
         !**********************************************************************
         !
         !    Function:  Reads data from the block USEPARTI containing the flag per element indicating
@@ -2196,15 +2514,41 @@
           integer(INTEGER_TYPE), intent(in) :: NBytes
           integer(INTEGER_TYPE), intent(inout) :: BlockCheck
           ! Local variables
-          integer(INTEGER_TYPE) :: I
+          integer(INTEGER_TYPE) :: I ! --> element counter
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE), intent(inout) :: PatchCounter
         
-          if ( (NBytes / 4)==Counters%NEl) then
-            
-            read(FileUnit) (IsParticleIntegration(I), I = 1, Counters%NEl)
+          !if ( (NBytes / 4)==Counters%NEl) then
+          !  
+          !  read(FileUnit) (IsParticleIntegration(I, IPatch_Temporary), I = 1, Counters%NEl)
+          !  
+          !  BlockCheck = BlockCheck + 1
+          !  
+          !end if
+          
+          !read(FileUnit) IPatch
+          
+          
+          if (PatchCounter  == Counters%NPatches +1) then 
+              
+              PatchCounter = 1
+              
+          end if
+          
+          
+          !do IPatch = 1, Counters%NPatches
+          if ( ((NBytes) / 4)==Counters%NEl(PatchCounter) ) then !-4 !NURBS%nel_NURBS(IPatch)
+           
+            read(FileUnit) (IsParticleIntegration(I, PatchCounter), I = 1, Counters%NEl(PatchCounter))!Counters%NEl) !NURBS%nel_NURBS(IPatch)
             
             BlockCheck = BlockCheck + 1
             
+            PatchCounter = PatchCounter + 1
+            
           end if
+          !end do 
  
         end subroutine ReadBlockUSEPARTI
 
@@ -2718,6 +3062,105 @@
          
         end subroutine ReadBlockDIDL___R
         
+        
+        
+        
+        
+        subroutine ReadBlockFPREV(FileUnit, NBytes, BlockCheck)
+        !**********************************************************************
+        !        
+        !    Function:  Reads data from the block FPREV containing previous 
+        !               deformation gradients.
+        !
+        !   FileUnit : File unit from which the block FPREV is read
+        !   NBytes : Number of bytes inside the block
+        !
+        ! O BlockCheck : Increase by 1, if the block was successfully read
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+          integer(INTEGER_TYPE), intent(in) :: NBytes
+          integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          ! Local variables
+          integer(INTEGER_TYPE) :: I
+          integer(INTEGER_TYPE) :: IDim_1, IDim_2
+
+          if ( (NBytes / (8*NDIM*NDIM) )==Counters%NParticles) then
+          
+            !read(FileUnit) (Particles(I)%DeformationGradientPrevious, &
+            !                    I = 1, Counters%NParticles)
+            
+            do I = 1, Counters%NParticles
+              
+              do IDim_1 = 1, NDIM
+                  do IDim_2 = 1, NDIM
+                      read(FileUnit) Particles(I)%DeformationGradientPrevious(IDim_1, IDim_2)
+                  end do 
+              end do
+              
+          end do
+          
+            BlockCheck = BlockCheck + 1
+            
+          end if
+         
+        end subroutine ReadBlockFPREV
+        
+        
+        
+        
+        subroutine ReadBlockFPREVWater(FileUnit, NBytes, BlockCheck)
+        !**********************************************************************
+        !        
+        !    Function:  Reads data from the block FPREV containing previous 
+        !               deformation gradients.
+        !
+        !   FileUnit : File unit from which the block FPREV is read
+        !   NBytes : Number of bytes inside the block
+        !
+        ! O BlockCheck : Increase by 1, if the block was successfully read
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+      
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+          integer(INTEGER_TYPE), intent(in) :: NBytes
+          integer(INTEGER_TYPE), intent(inout) :: BlockCheck
+          ! Local variables
+          integer(INTEGER_TYPE) :: I
+          integer(INTEGER_TYPE) :: IDim_1, IDim_2
+
+          if ( (NBytes / (8*NDIM*NDIM) )==Counters%NParticles) then
+          
+            !read(FileUnit) (Particles(I)%DeformationGradientPrevious, &
+            !                    I = 1, Counters%NParticles)
+            
+            do I = 1, Counters%NParticles
+              
+              do IDim_1 = 1, NDIM
+                  do IDim_2 = 1, NDIM
+                      read(FileUnit) Particles(I)%DeformationGradientPreviousWater(IDim_1, IDim_2)
+                  end do 
+              end do
+              
+          end do
+          
+            BlockCheck = BlockCheck + 1
+            
+          end if
+         
+        end subroutine ReadBlockFPREVWater
+        
+        
+        
             
         logical function ReadPPD()
         !**********************************************************************
@@ -2737,6 +3180,8 @@
 
           character(len = 255) :: CompleteFileName
           integer(INTEGER_TYPE) :: DefinitionType
+          
+          !External :: FExist
 
           ReadPPD = .false.
         
@@ -2839,6 +3284,8 @@
           integer(INTEGER_TYPE) :: I, J, NBytes
           character :: BName*12, Header*80
           character(len = MAX_FILENAME_LENGTH) :: BRFFileName
+          
+          !External :: FExist
 
           if (.not.IsFollowUpPhase()) RETURN 
           
@@ -2850,9 +3297,14 @@
           if (FExist(BRFFileName) ) then
             read(BRFunit) Header
             do
-              read(BRFunit) BName, NBytes
-              if (trim(BName)=='$$ENDOFFII$$') then ! close file
+                
+                 read(BRFunit) BName, NBytes
+                
+                if (trim(BName)=='$$ENDOFFII$$') then ! close file
                 EXIT
+                
+             
+              
               elseif (NBytes>0) then ! The block is not empty
                 if (trim(BName)=='$$UTOT___R$$') then
                   do I = 1, Counters%N
@@ -2870,6 +3322,7 @@
                   do I = 1, Counters%N
                     read(BRFunit) TotalVelocitySoil(I, 1) 
                   End Do
+                  !EXIT ! Abdelrahman alsardi: I HARDCODED THIS HERE
                 else if (trim(BName)=='$$WTOT___R$$') then
                   do I = 1, Counters%N
                     read(BRFunit) TotalVelocityWater(I, 1) ! Global coordinate system

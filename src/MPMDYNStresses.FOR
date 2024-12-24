@@ -103,6 +103,10 @@
           real(REAL_TYPE), dimension(Counters%N) :: DDisp, DDispLiquid, VelLiquid
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrix
           logical :: DoSkipStressComputation
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
 
           ! Initialise global variables
           CalParams%IntegrationPointData%NPlasticPoints = 0
@@ -194,14 +198,16 @@
           
           !!******STRAT calculation of fluid pressures (liquid and gas pressure)         
           if(NFORMULATION==1) then       ! one set of material points (1-point formulation)
-          do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)            
-            NElemPart = NumberOfIntegrationPoints(IEl)    ! Get the number of integration per element (Gaussian integration points or number of material points)
+          !do IAEl = 1, Counters%NAEl     ! Loop over all active elements for computation of stresses
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)            
+            NElemPart = NumberOfIntegrationPoints(IEl, IPatch)    ! Get the number of integration per element (Gaussian integration points or number of material points)
            
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
         
-              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)   ! Determine global ID of integration point 
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
               
                 if (CalParams%ApplyContactAlgorithm) then
@@ -216,6 +222,7 @@
                 end do
 
                 if (.not.DoSkipStressComputation) then
+                    ! this is where we calculate the pore pressure
                     call GetFluidPressure(IntGlo)     !Provide liquid and gas pressures for single-point formulation, 2phase and 3phase analysis
                 else
                     Particles(IntGlo)%WaterPressure = 0.0
@@ -223,7 +230,9 @@
                 end if
                         
             end do   ! Loop over all integration/material points of the element
-          end do     ! Loop over all active elements for computation of stresses
+                end do     ! Loop over all active elements for computation of stresses
+                
+                end do ! patches
 
           !Apply pressure increment smoothing
           if (CalParams%ApplySmootheningLiquidPressureIncrement) then
@@ -236,20 +245,22 @@
           end if
   
           !!******STRAT calculation of effective stresses
-          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix)!, WtN) !(:,:,IPatch)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
-            NElemPart = NumberOfIntegrationPoints(IEl) 
+            NElemPart = NumberOfIntegrationPoints(IEl, IPatch) 
      
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
          
-              IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point 
+              IntGlo = GetParticleIndex(Int, IEl, IPatch)   ! Determine global ID of integration point 
               IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
                           
               if ( (MaterialPointTypeArray(IntGlo)==MaterialPointTypeMixture).or.(MaterialPointTypeArray(IntGlo)==MaterialPointTypeSolid) ) then
@@ -271,7 +282,7 @@
                  end if
                   
                  if (.not.DoSkipStressComputation) then  
-                   call StressSolid(IntGlo, IEl, BMatrix, IEntity)   ! calculate stresses for mixture or solid material points
+                   call StressSolid(IntGlo, IEl, BMatrix, IEntity, IPatch)   ! calculate stresses for mixture or solid material points
                  else
                    do I = 1, NVECTOR     ! only first three indices, both for 2D and 3D
                      SigmaEffArray(IntGlo,I) = 0.D0
@@ -285,7 +296,7 @@
                   
                else if (MaterialPointTypeArray(IntGlo)==MaterialPointTypeLiquid) then
                   if (MatParams(IDMaterial)%MaterialModel==ESM_BINGHAM_LIQUID) then
-                    call StressSolid(IntGlo, IEl, BMatrix, IEntity) 
+                    call StressSolid(IntGlo, IEl, BMatrix, IEntity, IPatch) 
                   else
                     call GetPressureLiquidMaterialPoint(IntGlo, IEl)  ! provide liquid pressure for material points
                   end if
@@ -296,32 +307,37 @@
             ! Assign EUnloading to all particles (material points) of each element
                       
             if (NElemPart==1) then ! only for fully filled elements               
-             NumParticles = NPartEle(IEl)
-             FirstParticleIndex = GetParticleIndex(1, IEl)
+             NumParticles = NPartEle(IEl,IPatch)
+             FirstParticleIndex = GetParticleIndex(1, IEl, IPatch)
              FirstParticleEUnloading = Particles(FirstParticleIndex)%ESM_UnloadingStiffness
              do Int = 2, NumParticles
-                IntGlo = GetParticleIndex(Int, IEl)
+                IntGlo = GetParticleIndex(Int, IEl, IPatch)
                 Particles(IntGlo)%ESM_UnloadingStiffness = FirstParticleEUnloading
              enddo
             endif
             
-          end do ! Loop over all active elements for computation of stresses
+                end do ! Loop over all active elements for computation of stresses
+                
+                end do ! Loop over patches
 
           
-          do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
-            IEl = ActiveElement(IAEl)
+          !do IAEl = 1, Counters%NAEl ! Loop over all active elements for computation of stresses
+              
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
             
             if (CalParams%ApplyObjectiveStress.or.CalParams%ApplyImplicitQuasiStatic) then 
-              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix, WtN)
+              call GetBMatrix(IEl, 1, NodalCoordinatesUpd, BMatrix)!, WtN) !(:,:,IPatch)
             end if
             
             ! Get the number of integration per element (Gaussian integration points or number of material points)
-            NElemPart = NumberOfIntegrationPoints(IEl) 
+            NElemPart = NumberOfIntegrationPoints(IEl, IPatch) 
           
             ! Calculate stresses in integration/material points
             do Int = 1, NElemPart ! Loop over all integration/material points of the element
          
-             IntGlo = GetParticleIndex(Int, IEl)   ! Determine global ID of integration point
+             IntGlo = GetParticleIndex(Int, IEl, IPatch)   ! Determine global ID of integration point
              IDMaterial = MaterialIDArray(IntGlo)  ! Material number stored in $$MATERIAL_INDEX in the GOM-file
               
              if (CalParams%ApplyContactAlgorithm) then
@@ -338,7 +354,9 @@
                end if
               end if 
              end do
-          end do  ! Loop over all active elements for computation of stresses
+                end do  ! Loop over all active elements for computation of stresses
+                
+                end do ! patch
                
         end subroutine MPMDYNGetSig
 
@@ -418,6 +436,10 @@
           !real(REAL_TYPE), dimension(:), allocatable :: Props ! material properties
           character(len=64) :: SoilModel ! name of the constitutive model
           logical :: IsUndrEffectiveStress
+          
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
      
           ! determine material data of integration/material point
@@ -563,7 +585,7 @@
           ! for using objective stress definition
           if (CalParams%ApplyObjectiveStress) then ! Consider large deformation terms
             call Hill(IEl, ELEMENTNODES, IncrementalDisplacementSoil(1:Counters%N, IEntityID),  &
-                        ReducedDof, ElementConnectivities, BMatrix, Sig0, SigC, DEpsVol)
+                        ReducedDof, ElementConnectivities(:,:,IPatch_Temporary), BMatrix, Sig0, SigC, DEpsVol)
           end if ! objective stress  
             
           call CalculatePrincipalStresses(IntGlo, SigC, SigPrin)
@@ -688,6 +710,14 @@
            lambda = Kf/N
            DSigWP = lambda*( N * DEpsVolW + (1.0d0 - N) * DEpsVol)
          end if
+         
+         
+         ! Cavitation limit 
+         !DSigWP = 0.0 ! excess pore pressure is zero
+         !if (DSigWP>0.0) then 
+         !   DSigWP = 0.0
+         !end if
+         
         
          ! for submerged calculation
          if (CalParams%ApplySubmergedCalculation) then 
@@ -728,21 +758,28 @@
  
           integer(INTEGER_TYPE), intent(in) :: IMatSet
           ! Local variables  
-          real(REAL_TYPE), dimension(Counters%NodTot,2) :: dPressureSmooth
+          real(REAL_TYPE), dimension(Counters%Sum_NodTot,2) :: dPressureSmooth
           real(REAL_TYPE) :: dWP, Weight, dWPWeighted, EnhancedPressureIncrement
           integer(INTEGER_TYPE) :: IEl, IAEl, I, NElemPart, MaterialID, IParticle, ParticleIndex
           integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: LJ
         
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: GlobalNodeID
+          
           dPressureSmooth = 0.0
 
           !Calculate nodal incremental pressure mapping from MP to element nodes    
-          do IAEl = 1, Counters%NAEl  ! active element
-            IEl = ActiveElement(IAEl)
-            LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
-            if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-              NElemPart = NumberOfIntegrationPoints(IEl)
+          !do IAEl = 1, Counters%NAEl  ! active element
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
+            LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
+            if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
+              NElemPart = NumberOfIntegrationPoints(IEl, IPatch)
               do IParticle = 1, NElemPart
-                ParticleIndex = GetParticleIndex(IParticle, IEl)
+                ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                 MaterialID = MaterialIDArray(ParticleIndex)
                 
                 if (MaterialID==IMatSet)then ! This particle belongs to the considered entity (Material)
@@ -756,18 +793,28 @@
               end do ! particles
 
             end if ! entity
-          end do ! active element     
+                end do ! active element     
+                
+                end do ! patches
 
-          do I = 1, Counters%NodTot
+          
+          do IPatch = 1, Counters%NPatches ! loop over patches
+          do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
+              
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              
             if(dPressureSmooth(I, 2)>0.0) then
               dPressureSmooth(I, 1) = dPressureSmooth(I, 1) / dPressureSmooth(I, 2) ! Only consider active nodes
             end if
-          end do
+          end do ! loop over control points
+          end do ! loop over patches
        
-          do IAEl = 1, Counters%NAEl  ! active element 
-            IEl = ActiveElement(IAEl)
-              if (MaterialElements(IMatSet,IEl)==1) then     !element belongs to the material IMatSet
-                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl)
+          !do IAEl = 1, Counters%NAEl  ! active element 
+              do IPatch = 1, Counters%NPatches ! Loop over patches
+                do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            IEl = ActiveElement(IAEl, IPatch)
+              if (MaterialElements(IMatSet,IEl, IPatch)==1) then     !element belongs to the material IMatSet
+                LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                 EnhancedPressureIncrement = 0.0
                 do I = 1, ELEMENTNODES
                   EnhancedPressureIncrement = EnhancedPressureIncrement + dPressureSmooth(LJ(I), 1) / dble(ELEMENTNODES)
@@ -775,16 +822,18 @@
 
               ! Update particle pressure
 
-                NElemPart = NumberOfIntegrationPoints(IEl)
+                NElemPart = NumberOfIntegrationPoints(IEl, IPatch)
                 do IParticle = 1, NElemPart ! Loop over all particles of the element
-                  ParticleIndex = GetParticleIndex(IParticle, IEl)
+                  ParticleIndex = GetParticleIndex(IParticle, IEl, IPatch)
                   MaterialID = MaterialIDArray(ParticleIndex)
                     if (MaterialID==IMatSet)then ! this particle belongs to material IMatSet. Assign its strains
                       Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressure0 + EnhancedPressureIncrement
                     end if
                 end do ! particles
               end if ! material
-    end  do ! active element
+                end  do ! active element
+                
+                end do ! patches
     
     end subroutine SmoothenLiquidPressureIncrement
     
@@ -808,6 +857,9 @@
           real(REAL_TYPE) :: MaterialIndex = 0.0
           real(REAL_TYPE) :: DilationalWaveSpeed = 0.0
           logical :: IsUndrEffectiveStress
+          
+          ! Multipatch variables
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
 
           if (.not.CalParams%ApplyBulkViscosityDamping) return
 
@@ -827,7 +879,7 @@
             Density = (1 - MatParams(MaterialIndex)%InitialPorosity) * MatParams(MaterialIndex)%DensitySolid / 1000.0
           end if
 
-          ElementLMinLocal = ElementLMin(IEl)
+          ElementLMinLocal = ElementLMin(IEl,IPatch_Temporary)
           RateVolStrainLocal = RateVolStrain(IEl)
 
           
