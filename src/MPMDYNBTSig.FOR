@@ -83,6 +83,10 @@
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BBar
+          
+          real(REAL_TYPE), dimension(Counters%ELEMENTGAUSSPOINTS_BBAR, NDIM, ELEMENTNODES) :: BMatrixDeformed_BBar_AllGP
+          
           real(REAL_TYPE), dimension(NTENSOR) :: S
           real(REAL_TYPE), dimension(NVECTOR) :: PartLoad, PartGravity
           real(REAL_TYPE) :: WtN, WPP, TotIntWeightLiqMP !Det, 
@@ -103,6 +107,13 @@
           ! Multipatch variables 
           !integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+          real(REAL_TYPE) :: NDIM_Factor
+          
+          
+          NDIM_Factor = REAL(1)/REAL(NDIM)
+          
+          
+          
           
           ! these are needed to have GetParticleIndex into the the subroutine FormB3()
           maxParticle = 1
@@ -193,6 +204,11 @@
             else
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
+            
+            
+            if (CalParams%ApplyBBar) then   
+                call BMatrix_BBar(BMatrixDeformed_BBar_AllGP, IEl, IPatch)
+              end if 
              
             
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
@@ -208,7 +224,38 @@
               ! Get the B-matrix once per element is no longer valid. 
               !call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd(:,:,IPatch), B, Det, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl, GetParticleIndex(:,:,IPatch), IPatch) 
               call FormB3(Int, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)  !(:,:,IPatch)
+
+              
+              
+              
+              
+              
+              
+              
+              if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+    
+                  BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+              else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then    
+       
+                  BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
  
+              else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+        
+                  BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+
+              else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+
+                  BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+    
+              end if 
+              
+              
+              
+              
+              
+              
+              
               !--> Note that the B matrix here is dR/dx --> derivatuives of shape functions wrt global coordinates.
                 
               !! Determine global ID of integration point 
@@ -275,6 +322,126 @@
                 nn = Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(iNode,iel,IPatch) , IPatch)! get global node number
                 IDof = ReducedDof(nn) ! get dof number
 
+                !----------------------------------------------------------------------------
+                
+                if (CalParams%ApplyBBar) then 
+                
+                
+                
+                    
+                    
+                    
+                    
+                    
+                    
+                if ( NVECTOR == 2 ) then ! 2D
+                    
+                  ! In 2D, we use S(1) - S(4)   
+                  ! Assuming stress tensor setup, the following are the numberings. 
+                  ! S(1) = Sigma_xx     S(4) = Sigma_xy     
+                  !                     S(2) = Sigma_yy     
+                  !                                         S(3) = Sigma_zz
+                    
+                  ! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + ( ( B(1,iNode) + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(1) ) &
+                                                                                + ( (            + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(2) ) &                        
+                                                                                + (   B(2,iNode)*S(4) ) 
+                  ! nodal y-load 
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + ( (              (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(1) ) &
+                                                                                + ( ( B(2,iNode) + (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(2) ) &                        
+                                                                                + (   B(1,iNode)*S(4) ) 
+                  
+                  
+                  !InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) 
+                  ! nodal r-load (x-load)
+                  if ( ISAXISYMMETRIC ) then
+                    ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912 
+                    InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + S(3) * ShapeValues(iNode) / Position
+                  end if
+                else if ( NVECTOR == 3 ) then ! 3D
+                  
+                  ! In 3D, we use S(1) - S(6)   
+                  ! Assuming stress tensor setup, the following are the numberings.   
+                  ! S(1) = Sigma_xx     S(4) = Sigma_xy     S(6) = Sigma_xz
+                  !                     S(2) = Sigma_yy     S(5) = Sigma_yz
+                  !                                         S(3) = Sigma_zz
+                    
+                    
+                  ! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + ( ( B(1,iNode) + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(1) ) &
+                                                                                + ( (            + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(2) ) &
+                                                                                + ( (            + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(3) ) &
+                                                                                + (   B(3,iNode)*S(6) )                                                 &
+                                                                                + (   B(2,iNode)*S(4) )
+                  ! nodal y-load 
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + ( (            + (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(1) ) &
+                                                                                + ( ( B(2,iNode) + (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(2) ) &  
+                                                                                + ( (            + (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(3) ) & 
+                                                                                + (   B(3,iNode)*S(5) )                                                 &
+                                                                                + (   B(1,iNode)*S(4) ) 
+                    
+                  ! nodal y-load 
+                  InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + ( (            + (NDIM_Factor * (BBar(3,iNode)-B(3,iNode))) ) *S(1) ) &
+                                                                                + ( (            + (NDIM_Factor * (BBar(3,iNode)-B(3,iNode))) ) *S(2) ) &  
+                                                                                + ( ( B(3,iNode) + (NDIM_Factor * (BBar(3,iNode)-B(3,iNode))) ) *S(3) ) & 
+                                                                                + (   B(2,iNode)*S(5) )                                                 &
+                                                                                + (   B(1,iNode)*S(6) ) 
+                    
+                    
+                  !! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
+                  !InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + ( B(1,iNode)*S(1) ) + ( B(2,iNode)*S(4) ) + ( B(3,iNode)*S(6) ) 
+                  !! nodal y-load 
+                  !InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + ( B(1,iNode)*S(4) ) + ( B(2,iNode)*S(2) ) + ( B(3,iNode)*S(5) )
+                  !! nodal z-load 
+                  !InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + ( B(1,iNode)*S(6) ) + ( B(2,iNode)*S(5) ) + ( B(3,iNode)*S(3) )
+                else
+                    call GiveError('Dimension is not correct. It must be 2 or 3.')
+                end if
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                    
+                    
+                    
+                
+                
+                
+                
+                
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                else
+                    
+                    
+                    
+                    
+                !-------------------------------------------------------------------------------
+                
+                
                 if ( NVECTOR == 2 ) then ! 2D
                     
                   ! In 2D, we use S(1) - S(4)   
@@ -309,6 +476,29 @@
                 else
                     call GiveError('Dimension is not correct. It must be 2 or 3.')
                 end if
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                end if 
+                
+                
+                
+                
+                
+                !----------------------------------------------------------------------------
                 
                 if (CalParams%ApplyBulkViscosityDamping) then
                   do I = 1, NVECTOR  
@@ -628,6 +818,10 @@
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BBar
+          
+          real(REAL_TYPE), dimension(Counters%ELEMENTGAUSSPOINTS_BBAR, NDIM, ELEMENTNODES) :: BMatrixDeformed_BBar_AllGP
+          
           real(REAL_TYPE), dimension(NTENSOR) :: S
           real(REAL_TYPE) :: Position
           real(REAL_TYPE) :: ShapeValues(ELEMENTNODES)
@@ -640,6 +834,10 @@
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
+          
+          real(REAL_TYPE) :: NDIM_Factor
+          
+          NDIM_Factor = REAL(1.0)/REAL(NDIM)
           
           maxParticle = 1
           maxEl       = 1
@@ -676,6 +874,11 @@
             !! calculate B matrix for every material point depending on where it is located in the element  
             !call FormB3(1, IEl, ElementConnectivities, NodalCoordinatesUpd, B, Det, WTN, DShapeValuesArray, maxParticle, maxEl, GetParticleIndex)! , NElemPart)
         
+            if (CalParams%ApplyBBar) then 
+                  call BMatrix_BBar(BMatrixDeformed_BBar_AllGP, IEl, IPatch)
+                end if 
+            
+            
             do Int = 1, NElemPart
                 
                 IntGlo = GetParticleIndex(Int, IEl, IPatch)
@@ -684,6 +887,47 @@
                 ! calculate B matrix for every material point depending on where it is located in the element  
                 call FormB3(IntGlo, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch)! , NElemPart) !(:,:,IPatch)
               
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+    
+    BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+    
+    BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+ 
+else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+    
+    BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+
+else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+
+    BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+    
+end if 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
               !  IntGlo = GetParticleIndex(Int, IEl, IPatch)
               !MaterialIndex = MaterialIDArray(IntGlo)
               
@@ -741,6 +985,100 @@
                 nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch)
                 IDof = ReducedDof(nn)
                
+                
+                
+                if (CalParams%ApplyBBar) then 
+                
+                
+                if ( NVECTOR == 2 ) then ! 2D
+                    
+                  ! In 2D, we use S(1) - S(4)   
+                  ! Assuming stress tensor setup, the following are the numberings. 
+                  ! S(1) = Sigma_xx     S(4) = Sigma_xy     
+                  !                     S(2) = Sigma_yy     
+                  !                                         S(3) = Sigma_zz
+                    
+                  ! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + ( ( B(1,iNode) + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(1) ) &
+                                                                                + ( (            + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(2) ) &                        
+                                                                                + (   B(2,iNode)*S(4) ) 
+                  ! nodal y-load 
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + ( (              (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(1) ) &
+                                                                                + ( ( B(2,iNode) + (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(2) ) &                        
+                                                                                + (   B(1,iNode)*S(4) ) 
+                  
+                  
+                  !InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) 
+                  ! nodal r-load (x-load)
+                  if ( ISAXISYMMETRIC ) then
+                    ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912 
+                    InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + S(3) * ShapeValues(iNode) / Position
+                  end if
+                else if ( NVECTOR == 3 ) then ! 3D
+                  
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                  ! In 3D, we use S(1) - S(6)   
+                  ! Assuming stress tensor setup, the following are the numberings.   
+                  ! S(1) = Sigma_xx     S(4) = Sigma_xy     S(6) = Sigma_xz
+                  !                     S(2) = Sigma_yy     S(5) = Sigma_yz
+                  !                                         S(3) = Sigma_zz
+                    
+                    
+                  ! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
+                  InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + ( ( B(1,iNode) + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(1) ) &
+                                                                                + ( (            + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(2) ) &
+                                                                                + ( (            + (NDIM_Factor * (BBar(1,iNode)-B(1,iNode))) ) *S(3) ) &
+                                                                                + (   B(3,iNode)*S(6) )                                                 &
+                                                                                + (   B(2,iNode)*S(4) )
+                  ! nodal y-load 
+                  InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + ( (            + (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(1) ) &
+                                                                                + ( ( B(2,iNode) + (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(2) ) &  
+                                                                                + ( (            + (NDIM_Factor * (BBar(2,iNode)-B(2,iNode))) ) *S(3) ) & 
+                                                                                + (   B(3,iNode)*S(5) )                                                 &
+                                                                                + (   B(1,iNode)*S(4) ) 
+                    
+                  ! nodal y-load 
+                  InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + ( (            + (NDIM_Factor * (BBar(3,iNode)-B(3,iNode))) ) *S(1) ) &
+                                                                                + ( (            + (NDIM_Factor * (BBar(3,iNode)-B(3,iNode))) ) *S(2) ) &  
+                                                                                + ( ( B(3,iNode) + (NDIM_Factor * (BBar(3,iNode)-B(3,iNode))) ) *S(3) ) & 
+                                                                                + (   B(2,iNode)*S(5) )                                                 &
+                                                                                + (   B(1,iNode)*S(6) ) 
+                    
+                    
+                  !! nodal x-load                                              --> replacing last terms with BTSigma(I) gives error in tests
+                  !InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + ( B(1,iNode)*S(1) ) + ( B(2,iNode)*S(4) ) + ( B(3,iNode)*S(6) ) 
+                  !! nodal y-load 
+                  !InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + ( B(1,iNode)*S(4) ) + ( B(2,iNode)*S(2) ) + ( B(3,iNode)*S(5) )
+                  !! nodal z-load 
+                  !InternalLD(IDof+3, iEntityID) = InternalLD(IDof+3, iEntityID) + ( B(1,iNode)*S(6) ) + ( B(2,iNode)*S(5) ) + ( B(3,iNode)*S(3) )
+                else
+                    call GiveError('Dimension is not correct. It must be 2 or 3.')
+                end if
+                
+                
+                
+                
+                else 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                !------------------------------------------------------------------------------------
+                
                 if ( NVECTOR == 3 ) then ! 3D
                   InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) + B(3,iNode)*S(6)
                   InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) + B(3,iNode)*S(5)
@@ -757,6 +1095,27 @@
                 else
                   call GiveError('Dimension is not correct. It must be 2 or 3.')
                 end if
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                !---------------------------------------------------------------------------------
+                
+                
+                
+                end if 
+                
+                
+                
  
                 if (CalParams%ApplyBulkViscosityDamping) then
                   do I = 1, NVECTOR  

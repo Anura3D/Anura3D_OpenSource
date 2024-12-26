@@ -134,7 +134,7 @@
                              IEl, ElementConnectivities(:,:, IPatch), &
                              NodalCoordinatesUpd, &!(:,:,IPatch),  &
                              BMatrixDeformed, &
-                             IPatch)!, DetJac)
+                             IPatch, DetJac)
 				
                 if ( ISAXISYMMETRIC ) then
                   call getNodalVolumesOfAnElement(IEl, volumeElNodes)
@@ -220,7 +220,7 @@
               
               EnhancedVolumetricStrain = 0.0
               do I = 1, ELEMENTNODES
-                EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
+                EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / real(ELEMENTNODES) !dble
               end do    
                   
               do I = 1, NTENSOR
@@ -340,7 +340,7 @@
                              IEl, ElementConnectivities(:,:, IPatch), &
                              NodalCoordinatesUpd, &!(:,:,IPatch),  &
                              BMatrixDeformed, &
-                             IPatch)!, DetJac)
+                             IPatch, DetJac)
                   
                   if ( ISAXISYMMETRIC ) then
                     call getNodalVolumesOfAnElement(IEl, volumeElNodes)
@@ -433,7 +433,7 @@
                 
                 EnhancedVolumetricStrain = 0.0
                 do I = 1, ELEMENTNODES
-                  EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
+                  EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / real(ELEMENTNODES) !dble
                 end do    
 
                 do I = 1, NTENSOR
@@ -554,7 +554,7 @@
                   
                   EnhancedVolumetricStrain = 0.0
                   do I = 1, ELEMENTNODES
-                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
+                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / real(ELEMENTNODES) !dble
                   end do    
 
 !              EV = ElementsVolumetricStrain (IEl) - EnhancedVolumetricStrain
@@ -655,7 +655,7 @@
                   
                   EnhancedVolumetricStrain = 0.0
                   do I = 1, ELEMENTNODES
-                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / dble(ELEMENTNODES)
+                    EnhancedVolumetricStrain = EnhancedVolumetricStrain + StrainSmooth(LJ(I), 1, IPatch_Temporary) / real(ELEMENTNODES) !dble
                   end do    
 
 !              EV = ElementsVolumetricStrain (IEl) - EnhancedVolumetricStrain                      

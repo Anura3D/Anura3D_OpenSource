@@ -1135,7 +1135,7 @@
                   ! dHS needs to be an input in BMatrix
                   call BMatrix(LocPosition, ELEMENTNODES, Counters%NEl(IPatch), Counters%NodTot(IPatch), NDIM, & !Counters%NEl !Counters%NodTot !NURBS%nel_NURBS
                              IElement, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, BMatrixDeformed, & !(:,:,IPatch)
-                             IPatch)!, DetJac) !NodalCoordinatesUpd
+                             IPatch, DetJac) !NodalCoordinatesUpd
      
                   !call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), &
                   !              BMatrixDeformed, DULiquid(1:Counters%N, 1), ReducedDof, EpsW, &

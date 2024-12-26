@@ -1561,7 +1561,7 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
           real(REAL_TYPE) :: WtN !, intent(out)
           ! Local variables
           integer(INTEGER_TYPE) :: IParticleIndex
-          !real(REAL_TYPE) :: Det
+          real(REAL_TYPE) :: Det
           
           integer(INTEGER_TYPE) :: maxParticle, maxEl, NEl, IAEL
           
@@ -1586,7 +1586,7 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
             IParticleIndex = GetParticleIndex(LocalID, IEl, IPatch)   
             call BMatrix(Particles(IParticleIndex)%LocPos, & ! Get the B matrix for the particle
                          ELEMENTNODES, Counters%NEl(IPatch),  Counters%NodTot(IPatch), NVECTOR, IEl, ElementConnectivities(:,:,IPatch), Co, B, & !NURBS%nel_NURBS(IPatch)
-                         IPatch)!, !Det) !Counters%NEl!Counters%NodTot
+                         IPatch, Det) !Counters%NEl!Counters%NodTot
             WtN = Particles(IParticleIndex)%IntegrationWeight 
           else ! Gauss point
             ! I commented this gauss point integration

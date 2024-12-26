@@ -2429,7 +2429,7 @@
         
         
         
-        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, IPatch)!, DetJac) ! -> DetJac here is | dx/dtilexi |
+        subroutine BMatrix(LocPos, IElTyp, NEl, NodTot, IDim, IElement, ICon, NodeCoord, B, IPatch, DetJac) ! -> DetJac here is | dx/dtilexi |
         !**********************************************************************
         !
         !    Function:  Determination of the strain interpolation matrix (B matrix)
@@ -2460,7 +2460,7 @@
           integer(INTEGER_TYPE), dimension(ELEMENTNODES, NEl), intent(in) :: ICon
           real(REAL_TYPE), dimension(:, :, :), intent(in) :: NodeCoord !dimension(NodTot, IDim)
           real(REAL_TYPE), dimension(IDim, ELEMENTNODES), intent(out) :: B
-          real(REAL_TYPE) :: DetJac !, intent(out)
+          real(REAL_TYPE), intent(out) :: DetJac !, intent(out)
           real(REAL_TYPE) :: Det1
 
           ! Local variables
@@ -2493,6 +2493,8 @@
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dxi_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dx_dtildexi
           real(REAL_TYPE), dimension(NDIM,NDIM) :: dtildexi_dx
+          
+          real(REAL_TYPE), dimension(NDIM,NDIM) :: InvRJac
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
@@ -2570,9 +2572,157 @@
              end do
            end do
          end do       
+         
+         
+         
+         !-------------------------------------------------------------------
+         
+         
+      !!!!!!!!!!!!!!!!!!! PARAMETRIC TO PARENT DOMAIN !!!!!!!!!!!!!!!!!!!
+      ! based on element number, IEl --> find ni, nj, nk  
+      !ni = NURBS%INN(ElementConnectivities(1,IEl,IPatch),1,IPatch)    
+      !nj = NURBS%INN(ElementConnectivities(1,IEl,IPatch),2,IPatch)
+      !if (NDIM == 3) then 
+      !    nk = NURBS%INN(ElementConnectivities(1,IEl,IPatch),3,IPatch)   
+      !end if 
+    
+      ! this is completely based on the parametric domain 
+      call Get_dxi_dtildexi_MapFromParentElToParmtr(NURBS%NXiKnotEntries(IPatch), NURBS%XiKnotEntries(:,IPatch), ni, &
+                                                                     NURBS%NEtaKnotEntries(IPatch), NURBS%EtaKnotEntries(:,IPatch), nj, &  
+                                                                     NURBS%NZetaKnotEntries(IPatch), NURBS%ZetaKnotEntries(:,IPatch), nk, &       
+                                                                     dxi_dtildexi)
+      
+      ! calculate dx_dtildexi = dx_dxi * dxi_dtildexi
+      call Get_dx_dtildexi_MappingFromParentElementToParameterSpace(dx_dxi, dxi_dtildexi, dx_dtildexi) ! -> RJac = dx/dxi * dxi/dtildexi
+         
+       !debugger
+      !if (dx_dtildexi(2,2) == 0.0) then 
+      !    aa=1
+      !end if 
+         
+      ! Invert dx_dxi Jacobian-matrix and its determinant. Note (dx_dxi)^-1 = dxi_dx
+      call RJacInv(NDIM, dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, Det_dtildexi_dx)
+         
+         
+      ! assign the determinant to dx_dtildexi
+      ! --> connecting physical domain to parent domain
+      RJac = dx_dtildexi 
+      InvRJac = dtildexi_dx
+      DetJac = Det_dx_dtildexi
+      Det1 = Det_dtildexi_dx
+      
+      if (Det_dx_dtildexi < 0) Then
+        !call WriteInLogFile('iEl : ' // trim(String(iElement)))
+        !call WriteInLogFile('int : ' // trim(String(int)))
+        call WriteInLogFile('Error DET<0')
+        !do K = 1, ELEMENTNODES
+        !  NN = ElementConnectivities(K, IEl)
+        !  do J = 1, NDIM
+        !    call WriteInLogFile(trim(String(nn)) //' '// trim(String(NodeCoord(nn,j, IPatch))))
+        !  end do
+        !end Do
+        call GiveError('Determinant Det_dx_dtildexi less than zero. [subroutine BMatrix()].')
+      end If      
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         !--------------------------------------------------------------------
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
         end subroutine BMatrix
         
+        !---------------------------------------------------------------------------------
         
+                  subroutine BMatrix_BBar(BMatrixDeformed_GaussPoints, IElement, IPatch)!, !LocPos) 
+                  !----------------------------------------------------------------------
+                  !
+                  ! Evaluate the BMatrix considering multiple gauss points in an element.   
+                  !
+                  !----------------------------------------------------------------------
+                  
+                  implicit none 
+                  
+                  real(REAL_TYPE) :: WeiGP
+                  
+                  real(REAL_TYPE), dimension(NDIM) :: PosGP
+                  
+                  !real(REAL_TYPE), dimension(NDIM), intent(in) :: LocPos
+                  
+                  real(REAL_TYPE), dimension(Counters%ELEMENTGAUSSPOINTS_BBAR, NDIM, ELEMENTNODES), intent(out) :: BMatrixDeformed_GaussPoints
+                  
+                  !real(REAL_TYPE), dimension(NDIM, ELEMENTNODES), intent(out) :: BMatrixDeformed_Average
+                  
+                  integer(INTEGER_TYPE), intent(in) :: IElement, IPatch
+                  
+                  integer(INTEGER_TYPE) :: IGaussPoint
+                  
+                  real(REAL_TYPE) :: DetJac
+                  
+                  real(REAL_TYPE) :: GP_Factor
+                  
+                  
+                  GP_Factor = real(1)/real(Counters%ELEMENTGAUSSPOINTS_BBAR)
+                  
+                  
+                  ! initialize variable 
+                  PosGP = 0.0
+                  BMatrixDeformed_GaussPoints = 0.0
+                  !BMatrixDeformed_Average = 0.0
+                  
+                  do IGaussPoint = 1, Counters%ELEMENTGAUSSPOINTS_BBAR
+                      ! determine the location and integration weight of IGaussPoint
+                      call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP, Counters%ELEMENTGAUSSPOINTS_BBAR)
+                      
+                      ! determine B matrix of deformed element at the particle local position
+                      call BMatrix(PosGP, & !Particles(ParticleIndex)%LocPos, &
+                               ELEMENTNODES, Counters%NEl(IPatch), &!Counters%NEl, & !nel_NURBS(IPatch), &
+                               Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
+                               IElement, ElementConnectivities(:,:,IPatch), &
+                               NodalCoordinatesUpd,  & !(:,:,IPatch)
+                               BMatrixDeformed_GaussPoints(IGaussPoint, :, :), &
+                               IPatch, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
+                  !end do
+                  
+                  
+                  !do IGaussPoint = 1, Counters%ELEMENTGAUSSPOINTS_BBAR
+                      !BMatrixDeformed_Average = BMatrixDeformed_Average + &
+                      !    ( BMatrixDeformed_GaussPoints(IGaussPoint, :, :) * GP_Factor ) 
+                  end do
+                  
+                  end subroutine BMatrix_BBar
+        
+         
+       !-----------------------------------------------------------------------
         
       !  subroutine BMatrix_VolLockSmooth(LocPos, IElTyp, NEl, NodTot, IDim, &
       !      IElement, ICon, NodeCoord, B, IPatch)!, DetJac) ! -> DetJac here is | dx/dtilexi |

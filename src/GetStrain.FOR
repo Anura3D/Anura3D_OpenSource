@@ -138,6 +138,153 @@
           
     end subroutine Get_Strain
 
+    
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    subroutine Get_Strain_BBar(IEl, IPoint, ICon, B, BBar, Disp, NDofEx, Eps, IPatch)
+    !*************************************************************************************   
+    !    subroutine:     Get_Strain
+    ! 
+    !    DESCRIPTION:        
+    !>   Calculates the strains in an integration point
+    !
+    !>   @param[in] IEl : Element number
+    !    @param[in] IMP : Material point number
+    !    @param[in] Icon : Element conectivities
+    !    @param[in] B : B matrix
+    !    @param[in] disp : Displacements of global dof
+    !    @param[in] NDofEx : Reduced dof
+    !
+    !>   @param[out] Eps : Strain
+    !
+    !*************************************************************************************
+      use ModCounters
+      use ModMeshInfo
+      use ModMPMData
+      
+      
+      implicit none
+      
+      integer(INTEGER_TYPE), intent(in) :: IEl, IPoint
+      !integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%Nel), intent(in) :: ICon    
+      !integer(INTEGER_TYPE), dimension(ELEMENTNODES, nel_NURBS(IPatch)), intent(in) :: ICon
+      integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%NEl(IPatch)), intent(in) :: ICon
+
+
+      real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: B
+      real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES), intent(in) :: BBar
+      real(REAL_TYPE), dimension(Counters%N), intent(in) :: Disp
+      integer(INTEGER_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch+1), intent(in) :: NDofEx !Counters%NodTot
+      real(REAL_TYPE), dimension(NTENSOR), intent(out) :: Eps
+      
+      ! local variables
+      integer(INTEGER_TYPE) :: J, NN, ParticleIndex
+      real(REAL_TYPE) :: Position
+      real(REAL_TYPE), dimension(NVECTOR) :: U
+      real(REAL_TYPE), dimension(ELEMENTNODES) :: ShapeValues
+      REAL(REAL_TYPE) :: NDIM_Factor
+      
+      ! Multipatch variables 
+      integer(INTEGER_TYPE) :: IPatch_Temporary
+      integer(INTEGER_TYPE), intent(in) :: IPatch
+      
+      Eps = 0.0
+
+      
+      NDIM_Factor = REAL(1)/REAL(NDIM)
+      
+      
+      select case(NDIM)
+      
+      case(2)
+          
+          ! Axisymmetry is a 2D problem
+          if ( ISAXISYMMETRIC ) then
+            if ( IsParticleIntegration(IEl, IPatch) ) then ! MP-integration
+              ParticleIndex = GetParticleIndex(IPoint, IEl, IPatch) ! MP global ID
+              Position = GlobPosArray(ParticleIndex, 1) ! index 1 is radial direction
+              ShapeValues(:) = ShapeValuesArray(ParticleIndex, :)
+            else ! GP-integration
+              Position = GPGlobalPositionElement(1, IPoint, IEl) ! index 1 is radial direction
+              ShapeValues(:) = GPShapeFunction(IPoint, :) ! where is this GP shape function declared 
+            end if
+          end if  
+
+          do J = 1, ELEMENTNODES 
+            NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
+            U(1) = Disp(NDofEx(NN)+1)
+            U(2) = Disp(NDofEx(NN)+2)
+            
+            Eps(1) = Eps(1) + ((B(1,J) + (NDIM_Factor)*(BBar(1,J)-B(1,J))) * U(1))    &
+                            + ((         (NDIM_Factor)*(BBar(2,J)-B(2,J))) * U(2))    ! Eps_XX = dUx/dX
+            
+            Eps(2) = Eps(2) + ((         (NDIM_Factor)*(BBar(1,J)-B(1,J))) * U(1))    &
+                            + ((B(2,J) + (NDIM_Factor)*(BBar(2,J)-B(2,J))) * U(2))
+            
+            !Eps(2) = Eps(2) + B(2,J) * U(2)                  ! Eps_YY = dUy/dY
+            if ( ISAXISYMMETRIC ) then
+              Eps(3) = Eps(3) + U(1) * ShapeValues(J) / Position ! Eps_tt = u_r*N/r
+            else               
+              Eps(3) = 0.0                                     ! E_zz = 0 in 2D
+            end if
+            Eps(4) = Eps(4) + (B(2,J) * U(1)) + (B(1,J) * U(2))  ! Gam_XY = dUx/dY+dUy/dX
+          end do   
+            
+      case(3)
+          
+            
+          do J = 1, ELEMENTNODES!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)!ELEMENTNODES 
+            NN = Multipatch_Connecting_Local_To_Global_ControlPoints(Icon(J, Iel), IPatch)
+            U(1) = Disp(NDofEx(NN)+1)
+            U(2) = Disp(NDofEx(NN)+2)
+            U(3) = Disp(NDofEx(NN)+3)
+            Eps(1) = Eps(1) + ( (B(1,J) + (NDIM_Factor)*(BBar(1,J)-B(1,J) )) * U(1) )  &
+                            + ( (         (NDIM_Factor)*(BBar(2,J)-B(2,J) )) * U(2) )  &
+                            + ( (         (NDIM_Factor)*(BBar(3,J)-B(3,J) )) * U(3) )  ! Eps_XX = dUx/dX
+            
+            
+            Eps(2) = Eps(2) + ( (         (NDIM_Factor)*(BBar(1,J)-B(1,J) )) * U(1) )  &
+                            + ( (B(2,J) + (NDIM_Factor)*(BBar(2,J)-B(2,J) )) * U(2) )  &
+                            + ( (         (NDIM_Factor)*(BBar(3,J)-B(3,J) )) * U(3) )  
+            !Eps(2) = Eps(2) + ( B(2,J) * U(2) )                      ! Eps_YY = dUy/dY
+            
+            
+            Eps(3) = Eps(3) + ( (         (NDIM_Factor)*(BBar(1,J)-B(1,J) )) * U(1) )  &
+                            + ( (         (NDIM_Factor)*(BBar(2,J)-B(2,J) )) * U(2) )  &
+                            + ( (B(3,J) + (NDIM_Factor)*(BBar(3,J)-B(3,J) )) * U(3) )  
+            
+            
+            !Eps(3) = Eps(3) + ( B(3,J) * U(3) )                      ! Eps_ZZ = dUz/dZ
+            Eps(4) = Eps(4) + ( B(2,J) * U(1) ) + ( B(1,J) * U(2) )  ! Gam_XY = dUx/dY+dUy/dX
+            Eps(5) = Eps(5) + ( B(3,J) * U(2) ) + ( B(2,J) * U(3) )  ! Gam_YZ = dUy/dZ+dUz/dY
+            Eps(6) = Eps(6) + ( B(3,J) * U(1) ) + ( B(1,J) * U(3) )  ! Gam_ZX = dUz/dX+dUx/dZ
+          end do  
+          
+      end select
+          
+    end subroutine Get_Strain_BBar
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     

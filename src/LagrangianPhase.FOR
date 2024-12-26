@@ -4793,7 +4793,7 @@
                                Counters%NodTot(IPatch), NDIM, & !Counters%NodTot
                                IElem, ElementConnectivities(:,:,IPatch), &
                                NodalCoordinates, B, & !(:,:,IPatch)
-                               IPatch)!, DetJac) !update Jacob -> dxi/dtildexi
+                               IPatch, DetJac) !update Jacob -> dxi/dtildexi
               
               do INode = 1, ELEMENTNODES
                   NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(INode,IElem, IPatch), IPatch)

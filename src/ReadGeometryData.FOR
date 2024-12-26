@@ -1057,6 +1057,13 @@
             !else if (trim(BName) == '$$MOVING_MESH_PATCH') then 
             !    MovingMeshPatchID = IPatch
                 
+
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            else if (trim(BName) == '$$BBAR_NUMBER_OF_GAUSS_POINTS') then 
+                ! B-bar number of gauss points
+                Counters%ELEMENTGAUSSPOINTS_BBAR = -1
+                ! read patch ID from the GOM file
+                read(GOMunit, *) Counters%ELEMENTGAUSSPOINTS_BBAR
                 
                 
                 

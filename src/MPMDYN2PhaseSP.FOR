@@ -924,6 +924,11 @@
           real(REAL_TYPE) :: DeformationGradientPreviousInverseJacobian
           
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrixDeformed
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrixDeformed_Average
+          
+          real(REAL_TYPE), dimension(Counters%ELEMENTGAUSSPOINTS_BBAR, NDIM, ELEMENTNODES) :: BMatrixDeformed_BBar_AllGP
+
+          
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IAElement, IElement, NElemPart, IParticle, ParticleIndex, iEntity, iEntityDefault
      
@@ -974,6 +979,11 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
+              if (CalParams%ApplyBBar) then 
+                  ! B-bar at the gauss point
+                  call BMatrix_BBar(BMatrixDeformed_BBar_AllGP, IElement, IPatch)     
+              end if 
+              
               do IParticle = 1, NElemPart       !loop over all particles of the element
               
                 ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch)   !particle global ID
@@ -988,8 +998,54 @@
                              IElement, ElementConnectivities(:,:,IPatch), & !
                              NodalCoordinatesUpd, &!NodalCoordinatesUpd,  &!(:,:,IPatch)
                              BMatrixDeformed, &
-                             IPatch)!, DetJac)
+                             IPatch, DetJac)
      
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then 
+                      
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then
+                      
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+                      
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+                  
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+          
+                  
                   !get the nodal displacement increments for the specific entity
                   !=================================
                   if (CalParams%ApplyContactAlgorithm) then
@@ -1006,9 +1062,19 @@
 
                   if (.not.CalParams%ApplyFBarWater) then 
                   
+                  if (.not.CalParams%ApplyBBar) then 
+                      
                   ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
                   call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, DUTotEnt, ReducedDof, Eps, &
                                 IPatch)
+                  else
+                      
+                  ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
+                  call Get_Strain_BBar(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, BMatrixDeformed_Average, DUTotEnt, ReducedDof, Eps, &
+                                IPatch)    
+                      
+                  end if 
+                  
                   
                   Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
                   
@@ -2116,6 +2182,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BBar
+          
+          real(REAL_TYPE), dimension(Counters%ELEMENTGAUSSPOINTS_BBAR, NDIM, ELEMENTNODES) :: BMatrixDeformed_BBar_AllGP
+          
           integer(INTEGER_TYPE) :: IntGlo, IEl, Int, I, J, NN, NElemPart, iEntityID, iNode, IDof
           real(REAL_TYPE) :: WtN, S, TotIntWeightLiqMP !Det, 
           integer(INTEGER_TYPE) :: IPart, IAEl, ParticleIndex, NodeID, ILoadSystem
@@ -2136,6 +2206,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: ILoadSystem_Temporary
           
+          real(REAL_TYPE) :: NDIM_Factor
+          
+          NDIM_Factor = real(1.0)/real(NDIM)
+          
           
           maxParticle = 1
           maxEl       = 1
@@ -2149,6 +2223,8 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 end do ! loop over patches
 
           B = 0.0
+          BBar = 0.0
+          
           IntGlo = 0
           IEl = 0
           Int = 0
@@ -2242,7 +2318,9 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if
               
-              
+              if (CalParams%ApplyBBar) then 
+                  call BMatrix_BBar(BMatrixDeformed_BBar_AllGP, IEl, IPatch)  
+              end if 
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -2253,6 +2331,35 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 ! moved this into the loop 
                 call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
                 !GetParticleIndex(:,:,IPatch),
+                
+                
+                
+                
+                
+                if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                  
+                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
+                
+                
+                
+                
+                
+                
+                
               
                 ! Set the integration weight
                 if (IsParticleIntegration(IEl, IPatch) ) then
@@ -2285,6 +2392,40 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                   IDof = ReducedDof(nn)
                   ! nodal load
                   
+                  
+                  
+                  
+                  if (CalParams%ApplyBBar) then 
+            
+                if (NDIM == 3) then
+                    
+                IntLoadWaterLoc(IDof+1, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + ( ( B(1, INode) + (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S )  
+                
+                IntLoadWaterLoc(IDof+2, iEntityID) = IntLoadWaterLoc(IDof+2, iEntityID) + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                        + ( ( B(2, INode) + (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S )  
+                
+                IntLoadWaterLoc(IDof+3, iEntityID) = IntLoadWaterLoc(IDof+3, iEntityID) + ( (               (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S ) &
+                                                                                        + ( ( B(3, INode) + (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S )  
+                
+                !IntLoadWaterLoc(IDof+2, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + B(I, INode) * S
+            
+                elseif (NDIM == 2) then 
+                    
+                IntLoadWaterLoc(IDof+1, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + ( ( B(1, INode) + (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S )
+                
+                IntLoadWaterLoc(IDof+2, iEntityID) = IntLoadWaterLoc(IDof+2, iEntityID) + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                        + ( ( B(2, INode) + (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S )
+                
+                end if
+                
+            
+            else
+                  
                   do I = 1, NVECTOR
                     IntLoadWaterLoc(IDof+I, iEntityID) = IntLoadWaterLoc(IDof+I, iEntityID) + B(I, INode) * S
                   end do
@@ -2293,6 +2434,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                     ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912
                     IntLoadWaterLoc(IDof+1, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + S * ShapeValues(INode) / Position
                   end if
+                  
+                  
+            end if
+            
                   
                 end do ! loop element nodes
                 
@@ -2624,6 +2769,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
 
           ! Local variables
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: B
+          real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BBar
+          
+          real(REAL_TYPE), dimension(Counters%ELEMENTGAUSSPOINTS_BBAR, NDIM, ELEMENTNODES) :: BMatrixDeformed_BBar_AllGP
+          
           integer(INTEGER_TYPE) :: I, J, IntGlo, IEl, Int, NN, NElemPart, iEntityID, iNode, IDof
           real(REAL_TYPE) :: WtN, S, TotIntWeightLiqMP ! Det,
           integer(INTEGER_TYPE) :: IAEl, ParticleIndex
@@ -2637,6 +2786,9 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
+          integer(INTEGER_TYPE) :: NDIM_Factor
+          
+          NDIM_Factor = real(1.0)/real(NDIM)
           
           maxParticle = 1
           maxEl       = 1
@@ -2686,6 +2838,17 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
               end if
               
               
+              
+              
+              
+              if (CalParams%ApplyBBar) then 
+                   call BMatrix_BBar(BMatrixDeformed_BBar_AllGP, IEl, IPatch)
+              end if 
+              
+              
+              
+              
+              
         
               !------------------------------------ INTEGRATION POINT LOOP --------------------------------
               do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -2695,6 +2858,35 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
               
                 ! moved this into the loop
                 call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
+                
+                
+                
+                
+                
+                if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                  
+                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
+                
+                
+                
+                
+                
+
+                
                 
                 if (IsParticleIntegration(IEl, IPatch) ) then
                   ! use the integration weight of particle if it is partially filled, otherwise the weight of gauss point is used
@@ -2725,6 +2917,39 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
 
                   nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                   IDof = ReducedDof(nn)   ! global storage coordinate of x-val
+                  
+                  
+                  if (CalParams%ApplyBBar) then 
+                  
+                      if (NDIM == 3) then
+                          
+                      IntLoadWaterLoc(IDof+1, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + ( ( B(1, INode) + (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                              + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                              + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S )  
+                      
+                      IntLoadWaterLoc(IDof+2, iEntityID) = IntLoadWaterLoc(IDof+2, iEntityID) + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                              + ( ( B(2, INode) + (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                              + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S )  
+                      
+                      IntLoadWaterLoc(IDof+3, iEntityID) = IntLoadWaterLoc(IDof+3, iEntityID) + ( (               (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S ) &
+                                                                                              + ( (               (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S ) &
+                                                                                              + ( ( B(3, INode) + (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S )  
+                      
+                      !IntLoadWaterLoc(IDof+2, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + B(I, INode) * S
+                  
+                      elseif (NDIM == 2) then 
+                          
+                      IntLoadWaterLoc(IDof+1, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + ( ( B(1, INode) + (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                              + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S )
+                      
+                      IntLoadWaterLoc(IDof+2, iEntityID) = IntLoadWaterLoc(IDof+2, iEntityID) + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                              + ( ( B(2, INode) + (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S )
+                      
+                      end if
+                      
+                  
+                  else
+                  
             
                   ! nodal x-load 
                   do I = 1, NVECTOR
@@ -2735,6 +2960,18 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                     ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912
                     IntLoadWaterLoc(IDof+1, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + S * ShapeValues(INode) / Position
                   end if
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  end if
+                  
+                  
+                  
+                  
                                              
                 end do !node loop             
               end do ! Loop over 1 .. NElemPart
@@ -3176,6 +3413,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           
           ! Local variables
           real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: B
+          real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BBar
+          
+          real(REAL_TYPE), dimension(Counters%ELEMENTGAUSSPOINTS_BBAR, NDIM, ELEMENTNODES) :: BMatrixDeformed_BBar_AllGP
+          
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, NN, NElemPart, iEntityID, iNode, IDof, ILoadSystem
           real(REAL_TYPE) :: WtN, S !Det, 
           real(REAL_TYPE) :: PartDegreeSat, PartPorosity
@@ -3193,6 +3434,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: ILoadSystem_Temporary
+          
+          real(REAL_TYPE) :: NDIM_Factor
+          
+          NDIM_Factor = real(1.0)/real(NDIM)
           
           maxParticle = 1
           maxEl       = 1
@@ -3272,7 +3517,9 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
               NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
             end if
               
-            
+            if (CalParams%ApplyBBar) then 
+                call BMatrix_BBar(BMatrixDeformed_BBar_AllGP, IEl, IPatch)  
+            end if 
 
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -3281,6 +3528,45 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
               IntGlo = GetParticleIndex(Int, IEl, IPatch)
               
               call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
+              
+              
+              
+              
+              
+              
+              
+
+              if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                  
+                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
+                  
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
               
                PartPorosity = Particles(ParticleIndex)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -3319,6 +3605,42 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                 IDof = ReducedDof(nn)   ! global storage coordinate of x-val
 
+                
+                
+                if (CalParams%ApplyBBar) then 
+            
+                if (NDIM == 3) then
+                    
+                IntLoadWaterPorosityLoc(IDof+1, iEntityID) = IntLoadWaterPorosityLoc(IDof+1, iEntityID) + ( ( B(1, INode) + (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S )  
+                
+                IntLoadWaterPorosityLoc(IDof+2, iEntityID) = IntLoadWaterPorosityLoc(IDof+2, iEntityID) + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                        + ( ( B(2, INode) + (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S )  
+                
+                IntLoadWaterPorosityLoc(IDof+3, iEntityID) = IntLoadWaterPorosityLoc(IDof+3, iEntityID) + ( (               (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S ) &
+                                                                                        + ( ( B(3, INode) + (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S )  
+                
+                !IntLoadWaterLoc(IDof+2, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + B(I, INode) * S
+            
+                elseif (NDIM == 2) then 
+                    
+                IntLoadWaterPorosityLoc(IDof+1, iEntityID) = IntLoadWaterPorosityLoc(IDof+1, iEntityID) + ( ( B(1, INode) + (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                        + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S )
+                
+                IntLoadWaterPorosityLoc(IDof+2, iEntityID) = IntLoadWaterPorosityLoc(IDof+2, iEntityID) + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                        + ( ( B(2, INode) + (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S )
+                
+                end if
+                
+            
+            else
+            
+                
+                
+                
                 do I = 1, NVECTOR
                   IntLoadWaterPorosityLoc(IDof+I, iEntityID) = IntLoadWaterPorosityLoc(IDof+I, iEntityID) + B(I, INode) * S
                 end do
@@ -3327,6 +3649,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                   ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912
                   IntLoadWaterPorosityLoc(IDof+1, iEntityID) = IntLoadWaterPorosityLoc(IDof+1, iEntityID) + S * ShapeValues(INode) / Position
                 end if
+                
+                
+            end if
+            
                 
               end do !node loop
             end do ! Loop over 1 .. NElemPart
@@ -3362,6 +3688,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
 
           ! Local variables
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: B
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BBar
+          
+          real(REAL_TYPE), dimension(Counters%ELEMENTGAUSSPOINTS_BBAR, NDIM, ELEMENTNODES) :: BMatrixDeformed_BBar_AllGP
+          
           integer(INTEGER_TYPE) :: I, IntGlo, IEl, Int, NN, NElemPart, iEntityID, iNode, IDof
           real(REAL_TYPE) :: WtN, S !Det, 
           real(REAL_TYPE) :: PartDegreeSat, PartPorosity
@@ -3375,6 +3705,9 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
           integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE) :: IPatch
           
+          real(REAL_TYPE) :: NDIM_Factor
+          
+          NDIM_Factor = real(1.0)/real(NDIM)
           
           maxParticle = 1
           maxEl       = 1
@@ -3404,6 +3737,10 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
             end if
 
             
+            if (CalParams%ApplyBBar) then 
+                call BMatrix_BBar(BMatrixDeformed_BBar_AllGP, IEl, IPatch)    
+            end if 
+            
 
             !------------------------------------ INTEGRATION POINT LOOP --------------------------------
             do Int = 1, NElemPart ! Loop over number of integration points per element IEl
@@ -3413,6 +3750,44 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
               
               ! Moved this into the integeration point loop
               call FormB3(1, IEl, ElementConnectivities(:,:,IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element !(:,:,IPatch)
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                  
+                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
               
               PartPorosity = Particles(IntGlo)%Porosity
                if (CalParams%ApplyPartialSaturation) then
@@ -3450,6 +3825,63 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel,IPatch), IPatch) ! get global node number
                 IDof = ReducedDof(nn)    ! global storage coordinate of x-val
 
+                
+                if (CalParams%ApplyBBar) then 
+            
+                if (NDIM == 3) then
+                    
+                IntLoadWaterPorosityLoc(IDof+1, iEntityID) = IntLoadWaterPorosityLoc(IDof+1, iEntityID) + ( ( B(1, INode) + (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                                        + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                                        + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S )
+                
+                IntLoadWaterPorosityLoc(IDof+2, iEntityID) = IntLoadWaterPorosityLoc(IDof+2, iEntityID) + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                                        + ( ( B(2, INode) + (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                                        + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S )
+                
+                IntLoadWaterPorosityLoc(IDof+3, iEntityID) = IntLoadWaterPorosityLoc(IDof+3, iEntityID) + ( (               (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S ) &
+                                                                                                        + ( (               (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S ) &
+                                                                                                        + ( ( B(3, INode) + (NDIM_Factor*(BBar(3,INode)-B(3,INode)) ) ) * S )
+                
+                !IntLoadWaterLoc(IDof+2, iEntityID) = IntLoadWaterLoc(IDof+1, iEntityID) + B(I, INode) * S
+                
+                else if (NDIM == 2) then 
+                    
+                IntLoadWaterPorosityLoc(IDof+1, iEntityID) = IntLoadWaterPorosityLoc(IDof+1, iEntityID) + ( ( B(1, INode) + (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S ) &
+                                                                                                        + ( (               (NDIM_Factor*(BBar(1,INode)-B(1,INode)) ) ) * S )
+                
+                IntLoadWaterPorosityLoc(IDof+2, iEntityID) = IntLoadWaterPorosityLoc(IDof+2, iEntityID) + ( (               (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S ) &
+                                                                                                        + ( ( B(2, INode) + (NDIM_Factor*(BBar(2,INode)-B(2,INode)) ) ) * S )
+                
+                end if
+                
+            
+            else
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 do I = 1, NVECTOR
                   IntLoadWaterPorosityLoc(IDof+I, iEntityID) = IntLoadWaterPorosityLoc(IDof+I, iEntityID) + B(I, INode) * S
                 end do
@@ -3459,6 +3891,32 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                     IntLoadWaterPorosityLoc(IDof+1, iEntityID) = IntLoadWaterPorosityLoc(IDof+1, iEntityID) + S * ShapeValues(INode) / Position
                 end if
 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+            end if 
+            
+                
+                
+                
+                
               end do !node loop
             end do ! Loop over 1 .. NElemPart
             !------------------------------------ END INTEGRATION POINT LOOP -----------------------------

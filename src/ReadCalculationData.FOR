@@ -623,6 +623,7 @@
 			         ApplyContactVelocityScaling= .false.,& !True for scaling wrong velocities at the contact
 					 ApplyContactNormalCorrection= .false.,& !Allows to modify some normal vectors in the contact algorithm
                      ApplyStructuredMeshLocPosUpdate= .false., &
+                     ApplyBBar= .false., &
                      ApplyFBar= .false., &
                      ApplyFBarWater= .false., &   
                      ApplyFBarLowerOrder= .false., &
@@ -1519,6 +1520,13 @@
             !    call Assert( ios == 0, messageIOS//trim(BName) )
             !    call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
             !    if ( DumI(1) == 1 ) CalParams%ApplyBBar = .true.
+            ! B-bar flags -----------------------------------------------------------------------------------------    
+            else if (trim(BName)=='$$B_BAR_VOLLOCK_SMOOTHING') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyBBar = .true.
                 
                 
                 

@@ -310,10 +310,11 @@
           real(REAL_TYPE) :: DeformationGradientPreviousJacobian
           real(REAL_TYPE) :: DeformationGradientPreviousInverseJacobian
           
-          real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed
+          real(REAL_TYPE), dimension(NDIM, ELEMENTNODES) :: BMatrixDeformed, BMatrixDeformed_Average
+          real(REAL_TYPE), dimension(Counters%ELEMENTGAUSSPOINTS_BBAR, NDIM, ELEMENTNODES) :: BMatrixDeformed_BBar_AllGP
+          
           real(REAL_TYPE) :: DetJac
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
-
           
           ! Multipatch variables 
           integer(INTEGER_TYPE) :: IPatch_Temporary = 1
@@ -367,6 +368,12 @@
                 NElemPart = ELEMENTGAUSSPOINTS ! Number of Gauss points per element
               end if  
               
+              
+              if (CalParams%ApplyBBar) then 
+                  ! B-bar at the gauss point
+                  call BMatrix_BBar(BMatrixDeformed_BBar_AllGP, IElement, IPatch)     
+              end if
+              
               do IParticle = 1, NElemPart ! loop over all particles of the active element
               
                 ParticleIndex = GetParticleIndex(IParticle, IElement, IPatch) ! get global particle ID
@@ -380,7 +387,38 @@
                                IElement, ElementConnectivities(:,:,IPatch), &
                                NodalCoordinatesUpd,  & !(:,:,IPatch)
                                BMatrixDeformed, &
-                               IPatch)!, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
+                               IPatch, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
+                  
+                  
+                  if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then 
+    
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then
+    
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(2, :, :)
+ 
+                  else if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+        
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(3, :, :)
+
+                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(4, :, :)
+
+                  end if
+                  
+                  
+              
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
                   
                   ! get the nodal displacement increments for the specific entity
                   if (CalParams%ApplyContactAlgorithm) then ! CONTACT IS APPLIED
@@ -393,13 +431,22 @@
 
                   if (.not.CalParams%ApplyFBar) then 
                       
+                  if (.not.CalParams%ApplyBBar) then
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, ParticleIndex, &!IParticle, &
                                 ElementConnectivities(:,:,IPatch), & 
                                 BMatrixDeformed, DUTotEnt, ReducedDof, &
                                 Eps, &
                                 IPatch) ! Eps = strain increment at material point
+                  else 
+                  ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
+                  call Get_Strain_BBar(IElement, ParticleIndex, &!IParticle, &
+                                ElementConnectivities(:,:,IPatch), & 
+                                BMatrixDeformed, BMatrixDeformed_Average, DUTotEnt, ReducedDof, &
+                                Eps, &
+                                IPatch) ! Eps = strain increment at material point
                   
+                  end if 
                   else
                   
                       ! Relative deformation gradient --> DeltaF_MP
@@ -505,11 +552,7 @@
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        
-        
-        
-         
-       !-----------------------------------------------------------------------
+
        
        
        
@@ -1555,7 +1598,7 @@
                              IElement, ElementConnectivities(:,:,IPatch), &
                              NodalCoordinatesUpd, &!NodalCoordinatesUpd, & !(:,:,IPatch)
                              BMatrixDeformed, &
-                             IPatch)!, DetJac)
+                             IPatch, DetJac)
 
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain(IElement, IParticle, &

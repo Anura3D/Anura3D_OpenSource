@@ -91,7 +91,9 @@
           integer(INTEGER_TYPE) ::            NSoilLoadSystems = 1 !number of load systems (solid)
           integer(INTEGER_TYPE) ::            NWaterLoadSystems = 1 !number of load systems (water)
           integer(INTEGER_TYPE) ::            NGasLoadSystems = 1 !number of load systems (gas)
-                     
+          
+          integer(INTEGER_TYPE) ::            ELEMENTGAUSSPOINTS_BBAR  
+          
         end type CounterType
         
         type(CounterType), public, save :: Counters ! Stores general counters relevant to the house-keeping

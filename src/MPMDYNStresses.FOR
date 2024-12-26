@@ -126,7 +126,7 @@
             NMaterialSets = Counters%NLayers
             do IMatSet = 1, NMaterialSets
 
-              IEntity =getMaterialEntity(IMatSet)
+              IEntity = 1!IEntity =getMaterialEntity(IMatSet)
 
               if (NFORMULATION==1) then                                ! one set of material points (1-point formulation)
                 if (.not.CalParams%ApplyContactAlgorithm) then         ! no contact
@@ -817,7 +817,7 @@
                 LJ(:) = ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
                 EnhancedPressureIncrement = 0.0
                 do I = 1, ELEMENTNODES
-                  EnhancedPressureIncrement = EnhancedPressureIncrement + dPressureSmooth(LJ(I), 1) / dble(ELEMENTNODES)
+                  EnhancedPressureIncrement = EnhancedPressureIncrement + dPressureSmooth(LJ(I), 1) / real(ELEMENTNODES) !dble
                 end do    
 
               ! Update particle pressure
