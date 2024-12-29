@@ -1019,23 +1019,7 @@
                   
                   
                   
-                  if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then 
-                      
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(1, :, :)
-
-                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then
-                      
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(2, :, :)
-                   
-                  else if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
-                      
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(3, :, :)
                   
-                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
-                  
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(4, :, :)
-                      
-                  end if 
                   
                   
                   
@@ -1068,6 +1052,25 @@
                   call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, DUTotEnt, ReducedDof, Eps, &
                                 IPatch)
                   else
+                      
+                      
+                      if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then 
+                      
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then
+                      
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+                      
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+                  
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
                       
                   ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
                   call Get_Strain_BBar(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, BMatrixDeformed_Average, DUTotEnt, ReducedDof, Eps, &
@@ -2336,23 +2339,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 
                 
                 
-                if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
-
-                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
-                   
-                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
-                  
-                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-                  
-                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
-                      
-                  end if 
+                
                 
                 
                 
@@ -2396,6 +2383,34 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                   
                   
                   if (CalParams%ApplyBBar) then 
+                      
+                      
+                      
+                      
+                      
+                      if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                  
+                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
+                      
+                      
+                      
+                      
+                      
+                      
             
                 if (NDIM == 3) then
                     
@@ -2863,23 +2878,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 
                 
                 
-                if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
-
-                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
-                   
-                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
-                  
-                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-                  
-                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
-                      
-                  end if 
+                
                 
                 
                 
@@ -2920,6 +2919,27 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                   
                   
                   if (CalParams%ApplyBBar) then 
+                      
+                      
+                      if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                  
+                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
+                  
+                  
                   
                       if (NDIM == 3) then
                           
@@ -3536,23 +3556,7 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
               
               
 
-              if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
-
-                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
-                   
-                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
-                  
-                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-                  
-                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
-                      
-                  end if 
+              
                   
               
               
@@ -3608,6 +3612,37 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
                 
                 
                 if (CalParams%ApplyBBar) then 
+                    
+                    
+                    
+                    
+                    
+                    
+                    if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                  
+                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
             
                 if (NDIM == 3) then
                     
@@ -3760,24 +3795,6 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
               
               
               
-              if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
-
-                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
-                   
-                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-                      
-                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
-                  
-                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-                  
-                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
-                      
-                  end if 
-              
               
               
               
@@ -3827,6 +3844,32 @@ end subroutine MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth !MapVolu
 
                 
                 if (CalParams%ApplyBBar) then 
+                    
+                    
+                    
+                    
+                    
+                    if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+                   
+                  else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                      
+                      BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  
+                  else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+                  
+                      BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+                      
+                  end if 
+              
+              
+                    
+                    
             
                 if (NDIM == 3) then
                     

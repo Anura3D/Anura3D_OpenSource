@@ -80,8 +80,39 @@
 
             ! Increase time
             CalParams%TimeStep = CalParams%TimeStep + 1
+            CalParams%FBarTimeStep = CalParams%FBarTimeStep + 1
+            
             CalParams%TotalRealTime = CalParams%TotalRealTime + CalParams%TimeIncrement
             CalParams%OverallRealTime = CalParams%OverallRealTime + CalParams%TimeIncrement
+            
+            
+            if (CalParams%FBarTimeStep == 40) then 
+                
+                CalParams%ApplyFBar = .true.
+                CalParams%ApplyFBarWater = .true.
+                CalParams%ApplyFBarSmoothWP = .true.
+                !CalParams%ApplyFBarSmoothStresses = .true.
+                CalParams%FBarTimeStep = 0
+                
+            else 
+                
+                CalParams%ApplyFBar = .false.
+                CalParams%ApplyFBarWater = .false.
+                CalParams%ApplyFBarSmoothWP = .false.
+                !CalParams%ApplyFBarSmoothStresses = .false.
+                !CalParams%FBarTimeStep = CalParams%FBarTimeStep + 1
+                
+            end if 
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
             !call WriteInLogFile('TimeStep: ' // trim(String(CalParams%TimeStep))//' '//trim(String(CalParams%TimeIncrement)) &
             !                                                                    //' '//trim(String(CalParams%TotalRealTime)))
             !call WriteInLogFile('  Skipconvection? '//trim(String(MinimumDeterminantRatioReached))//' '// &

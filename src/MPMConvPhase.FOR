@@ -390,23 +390,7 @@
                                IPatch, DetJac) !update Jacob -> DetJac = | dx/dtildexi |
                   
                   
-                  if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then 
-    
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(1, :, :)
-
-                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then
-    
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(2, :, :)
- 
-                  else if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
-        
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(3, :, :)
-
-                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
-
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(4, :, :)
-
-                  end if
+                  
                   
                   
               
@@ -439,6 +423,26 @@
                                 Eps, &
                                 IPatch) ! Eps = strain increment at material point
                   else 
+                      
+                      if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then 
+    
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then
+    
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(2, :, :)
+ 
+                  else if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+        
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(3, :, :)
+
+                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+
+                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(4, :, :)
+
+                  end if
+                      
+                      
                   ! Eps in 3D (Exx, Eyy, Ezz, Gxy, Gyz, Gzx), in 2D (Exx, Eyy, Ezz, Gxy)
                   call Get_Strain_BBar(IElement, ParticleIndex, &!IParticle, &
                                 ElementConnectivities(:,:,IPatch), & 

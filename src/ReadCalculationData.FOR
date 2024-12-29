@@ -502,6 +502,7 @@
                      OutputNumberOfRealTime, & ! number of timesteps for which additional output-files are generated
                      OutputNumberOfLoadSteps, &
                      TimeStep, & ! Current time step
+                     FBarTimeStep, & ! F-bar time step   
                      MaxTimeSteps, & ! The maximum time step per load step in quasi-static calculation
                      NThreads, & ! Number of parallelized threads
                      NMaterialPoints, & ! initial number of all (solid+liquid) material points per element (default = 4)     
@@ -1140,6 +1141,7 @@
         CalParams%OutputTimeStepID(MAXOUTPUTTIMESTEPS) = -1
         CalParams%OutputNumberOfLoadSteps = -1
         CalParams%TimeStep = 1
+        CalParams%FBarTimeStep = 0
         CalParams%MaxTimeSteps = 10000
         CalParams%NThreads = 1
         CalParams%NMaterialPoints = 4

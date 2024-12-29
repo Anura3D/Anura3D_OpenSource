@@ -232,23 +232,7 @@
               
               
               
-              if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
-    
-                  BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
-
-              else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then    
-       
-                  BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
- 
-              else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-        
-                  BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
-
-              else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-
-                  BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
-    
-              end if 
+              
               
               
               
@@ -329,7 +313,23 @@
                 
                 
                     
-                    
+                    if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+    
+                  BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+              else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then    
+       
+                  BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+ 
+              else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+        
+                  BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+
+              else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+
+                  BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+    
+              end if 
                     
                     
                     
@@ -899,23 +899,7 @@
                 
                 
                 
-                if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
-    
-    BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
-
-else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
-    
-    BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
- 
-else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-    
-    BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
-
-else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
-
-    BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
-    
-end if 
+                
                 
                 
                 
@@ -988,6 +972,26 @@ end if
                 
                 
                 if (CalParams%ApplyBBar) then 
+                    
+                    
+                    
+                    if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then 
+    
+    BBar = BMatrixDeformed_BBar_AllGP(1, :, :)
+
+else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) < 0)) then
+    
+    BBar = BMatrixDeformed_BBar_AllGP(2, :, :)
+ 
+else if ((Particles(IntGlo)%LocPos(1) < 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+    
+    BBar = BMatrixDeformed_BBar_AllGP(3, :, :)
+
+else if ((Particles(IntGlo)%LocPos(1) > 0) .AND. (Particles(IntGlo)%LocPos(2) > 0)) then
+
+    BBar = BMatrixDeformed_BBar_AllGP(4, :, :)
+    
+end if 
                 
                 
                 if ( NVECTOR == 2 ) then ! 2D
