@@ -737,6 +737,8 @@
                         call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
                         call GetNodalStressIncrement_VolLockSmooth()
                         call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
+                        
+                        !CalParams%ApplyFBarSmoothStresses = .false.
                
                     end if 
                
@@ -2004,8 +2006,8 @@
         implicit none
         
         ! Hardcoded NControlPoints for the higher order mesh of patch 1
-        real(REAL_TYPE), dimension(NTENSOR, Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedStrainIncrementTensor_Numerator       !CC added nEntity
-        
+        real(REAL_TYPE), dimension(NTENSOR, NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity), intent(out) :: WeightedStrainIncrementTensor_Numerator       !CC added nEntity
+        !Counters%NodTot(1)
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
           !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
@@ -2038,7 +2040,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       

@@ -1691,7 +1691,7 @@
           end if 
           
           
-          call InitialiseEdgeNodeTyings()
+          !call InitialiseEdgeNodeTyings()
           
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           ! I need to uncomment the below subroutines 
@@ -1898,7 +1898,8 @@
           
           
               
-          
+          ! I moved this here because it needs to populate the multipatch data
+          call InitialiseEdgeNodeTyings()
           
       
         end subroutine InitialiseMeshData
@@ -3363,10 +3364,14 @@
           do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points 
               
-              !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
+              GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
-            EdgeNodeTyingsHOE(1, I) = I
-            EdgeNodeTyingsHOE(2, I) = I
+              
+              EdgeNodeTyingsHOE(1, GlobalNodeID) = GlobalNodeID
+              EdgeNodeTyingsHOE(2, GlobalNodeID) = GlobalNodeID
+              
+            !EdgeNodeTyingsHOE(1, I) = I
+            !EdgeNodeTyingsHOE(2, I) = I
           end do ! loop over control points
           end do ! loop over patches
           
@@ -5071,26 +5076,54 @@
         implicit none
           ! local variables       
           character(len=MAX_FILENAME_LENGTH) :: FileName
-          integer(INTEGER_TYPE) :: I, J, SurfaceID, NSurfaces, IError, ios
-          integer(INTEGER_TYPE) :: DumE, DUmI, NumSideNodes
-          integer(INTEGER_TYPE), dimension(:), allocatable :: DumN
+          integer(INTEGER_TYPE) :: I, J, SurfaceID, IError, ios !NSurfaces,
+          
+          integer(INTEGER_TYPE) :: NSurfaces !, dimension(Counters%NPatches) 
+          
+          integer(INTEGER_TYPE) :: DumE, DumI, NumSideNodes !--> note DumE is unused
+          
+          !integer(INTEGER_TYPE), dimension(:), allocatable :: DumN ! --> might need to comment this
+          real(REAL_TYPE), dimension(:), allocatable :: DumR ! --> real number for the control points
+          
+          
           character(len=255) :: DumS
           character(len=255) :: BName
-          character(len=255), dimension(MAXOUTPUTSURFACES) :: DumSurfaceName
+          character(len=255), dimension(MAXOUTPUTSURFACES) :: DumSurfaceName !, Counters%NPatches
+          
+          ! Patch ID
+          integer(INTEGER_TYPE) :: PatchID
+          
+          ! multipatch variable 
+          real(REAL_TYPE), dimension(NVECTOR) :: ControlPointSurface ! control point coordinates
+          integer(INTEGER_TYPE) :: IControlPoint_Surface
+          integer(INTEGER_TYPE) :: IControlPoint_Full
+          integer(INTEGER_TYPE) :: counter
+          integer(INTEGER_TYPE) :: FirstIndex, LastIndex
           
           !External :: FExist
           
-          allocate(IsReactionNode(Counters%Sum_NodTot), stat = Ierror)
-          IsReactionNode = .false.
-        
+          ! initialize
+          NSurfaces = 0
+          
+          !allocate(IsReactionNode(Counters%Sum_NodTot), stat = Ierror) ! maybe this needs to be multipatch unique global control points
+          allocate(IsReactionNode(NURBS%Maximum_NControlPoints, Counters%NPatches), stat = Ierror) !NumberOfGlobalControlPointsUniqueMultipatch), stat = Ierror) 
+          !allocate(IsReactionNode(NumberOfGlobalControlPointsUniqueMultipatch), stat = Ierror) !NumberOfGlobalControlPointsUniqueMultipatch), stat = Ierror) 
+          IsReactionNode = .false. ! initialise
+            
           
           if (ELEMENTTYPE==TETRAOLD) then
             NumSideNodes = N_BOUNDARY_NODES_HOE
           else
             NumSideNodes = ELEMENTBOUNDARYNODES
           end if
-          allocate(DumN(NumSideNodes), Stat = Ierror)
-          DumN = -1
+          
+          ! This is for control point number 
+          !allocate(DumN(NumSideNodes), Stat = Ierror) ! NumSideNodes --> ELEMENTBOUNDARYNODES
+          !DumN = -1
+          
+          ! This is for control point coordinate
+          allocate(DumR(NumSideNodes*NVECTOR), Stat = Ierror) ! NumSideNodes --> ELEMENTBOUNDARYNODES
+          DumR = -1
           
           
           ! read GOM file
@@ -5108,24 +5141,69 @@
           NSurfaces = 0 
           do
           read(GOMunit, '(A)', iostat=ios) BName 
+          !if (trim(BName) == '$$PATCH_ID') then
+          !    read(GOMUnit, *) PatchID
+          !    
+          !else 
+              
+        
+             
           if (trim(BName) == '$$START_OUTPUT_REACTION_FORCES') then
            read(GOMUnit, *) DumI
            if (DumI < 1) EXIT
-           do J=1,DumI
-            read(GOMunit, *) DumS, DumE, DumN(1:NumSideNodes)
+           do J=1,DumI                   ! I changed this to real number coordinates
+            read(GOMunit, *) DumS, DumE, DumR(1:(NumSideNodes*NVECTOR)) !DumN(1:NumSideNodes)
             !DumSurfaceName(J) = DumS
             !do while (trim(DumS) /= '$$END_OUTPUT_REACTION_FORCES')
             do I=1,MAXOUTPUTSURFACES
-              if (DumSurfaceName(I) == DumS) then !the surface has already been specified before
+              if (DumSurfaceName(I) == DumS) then !the surface has already been specified before !, PatchID
                  EXIT
-              else if (DumSurfaceName(I) == '/') then !first non-assigned position of the array
-                DumSurfaceName(I) = DumS !Assign the surface name to this position 
-                NSurfaces = NSurfaces + 1 !increment the number of surfaces
+              else if (DumSurfaceName(I) == '/') then !first non-assigned position of the array !, PatchID
+                DumSurfaceName(I) = DumS !Assign the surface name to this position !, PatchID
+                NSurfaces = NSurfaces + 1 !increment the number of surfaces !(PatchID) !(PatchID)
                 EXIT
               end if
-             end do
-              !read(GOMunit, *) DumE, DumN(1:6)
-              IsReactionNode(DumN(1:NumSideNodes)) = .true.
+            end do
+            
+            
+            counter = 0
+            
+            ! loop over all control points in the surface
+            do IControlPoint_Surface = 1, NumSideNodes
+                
+                counter = counter + 1
+                
+                FirstIndex = 1 + ((counter - 1)*2) ! integer for 1, 3, 5, 7, ...
+                LastIndex = 2 + ((counter - 1)*2) ! integer for 2, 4, 6, ...
+                
+                ControlPointSurface = DumR(FirstIndex:LastIndex)
+                
+                do PatchID = 1, Counters%NPatches
+                
+                ! loop over all control points in the patch
+                do IControlPoint_Full = 1, Counters%NodTot(PatchID) 
+                    
+                    if (ControlPointSurface(1) == NodalCoordinates(IControlPoint_Full, 1, PatchID) &
+                        .and. ControlPointSurface(2) == NodalCoordinates(IControlPoint_Full, 2, PatchID)) then 
+               
+                        !IsReactionNode(Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_Full, PatchID)) = .true. 
+                        IsReactionNode(IControlPoint_Full, PatchID) = .true. 
+                        ! turn reaction on 
+                        
+                    end if 
+                    
+                    
+                end do ! loop over all control points in the patch
+                
+                end do ! loop over patches
+                
+            end do ! loop over all control points in the surface
+            
+            
+            
+            
+            !read(GOMunit, *) DumE, DumN(1:6)
+              !IsReactionNode(DumN(1:NumSideNodes), PatchID) = .true.
               !read(GOMUnit,*) DumS, DumE, DumN(1:6)
            end do
            EXIT
@@ -5133,48 +5211,197 @@
            EXIT 
           end if
           end do
-          if (NSurfaces < 1) RETURN
+          if (NSurfaces < 1) RETURN !(PatchID)
           rewind(GOMUnit)
-          Counters%NReactionSurfaceOutput = NSurfaces
+          Counters%NReactionSurfaceOutput = NSurfaces!maxval()
           
           !allocate vectors
-          allocate(IsReactionNodeSurface(Counters%Sum_NodTot,NSurfaces), stat = Ierror)
-          allocate(OutputSurfaceName(NSurfaces), stat = IError)
+          allocate(IsReactionNodeSurface(NURBS%Maximum_NControlPoints, Counters%NReactionSurfaceOutput, Counters%NPatches), stat = Ierror)
+          !allocate(IsReactionNodeSurface(NumberOfGlobalControlPointsUniqueMultipatch, Counters%NReactionSurfaceOutput, Counters%NPatches), stat = Ierror)
           
-          OutputSurfaceName(1:NSurfaces) = DumSurfaceName(1:NSurfaces)
+          allocate(OutputSurfaceName(Counters%NReactionSurfaceOutput), stat = IError) !, Counters%NPatches
+          
+          OutputSurfaceName(1:NSurfaces) = DumSurfaceName(1:NSurfaces) !, PatchID !, PatchID !(PatchID) !(PatchID)
           IsReactionNodeSurface = .false.
           
           !**************************************************************
           !Second read: Assign the nodes to the surfaces
           do
             read(GOMunit, '(A)', iostat=ios) BName 
+          !if (trim(BName) == '$$PATCH_ID') then
+          !    read(GOMUnit, *) PatchID
+          !  
+          !else 
+              
             if (trim(BName) == '$$START_OUTPUT_REACTION_FORCES') then 
               read(GOMUnit, *) DumI
               do J=1,DumI
-                read(GOMunit, *) DumS, DumE, DumN(1:NumSideNodes)
-                do I=1,NSurfaces
-                 if (OutputSurfaceName(I) == DumS) then !the surface has already been specified before
+                read(GOMunit, *) DumS, DumE, DumR(1:(NumSideNodes*NVECTOR)) !DumN(1:NumSideNodes)
+                do I=1,NSurfaces!(PatchID)
+                 if (OutputSurfaceName(I) == DumS) then !the surface has already been specified before !, PatchID
                   SurfaceID = I !get surfaceID
-                  IsReactionNodeSurface(DumN(1:NumSideNodes),SurfaceID) = .true.
+                  
+                  
+                  
+                  
+                  
+                  counter = 0
+            
+            ! loop over all control points in the surface
+            do IControlPoint_Surface = 1, NumSideNodes
+                
+                counter = counter + 1
+                
+                FirstIndex = 1 + ((counter - 1)*2) ! integer for 1, 3, 5, 7, ...
+                LastIndex = 2 + ((counter - 1)*2) ! integer for 2, 4, 6, ...
+                
+                ControlPointSurface = DumR(FirstIndex:LastIndex)
+                
+                do PatchID = 1, Counters%NPatches
+                
+                ! loop over all control points in the patch
+                do IControlPoint_Full = 1, Counters%NodTot(PatchID) 
+                    
+                    if (ControlPointSurface(1) == NodalCoordinates(IControlPoint_Full, 1, PatchID) &
+                        .and. ControlPointSurface(2) == NodalCoordinates(IControlPoint_Full, 2, PatchID)) then 
+               
+                        !IsReactionNode(IControlPoint_Surface, PatchID) = .true. 
+                        ! turn reaction on 
+                        
+                        !IsReactionNodeSurface(DumN(1:NumSideNodes),SurfaceID, PatchID) = .true.
+                        !IsReactionNodeSurface(Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_Full,PatchID),SurfaceID, PatchID) = &
+                        !    .true.
+                        IsReactionNodeSurface(IControlPoint_Full,SurfaceID, PatchID) = &
+                            .true.
+                    end if 
+                    
+                    
+                end do ! loop over all control points in the patch
+                
+                end do ! loop over patches
+                
+            end do ! loop over all control points in the surface
+            
+            
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  !IsReactionNodeSurface(DumN(1:NumSideNodes),SurfaceID, PatchID) = .true.
+                  
+                  
+                  
+                  
                   EXIT
+                  
                  end if
                 end do
               end do
               EXIT
+              
             else if (trim(BName) == '$$FINISH') then
               EXIT 
             end if
           end do
           !***************************************************************
-          if (allocated(DumN)) then
-            deallocate (DumN, stat = IError)
+          !if (allocated(DumN)) then
+          !  deallocate (DumN, stat = IError)
+          !end if
+          
+          if (allocated(DumR)) then
+            deallocate (DumR, stat = IError)
           end if
           
           
           !call DetermineReactionElements()        
           
-      end subroutine InitialiseSurfaceReaction
+        end subroutine InitialiseSurfaceReaction
     
+        
+        
+        
+        
+    !    subroutine DetermineReactionElements()
+    !!********************************************************************************
+    !!
+    !!Function: Determine the elements to be considered for the integration of the reaction forces
+    !!
+    !!********************************************************************************
+    !implicit none
+    !logical, dimension(Counters%Sum_nel, Counters%NPatches) :: IsReactionElm !Counters%NEl !Counters%Sum_nel
+    !integer(INTEGER_TYPE) :: Inode, NElemNod, J, IEle, Ierror, cont !NReactionElem,
+    !
+    !integer(INTEGER_TYPE), dimension(Counters%NPatches) :: NReactionElem
+    !
+    !integer(INTEGER_TYPE) :: IPatch, Max_NReactionElem, GlobalNodeID
+    !
+    !! allocate to the number of patches
+    !allocate( Counters%NElemReactions(Counters%NPatches) )
+    !
+    !! initialise
+    !Counters%NElemReactions = 0
+    !IsReactionElm = .false.
+    !NReactionElem = 0
+    !
+    !do IPatch = 1, Counters%NPatches ! loop over patches ! --> local numbering 
+    !do INode = 1, Counters%NodTot(IPatch) ! loop over control points ! --> local numbering
+    !    
+    !    !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch)
+    !    
+    !  if (IsReactionNode(INode, IPatch)) then ! --> local numbering 
+    !    NElemNod = GetNElmOfNode(INode, IPatch) ! number of elements associated with a node
+    !    do J=1,NElemNod ! loop over number of elements associated with the node
+    !      IEle = GetElmIOfNode(INode,J, IPatch)
+    !      if (.not.IsReactionElm(IEle, IPatch)) then
+    !        IsReactionElm (IEle, IPatch) = .true. ! we are turning on reaction element
+    !        NReactionElem(IPatch) = NReactionElem(IPatch) + 1 ! counting how many elements that are linked to reaction
+    !      end if
+    !    end do
+    !   end if
+    !end do ! loop over control points
+    !end do ! loop over patches
+    !  
+    !! finding the maximum number of reaction elements
+    ! Counters%NElemReactions = NReactionElem!maxval()
+    ! Max_NReactionElem = MAXVAL(NReactionElem)
+    ! 
+    ! !allocate(ConsideredElemReaction(NReactionElem), stat = Ierror)
+    ! allocate(ConsideredElemReaction(Max_NReactionElem, Counters%NPatches), stat = Ierror)
+    ! 
+    ! ! initialize
+    ! ConsideredElemReaction = 0
+    ! cont = 0
+    ! 
+    ! do IPatch = 1, Counters%NPatches ! Loop over patches
+    !do IEle=1, Counters%NEl(IPatch)!NURBS%nel_NURBS(IPatch)!Counters%NEl
+    !  if(IsReactionElm(IEle, IPatch))then
+    !    cont = cont + 1
+    !    ConsideredElemReaction(cont, IPatch) = IEle ! we are setting the element numbers for each patch
+    !    ! --> this is local numbering
+    !  end if
+    !end do ! Loop over elements
+    !
+    !cont = 0 ! reset counter before moving onto the next patch 
+    !
+    ! end do ! Loop over patches
+    !   
+    !    end subroutine DetermineReactionElements
+        
         
       !subroutine InitialiseGPGlobalPositionArrays()
       !!*********************************************************************************
@@ -5377,559 +5604,62 @@
         
         
         
-        subroutine Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
-                                                                NXiKnotOrder, NEtaKnotOrder, &
-                                                                NNodes, &
-                                                                IPatch)
-          ! this subroutine generates the element connectivity for IGA
-          
-          implicit none 
-          
-          ! initiate variables 
-          integer(INTEGER_TYPE) :: ii, jj, kk
-          integer(INTEGER_TYPE) :: counter_Xknot, counter_JumpWithinRows, counter_JumpWithinColumns
-          integer(INTEGER_TYPE) :: KnotSpan_Y_Order 
-          integer(INTEGER_TYPE) :: KnotSpan_X_Order
-          integer(INTEGER_TYPE) :: counter
-          integer(INTEGER_TYPE) :: Size_KnotSpan_X_Unique
-          integer(INTEGER_TYPE) :: Size_KnotSpan_Y_Unique
-          integer(INTEGER_TYPE) :: rows
-          
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
-          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NNodes
-          
-          ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
-          integer(INTEGER_TYPE), intent(in) :: IPatch
-          
-          !NXiKnotEntriesUNIQUE
-          !NEtaKnotEntriesUNIQUE
-          
-          !ElementConnectivities = 0
+!        subroutine Generate_STARTELEMCON_ElementConnectivities(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, &
+!                                                                NXiKnotOrder, NEtaKnotOrder, &
+!                                                                NNodes, &
+!                                                                IPatch)
+!          ! this subroutine generates the element connectivity for IGA
 !          
-!          KnotSpan_X_Order = NXiKnotOrder
-!          KnotSpan_Y_Order = NEtaKnotOrder
+!          implicit none 
 !          
-!          Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
-!          Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
+!          ! initiate variables 
+!          integer(INTEGER_TYPE) :: ii, jj, kk
+!          integer(INTEGER_TYPE) :: counter_Xknot, counter_JumpWithinRows, counter_JumpWithinColumns
+!          integer(INTEGER_TYPE) :: KnotSpan_Y_Order 
+!          integer(INTEGER_TYPE) :: KnotSpan_X_Order
+!          integer(INTEGER_TYPE) :: counter
+!          integer(INTEGER_TYPE) :: Size_KnotSpan_X_Unique
+!          integer(INTEGER_TYPE) :: Size_KnotSpan_Y_Unique
+!          integer(INTEGER_TYPE) :: rows
 !          
+!          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
+!          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
+!          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+!          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+!          integer(INTEGER_TYPE), intent(in) :: NNodes
 !          
-!          ii = 1
-!          counter_Xknot = 0 
-!          counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
-!          counter_JumpWithinColumns = KnotSpan_Y_Order+1 
+!          ! Multipatch variables 
+!          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+!          integer(INTEGER_TYPE), intent(in) :: IPatch
 !          
-!          counter = 1
-!          rows = 0
+!          !NXiKnotEntriesUNIQUE
+!          !NEtaKnotEntriesUNIQUE
 !          
-!          !% for ii = 1: (Size_KnotSpan_X_Unique-1)
-!          do jj = 1,KnotSpan_Y_Order+1
-!              do kk = 1,KnotSpan_X_Order+1 
-!            
-! 
-!                  !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
-!                ElementConnectivities(counter ,  nel_NURBS(IPatch)-rows, IPatch)  &
-!                  = NNodes - counter_Xknot 
-!                  counter = counter + 1 
-!                  counter_Xknot = counter_Xknot + 1 
-!                  
-!              end do
-!              !rows = rows+1
-!              counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
-!              !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
-!          end do       
-!    
-!    
-!    
-!    
-!          counter = 1 
-!          rows = rows+1 !2
-!!% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
-!  
-!        
-!          do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
-!              ElementConnectivities(:, nel_NURBS(IPatch)-rows,IPatch) = ElementConnectivities(:, nel_NURBS(IPatch), IPatch) - counter
-!              rows = rows +1 
-!              counter = counter + 1 
-!          end do
-!    
-!          counter = counter + (KnotSpan_Y_Order)
-!    
-!    
-!!% end    
-!    
-!    
-!    
-!    
-!!% counter = 1; 
-!!% rows = 2
-!
-!          do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
-!              do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
-!                  ElementConnectivities(:, nel_NURBS(IPatch)-rows,IPatch) = ElementConnectivities(:, nel_NURBS(IPatch), IPatch) - counter 
-!                  rows = rows +1 
-!                  counter = counter + 1     
-!              end do
-!
-!              counter = counter + (KnotSpan_Y_Order)
-!          end do
-!
-!    
-!!%     rows = rows +1; 
-!!%     counter = 0; 
-!!% end        
-!
-!        
-!!%         end  
-!!%     end
-!% end 
-
-          
-          ! I need to comment all above this
-          !ElementConnectivities = IEN
-          
-                                                                end subroutine 
-       
-       
-       
-                                                                
-                                                                
-                                                                
-                                                                
-        subroutine Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
-                                                                NXiKnotOrder, NEtaKnotOrder, NZetaKnotOrder, &
-                                                                NNodes)
-          ! this subroutine generates the element connectivity for IGA
-          
-          implicit none 
-          
-          
-          
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInXDirection
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInYDirection
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInZDirection
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInXYPlane
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsInXZPlane
-          
-          integer(INTEGER_TYPE) :: NumberOfControlPointsForEachKnotSpan
-          
-          ! initiate variables 
-          integer(INTEGER_TYPE) :: ii, jj, kk, ll
-          integer(INTEGER_TYPE) :: counter_Xknot, counter_JumpWithinRows, counter_JumpWithinColumns
-          integer(INTEGER_TYPE) :: KnotSpan_Y_Order 
-          integer(INTEGER_TYPE) :: KnotSpan_X_Order
-          integer(INTEGER_TYPE) :: KnotSpan_Z_Order
-          integer(INTEGER_TYPE) :: counter
-          integer(INTEGER_TYPE) :: Size_KnotSpan_X_Unique
-          integer(INTEGER_TYPE) :: Size_KnotSpan_Y_Unique
-          integer(INTEGER_TYPE) :: Size_KnotSpan_Z_Unique
-          integer(INTEGER_TYPE) :: rows
-          
-          
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
-          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
-          integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntriesUNIQUE
-          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder
-          integer(INTEGER_TYPE), intent(in) :: NNodes
-          
-          !NXiKnotEntriesUNIQUE
-          !NEtaKnotEntriesUNIQUE
-          
-          !ElementConnectivities = IEN
-          
-!          KnotSpan_X_Order = NXiKnotOrder
-!          KnotSpan_Y_Order = NEtaKnotOrder
-!          KnotSpan_Z_Order = NZetaKnotOrder
-!          
-!          
-!          Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
-!          Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
-!          Size_KnotSpan_Z_Unique = NZetaKnotEntriesUNIQUE
-!          
-!          ii = 1
-!          counter_Xknot = 0 
-!          counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
-!          counter_JumpWithinColumns = KnotSpan_Y_Order+1 
-!          
-!          
-!          
-!          
-!          
-!          
-!          ! Abdelrahman: we are trying to calculate how many control points are in each direction
-!          NumberOfControlPointsInXDirection = NXiKnotEntriesUNIQUE+NXiKnotOrder-1 !4 for the cubic column exmaple 
-!          NumberOfControlPointsInYDirection = NEtaKnotEntriesUNIQUE+NEtaKnotOrder-1 !7 for the cubic column example 
-!          NumberOfControlPointsInZDirection = NZetaKnotEntriesUNIQUE+NZetaKnotOrder-1 !4 for the cubic column example 
-!          
-!          
-!          ! let's look at the x-y plane 
-!          NumberOfControlPointsInXYPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInYDirection
-!          ! let's look at the x-z plane 
-!          NumberOfControlPointsInXZPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInZDirection
-!          
-!          ! let's calculate how many control points for one element 
-!          NumberOfControlPointsForEachKnotSpan = (NXiKnotOrder+1)*(NEtaKnotOrder+1)*(NZetaKnotOrder+1)
-!          
-!          counter = 0 
-!
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!          !     1 Element  
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!          ! looping accross the number of control points in the x-z plane 
-!          !do ii = 0, NumberOfControlPointsInXZPlane-1
-!          !    
-!          !    ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1
-!          !    counter = counter + 1
-!          !end do 
-!          
-!          do jj =0,NumberOfControlPointsInZDirection-1
-!              do ii = 0, NumberOfControlPointsInXZPlane-1
-!              
-!                  ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
-!                  counter = counter + 1
-!                  
-!                  
-!                  !counter = counter + 1
-!                  !ElementConnectivities(counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
-!                  
-!              end do 
-!          end do 
-!          
-!          
-!          ! loop accross the number of number of control points for each knot span 
-!          !do jj = 1,NumberOfControlPointsInZDirection
-!          !
-!          !    do ii = 0, NumberOfControlPointsInXZPlane-1
-!          !        ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1  
-!          !        counter = counter + 1
-!          !        
-!          !    end do 
-!          !    
-!          !end do 
-!          
-!          
-!          
-!          !ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1)
-!          
-!          
-!          
-!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!          ! loop over elements so that we can establish the connectivity 
-!          counter = 0
-!          do ii = 2, nel_NURBS
-!              
-!              
-!              ElementConnectivities(:,ii) = ElementConnectivities(:,1) + ( (ii-1)*NumberOfControlPointsInXDirection)
-!              counter = counter + 1
-!              
-!              
-!          end do 
-!          
-!    !      16    12     8     4
-!    !15    11     7     3
-!    !14    10     6     2
-!    !13     9     5     1
-!          
-!    !      ElementConnectivities= 0
-!    !      ElementConnectivities(1,1) = 1
-!    !      ElementConnectivities(2,1) = 5 
-!    !      ElementConnectivities(3,1) = 9
-!    !      ElementConnectivities(4,1) = 13 
-!    !      ElementConnectivities(5,1) = 2
-!    !      ElementConnectivities(6,1) = 6
-!    !      ElementConnectivities(7,1) = 10
-!    !      ElementConnectivities(8,1) = 14
-!    !      ElementConnectivities(9,1) = 3
-!    !      ElementConnectivities(10,1) = 7
-!    !      ElementConnectivities(11,1) = 11
-!    !      ElementConnectivities(12,1) = 15
-!    !      ElementConnectivities(13,1) = 4
-!    !      ElementConnectivities(14,1) = 8
-!    !      ElementConnectivities(15,1) = 12
-!    !      ElementConnectivities(16,1) = 16
-!    !      
-!    !      
-!    !!      32    28    24    20
-!    !!31    27    23    19
-!    !!30    26    22    18
-!    !!29    25    21    17
-!    !      
-!    !      ElementConnectivities(17,1) = 17
-!    !      ElementConnectivities(18,1) = 21
-!    !      ElementConnectivities(19,1) = 25
-!    !      ElementConnectivities(20,1) = 29
-!    !      ElementConnectivities(21,1) = 18
-!    !      ElementConnectivities(22,1) = 22
-!    !      ElementConnectivities(23,1) = 26
-!    !      ElementConnectivities(24,1) = 30
-!    !      ElementConnectivities(25,1) = 19
-!    !      ElementConnectivities(26,1) = 23
-!    !      ElementConnectivities(27,1) = 27
-!    !      ElementConnectivities(28,1) = 31
-!    !      ElementConnectivities(29,1) = 20
-!    !      ElementConnectivities(30,1) = 24
-!    !      ElementConnectivities(31,1) = 28
-!    !      ElementConnectivities(32,1) = 32
-!    !      
-!    !      
-!    !!       48    44    40    36
-!    !!47    43    39    35
-!    !!46    42    38    34
-!    !!45    41    37    33
-!    !      
-!    !      ElementConnectivities(33,1) = 33
-!    !      ElementConnectivities(34,1) = 37 
-!    !      ElementConnectivities(35,1) = 41
-!    !      ElementConnectivities(36,1) = 45
-!    !      ElementConnectivities(37,1) = 34
-!    !      ElementConnectivities(38,1) = 38
-!    !      ElementConnectivities(39,1) = 42
-!    !      ElementConnectivities(40,1) = 46
-!    !      ElementConnectivities(41,1) = 35
-!    !      ElementConnectivities(42,1) = 39
-!    !      ElementConnectivities(43,1) = 43
-!    !      ElementConnectivities(44,1) = 47
-!    !      ElementConnectivities(45,1) = 36
-!    !      ElementConnectivities(46,1) = 40
-!    !      ElementConnectivities(47,1) = 44
-!    !      ElementConnectivities(48,1) = 48
-!    !      
-!    !!      64    60    56    52
-!    !!63    59    55    51
-!    !!62    58    54    50
-!    !!61    57    53    49
-!    !      
-!    !      ElementConnectivities(49,1) = 49
-!    !      ElementConnectivities(50,1) = 53
-!    !      ElementConnectivities(51,1) = 57
-!    !      ElementConnectivities(52,1) = 61
-!    !      ElementConnectivities(53,1) = 50
-!    !      ElementConnectivities(54,1) = 54
-!    !      ElementConnectivities(55,1) = 58
-!    !      ElementConnectivities(56,1) = 62
-!    !      ElementConnectivities(57,1) = 51
-!    !      ElementConnectivities(58,1) = 55
-!    !      ElementConnectivities(59,1) = 59
-!    !      ElementConnectivities(60,1) = 63
-!    !      ElementConnectivities(61,1) = 52
-!    !      ElementConnectivities(62,1) = 56
-!    !      ElementConnectivities(63,1) = 60
-!    !      ElementConnectivities(64,1) = 64
-!          
-!          
-!          
-!    !      ElementConnectivities= 0
-!    !      ElementConnectivities(64,1) = 4
-!    !      ElementConnectivities(63,1) = 8 
-!    !      ElementConnectivities(62,1) = 12
-!    !      ElementConnectivities(61,1) = 16 
-!    !      ElementConnectivities(60,1) = 3
-!    !      ElementConnectivities(59,1) = 7
-!    !      ElementConnectivities(58,1) = 11
-!    !      ElementConnectivities(57,1) = 15
-!    !      ElementConnectivities(56,1) = 2
-!    !      ElementConnectivities(55,1) = 6
-!    !      ElementConnectivities(54,1) = 10
-!    !      ElementConnectivities(53,1) = 14
-!    !      ElementConnectivities(52,1) = 1
-!    !      ElementConnectivities(51,1) = 5
-!    !      ElementConnectivities(50,1) = 9
-!    !      ElementConnectivities(49,1) = 13
-!    !      
-!    !      
-!    !!      32    28    24    20
-!    !!31    27    23    19
-!    !!30    26    22    18
-!    !!29    25    21    17
-!    !      
-!    !      ElementConnectivities(48,1) = 20
-!    !      ElementConnectivities(47,1) = 24
-!    !      ElementConnectivities(46,1) = 28
-!    !      ElementConnectivities(45,1) = 32
-!    !      ElementConnectivities(44,1) = 19
-!    !      ElementConnectivities(43,1) = 23
-!    !      ElementConnectivities(42,1) = 27
-!    !      ElementConnectivities(41,1) = 31
-!    !      ElementConnectivities(40,1) = 18
-!    !      ElementConnectivities(39,1) = 22
-!    !      ElementConnectivities(38,1) = 26
-!    !      ElementConnectivities(37,1) = 30
-!    !      ElementConnectivities(36,1) = 17
-!    !      ElementConnectivities(35,1) = 21
-!    !      ElementConnectivities(34,1) = 25
-!    !      ElementConnectivities(33,1) = 29
-!    !      
-!    !      
-!    !!       48    44    40    36
-!    !!47    43    39    35
-!    !!46    42    38    34
-!    !!45    41    37    33
-!    !      
-!    !      ElementConnectivities(32,1) = 36
-!    !      ElementConnectivities(31,1) = 40 
-!    !      ElementConnectivities(30,1) = 44
-!    !      ElementConnectivities(29,1) = 48
-!    !      ElementConnectivities(28,1) = 35
-!    !      ElementConnectivities(27,1) = 39
-!    !      ElementConnectivities(26,1) = 43
-!    !      ElementConnectivities(25,1) = 47
-!    !      ElementConnectivities(24,1) = 34
-!    !      ElementConnectivities(23,1) = 38
-!    !      ElementConnectivities(22,1) = 42
-!    !      ElementConnectivities(21,1) = 46
-!    !      ElementConnectivities(20,1) = 33
-!    !      ElementConnectivities(19,1) = 37
-!    !      ElementConnectivities(18,1) = 41
-!    !      ElementConnectivities(17,1) = 45
-!    !      
-!    !!      64    60    56    52
-!    !!63    59    55    51
-!    !!62    58    54    50
-!    !!61    57    53    49
-!    !      
-!    !      ElementConnectivities(16,1) = 52
-!    !      ElementConnectivities(15,1) = 56
-!    !      ElementConnectivities(14,1) = 60
-!    !      ElementConnectivities(13,1) = 64
-!    !      ElementConnectivities(12,1) = 51
-!    !      ElementConnectivities(11,1) = 55
-!    !      ElementConnectivities(10,1) = 59
-!    !      ElementConnectivities(9,1) = 63
-!    !      ElementConnectivities(8,1) = 50
-!    !      ElementConnectivities(7,1) = 54
-!    !      ElementConnectivities(6,1) = 58
-!    !      ElementConnectivities(5,1) = 62
-!    !      ElementConnectivities(4,1) = 49
-!    !      ElementConnectivities(3,1) = 53
-!    !      ElementConnectivities(2,1) = 57
-!    !      ElementConnectivities(1,1) = 61
-!          
-!          
-!!          ElementConnectivities(
-!!          ElementConnectivities
+!          !ElementConnectivities = 0
+!!          
+!!          KnotSpan_X_Order = NXiKnotOrder
+!!          KnotSpan_Y_Order = NEtaKnotOrder
+!!          
+!!          Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
+!!          Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
 !!          
 !!          
-!!          32    28    24    20
-!!    31    27    23    19
-!!    30    26    22    18
-!!29        25    21    17
-!          
-!          
-!          
-!          
-!          
-!          
-!          
-!    !            ElementConnectivities= 0
-!    !      ElementConnectivities(64,1) = 4
-!    !      ElementConnectivities(63,1) = 3 
-!    !      ElementConnectivities(62,1) = 2
-!    !      ElementConnectivities(61,1) = 1 
-!    !      ElementConnectivities(60,1) = 8
-!    !      ElementConnectivities(59,1) = 7
-!    !      ElementConnectivities(58,1) = 6
-!    !      ElementConnectivities(57,1) = 5
-!    !      ElementConnectivities(56,1) = 12
-!    !      ElementConnectivities(55,1) = 11
-!    !      ElementConnectivities(54,1) = 10
-!    !      ElementConnectivities(53,1) = 9
-!    !      ElementConnectivities(52,1) = 16
-!    !      ElementConnectivities(51,1) = 15
-!    !      ElementConnectivities(50,1) = 14
-!    !      ElementConnectivities(49,1) = 13
-!    !      
-!    !      
-!    !!      32    28    24    20
-!    !!31    27    23    19
-!    !!30    26    22    18
-!    !!29    25    21    17
-!    !      
-!    !      ElementConnectivities(48,1) = 17
-!    !      ElementConnectivities(47,1) = 18
-!    !      ElementConnectivities(46,1) = 19
-!    !      ElementConnectivities(45,1) = 20
-!    !      ElementConnectivities(44,1) = 21
-!    !      ElementConnectivities(43,1) = 22
-!    !      ElementConnectivities(42,1) = 23
-!    !      ElementConnectivities(41,1) = 24
-!    !      ElementConnectivities(40,1) = 25
-!    !      ElementConnectivities(39,1) = 26
-!    !      ElementConnectivities(38,1) = 27
-!    !      ElementConnectivities(37,1) = 28
-!    !      ElementConnectivities(36,1) = 29
-!    !      ElementConnectivities(35,1) = 30
-!    !      ElementConnectivities(34,1) = 31
-!    !      ElementConnectivities(33,1) = 32
-!    !      
-!    !      
-!    !!       48    44    40    36
-!    !!47    43    39    35
-!    !!46    42    38    34
-!    !!45    41    37    33
-!    !      
-!    !      ElementConnectivities(32,1) = 33
-!    !      ElementConnectivities(31,1) = 34 
-!    !      ElementConnectivities(30,1) = 35
-!    !      ElementConnectivities(29,1) = 36
-!    !      ElementConnectivities(28,1) = 37
-!    !      ElementConnectivities(27,1) = 38
-!    !      ElementConnectivities(26,1) = 39
-!    !      ElementConnectivities(25,1) = 40
-!    !      ElementConnectivities(24,1) = 41
-!    !      ElementConnectivities(23,1) = 42
-!    !      ElementConnectivities(22,1) = 43
-!    !      ElementConnectivities(21,1) = 44
-!    !      ElementConnectivities(20,1) = 45
-!    !      ElementConnectivities(19,1) = 46
-!    !      ElementConnectivities(18,1) = 47
-!    !      ElementConnectivities(17,1) = 48
-!    !      
-!    !!      64    60    56    52
-!    !!63    59    55    51
-!    !!62    58    54    50
-!    !!61    57    53    49
-!    !      
-!    !      ElementConnectivities(16,1) = 49
-!    !      ElementConnectivities(15,1) = 50
-!    !      ElementConnectivities(14,1) = 51
-!    !      ElementConnectivities(13,1) = 52
-!    !      ElementConnectivities(12,1) = 53
-!    !      ElementConnectivities(11,1) = 54
-!    !      ElementConnectivities(10,1) = 55
-!    !      ElementConnectivities(9,1) = 56
-!    !      ElementConnectivities(8,1) = 57
-!    !      ElementConnectivities(7,1) = 58
-!    !      ElementConnectivities(6,1) = 59
-!    !      ElementConnectivities(5,1) = 60
-!    !      ElementConnectivities(4,1) = 61
-!    !      ElementConnectivities(3,1) = 62
-!    !      ElementConnectivities(2,1) = 63
-!    !      ElementConnectivities(1,1) = 64
-!          
+!!          ii = 1
+!!          counter_Xknot = 0 
+!!          counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
+!!          counter_JumpWithinColumns = KnotSpan_Y_Order+1 
+!!          
 !!          counter = 1
 !!          rows = 0
 !!          
 !!          !% for ii = 1: (Size_KnotSpan_X_Unique-1)
-!!          do ll = 1,KnotSpan_Z_Order+1
-!!              do jj = 1,KnotSpan_Y_Order+1
-!!                  do kk = 1,KnotSpan_X_Order+1 
+!!          do jj = 1,KnotSpan_Y_Order+1
+!!              do kk = 1,KnotSpan_X_Order+1 
 !!            
 !! 
 !!                  !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
-!!                ElementConnectivities(counter ,  nel_NURBS-rows)  &
-!!                 !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1)*(KnotSpan_Z_Order+1))-counter ,  nel_NURBS-rows) &
-!!                    = NNodes - counter_Xknot 
+!!                ElementConnectivities(counter ,  nel_NURBS(IPatch)-rows, IPatch)  &
+!!                  = NNodes - counter_Xknot 
 !!                  counter = counter + 1 
 !!                  counter_Xknot = counter_Xknot + 1 
 !!                  
@@ -5937,9 +5667,7 @@
 !!              !rows = rows+1
 !!              counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
 !!              !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
-!!              end do       
-!!          end do 
-!!          
+!!          end do       
 !!    
 !!    
 !!    
@@ -5950,7 +5678,7 @@
 !!  
 !!        
 !!          do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
-!!              ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter
+!!              ElementConnectivities(:, nel_NURBS(IPatch)-rows,IPatch) = ElementConnectivities(:, nel_NURBS(IPatch), IPatch) - counter
 !!              rows = rows +1 
 !!              counter = counter + 1 
 !!          end do
@@ -5968,36 +5696,535 @@
 !!
 !!          do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
 !!              do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
-!!                  ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter 
+!!                  ElementConnectivities(:, nel_NURBS(IPatch)-rows,IPatch) = ElementConnectivities(:, nel_NURBS(IPatch), IPatch) - counter 
 !!                  rows = rows +1 
 !!                  counter = counter + 1     
 !!              end do
 !!
 !!              counter = counter + (KnotSpan_Y_Order)
 !!          end do
-!
-!          
-!          
-!          
-!          
-!          
-!          
-!          
-!    
-!!%     rows = rows +1; 
-!!%     counter = 0; 
-!!% end        
-!
-!        
-!!%         end  
-!!%     end
+!!
+!!    
+!!!%     rows = rows +1; 
+!!!%     counter = 0; 
+!!!% end        
+!!
+!!        
+!!!%         end  
+!!!%     end
 !!% end 
-
-          
-          
-          
-          
-                                                                end subroutine 
+!
+!          
+!          ! I need to comment all above this
+!          !ElementConnectivities = IEN
+!          
+!                                                                end subroutine 
+!       
+!       
+!       
+!                                                                
+!                                                                
+!                                                                
+!                                                                
+!        subroutine Generate_STARTELEMCON_ElementConnectivities_3D(NXiKnotEntriesUNIQUE, NEtaKnotEntriesUNIQUE, NZetaKnotEntriesUNIQUE, &
+!                                                                NXiKnotOrder, NEtaKnotOrder, NZetaKnotOrder, &
+!                                                                NNodes)
+!          ! this subroutine generates the element connectivity for IGA
+!          
+!          implicit none 
+!          
+!          
+!          
+!          
+!          integer(INTEGER_TYPE) :: NumberOfControlPointsInXDirection
+!          
+!          integer(INTEGER_TYPE) :: NumberOfControlPointsInYDirection
+!          
+!          integer(INTEGER_TYPE) :: NumberOfControlPointsInZDirection
+!          
+!          integer(INTEGER_TYPE) :: NumberOfControlPointsInXYPlane
+!          
+!          integer(INTEGER_TYPE) :: NumberOfControlPointsInXZPlane
+!          
+!          integer(INTEGER_TYPE) :: NumberOfControlPointsForEachKnotSpan
+!          
+!          ! initiate variables 
+!          integer(INTEGER_TYPE) :: ii, jj, kk, ll
+!          integer(INTEGER_TYPE) :: counter_Xknot, counter_JumpWithinRows, counter_JumpWithinColumns
+!          integer(INTEGER_TYPE) :: KnotSpan_Y_Order 
+!          integer(INTEGER_TYPE) :: KnotSpan_X_Order
+!          integer(INTEGER_TYPE) :: KnotSpan_Z_Order
+!          integer(INTEGER_TYPE) :: counter
+!          integer(INTEGER_TYPE) :: Size_KnotSpan_X_Unique
+!          integer(INTEGER_TYPE) :: Size_KnotSpan_Y_Unique
+!          integer(INTEGER_TYPE) :: Size_KnotSpan_Z_Unique
+!          integer(INTEGER_TYPE) :: rows
+!          
+!          
+!          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntriesUNIQUE
+!          integer(INTEGER_TYPE), intent(in) :: NEtaKnotEntriesUNIQUE
+!          integer(INTEGER_TYPE), intent(in) :: NZetaKnotEntriesUNIQUE
+!          integer(INTEGER_TYPE), intent(in) :: NXiKnotOrder
+!          integer(INTEGER_TYPE), intent(in) :: NEtaKnotOrder
+!          integer(INTEGER_TYPE), intent(in) :: NZetaKnotOrder
+!          integer(INTEGER_TYPE), intent(in) :: NNodes
+!          
+!          !NXiKnotEntriesUNIQUE
+!          !NEtaKnotEntriesUNIQUE
+!          
+!          !ElementConnectivities = IEN
+!          
+!!          KnotSpan_X_Order = NXiKnotOrder
+!!          KnotSpan_Y_Order = NEtaKnotOrder
+!!          KnotSpan_Z_Order = NZetaKnotOrder
+!!          
+!!          
+!!          Size_KnotSpan_X_Unique = NXiKnotEntriesUNIQUE
+!!          Size_KnotSpan_Y_Unique = NEtaKnotEntriesUNIQUE
+!!          Size_KnotSpan_Z_Unique = NZetaKnotEntriesUNIQUE
+!!          
+!!          ii = 1
+!!          counter_Xknot = 0 
+!!          counter_JumpWithinRows = (Size_KnotSpan_X_Unique-1)+KnotSpan_X_Order 
+!!          counter_JumpWithinColumns = KnotSpan_Y_Order+1 
+!!          
+!!          
+!!          
+!!          
+!!          
+!!          
+!!          ! Abdelrahman: we are trying to calculate how many control points are in each direction
+!!          NumberOfControlPointsInXDirection = NXiKnotEntriesUNIQUE+NXiKnotOrder-1 !4 for the cubic column exmaple 
+!!          NumberOfControlPointsInYDirection = NEtaKnotEntriesUNIQUE+NEtaKnotOrder-1 !7 for the cubic column example 
+!!          NumberOfControlPointsInZDirection = NZetaKnotEntriesUNIQUE+NZetaKnotOrder-1 !4 for the cubic column example 
+!!          
+!!          
+!!          ! let's look at the x-y plane 
+!!          NumberOfControlPointsInXYPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInYDirection
+!!          ! let's look at the x-z plane 
+!!          NumberOfControlPointsInXZPlane = NumberOfControlPointsInXDirection*NumberOfControlPointsInZDirection
+!!          
+!!          ! let's calculate how many control points for one element 
+!!          NumberOfControlPointsForEachKnotSpan = (NXiKnotOrder+1)*(NEtaKnotOrder+1)*(NZetaKnotOrder+1)
+!!          
+!!          counter = 0 
+!!
+!!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!          !     1 Element  
+!!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!          ! looping accross the number of control points in the x-z plane 
+!!          !do ii = 0, NumberOfControlPointsInXZPlane-1
+!!          !    
+!!          !    ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1
+!!          !    counter = counter + 1
+!!          !end do 
+!!          
+!!          do jj =0,NumberOfControlPointsInZDirection-1
+!!              do ii = 0, NumberOfControlPointsInXZPlane-1
+!!              
+!!                  ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
+!!                  counter = counter + 1
+!!                  
+!!                  
+!!                  !counter = counter + 1
+!!                  !ElementConnectivities(counter,1) = ii+1+(NumberOfControlPointsInXYPlane*jj)
+!!                  
+!!              end do 
+!!          end do 
+!!          
+!!          
+!!          ! loop accross the number of number of control points for each knot span 
+!!          !do jj = 1,NumberOfControlPointsInZDirection
+!!          !
+!!          !    do ii = 0, NumberOfControlPointsInXZPlane-1
+!!          !        ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1) = ii+1  
+!!          !        counter = counter + 1
+!!          !        
+!!          !    end do 
+!!          !    
+!!          !end do 
+!!          
+!!          
+!!          
+!!          !ElementConnectivities(NumberOfControlPointsForEachKnotSpan-counter,1)
+!!          
+!!          
+!!          
+!!          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!          ! loop over elements so that we can establish the connectivity 
+!!          counter = 0
+!!          do ii = 2, nel_NURBS
+!!              
+!!              
+!!              ElementConnectivities(:,ii) = ElementConnectivities(:,1) + ( (ii-1)*NumberOfControlPointsInXDirection)
+!!              counter = counter + 1
+!!              
+!!              
+!!          end do 
+!!          
+!!    !      16    12     8     4
+!!    !15    11     7     3
+!!    !14    10     6     2
+!!    !13     9     5     1
+!!          
+!!    !      ElementConnectivities= 0
+!!    !      ElementConnectivities(1,1) = 1
+!!    !      ElementConnectivities(2,1) = 5 
+!!    !      ElementConnectivities(3,1) = 9
+!!    !      ElementConnectivities(4,1) = 13 
+!!    !      ElementConnectivities(5,1) = 2
+!!    !      ElementConnectivities(6,1) = 6
+!!    !      ElementConnectivities(7,1) = 10
+!!    !      ElementConnectivities(8,1) = 14
+!!    !      ElementConnectivities(9,1) = 3
+!!    !      ElementConnectivities(10,1) = 7
+!!    !      ElementConnectivities(11,1) = 11
+!!    !      ElementConnectivities(12,1) = 15
+!!    !      ElementConnectivities(13,1) = 4
+!!    !      ElementConnectivities(14,1) = 8
+!!    !      ElementConnectivities(15,1) = 12
+!!    !      ElementConnectivities(16,1) = 16
+!!    !      
+!!    !      
+!!    !!      32    28    24    20
+!!    !!31    27    23    19
+!!    !!30    26    22    18
+!!    !!29    25    21    17
+!!    !      
+!!    !      ElementConnectivities(17,1) = 17
+!!    !      ElementConnectivities(18,1) = 21
+!!    !      ElementConnectivities(19,1) = 25
+!!    !      ElementConnectivities(20,1) = 29
+!!    !      ElementConnectivities(21,1) = 18
+!!    !      ElementConnectivities(22,1) = 22
+!!    !      ElementConnectivities(23,1) = 26
+!!    !      ElementConnectivities(24,1) = 30
+!!    !      ElementConnectivities(25,1) = 19
+!!    !      ElementConnectivities(26,1) = 23
+!!    !      ElementConnectivities(27,1) = 27
+!!    !      ElementConnectivities(28,1) = 31
+!!    !      ElementConnectivities(29,1) = 20
+!!    !      ElementConnectivities(30,1) = 24
+!!    !      ElementConnectivities(31,1) = 28
+!!    !      ElementConnectivities(32,1) = 32
+!!    !      
+!!    !      
+!!    !!       48    44    40    36
+!!    !!47    43    39    35
+!!    !!46    42    38    34
+!!    !!45    41    37    33
+!!    !      
+!!    !      ElementConnectivities(33,1) = 33
+!!    !      ElementConnectivities(34,1) = 37 
+!!    !      ElementConnectivities(35,1) = 41
+!!    !      ElementConnectivities(36,1) = 45
+!!    !      ElementConnectivities(37,1) = 34
+!!    !      ElementConnectivities(38,1) = 38
+!!    !      ElementConnectivities(39,1) = 42
+!!    !      ElementConnectivities(40,1) = 46
+!!    !      ElementConnectivities(41,1) = 35
+!!    !      ElementConnectivities(42,1) = 39
+!!    !      ElementConnectivities(43,1) = 43
+!!    !      ElementConnectivities(44,1) = 47
+!!    !      ElementConnectivities(45,1) = 36
+!!    !      ElementConnectivities(46,1) = 40
+!!    !      ElementConnectivities(47,1) = 44
+!!    !      ElementConnectivities(48,1) = 48
+!!    !      
+!!    !!      64    60    56    52
+!!    !!63    59    55    51
+!!    !!62    58    54    50
+!!    !!61    57    53    49
+!!    !      
+!!    !      ElementConnectivities(49,1) = 49
+!!    !      ElementConnectivities(50,1) = 53
+!!    !      ElementConnectivities(51,1) = 57
+!!    !      ElementConnectivities(52,1) = 61
+!!    !      ElementConnectivities(53,1) = 50
+!!    !      ElementConnectivities(54,1) = 54
+!!    !      ElementConnectivities(55,1) = 58
+!!    !      ElementConnectivities(56,1) = 62
+!!    !      ElementConnectivities(57,1) = 51
+!!    !      ElementConnectivities(58,1) = 55
+!!    !      ElementConnectivities(59,1) = 59
+!!    !      ElementConnectivities(60,1) = 63
+!!    !      ElementConnectivities(61,1) = 52
+!!    !      ElementConnectivities(62,1) = 56
+!!    !      ElementConnectivities(63,1) = 60
+!!    !      ElementConnectivities(64,1) = 64
+!!          
+!!          
+!!          
+!!    !      ElementConnectivities= 0
+!!    !      ElementConnectivities(64,1) = 4
+!!    !      ElementConnectivities(63,1) = 8 
+!!    !      ElementConnectivities(62,1) = 12
+!!    !      ElementConnectivities(61,1) = 16 
+!!    !      ElementConnectivities(60,1) = 3
+!!    !      ElementConnectivities(59,1) = 7
+!!    !      ElementConnectivities(58,1) = 11
+!!    !      ElementConnectivities(57,1) = 15
+!!    !      ElementConnectivities(56,1) = 2
+!!    !      ElementConnectivities(55,1) = 6
+!!    !      ElementConnectivities(54,1) = 10
+!!    !      ElementConnectivities(53,1) = 14
+!!    !      ElementConnectivities(52,1) = 1
+!!    !      ElementConnectivities(51,1) = 5
+!!    !      ElementConnectivities(50,1) = 9
+!!    !      ElementConnectivities(49,1) = 13
+!!    !      
+!!    !      
+!!    !!      32    28    24    20
+!!    !!31    27    23    19
+!!    !!30    26    22    18
+!!    !!29    25    21    17
+!!    !      
+!!    !      ElementConnectivities(48,1) = 20
+!!    !      ElementConnectivities(47,1) = 24
+!!    !      ElementConnectivities(46,1) = 28
+!!    !      ElementConnectivities(45,1) = 32
+!!    !      ElementConnectivities(44,1) = 19
+!!    !      ElementConnectivities(43,1) = 23
+!!    !      ElementConnectivities(42,1) = 27
+!!    !      ElementConnectivities(41,1) = 31
+!!    !      ElementConnectivities(40,1) = 18
+!!    !      ElementConnectivities(39,1) = 22
+!!    !      ElementConnectivities(38,1) = 26
+!!    !      ElementConnectivities(37,1) = 30
+!!    !      ElementConnectivities(36,1) = 17
+!!    !      ElementConnectivities(35,1) = 21
+!!    !      ElementConnectivities(34,1) = 25
+!!    !      ElementConnectivities(33,1) = 29
+!!    !      
+!!    !      
+!!    !!       48    44    40    36
+!!    !!47    43    39    35
+!!    !!46    42    38    34
+!!    !!45    41    37    33
+!!    !      
+!!    !      ElementConnectivities(32,1) = 36
+!!    !      ElementConnectivities(31,1) = 40 
+!!    !      ElementConnectivities(30,1) = 44
+!!    !      ElementConnectivities(29,1) = 48
+!!    !      ElementConnectivities(28,1) = 35
+!!    !      ElementConnectivities(27,1) = 39
+!!    !      ElementConnectivities(26,1) = 43
+!!    !      ElementConnectivities(25,1) = 47
+!!    !      ElementConnectivities(24,1) = 34
+!!    !      ElementConnectivities(23,1) = 38
+!!    !      ElementConnectivities(22,1) = 42
+!!    !      ElementConnectivities(21,1) = 46
+!!    !      ElementConnectivities(20,1) = 33
+!!    !      ElementConnectivities(19,1) = 37
+!!    !      ElementConnectivities(18,1) = 41
+!!    !      ElementConnectivities(17,1) = 45
+!!    !      
+!!    !!      64    60    56    52
+!!    !!63    59    55    51
+!!    !!62    58    54    50
+!!    !!61    57    53    49
+!!    !      
+!!    !      ElementConnectivities(16,1) = 52
+!!    !      ElementConnectivities(15,1) = 56
+!!    !      ElementConnectivities(14,1) = 60
+!!    !      ElementConnectivities(13,1) = 64
+!!    !      ElementConnectivities(12,1) = 51
+!!    !      ElementConnectivities(11,1) = 55
+!!    !      ElementConnectivities(10,1) = 59
+!!    !      ElementConnectivities(9,1) = 63
+!!    !      ElementConnectivities(8,1) = 50
+!!    !      ElementConnectivities(7,1) = 54
+!!    !      ElementConnectivities(6,1) = 58
+!!    !      ElementConnectivities(5,1) = 62
+!!    !      ElementConnectivities(4,1) = 49
+!!    !      ElementConnectivities(3,1) = 53
+!!    !      ElementConnectivities(2,1) = 57
+!!    !      ElementConnectivities(1,1) = 61
+!!          
+!!          
+!!!          ElementConnectivities(
+!!!          ElementConnectivities
+!!!          
+!!!          
+!!!          32    28    24    20
+!!!    31    27    23    19
+!!!    30    26    22    18
+!!!29        25    21    17
+!!          
+!!          
+!!          
+!!          
+!!          
+!!          
+!!          
+!!    !            ElementConnectivities= 0
+!!    !      ElementConnectivities(64,1) = 4
+!!    !      ElementConnectivities(63,1) = 3 
+!!    !      ElementConnectivities(62,1) = 2
+!!    !      ElementConnectivities(61,1) = 1 
+!!    !      ElementConnectivities(60,1) = 8
+!!    !      ElementConnectivities(59,1) = 7
+!!    !      ElementConnectivities(58,1) = 6
+!!    !      ElementConnectivities(57,1) = 5
+!!    !      ElementConnectivities(56,1) = 12
+!!    !      ElementConnectivities(55,1) = 11
+!!    !      ElementConnectivities(54,1) = 10
+!!    !      ElementConnectivities(53,1) = 9
+!!    !      ElementConnectivities(52,1) = 16
+!!    !      ElementConnectivities(51,1) = 15
+!!    !      ElementConnectivities(50,1) = 14
+!!    !      ElementConnectivities(49,1) = 13
+!!    !      
+!!    !      
+!!    !!      32    28    24    20
+!!    !!31    27    23    19
+!!    !!30    26    22    18
+!!    !!29    25    21    17
+!!    !      
+!!    !      ElementConnectivities(48,1) = 17
+!!    !      ElementConnectivities(47,1) = 18
+!!    !      ElementConnectivities(46,1) = 19
+!!    !      ElementConnectivities(45,1) = 20
+!!    !      ElementConnectivities(44,1) = 21
+!!    !      ElementConnectivities(43,1) = 22
+!!    !      ElementConnectivities(42,1) = 23
+!!    !      ElementConnectivities(41,1) = 24
+!!    !      ElementConnectivities(40,1) = 25
+!!    !      ElementConnectivities(39,1) = 26
+!!    !      ElementConnectivities(38,1) = 27
+!!    !      ElementConnectivities(37,1) = 28
+!!    !      ElementConnectivities(36,1) = 29
+!!    !      ElementConnectivities(35,1) = 30
+!!    !      ElementConnectivities(34,1) = 31
+!!    !      ElementConnectivities(33,1) = 32
+!!    !      
+!!    !      
+!!    !!       48    44    40    36
+!!    !!47    43    39    35
+!!    !!46    42    38    34
+!!    !!45    41    37    33
+!!    !      
+!!    !      ElementConnectivities(32,1) = 33
+!!    !      ElementConnectivities(31,1) = 34 
+!!    !      ElementConnectivities(30,1) = 35
+!!    !      ElementConnectivities(29,1) = 36
+!!    !      ElementConnectivities(28,1) = 37
+!!    !      ElementConnectivities(27,1) = 38
+!!    !      ElementConnectivities(26,1) = 39
+!!    !      ElementConnectivities(25,1) = 40
+!!    !      ElementConnectivities(24,1) = 41
+!!    !      ElementConnectivities(23,1) = 42
+!!    !      ElementConnectivities(22,1) = 43
+!!    !      ElementConnectivities(21,1) = 44
+!!    !      ElementConnectivities(20,1) = 45
+!!    !      ElementConnectivities(19,1) = 46
+!!    !      ElementConnectivities(18,1) = 47
+!!    !      ElementConnectivities(17,1) = 48
+!!    !      
+!!    !!      64    60    56    52
+!!    !!63    59    55    51
+!!    !!62    58    54    50
+!!    !!61    57    53    49
+!!    !      
+!!    !      ElementConnectivities(16,1) = 49
+!!    !      ElementConnectivities(15,1) = 50
+!!    !      ElementConnectivities(14,1) = 51
+!!    !      ElementConnectivities(13,1) = 52
+!!    !      ElementConnectivities(12,1) = 53
+!!    !      ElementConnectivities(11,1) = 54
+!!    !      ElementConnectivities(10,1) = 55
+!!    !      ElementConnectivities(9,1) = 56
+!!    !      ElementConnectivities(8,1) = 57
+!!    !      ElementConnectivities(7,1) = 58
+!!    !      ElementConnectivities(6,1) = 59
+!!    !      ElementConnectivities(5,1) = 60
+!!    !      ElementConnectivities(4,1) = 61
+!!    !      ElementConnectivities(3,1) = 62
+!!    !      ElementConnectivities(2,1) = 63
+!!    !      ElementConnectivities(1,1) = 64
+!!          
+!!!          counter = 1
+!!!          rows = 0
+!!!          
+!!!          !% for ii = 1: (Size_KnotSpan_X_Unique-1)
+!!!          do ll = 1,KnotSpan_Z_Order+1
+!!!              do jj = 1,KnotSpan_Y_Order+1
+!!!                  do kk = 1,KnotSpan_X_Order+1 
+!!!            
+!!! 
+!!!                  !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1))-counter ,  nel_NURBS-rows)  &                       
+!!!                ElementConnectivities(counter ,  nel_NURBS-rows)  &
+!!!                 !ElementConnectivities(((KnotSpan_X_Order+1)*(KnotSpan_Y_Order+1)*(KnotSpan_Z_Order+1))-counter ,  nel_NURBS-rows) &
+!!!                    = NNodes - counter_Xknot 
+!!!                  counter = counter + 1 
+!!!                  counter_Xknot = counter_Xknot + 1 
+!!!                  
+!!!              end do
+!!!              !rows = rows+1
+!!!              counter_Xknot = counter_Xknot + (Size_KnotSpan_X_Unique-1)-1 
+!!!              !counter_Xknot = counter_Xknot + Size_KnotSpan_X_Unique
+!!!              end do       
+!!!          end do 
+!!!          
+!!!    
+!!!    
+!!!    
+!!!    
+!!!          counter = 1 
+!!!          rows = rows+1 !2
+!!!!% for jj = 1: (Size_KnotSpan_Y_Unique-1)-1 % knot spans - 1 
+!!!  
+!!!        
+!!!          do ii = 1,(Size_KnotSpan_X_Unique-1)-1 !% knot spans - 1
+!!!              ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter
+!!!              rows = rows +1 
+!!!              counter = counter + 1 
+!!!          end do
+!!!    
+!!!          counter = counter + (KnotSpan_Y_Order)
+!!!    
+!!!    
+!!!!% end    
+!!!    
+!!!    
+!!!    
+!!!    
+!!!!% counter = 1; 
+!!!!% rows = 2
+!!!
+!!!          do jj = 1, (Size_KnotSpan_Y_Unique-1)-1 !% knot spans - 1 
+!!!              do ii = 1, (Size_KnotSpan_X_Unique-1) !% knot spans - 1
+!!!                  ElementConnectivities(:, nel_NURBS-rows) = ElementConnectivities(:, nel_NURBS) - counter 
+!!!                  rows = rows +1 
+!!!                  counter = counter + 1     
+!!!              end do
+!!!
+!!!              counter = counter + (KnotSpan_Y_Order)
+!!!          end do
+!!
+!!          
+!!          
+!!          
+!!          
+!!          
+!!          
+!!          
+!!    
+!!!%     rows = rows +1; 
+!!!%     counter = 0; 
+!!!% end        
+!!
+!!        
+!!!%         end  
+!!!%     end
+!!!% end 
+!
+!          
+!          
+!          
+!          
+!                                                                end subroutine 
                                                                 
                                                                 
                                                                 

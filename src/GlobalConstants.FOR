@@ -833,10 +833,11 @@
         real(REAL_TYPE), dimension(:), allocatable :: SubIncrementalDisplacement
         real(REAL_TYPE), dimension(:), allocatable :: SubIncrementalPressure
         
-        integer(INTEGER_TYPE), dimension(:), allocatable :: ConsideredElemReaction !vector containing the ElementID of those elements considered in the integration of reaction forces
-        logical, dimension(:,:), allocatable :: IsReactionNodeSurface
-        character (len=255), dimension(:), allocatable :: OutputSurfaceName
-        logical, dimension(:), allocatable :: IsReactionNode!Determine if a node is on the reaction surface
+        integer(INTEGER_TYPE), dimension(:, :), allocatable :: ConsideredElemReaction !vector containing the ElementID of those elements considered in the integration of reaction forces
+                                                    ! --> I added a rank for multipatch
+        logical, dimension(:,:, :), allocatable :: IsReactionNodeSurface !--> I added a rank for multipatch
+        character (len=255), dimension(:), allocatable :: OutputSurfaceName ! --> I added a rank ! I removed the rank
+        logical, dimension(:, :), allocatable :: IsReactionNode !Determine if a node is on the reaction surface ! --> I added a rank for multipatch
         
         real(REAL_TYPE), dimension(:,:,:), allocatable :: GPGlobalPositionElement		
         

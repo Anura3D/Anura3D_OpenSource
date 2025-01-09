@@ -342,7 +342,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$DSPTSD_R$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (DashpotSld(ReducedDof(I1) + J) + DashpotSld(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -375,7 +375,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$SPSD___R$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (SpringSld(ReducedDof(I1) + J) + SpringSld(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -408,7 +408,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$UTOTVBSR$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit)( (NodalTotDisplacementVB(ReducedDof(I1) + J, 1) + NodalTotDisplacementVB(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
@@ -484,7 +484,7 @@
           write(FileUnit) '$$UWTOT__R$$', NBytes
 
           if (NBytes>0) then
-            do I = 1, Counters%Sum_NodTot
+            do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
               I1 = EdgeNodeTyingsHOE(1, I)
               I3 = EdgeNodeTyingsHOE(2, I)
               write(FileUnit) ((TotalDisplacementWater(ReducedDof(I1)+J)+TotalDisplacementWater(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -518,7 +518,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$WTOT___R$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (TotalVelocityWater(ReducedDof(I1) + J, 1) + TotalVelocityWater(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
@@ -551,7 +551,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$EXLDWT_R$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (ExtLoadWaterTotal(ReducedDof(I1) + J, 1,1) + ExtLoadWaterTotal(ReducedDof(I3) + J, 1,1) ) / 2, J=1,NDOFL)
@@ -583,7 +583,7 @@
           NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$DSPTWT_R$$', NBytes
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (DashpotWat(ReducedDof(I1) + J) + DashpotWat(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -617,7 +617,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$SPWT___R$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (SpringWat(ReducedDof(I1) + J) + SpringWat(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -650,7 +650,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$WTOTVBWR$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (NodalTotDisplacementVBWater(ReducedDof(I1) + J, 1) + NodalTotDisplacementVBWater(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)
@@ -722,7 +722,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$UGTOT__R$$', NBytes
           if (NBytes>0) then
-            do I = 1, Counters%Sum_NodTot
+            do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
               I1 = EdgeNodeTyingsHOE(1, I)
               I3 = EdgeNodeTyingsHOE(2, I)
               write(FileUnit) ( (TotalDisplacementGas(ReducedDof(I1) + J) + TotalDisplacementGas(ReducedDof(I3) + J)) / 2, J=1,NDOFL)
@@ -756,7 +756,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$GTOT___R$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (TotalVelocityGas(ReducedDof(I1) + J, 1) + TotalVelocityGas(ReducedDof(I3) + J, 1)) / 2, J=1,NDOFL)
@@ -790,7 +790,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$EXLDGS_R$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (ExtLoadGasTotal(ReducedDof(I1) + J, 1,1) + ExtLoadGasTotal(ReducedDof(I3) + J, 1,1) ) / 2, J=1,NDOFL)
@@ -823,7 +823,7 @@
           NValues = Counters%Sum_NodTot * NDOFL
           NBytes = 8 * NValues
           write(FileUnit) '$$DSPTGT_R$$', NBytes
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (DashpotGas(ReducedDof(I1) + J) + DashpotGas(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -857,7 +857,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$SPGT___R$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (SpringGas(ReducedDof(I1) + J) + SpringGas(ReducedDof(I3) + J) ) / 2, J=1,NDOFL)
@@ -890,7 +890,7 @@
           NBytes = 8 * NValues
           write(FileUnit) '$$WTOTVBGR$$', NBytes
 
-          do I = 1, Counters%Sum_NodTot
+          do I = 1, NumberOfGlobalControlPointsUniqueMultipatch!Counters%Sum_NodTot
             I1 = EdgeNodeTyingsHOE(1, I)
             I3 = EdgeNodeTyingsHOE(2, I)
             write(FileUnit) ( (NodalTotDisplacementVBGas(ReducedDof(I1) + J, 1) + NodalTotDisplacementVBGas(ReducedDof(I3) + J, 1) ) / 2, J=1,NDOFL)

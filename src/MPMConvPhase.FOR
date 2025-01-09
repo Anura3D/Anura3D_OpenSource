@@ -335,15 +335,15 @@
           
           if (CalParams%ApplyFBarLowerOrder) then 
               ! lower order grid
-              allocate( WeightedUpdatedDeformationGradientJacobian(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )   
+              allocate( WeightedUpdatedDeformationGradientJacobian(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity) )   
                 WeightedUpdatedDeformationGradientJacobian = 0.0
-              allocate( UpdatedDeformationGradientJacobian(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )
+              allocate( UpdatedDeformationGradientJacobian(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity) )
                 UpdatedDeformationGradientJacobian = 0.0
           else 
               ! same higher order grid
-              allocate( WeightedUpdatedDeformationGradientJacobian(NURBS%Maximum_NControlPoints, Counters%nEntity) )  
+              allocate( WeightedUpdatedDeformationGradientJacobian(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity) )  
               WeightedUpdatedDeformationGradientJacobian = 0.0
-              allocate( UpdatedDeformationGradientJacobian(NURBS%Maximum_NControlPoints, Counters%nEntity) )    
+              allocate( UpdatedDeformationGradientJacobian(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity) )    
               UpdatedDeformationGradientJacobian = 0.0  
           end if
                       
@@ -538,7 +538,7 @@
           
               do IParticle = 1, Counters%NParticles
                   ! Update deformation gradients
-                  call UpdateRelativeDeformationGradient(Particles(IParticle))
+                  call UpdateRelativeDeformationGradient(Particles(IParticle), IParticle)
                   call UpdateDeformationGradientPrevious(Particles(IParticle)) 
                   
                   ! Update strains 
@@ -574,7 +574,7 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
           
           
         ! Local variables
@@ -599,7 +599,7 @@
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES) = &
-                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
+                        Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)
                 
                 !do I = 1, NTENSOR
               
@@ -793,7 +793,7 @@
         
         
         
-        subroutine UpdateRelativeDeformationGradient(Particle) 
+        subroutine UpdateRelativeDeformationGradient(Particle, IParticle) 
         !----------------------------------------------------------------
         ! To update the relative deformation gradient after smoothing the jacobians
         !----------------------------------------------------------------
@@ -801,7 +801,7 @@
         
         type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
         
-        integer(INTEGER_TYPE) :: IParticle
+        integer(INTEGER_TYPE), intent(in) :: IParticle
         
         real(REAL_TYPE) :: Exponent 
         
@@ -958,7 +958,7 @@
         
         !integer(INTEGER_TYPE), intent(in) :: IPatch
         ! this is a scalar for each node
-        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -997,7 +997,7 @@
 
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -1174,32 +1174,33 @@
         implicit none
         
         
-        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
+        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary, IPatch, GlobalNodeID
         integer(INTEGER_TYPE) :: INode, ITens
         
-        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobian
-        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobian
-        
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobian
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobian
+        !NURBS%Maximum_NControlPoints
         
         IPatch_Temporary = 1
         ! initialisation --> not necessary here
         UpdatedDeformationGradientJacobian = 0.0
         
-        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do IPatch = 1, Counters%NPatches
+        do INode = 1, Counters%NodTot(IPatch) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
-                IDOF = ReducedDof(INode)+1 ! obtain the x dof so that we can find the mass. 
+                IDOF = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch))+1 ! obtain the x dof so that we can find the mass. 
                                            ! It does not matter what dof you choose (here x-direction), 
                                            ! because mass is scalar. 
-                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch)
                 !do ITens = 1, NTENSOR
                 
                     if (LumpedMassDry(IDOF,J)/=0) then
-                        UpdatedDeformationGradientJacobian(INode,J) = ( WeightedUpdatedDeformationGradientJacobian(INode,J) &
+                        UpdatedDeformationGradientJacobian(GlobalNodeID,J) = ( WeightedUpdatedDeformationGradientJacobian(GlobalNodeID,J) &
                                                                             / LumpedMassDry(IDOF,J) )
                     else
-                        UpdatedDeformationGradientJacobian(INode,J) = 0.0 
+                        UpdatedDeformationGradientJacobian(GlobalNodeID,J) = 0.0 
                     end if
                 
                 !end do 
@@ -1207,6 +1208,8 @@
             end do
           
         end do
+        
+        end do 
         
         
             end subroutine NormWeightedUpdDefGradJacobAtNodes !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
@@ -1765,7 +1768,7 @@
             end if
 
             ! Calculate new particle shape function values -> after updating position 
-            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(:,:,PatchIDArray(IParticle)), NodalCoordinates, PatchIDArray(IParticle)) ! -> this needs to be for singular MP !(:,:,PatchIDArray(IParticle))
+            call SetParticleShapeFunctionData(Particles(IParticle), IParticle, ElementIDArray(IParticle), ElementConnectivities(1:ELEMENTNODES, 1:NURBS%Maximum_NEl_NURBS,PatchIDArray(IParticle)), NodalCoordinates, PatchIDArray(IParticle)) ! -> this needs to be for singular MP !(:,:,PatchIDArray(IParticle))
             ! Calculate new particle shape function values -> after updating position --> Volumetric locking smoothing
             if (CalParams%ApplyFBar .and. CalParams%ApplyFBarLowerOrder) then
                 call SetParticleShapeFunctionData_VolLockSmooth(Particles(IParticle), IParticle, ElementIDArray(IParticle), NURBS%ElementConnectivities_VolLockSmooth(:,:,PatchIDArray(IParticle)), NodalCoordinates_VolLockSmooth, PatchIDArray(IParticle)) ! -> this needs to be for singular MP !(:,:,PatchIDArray(IParticle))
@@ -1998,10 +2001,10 @@
                                    ELEMENTNODES, &
                                    Counters%NEl(IPatch),  & 
                                    Counters%NodTot(IPatch), NDIM, & 
-                                   NodalCoordinates(:,:,IPatch), & 
-                                   ElementConnectivities(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), & !NURBS%nel_NURBS
+                                   NodalCoordinates, &!(:,:,IPatch), & 
+                                   ElementConnectivities, &!(1:ELEMENTNODES,1:Counters%NEl(IPatch),IPatch), & !NURBS%nel_NURBS
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch), IPatch)!, &
+                                   OutsideElement, Success, ElementAdjacencies, IPatch)!, & !(1:Counters%NEl(IPatch),1:ELEMENTSIDES, IPatch)
                       
                   end if 
                   
@@ -2261,10 +2264,10 @@
                                    ElemTrial, &
                                    ELEMENTNODES, Counters%NEl(PatchTrial),  & !Counters%NEl
                                    Counters%NodTot(PatchTrial), NDIM, & !Counters%NodTot
-                                   NodalCoordinates(:,:,PatchTrial), &
-                                   ElementConnectivities(:,:,PatchTrial), &
+                                   NodalCoordinates, &!(:,:,PatchTrial), &
+                                   ElementConnectivities, &!(:,:,PatchTrial), &
                                    NewLocPos, &
-                                   OutsideElement, Success, ElementAdjacencies(:,:, PatchTrial), PatchTrial)!, &
+                                   OutsideElement, Success, ElementAdjacencies(1:Counters%NEl(PatchTrial),1:ELEMENTSIDES, PatchTrial), PatchTrial)!, & !(:,:, PatchTrial)
                         
                                 
                             end if 

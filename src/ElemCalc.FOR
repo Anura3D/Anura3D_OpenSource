@@ -4026,8 +4026,8 @@
           real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, NDIM, Counters%NPatches), intent(in) :: NodeCoord !(IPatch)
           !real(REAL_TYPE), dimension(:, :), intent(in) :: IncrementalDisplacementSoil
           !integer(INTEGER_TYPE), dimension((NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), nel_NURBS(IPatch)), intent(in) :: ICon
-
-          integer(INTEGER_TYPE), dimension(ELEMENTNODES, Counters%NEl(IPatch)), intent(in) :: ICon
+          !(IPatch)
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES, NURBS%Maximum_NEl_NURBS, Counters%NPatches), intent(in) :: ICon
           
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos !local position of point is an output 
           logical, intent(out) :: OutsideElement, Success
@@ -4136,7 +4136,7 @@
               ! Jacobian calculation
               call DetJacob(HS, dHS, & !-> dHS = dR/dx
                           LocPos_XiTilde, NEl, NodTot, IDim, &
-                          IElement, ICon, NodeCoord, & 
+                          IElement, ICon(1:ELEMENTNODES, 1:Counters%NEl(IPatch), IPatch), NodeCoord, & 
                           dx_dxi, &  
                           dx_dtildexi, dtildexi_dx, Det_dx_dtildexi, &
                           dxi_dx, dtildexi_dxi, &
@@ -4241,7 +4241,7 @@
             call GetGlobalCoordinates(LocPos_XiTilde,  &
                                       ELEMENTNODES, &!(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1), &
                                       NEl, NodTot, IDim, &
-                                      IElement, ICon, NodeCoord, &
+                                      IElement, ICon(:,:,IPatch), NodeCoord, &
                                       GlobPosIteration, &
                                       IPatch)!, &
             !IncrementalDisplacementSoil)
@@ -5259,7 +5259,7 @@
           integer(INTEGER_TYPE), intent(in) :: IElTyp, NEl, NodTot, IDim
           real(REAL_TYPE), dimension(IDim), intent(inout) :: LocPos_XiTilde
           integer(INTEGER_TYPE), intent(in) :: IElement
-          integer(INTEGER_TYPE), dimension(ELEMENTNODES, NEl), intent(in) :: ICon
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES, NURBS%Maximum_NEl_NURBS), intent(in) :: ICon
           real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, IDim, Counters%NPatches), intent(in) :: NodeCoord !NodTot
           !real(REAL_TYPE), dimension(NodTot, IDim), intent(in) :: IncrementalDisplacementSoil
           real(REAL_TYPE), dimension(IDim), intent(out) :: GlobPos

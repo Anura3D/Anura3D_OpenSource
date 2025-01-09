@@ -85,8 +85,8 @@
           integer(INTEGER_TYPE) ::            NPatches = 0 ! number of initialised material points
           integer(INTEGER_TYPE) ::            SolidMaterialPoints = 0 ! number of solid material points
           integer(INTEGER_TYPE) ::            LiquidMaterialPoints = 0 ! number of liquid material points
-          integer(INTEGER_TYPE) ::            NReactionSurfaceOutput = 0 !Number of surfaces for output of reaction forces
-          integer(INTEGER_TYPE) ::            NElemReactions = 0 !number of elements to be considered for the output of reaction surface forces
+          integer(INTEGER_TYPE) ::            NReactionSurfaceOutput = 0 !Number of surfaces for output of reaction forces ! --> added a rank for multipatch ! , dimension(:)
+          integer(INTEGER_TYPE), allocatable, dimension(:) ::            NElemReactions! = 0 !number of elements to be considered for the output of reaction surface forces ! added a rank for multipatch
           integer(INTEGER_TYPE) ::            HydraulicHeadSides = 0
           integer(INTEGER_TYPE) ::            NSoilLoadSystems = 1 !number of load systems (solid)
           integer(INTEGER_TYPE) ::            NWaterLoadSystems = 1 !number of load systems (water)

@@ -950,14 +950,14 @@
           IPatch_Temporary = 1
           
           if (CalParams%ApplyFBarLowerOrder) then
-              allocate( WeightedUpdatedDeformationGradientJacobianWater(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )   
+              allocate( WeightedUpdatedDeformationGradientJacobianWater(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity) )   
               WeightedUpdatedDeformationGradientJacobianWater = 0.0
-              allocate( UpdatedDeformationGradientJacobianWater(NURBS%NControlPoints_VolLockSmooth(IPatch_Temporary), Counters%nEntity) )
+              allocate( UpdatedDeformationGradientJacobianWater(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity) )
               UpdatedDeformationGradientJacobianWater = 0.0
           else 
-              allocate( WeightedUpdatedDeformationGradientJacobianWater(NURBS%Maximum_NControlPoints, Counters%nEntity) )   
+              allocate( WeightedUpdatedDeformationGradientJacobianWater(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity) )   
               WeightedUpdatedDeformationGradientJacobianWater = 0.0
-              allocate( UpdatedDeformationGradientJacobianWater(NURBS%Maximum_NControlPoints, Counters%nEntity) )    
+              allocate( UpdatedDeformationGradientJacobianWater(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity) )    
               UpdatedDeformationGradientJacobianWater = 0.0
           end if
           
@@ -1320,7 +1320,7 @@ end subroutine CalculateEpsVoigtWater
         
         !integer(INTEGER_TYPE), intent(in) :: IPatch
         ! this is a scalar for each node
-        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobianWater       !CC added nEntity
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobianWater       !CC added nEntity
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -1359,7 +1359,7 @@ end subroutine CalculateEpsVoigtWater
 
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -1420,32 +1420,34 @@ end subroutine CalculateEpsVoigtWater
         implicit none
         
         
-        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
+        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary, IPatch, GlobalNodeID
         integer(INTEGER_TYPE) :: INode, ITens
         
-        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobianWater
-        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobianWater
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobianWater
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobianWater
         
         
         IPatch_Temporary = 1
         ! initialisation --> not necessary here
         UpdatedDeformationGradientJacobianWater = 0.0
-        
-        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do IPatch = 1, Counters%NPatches
+        do INode = 1, Counters%NodTot(IPatch) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
-                IDOF = ReducedDof(INode)+1 ! obtain the x dof so that we can find the mass. 
+                IDOF = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch)) +1 ! obtain the x dof so that we can find the mass. 
                                            ! It does not matter what dof you choose (here x-direction), 
                                            ! because mass is scalar. 
+                
+                GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch)
                 
                 !do ITens = 1, NTENSOR
                 
                     if (LumpedMassDry(IDOF,J)/=0) then
-                        UpdatedDeformationGradientJacobianWater(INode,J) = ( WeightedUpdatedDeformationGradientJacobianWater(INode,J) &
+                        UpdatedDeformationGradientJacobianWater(GlobalNodeID,J) = ( WeightedUpdatedDeformationGradientJacobianWater(GlobalNodeID,J) &
                                                                             / LumpedMassDry(IDOF,J) )
                     else
-                        UpdatedDeformationGradientJacobianWater(INode,J) = 0.0 
+                        UpdatedDeformationGradientJacobianWater(GlobalNodeID,J) = 0.0 
                     end if
                 
                 !end do 
@@ -1453,6 +1455,9 @@ end subroutine CalculateEpsVoigtWater
             end do
           
         end do
+        
+        
+        end do 
         
         
             end subroutine NormWeightedUpdDefGradJacobAtNodesWater !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
@@ -1477,7 +1482,7 @@ end subroutine CalculateEpsVoigtWater
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NURBS%Maximum_NControlPoints,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobianWater       !CC added nEntity
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobianWater       !CC added nEntity
           
           
         ! Local variables
@@ -1502,7 +1507,7 @@ end subroutine CalculateEpsVoigtWater
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES) = &
-                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
+                        Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)
                 
                 !do I = 1, NTENSOR
               

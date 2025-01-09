@@ -229,6 +229,10 @@
           logical :: IsUndrEffectiveStress
           character(len = 255) :: CompleteFileName
           
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          
           !External :: FExist
           
           if(Counters%NReactionSurfaceOutput<1) RETURN
@@ -239,10 +243,12 @@
                 IsUndrEffectiveStress = &
             (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE)
               end if
-             end do
+            end do
   
 
-            do ISurface = 1, Counters%NReactionSurfaceOutput
+            !do IPatch = 1, Counters%NPatches ! loop over patches
+            
+            do ISurface = 1, Counters%NReactionSurfaceOutput!(IPatch)
                 call GetStepExt(ISurface, XXX)
                 CompleteFileName = trim(CalParams%FileNames%ProjectName)// '.RSurf_' // XXX 
                 if ( (FExist(trim(CompleteFileName))).and.(CalParams%IStep>1) ) then
@@ -388,6 +394,10 @@
                         
                 end if  
             end do
+            
+            
+            
+            !end do ! loop over patches !Counters%NPatches
 
         end subroutine InitialiseSurfaceReactionOutputFiles
 
@@ -789,7 +799,8 @@
         !*********************************************************************
         implicit none
         
-        real(REAL_TYPE), dimension(Counters%N, CalParams%NumberOfMaterials), intent(inout) :: ReactionSolid
+        real(REAL_TYPE), dimension(Counters%N, CalParams%NumberOfMaterials), intent(inout) :: ReactionSolid 
+        ! --> we're using all dofs here --> we are really just calculating the internal force
         real(REAL_TYPE), dimension(Counters%N, CalParams%NumberOfMaterials), intent(inout) :: ReactionWater
         real(REAL_TYPE), dimension(Counters%N, CalParams%NumberOfMaterials), intent(inout) :: ReactionGas
         real(REAL_TYPE), dimension(Counters%N, CalParams%NumberOfMaterials) :: GravitySolid
@@ -831,9 +842,10 @@
         ReactionWater = 0.0
         ReactionGas = 0.0
         
+        do IPatch = 1, Counters%NPatches
         !compute ReactionForce
-        do I=1, Counters%NElemReactions !loop over the elements that have a node on the reaction surface
-          IEl = ConsideredElemReaction(I)
+        do I=1, Counters%NElemReactions(IPatch) !loop over the elements that have a node on the reaction surface
+          IEl = ConsideredElemReaction(I, IPatch)
           
           if (.not.IsActiveElement(IEl,IPatch)) CYCLE
             
@@ -849,7 +861,7 @@
               
               ! Determine global ID of integration point 
             IntGlo = GetParticleIndex(Int, IEl, IPatch)
-            MaterialIndex = MaterialIDArray(IntGlo)
+            MaterialIndex = MaterialIDArray(IntGlo) !--> we need this material index so that we can get our reaction
 
             call FormB3(Int, IEl, ElementConnectivities(:,:, IPatch), NodalCoordinatesUpd, B, WTN, DShapeValuesArray(IntGlo,:,:), maxParticle, maxEl,  IPatch) ! get the B-matrix once per element
             !(:,:,IPatch)
@@ -868,7 +880,7 @@
             IsUndrEffectiveStress = (trim(MatParams(MaterialIndex)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE)
               
             ! Set the integration weight
-            if (IsParticleIntegration(IEl, IPatch_Temporary)) then 
+            if (IsParticleIntegration(IEl, IPatch)) then 
              if ( ISAXISYMMETRIC ) then
              ! the integration weight of the MP is not corrected due to the axisymmetry
                Position = GlobPosArray(IntGlo, 1) ! INDEX_X = 1
@@ -904,10 +916,10 @@
             end if
                             
             do iNode=1,ELEMENTNODES ! loop over element nodes
-              nn = Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch), IPatch) ! get global node number
-              nix = reducedDof(nn)
+              nn = ElementConnectivities(iNode,iel, IPatch) ! get global node number !Multipatch_Connecting_Local_To_Global_ControlPoints( !, IPatch)
+              nix = reducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(nn, IPatch))
                 
-              if (IsReactionNode(nn)) then
+              if (IsReactionNode(nn, IPatch)) then
                if ( NVECTOR == 2 ) then ! 2D
                  ! nodal x-load
                  ReactionSolid(nix+1, MaterialIndex) = ReactionSolid(nix+1, MaterialIndex) + B(1,iNode)*S(1) + B(2,iNode)*S(4) 
@@ -942,13 +954,16 @@
             end do !loop over particles
         end do !loop over elements
         
+        end do !loop over patches
+        
         !compute gravity load
         GravitySolid = 0.0
         GravityWater = 0.0
         GravityGas = 0.0
         
-        do I=1, Counters%NElemReactions !loop over the elements that have a node on the reaction surface
-          IEl = ConsideredElemReaction(I)
+        do IPatch = 1, Counters%NPatches
+        do I=1, Counters%NElemReactions(IPatch) !loop over the elements that have a node on the reaction surface
+          IEl = ConsideredElemReaction(I, IPatch)
           NElemPart = NPartEle(IEl, IPatch)
           PartGravity = 0.0
           PartGravityWater = 0.0
@@ -971,10 +986,10 @@
             end if
             
             do iNode=1,ELEMENTNODES ! loop over element nodes
-              nn=Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(iNode,iel, IPatch),IPatch) ! get global node number
-              nix = reducedDof(nn)
+              nn= ElementConnectivities(iNode,iel, IPatch)!,IPatch) ! get global node number
+              nix = reducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(nn, IPatch))
               
-              if (IsReactionNode(nn)) then
+              if (IsReactionNode(nn, IPatch)) then
               PartGravity = ShapeValuesArray(IntGlo,INode) * PartGravity
     
               do J = 1, NVECTOR
@@ -994,9 +1009,11 @@
                 end do  
               end if
              end if !is reaction node
-            end do !loope over element nodes
+            end do !loop over element nodes
            end do !loop over particles
         end do !loop over elements 
+        
+        end do !loop over patches
         
         ReactionSolid = ReactionSolid - GravitySolid
 
@@ -1025,6 +1042,9 @@
             intent(out) :: SumReactionSolid, SumReactionWater, SumReactionGas
         
         integer(INTEGER_TYPE) :: ISurface, MaterialID, INode, dof, IDim
+        
+        integer(INTEGER_TYPE) :: IPatch
+        
         logical :: IsUndrEffectiveStress
         
         SumReactionSolid = 0.0
@@ -1039,9 +1059,10 @@
             !code version 2017.1 and following
             (trim(MatParams(MaterialID)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE))
            
-             do INode = 1, Counters%Sum_NodTot
-              If (IsReactionNodeSurface(INode,ISurface)) then
-               dof = ReducedDof(INode)
+             do IPatch = 1, Counters%NPatches ! loop over patches
+             do INode = 1, Counters%NodTot(IPatch) ! loop over nodes 
+              If (IsReactionNodeSurface(INode,ISurface, IPatch)) then ! input local numbering
+               dof = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch))
                do IDim = 1, NVECTOR
                  SumReactionSolid(IDim,MaterialID,ISurface) = SumReactionSolid(IDim,MaterialID,ISurface) + ReactionSolid(dof+IDim, MaterialID)
                
@@ -1056,6 +1077,8 @@
                 end do
                end if !is surface node
              end do !node loop
+             end do !patch loop 
+             
          end do !Materials
          end do !Surfaces                    
                    
