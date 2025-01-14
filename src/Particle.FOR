@@ -180,6 +180,8 @@
           real(REAL_TYPE) :: RelativeDeformationGradientJacobianWater
           real(REAL_TYPE) :: DeformationGradientPreviousJacobianWater
           
+          real(REAL_TYPE) :: VolStrainOriginal
+          real(REAL_TYPE) :: VolStrainSmoothed
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           !real(REAL_TYPE), dimension(:), allocatable :: EpsStepW 
           !> Strain Rates (dExx, dEyy, dEzz, dGxy, dGyz, dGxz) of the particle during a load step
@@ -191,6 +193,8 @@
           !> Sima principal (S1, S2, S3) of the particle during a load step
           real(REAL_TYPE), dimension(tsize) :: SigmaPrin != 0.0
           real(REAL_TYPE) :: WaterPressure = 0.0 ! Water pressure of the particle
+          real(REAL_TYPE) :: WaterPressureIncrement = 0.0 ! Water pressure of the particle
+
           real(REAL_TYPE) :: WaterPressure0 = 0.0 ! Initial water pressure of the particle from the last load step
           real(REAL_TYPE) :: HydraulicHead = 0.0 ! 
           
@@ -1551,6 +1555,39 @@
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
+    subroutine UpdateEpsSmoothed(Particle)!, EpsStep)
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          !real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+
+          integer(INTEGER_TYPE) :: IDIM
+          real(REAL_TYPE) :: Factor
+          
+          Factor = real(1.0)/real(NDIM)
+          
+          do IDIM = 1, NDIM 
+          
+          Particle%EpsStep(IDIM) = Particle%EpsStep(IDIM) &
+              - (Factor*(Particle%VolStrainOriginal &
+              - Particle%VolStrainSmoothed) )
+          end do 
+          
+    end subroutine UpdateEpsSmoothed
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     subroutine SetRelDefGradient(Particle, RelativeDeformationGradient)
         !**********************************************************************

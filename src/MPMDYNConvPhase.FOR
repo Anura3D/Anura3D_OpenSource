@@ -621,32 +621,35 @@
            ! Update particle strain data
             call UpdateParticleStrains() ! update particle strains for solid and mixture
             
+            call SmoothVolumetricStrains() ! --> ApplyFBar and ApplyFBarSmoothStrains
             
-            if (CalParams%ApplyFBar .and. CalParams%ApplyFBarSmoothStrains) then ! only FBar smooth strains turned on
-                
-                ! Smooth the strain field 
-                !--------------------------------------------------------------
-                if (CalParams%ApplyFBarLowerOrder) then 
-                    
-                ! use lower order grid    
-                call MapStrainIncrementTensor_VolLockSmooth_LowerOrder(WeightedStrainIncrementTensor_Numerator)
-                call GetNodalStrainIncrement_VolLockSmooth_LowerOrder()
-                
-                call MapNodalStrainIncrementToMPs_VolLockSmooth_LowerOrder(NodalStrainIncrement_VolLockSmooth)
-                
-                else 
-                    
-                ! use same higher order grid
-                ! we map strain increment * mass from the material point to the nodes 
-                call MapStrainIncrementTensor_VolLockSmooth(WeightedStrainIncrementTensor_Numerator)
-                ! we divide by the lumped mass to obtain the nodal strain increment
-                call GetNodalStrainIncrement_VolLockSmooth()
-                ! we map the nodal strain increment to the material points
-                call MapNodalStrainIncrementToMPs_VolLockSmooth(NodalStrainIncrement_VolLockSmooth)
-                
-                end if
-                !--------------------------------------------------------------
-            end if     
+            call SmoothVolumetricStrains_FBar() ! --> ApplyFBar and ApplyFBarSmoothStrains
+
+        !    if (CalParams%ApplyFBar .and. CalParams%ApplyFBarSmoothStrains) then ! only FBar smooth strains turned on
+        !        
+        !        ! Smooth the strain field 
+        !        !--------------------------------------------------------------
+        !        if (CalParams%ApplyFBarLowerOrder) then 
+        !            
+        !        ! use lower order grid    
+        !        call MapStrainIncrementTensor_VolLockSmooth_LowerOrder(WeightedStrainIncrementTensor_Numerator)
+        !        call GetNodalStrainIncrement_VolLockSmooth_LowerOrder()
+        !        
+        !        call MapNodalStrainIncrementToMPs_VolLockSmooth_LowerOrder(NodalStrainIncrement_VolLockSmooth)
+        !        
+        !        else 
+        !            
+        !        ! use same higher order grid
+        !        ! we map strain increment * mass from the material point to the nodes 
+        !        call MapStrainIncrementTensor_VolLockSmooth(WeightedStrainIncrementTensor_Numerator)
+        !        ! we divide by the lumped mass to obtain the nodal strain increment
+        !        call GetNodalStrainIncrement_VolLockSmooth()
+        !        ! we map the nodal strain increment to the material points
+        !        call MapNodalStrainIncrementToMPs_VolLockSmooth(NodalStrainIncrement_VolLockSmooth)
+        !        
+        !        end if
+        !        !--------------------------------------------------------------
+        !    end if     
         end if
         
         
@@ -661,7 +664,9 @@
           
          if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
            call CalculateWaterVolumetricStrain(IncrementalDisplacementWater)
-             if (IsMPMComputation()) then  ! MPM
+           call SmoothVolumetricStrains_Water() ! --> ApplyFBar and ApplyFBarSmoothStrains
+             
+           if (IsMPMComputation()) then  ! MPM
                !update particle displacement (water)
                call UpdateParticleDisplacementsWater(IncrementalDisplacementWater)
             else !(.not.IsMPMComputation()) then !FEM
@@ -709,39 +714,39 @@
                 
                 ! Smooth the stress field 
                 !--------------------------------------------------------------
-                if (CalParams%ApplyFBarLowerOrder) then 
-                    
-                    if (CalParams%ApplyFBarSmoothStresses) then 
-               
-                        call MapStressIncrementTensor_VolLockSmooth_LowerOrder(WeightedStressIncrementTensor_Numerator)
-                        call GetNodalStressIncrement_VolLockSmooth_LowerOrder()
-                        call MapNodalStressIncrementToMPs_VolLockSmooth_LowerOrder(NodalStressIncrement_VolLockSmooth)
-                
-                    end if 
-               
-                    if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
-                    
-                        call MapWP_VolLockSmooth_LowerOrder(WeightedWP_Numerator)
-                        call GetNodalWP_VolLockSmooth_LowerOrder()
-                        call MapNodalWPToMPs_VolLockSmooth_LowerOrder(NodalWP_VolLockSmooth)
-                    
-               
-                    end if 
-                
-                
-                else 
-                   
-                    
-                    if (CalParams%ApplyFBarSmoothStresses) then 
-                
-                        call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
-                        call GetNodalStressIncrement_VolLockSmooth()
-                        call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
-                        
-                        !CalParams%ApplyFBarSmoothStresses = .false.
-               
-                    end if 
-               
+                !if (CalParams%ApplyFBarLowerOrder) then 
+                !    
+                !    if (CalParams%ApplyFBarSmoothStresses) then 
+                !
+                !        call MapStressIncrementTensor_VolLockSmooth_LowerOrder(WeightedStressIncrementTensor_Numerator)
+                !        call GetNodalStressIncrement_VolLockSmooth_LowerOrder()
+                !        call MapNodalStressIncrementToMPs_VolLockSmooth_LowerOrder(NodalStressIncrement_VolLockSmooth)
+                !
+                !    end if 
+                !
+                !    if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
+                !    
+                !        call MapWP_VolLockSmooth_LowerOrder(WeightedWP_Numerator)
+                !        call GetNodalWP_VolLockSmooth_LowerOrder()
+                !        call MapNodalWPToMPs_VolLockSmooth_LowerOrder(NodalWP_VolLockSmooth)
+                !    
+                !
+                !    end if 
+                !
+                !
+                !else 
+                !   
+                !    
+                !    if (CalParams%ApplyFBarSmoothStresses) then 
+                !
+                !        call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
+                !        call GetNodalStressIncrement_VolLockSmooth()
+                !        call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
+                !        
+                !        !CalParams%ApplyFBarSmoothStresses = .false.
+                !
+                !    end if 
+                !
                     if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
                     
                         call MapWP_VolLockSmooth(WeightedWP_Numerator)
@@ -749,8 +754,8 @@
                         call MapNodalWPToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
                 
                     end if 
-                
-                end if
+                !
+                !end if
                 !--------------------------------------------------------------
                 
             !end if 
@@ -2412,7 +2417,7 @@
               
                       if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
        
-                          PartilceMass = MassArray(ParticleIndex) ! particle mass
+                          PartilceMass = Particles(ParticleIndex)%IntegrationWeight !MassArray(ParticleIndex) ! particle mass
                           ParticleShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
                  
                           ! reset volumetric strain 
@@ -2429,7 +2434,7 @@
                           !do I = 1, NTENSOR ! nodal i-momentum
                               WeightedWP_Numerator( INode(1:ELEMENTNODES), iEntity) = & !I, 
                                   WeightedWP_Numerator( INode(1:ELEMENTNODES), iEntity ) & !I, 
-                                  + ( PartilceMass * ParticleShape * Particles(ParticleIndex)%WaterPressure )
+                                  + ( PartilceMass * ParticleShape * Particles(ParticleIndex)%WaterPressureIncrement )
                           !end do     
        
                          ! end if 
@@ -3606,7 +3611,7 @@
                     if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
-                        Particles(ParticleIndex)%WaterPressure = 0.0
+                        Particles(ParticleIndex)%WaterPressureIncrement = 0.0
                         ParticleShape = ShapeValuesArray(ParticleIndex,:)
                  
                         if (CalParams%ApplyContactAlgorithm) then
@@ -3622,7 +3627,7 @@
                                 ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
                                 ! Particle strain 
                                 !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
-                                Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressure + &
+                                Particles(ParticleIndex)%WaterPressureIncrement = Particles(ParticleIndex)%WaterPressureIncrement + &
                                     ( ParticleShape(INode) * NodWP(INode, iEntity) ) !I, 
                             !end do    
                                 
@@ -3632,6 +3637,8 @@
                       
                     end if ! NumbOfLayers = 1 or SOLID MatPoint
                   
+                    Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressureIncrement + & 
+                                                                        Particles(ParticleIndex)%WaterPressure0
                     
                     !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
                     !if (Particles(ParticleIndex)%WaterPressure>0.0) then ! hardcoded 
@@ -7070,7 +7077,7 @@
                     if(LumpedMassDry(IDOF,J)/=0) then
                 
                     NodalWP_VolLockSmooth(INode,J) = ( WeightedWP_Numerator(INode,J) & !ITens, ITens,
-                                                                            / LumpedMassDry(IDOF,J) ) !*  &
+                                                                            / LumpedVolume(IDOF,J) ) !*  &
                                                 !PBoundary(IDOF)
                 
                     else

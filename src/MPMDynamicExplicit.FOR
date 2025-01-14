@@ -86,23 +86,23 @@
             CalParams%OverallRealTime = CalParams%OverallRealTime + CalParams%TimeIncrement
             
             
-            if (CalParams%FBarTimeStep == 40) then 
+            !if (CalParams%FBarTimeStep == 40) then 
                 
                 !CalParams%ApplyFBar = .true.
                 !CalParams%ApplyFBarWater = .true.
                 !CalParams%ApplyFBarSmoothWP = .true.
                 !CalParams%ApplyFBarSmoothStresses = .true.
-                CalParams%FBarTimeStep = 0
+                !CalParams%FBarTimeStep = 0
                 
-            else 
+            !else 
                 
                 !CalParams%ApplyFBar = .false.
                 !CalParams%ApplyFBarWater = .false.
-                CalParams%ApplyFBarSmoothWP = .false.
+                !CalParams%ApplyFBarSmoothWP = .false.
                 !CalParams%ApplyFBarSmoothStresses = .false.
                 !CalParams%FBarTimeStep = CalParams%FBarTimeStep + 1
                 
-            end if 
+            !end if 
             
             !if (IsLastTimeStepOfExplicitCalculation()) then 
             !    CalParams%ApplyFBarSmoothStresses = .true.

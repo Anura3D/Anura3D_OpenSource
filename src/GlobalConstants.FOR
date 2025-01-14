@@ -695,6 +695,7 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: GravityLoad ! Nodal load array of gravity load
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedVolume ! Lumped mass vector of dry soil
         
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_VolLockSmooth ! Lumped mass vector of dry soil
         

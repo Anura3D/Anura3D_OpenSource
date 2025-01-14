@@ -103,6 +103,7 @@
           ! Form the mass matrix and map momentum to nodes
           if (.not.IsMPMSkipConvection()) then
             call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
+            call MapVolumeP2N(LumpedVolume)
             if (CalParams%ApplyFBarLowerOrder) then 
                 call MapMassP2N_VolLockSmooth(LumpedMassDry_VolLockSmooth) !  Map mass and momentum from particle to node (global coord system)
             endif
@@ -1858,6 +1859,141 @@
           end do ! loop over patches
           
         end subroutine MapMomentumAndMassP2N
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine MapVolumeP2N(LumpedVolume) !Momentum, 
+        !**********************************************************************
+        !
+        ! Function:  to form the lumped mass vector and map momentum from material points to nodes
+        !
+        ! O  Momentum : nodal momentum vector, the output of this subroutine
+        ! O  LumpedMass : lumped soil mass
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(inout) ::   &
+              LumpedVolume
+              !Momentum,  &
+              
+          
+          ! Multipatch variables 
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          ! Local variables
+          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumVolumeX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+          
+          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1)) :: PartShape
+          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1), Counters%nEntity) :: LumMassX
+          
+          
+          
+          real(REAL_TYPE) :: ParticleVolume !Mass
+          
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
+
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: Mom
+         
+          
+          
+          
+          LumpedVolume = 0.0
+          !Momentum = 0.0
+          NoEn = Counters%nEntity
+          
+          do IPatch = 1, Counters%NPatches ! loop over all patches
+              
+              Ni = 0
+              Mom = 0
+              
+          do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
+
+              
+              IEl = ActiveElement(IAEl,IPatch)
+              
+
+              do I = 1, NVECTOR
+                  !Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)) = &
+                  
+                      
+                  Ni(I, 1:ELEMENTNODES) = &
+                      ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(&
+                      ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
+                  !Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = &
+                  !    Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
+              end do
+              LumVolumeX = & 
+                  LumpedVolume( Ni(1, 1:ELEMENTNODES), 1:NoEn) !--> wtf is this 1
+
+              do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+
+                  if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+                      !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
+                      ParticleVolume = Particles(ParticleIndex)%IntegrationWeight !MassArray(ParticleIndex) !get particle's mass
+                      PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
+
+                      if (CalParams%ApplyContactAlgorithm) then
+                          iEntity = EntityIDArray(ParticleIndex)
+                      else
+                          iEntity = 1
+                      end if
+
+                      ! nodal x-mass
+                      LumVolumeX(:, iEntity) = LumVolumeX(:, iEntity) + ( ParticleVolume * PartShape(:) )!use shape functions to map to mass to nodes
+
+                      ! nodal momentum in directions from 1 to NDIM
+                      !do I=1,NVECTOR
+                      !    Mom(I, :, iEntity) = Mom(I, :, iEntity) + ( ParticleMass * PartShape(:) * ParticleVelocity(I) )
+                      !end do
+
+                  end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+              end do ! loop over material points in element
+
+              do I = 1, NVECTOR
+                  
+                  ! I tried sum but that is wrong...
+                  LumpedVolume( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+                      LumVolumeX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+                  
+                  !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+                  !    Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+              end do
+
+          end do ! loop over elements
+          
+          end do ! loop over patches
+          
+        end subroutine MapVolumeP2N
+        
         
         
         

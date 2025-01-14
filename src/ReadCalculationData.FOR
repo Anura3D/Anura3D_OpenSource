@@ -1587,6 +1587,9 @@
                 call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
                 if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothWP = .true.
                 
+                
+                
+                
               
             !----------------------------------------------------------------------------------------------------------    
             ! GRAVITY DATA

@@ -1044,72 +1044,72 @@
                   end if
                   !====================================
 
-                  if (.not.CalParams%ApplyFBarWater) then 
+                  !if (.not.CalParams%ApplyFBarWater) then 
                   
-                  if (.not.CalParams%ApplyBBar) then 
+                  !if (.not.CalParams%ApplyBBar) then 
                       
                   ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
                   call Get_Strain(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, DUTotEnt, ReducedDof, Eps, &
                                 IPatch)
-                  else
-                      
-                      
-                      if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then 
-                      
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(1, :, :)
-
-                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then
-                      
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(2, :, :)
-                   
-                  else if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
-                      
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(3, :, :)
-                  
-                  else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
-                  
-                      BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(4, :, :)
-                      
-                  end if 
-                      
-                  ! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
-                  call Get_Strain_BBar(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, BMatrixDeformed_Average, DUTotEnt, ReducedDof, Eps, &
-                                IPatch)    
-                      
-                  end if 
+                  !else
+                  !    
+                  !    
+                  !    if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then 
+                  !    
+                  !    BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(1, :, :)
+                  !
+                  !else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) < 0)) then
+                  !    
+                  !    BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(2, :, :)
+                  ! 
+                  !else if ((Particles(ParticleIndex)%LocPos(1) < 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+                  !    
+                  !    BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(3, :, :)
+                  !
+                  !else if ((Particles(ParticleIndex)%LocPos(1) > 0) .AND. (Particles(ParticleIndex)%LocPos(2) > 0)) then
+                  !
+                  !    BMatrixDeformed_Average = BMatrixDeformed_BBar_AllGP(4, :, :)
+                  !    
+                  !end if 
+                  !    
+                  !! Eps = (Exx, Eyy, Ezz, Gxy, Gyz, Gzx)
+                  !call Get_Strain_BBar(IElement, IParticle, ElementConnectivities(:,:,IPatch), BMatrixDeformed, BMatrixDeformed_Average, DUTotEnt, ReducedDof, Eps, &
+                  !              IPatch)    
+                  !    
+                  !end if 
                   
                   
                   Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
                   
-                  else 
-                      
-                
-                      !---------
-                      ! Relative deformation gradient 
-                      call Get_RelativeDeformationGradient(IElement, ParticleIndex, &
-                        ElementConnectivities(:,:,IPatch), & 
-                        BMatrixDeformed, DUTotEnt, ReducedDof, &
-                        RelativeDeformationGradient, &
-                        IPatch) ! RelativeDeformationGradient = relative deformation gradient at material point
-          
-                      call RJacInv(NDIM, RelativeDeformationGradient, RelativeDeformationGradientInverse, &
-                          RelativeDeformationGradientJacobian, RelativeDeformationGradientInverseJacobian)
-                
-                    call RJacInv(NDIM, Particles(ParticleIndex)%DeformationGradientPreviousWater, DeformationGradientPreviousInverse, &
-                        DeformationGradientPreviousJacobian, DeformationGradientPreviousInverseJacobian)
-              
-                    ! Set Relative deformation gradient in particles type
-                    call SetRelDefGradientWater(Particles(ParticleIndex), RelativeDeformationGradient) 
-                
-                    ! Set Relative deformation gradient jacobian in particles type
-                    call SetRelDefGradientJacobianWater(Particles(ParticleIndex), RelativeDeformationGradientJacobian) 
-          
-                    ! Set Previous  deformation gradient in particles type
-                    call SetDefGradientJacobianPreviousWater(Particles(ParticleIndex), DeformationGradientPreviousJacobian) 
-              
-                    !---------
-                  
-                  end if 
+                  !else 
+                  !    
+                  !
+                  !    !---------
+                  !    ! Relative deformation gradient 
+                  !    call Get_RelativeDeformationGradient(IElement, ParticleIndex, &
+                  !      ElementConnectivities(:,:,IPatch), & 
+                  !      BMatrixDeformed, DUTotEnt, ReducedDof, &
+                  !      RelativeDeformationGradient, &
+                  !      IPatch) ! RelativeDeformationGradient = relative deformation gradient at material point
+                  !
+                  !    call RJacInv(NDIM, RelativeDeformationGradient, RelativeDeformationGradientInverse, &
+                  !        RelativeDeformationGradientJacobian, RelativeDeformationGradientInverseJacobian)
+                  !
+                  !  call RJacInv(NDIM, Particles(ParticleIndex)%DeformationGradientPreviousWater, DeformationGradientPreviousInverse, &
+                  !      DeformationGradientPreviousJacobian, DeformationGradientPreviousInverseJacobian)
+                  !
+                  !  ! Set Relative deformation gradient in particles type
+                  !  call SetRelDefGradientWater(Particles(ParticleIndex), RelativeDeformationGradient) 
+                  !
+                  !  ! Set Relative deformation gradient jacobian in particles type
+                  !  call SetRelDefGradientJacobianWater(Particles(ParticleIndex), RelativeDeformationGradientJacobian) 
+                  !
+                  !  ! Set Previous  deformation gradient in particles type
+                  !  call SetDefGradientJacobianPreviousWater(Particles(ParticleIndex), DeformationGradientPreviousJacobian) 
+                  !
+                  !  !---------
+                  !
+                  !end if 
                   
 
                   
@@ -1123,55 +1123,55 @@
               end do 
               
               
-              if (CalParams%ApplyFBarWater) then 
-      
-      if (.not.CalParams%ApplyFBarLowerOrder) then 
-  
-      call MapWeightedUpdDefGradJacobToNodesWater(WeightedUpdatedDeformationGradientJacobianWater) !CalculateUpdatedNodalDeformationGradientJacobian()
-  
-  
-      call NormWeightedUpdDefGradJacobAtNodesWater(UpdatedDeformationGradientJacobianWater, &
-                                            WeightedUpdatedDeformationGradientJacobianWater)
-              
-      call MapUpdatedDeformationGradientJacobianAtNodesToMPsWater(UpdatedDeformationGradientJacobianWater)
-              
-      else 
-      
-      ! Need to generalize the lower order interpolation for the pore water pressure    
-      call MapWeightedUpdDefGradJacobToNodesWater_VolLockSmooth(WeightedUpdatedDeformationGradientJacobianWater) !CalculateUpdatedNodalDeformationGradientJacobian()
-      
-      
-      call NormWeightedUpdDefGradJacobAtNodesWater_VolLockSmooth(UpdatedDeformationGradientJacobianWater, &
-                                            WeightedUpdatedDeformationGradientJacobianWater)
-              
-      call MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth(UpdatedDeformationGradientJacobianWater)
-      
-      end if 
-      
-  
-      do IParticle = 1, Counters%NParticles
-          ! Update deformation gradients
-          call UpdateRelativeDeformationGradientWater(Particles(IParticle))
-          call UpdateDeformationGradientPreviousWater(Particles(IParticle)) 
-          
-          ! Update strains 
-          call CalculateTensorialInfinitesimalStrainWater(Particles(IParticle), TensorialStrainIncrementWater)
-          call CalculateEpsVoigtWater(Particles(IParticle), TensorialStrainIncrementWater, Eps)
-          !call SetEpsStep(Particles(IParticle), Eps) 
-          !if (.not.CalParams%ApplyFBarSmoothStrains) then 
-          !call IncreaseEps(Particles(IParticle), Eps)
-          !end if 
-          
-          Particles(IParticle)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
-      end do 
-      
-              
-              else
-                  
-            !do IParticle = 1, Counters%NParticles
-            !      Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
-            !end do
-  end if 
+  !            if (CalParams%ApplyFBarWater) then 
+  !    
+  !    if (.not.CalParams%ApplyFBarLowerOrder) then 
+  !
+  !    call MapWeightedUpdDefGradJacobToNodes(WeightedUpdatedDeformationGradientJacobianWater) !CalculateUpdatedNodalDeformationGradientJacobian()
+  !
+  !
+  !    call NormWeightedUpdDefGradJacobAtNodesWater(UpdatedDeformationGradientJacobianWater, &
+  !                                          WeightedUpdatedDeformationGradientJacobianWater)
+  !            
+  !    call MapUpdatedDeformationGradientJacobianAtNodesToMPsWater(UpdatedDeformationGradientJacobianWater)
+  !            
+  !    else 
+  !    
+  !    ! Need to generalize the lower order interpolation for the pore water pressure    
+  !    call MapWeightedUpdDefGradJacobToNodesWater_VolLockSmooth(WeightedUpdatedDeformationGradientJacobianWater) !CalculateUpdatedNodalDeformationGradientJacobian()
+  !    
+  !    
+  !    call NormWeightedUpdDefGradJacobAtNodesWater_VolLockSmooth(UpdatedDeformationGradientJacobianWater, &
+  !                                          WeightedUpdatedDeformationGradientJacobianWater)
+  !            
+  !    call MapUpdDefGradientJacobianAtNodesToMPsWater_VolLockSmooth(UpdatedDeformationGradientJacobianWater)
+  !    
+  !    end if 
+  !    
+  !
+  !    do IParticle = 1, Counters%NParticles
+  !        ! Update deformation gradients
+  !        call UpdateRelativeDeformationGradientWater(Particles(IParticle))
+  !        call UpdateDeformationGradientPreviousWater(Particles(IParticle)) 
+  !        
+  !        ! Update strains 
+  !        call CalculateTensorialInfinitesimalStrainWater(Particles(IParticle), TensorialStrainIncrementWater)
+  !        call CalculateEpsVoigtWater(Particles(IParticle), TensorialStrainIncrementWater, Eps)
+  !        !call SetEpsStep(Particles(IParticle), Eps) 
+  !        !if (.not.CalParams%ApplyFBarSmoothStrains) then 
+  !        !call IncreaseEps(Particles(IParticle), Eps)
+  !        !end if 
+  !        
+  !        Particles(IParticle)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
+  !    end do 
+  !    
+  !            
+  !            else
+  !                
+  !          !do IParticle = 1, Counters%NParticles
+  !          !      Particles(ParticleIndex)%WaterVolumetricStrain = Eps(1) + Eps(2) + Eps(3) ! valid for 2D and 3D
+  !          !end do
+  !end if 
 
         end subroutine CalculateWaterVolumetricStrain
         
