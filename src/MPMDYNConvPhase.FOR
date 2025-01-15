@@ -2434,7 +2434,7 @@
                           !do I = 1, NTENSOR ! nodal i-momentum
                               WeightedWP_Numerator( INode(1:ELEMENTNODES), iEntity) = & !I, 
                                   WeightedWP_Numerator( INode(1:ELEMENTNODES), iEntity ) & !I, 
-                                  + ( PartilceMass * ParticleShape * Particles(ParticleIndex)%WaterPressureIncrement )
+                                  + ( PartilceMass * ParticleShape * Particles(ParticleIndex)%WaterPressure )
                           !end do     
        
                          ! end if 
@@ -3611,7 +3611,7 @@
                     if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
-                        Particles(ParticleIndex)%WaterPressureIncrement = 0.0
+                        Particles(ParticleIndex)%WaterPressure = 0.0
                         ParticleShape = ShapeValuesArray(ParticleIndex,:)
                  
                         if (CalParams%ApplyContactAlgorithm) then
@@ -3627,7 +3627,7 @@
                                 ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
                                 ! Particle strain 
                                 !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
-                                Particles(ParticleIndex)%WaterPressureIncrement = Particles(ParticleIndex)%WaterPressureIncrement + &
+                                Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressure + &
                                     ( ParticleShape(INode) * NodWP(INode, iEntity) ) !I, 
                             !end do    
                                 
@@ -3637,8 +3637,8 @@
                       
                     end if ! NumbOfLayers = 1 or SOLID MatPoint
                   
-                    Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressureIncrement + & 
-                                                                        Particles(ParticleIndex)%WaterPressure0
+                    !Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressureIncrement + & 
+                    !                                                    Particles(ParticleIndex)%WaterPressure0
                     
                     !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
                     !if (Particles(ParticleIndex)%WaterPressure>0.0) then ! hardcoded 

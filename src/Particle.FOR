@@ -193,7 +193,7 @@
           !> Sima principal (S1, S2, S3) of the particle during a load step
           real(REAL_TYPE), dimension(tsize) :: SigmaPrin != 0.0
           real(REAL_TYPE) :: WaterPressure = 0.0 ! Water pressure of the particle
-          real(REAL_TYPE) :: WaterPressureIncrement = 0.0 ! Water pressure of the particle
+          !real(REAL_TYPE) :: WaterPressureIncrement = 0.0 ! Water pressure of the particle
 
           real(REAL_TYPE) :: WaterPressure0 = 0.0 ! Initial water pressure of the particle from the last load step
           real(REAL_TYPE) :: HydraulicHead = 0.0 ! 

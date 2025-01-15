@@ -1821,10 +1821,10 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
           real(REAL_TYPE), intent(in) :: DSigWP
           real(REAL_TYPE), intent(in) :: DSigGP
           ! Local variables
-          if (.NOT. CalParams%ApplyFBarSmoothWP) then 
+          !if (.NOT. CalParams%ApplyFBarSmoothWP) then 
           Particles(IntGlo)%WaterPressure = Particles(IntGlo)%WaterPressure0 + DSigWP 
-          end if
-          Particles(IntGlo)%WaterPressureIncrement = DSigWP ! I changed this to increment
+          !end if
+          !Particles(IntGlo)%WaterPressureIncrement = DSigWP ! I changed this to increment
           Particles(IntGlo)%GasPressure = Particles(IntGlo)%GasPressure0 + DSigGP
           
           ! Ensure that the gas pressure is = 0 when the material point is saturated
