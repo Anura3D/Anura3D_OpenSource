@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -40,8 +40,8 @@
       !!    In case of warnings or messages, it only displays the message
       !!    on screen and writes it in the log file without stopping the calculation.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (Thu, 14 Apr 2022) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -210,6 +210,8 @@
       character(len = 10), parameter :: ERROR_MSG  = '[ERROR] : '
       character(len = 12), parameter :: WARNING_MSG= '[WARNING] : '
       character(len = 256) :: TimeStepMSG
+      character(len = MAX_FILENAME_LENGTH) :: ProjectName = ' ' ! name of project file
+      character(len = 255) :: FileName
       ! arguments:
       character*(*), intent(in) :: messageInput
       integer (INTEGER_TYPE), optional, intent(in) :: errorTypeInput
@@ -218,6 +220,8 @@
 
       character(len = MessageSize) :: message
 
+      call getarg(1, ProjectName)
+      
       ! procedure starts------------------------------------------------
       if (present(errorTypeInput)) then
         errorType = errorTypeInput
@@ -240,6 +244,16 @@
 
       ! write into outfile
       call WriteMessageInFile(message, OUTunit)
+      
+      ! write into errfile
+      if (errorType == ERROR) then
+      call WriteMessageInFile(message, ERRunit)
+      end if
+      
+      ! write into procfile      
+      FileName=trim(ProjectName)//'.PROC'
+      open(PROCunit, FILE = FileName)
+      call WriteMessageInFile(message, PROCunit)
 
       ! write into LOGfile
       call WriteMessageInFile(message, LOGunit)
@@ -379,4 +393,9 @@
       endif
 
       end subroutine AssertWarning
+
+
+
+
+
 

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- -*- coding: utf-8; mode: SGML -*- -->
+<container n="results" pn="Results output" icon="results.png">
+  <container n="output" pn="[post_visualization_software %W]" icon="results.png" open_window="0" state="normal">
+    <value n="calc_steps_between_outputs" pn="Calculation steps between outputs" v="1" state="normal"></value>
+    <container n="output_variables" pn="Output variables" icon="results.png">
+      <container n="scalar" pn="Scalar" icon="results.png">
+        <container n="general" pn="General" icon="results.png">
+          <value n="mass_mixture" pn="Mass mixture" v="1" values="1,0" state="normal"></value>
+          <value n="weight_mixture" pn="Weight mixture" v="1" values="1,0" state="normal"></value>	  
+          <value n="porosity" pn="Porosity" v="1" values="1,0" state="normal"></value>
+          <value n="mean_effective_stress" pn="Mean effective stress" v="1" values="1,0" state="normal"></value>
+          <value n="deviatoric_stress" pn="Deviatoric stress" v="1" values="1,0" state="normal"></value>
+          <value n="deviatoric_strain" pn="Deviatoric strain" v="1" values="1,0" state="normal"></value>
+          <value n="degree_of_saturation" pn="Degree of saturation" v="1" values="1,0" state="normal"></value>
+          <value n="state_variables" pn="State variables" v="1" values="1,0" state="normal"></value>
+          <value n="damping" pn="Damping" v="1" values="1,0" state="normal"></value>
+        </container>
+        <container n="solid" pn="Solid" icon="results.png">
+          <value n="mass_solid" pn="Mass solid" v="1" values="1,0" state="normal"></value>
+          <value n="weight_solid" pn="Weight solid" v="1" values="1,0" state="normal"></value>
+          <value n="volumetric_strain_solid" pn="Volumetric strain solid" v="1" values="1,0" state="normal"></value>
+        </container>
+        <container n="liquid" pn="Liquid" icon="results.png">
+          <value n="mass_liquid" pn="Mass liquid" v="1" values="1,0" state="normal"></value>
+          <value n="weight_liquid" pn="Weight liquid" v="1" values="1,0" state="normal"></value>
+          <value n="volumetric_strain_liquid" pn="Volumetric strain liquid" v="1" values="1,0" state="normal"></value>
+          <value n="pressure_liquid" pn="Pressure liquid" v="1" values="1,0" state="normal"></value>
+        </container>
+        <container n="gas" pn="Gas" icon="results.png">
+          <value n="mass_gas" pn="Mass gas" v="1" values="1,0" state="normal"></value>
+          <value n="weight_gas" pn="Weight gas" v="1" values="1,0" state="normal"></value>
+          <value n="pressure_gas" pn="Pressure gas" v="1" values="1,0" state="normal"></value>
+          <value n="volumetric_strain_gas" pn="Volumetric strain gas" v="1" values="1,0" state="normal"></value>
+        </container>
+      </container>     
+      <container n="vector" pn="Vector" icon="results.png">
+        <container n="general" pn="General" icon="results.png">
+          <value n="global_pos" pn="Global position" v="1" values="1,0" state="normal"></value>
+          <value n="local_pos" pn="Local position" v="1" values="1,0" state="normal"></value>
+          <value n="body_force_mixture" pn="Body force mixture" v="1" values="1,0" state="normal"></value>
+        </container>
+        <container n="solid" pn="Solid" icon="results.png">
+          <value n="body_force_solid" pn="Body force solid" v="1" values="1,0" state="normal"></value>
+          <value n="external_force_solid" pn="External force solid" v="1" values="1,0" state="normal"></value>
+          <value n="acceleration_solid" pn="Acceleration solid" v="1" values="1,0" state="normal"></value>	  
+          <value n="velocity_solid" pn="Velocity solid" v="1" values="1,0" state="normal"></value>
+          <value n="disp_solid" pn="Displacement solid" v="1" values="1,0" state="normal"></value>
+        </container>
+        <container n="liquid" pn="Liquid" icon="results.png">
+          <value n="body_force_liquid" pn="Body force liquid" v="1" values="1,0" state="normal"></value>
+          <value n="external_force_liquid" pn="External force liquid" v="1" values="1,0" state="normal"></value>
+	      <value n="velocity_liquid" pn="Velocity liquid" v="1" values="1,0" state="normal"></value>
+	      <value n="disp_liquid" pn="Displacement liquid" v="1" values="1,0" state="normal"></value>          
+	    </container>
+        <container n="gas" pn="Gas" icon="results.png">
+	      <value n="body_force_gas" pn="Body force liquid" v="1" values="1,0" state="normal"></value>
+	      <value n="external_force_gas" pn="External force liquid" v="1" values="1,0" state="normal"></value>
+	      <value n="velocity_gas" pn="Velocity liquid" v="1" values="1,0" state="normal"></value>
+	      <value n="disp_gas" pn="Displacement liquid" v="1" values="1,0" state="normal"></value>          
+	    </container>
+      </container>
+      <container n="tensor" pn="Tensor" icon="results.png">
+        <value n="total_stress" pn="Total stress" v="1" values="1,0" state="normal"></value>
+        <value n="effective_stress" pn="Effective stress" v="1" values="1,0" state="normal"></value>
+        <value n="strain" pn="Strain" v="1" values="1,0" state="normal"></value>
+      </container>
+    </container>
+  </container>
+  <container n="elements_for_mat_point_output" pn="Material Point Output" ov="element" ovm="element" icon="elements.gif" state="normal">
+    <condition n="select_elements_for_mat_point_output" pn="Select elements for MPs output" ov="element" ovm="element" icon="elements.gif" state="[activate_initial_stage %W %dict %BC]"></condition>
+	<value n="number_output_mat_point" pn="Number of output MPs per element" values="0,1,2,3" v="0" state="[activate_initial_stage %W %dict %BC]"></value>
+    <value n="time_between_outputs" pn="Time between outputs [s]" v="0.0" state="normal"></value>
+  </container>
+</container>

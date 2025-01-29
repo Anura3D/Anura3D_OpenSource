@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+<container n="General_data" pn="General data" icon="ruler" help="Setup unit system, problem dimensions, and gravity acceleration.">
+  <container n="units" pn="Units" icon="size" help="Common to all models">
+    <value n='units_mesh' pn='Geometry unit' values="m" v="m" editable="0"/>
+    <value n='units_force' pn='Force unit' values="kN" v="kN" editable="0"/>
+    <value n='units_time' pn='Time unit' values="s" v="s" editable="0"/>
+  </container>
+  <container n="GRAVITY_DATA" pn="Gravity data" icon="gravity.png">
+    <value n="gravity_acceleration" pn="gravity acceleration [m/s2]" v="9.81"/>
+    <value n="gravity_vector_x" pn="gravity vector x [-]" v="0.0"/>
+    <value n="gravity_vector_y" pn="gravity vector y [-]" v="-1.0"/>
+    <value n="gravity_vector_z" pn="gravity vector z [-]" v="0.0"/>                
+  </container>
+  <value n="NDIM" pn="Problem dimensions" icon="" help="Setup problem dimensions" values="2D:plane-strain,2D:Axissymmetric,3D,3D:Axissymmetric" v="2D:plane-strain" actualize_tree="1">
+  </value>
+  <value n="NLAYERS" pn="MPM discretization type" icon="" help="Select the number of layers for multiphase simulations. Only for MPM solvers." values="Single_point,Double_point" v="Single_point" actualize_tree="1">
+  </value>
+  <container n="POSTPROCESS_VISUALIZATION_SOFTWARE" pn="Post-processing visualization software" icon="post.png"> 
+    <value n="Paraview" pn="ParaView" v="1" values="1,0" state="normal" actualize_tree="1"/>
+    <value n="GiD_ASCII" pn="GiD (ASCII format)" v="1" values="1,0" state="normal" actualize_tree="1"/>
+    <value n="GiD_Binary" pn="GiD (Binary format)" v="1" values="1,0" state="normal" actualize_tree="1"/>
+  </container>
+</container>

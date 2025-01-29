@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       !  Note: Version archived subroutines are contained at the end of the module
       !
-      !     $Revision: 10167 $
-      !     $Date: 2024-06-25 15:15:53 +0200 (Tue, 25 Jun 2024) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -404,7 +404,8 @@
                      TimeStep, & ! Current time step
                      MaxTimeSteps, & ! The maximum time step per load step in quasi-static calculation
                      NThreads, & ! Number of parallelized threads
-                     NMaterialPoints, & ! initial number of all (solid+liquid) material points per element (default = 4)     
+                     NMaterialPoints, & ! initial number of all (solid+liquid) material points per element (default = 4)   
+                     StageNumber, & ! Stage of calculation
                      NLoadSteps, & ! Initial number of load phases
                      IStep, & ! Number of the current load phase
                      PreviouslyRealisedLoadStep, & ! Number of last previously computed step
@@ -796,6 +797,7 @@
         CalParams%MaxTimeSteps = 10000
         CalParams%NThreads = 1
         CalParams%NMaterialPoints = 4
+        CalParams%StageNumber = 0
         CalParams%NLoadSteps = 1
         CalParams%IStep = 1
         CalParams%PreviouslyRealisedLoadStep = 0
@@ -984,7 +986,9 @@
           
           ! read CPS data
           select case (FileVersion) ! read CPS data depending on file version
-              
+            
+            case (Anura3D_v2025)
+              call ReadCPS(FileUnit,FileVersion)
             case (Anura3D_v2024)
               call ReadCPS(FileUnit,FileVersion)
             case (Anura3D_v2023)
@@ -1003,7 +1007,8 @@
                 // trim(Anura3D_v2021) // ', ' &
                 // trim(Anura3D_v2022) // ', ' &
                 // trim(Anura3D_v2023) // ', ' &
-                // trim(Anura3D_v2024)     // '.' )
+                // trim(Anura3D_v2024) // ', ' &
+                // trim(Anura3D_v2025)     // '.' )
               
           end select
 
@@ -1040,6 +1045,9 @@
 
           ! set CPS version number
             select case (FileVersion)
+            case (Anura3D_v2025) 
+                call GiveMessage('Reading... ' // Anura3D_v2025)
+                CalParams%CPSversion = Anura3D_v2025
             case (Anura3D_v2024) 
                 call GiveMessage('Reading... ' // Anura3D_v2024)
                 CalParams%CPSversion = Anura3D_v2021
@@ -1064,8 +1072,13 @@
             BName = Upcase(TName)
             call WriteInLogFile('Reading flag from CPS file: ' // trim(BName), FEEDBACK_LEVEL_ALWAYS)
 
+            ! STAGE OF CALCULATION
+            if (trim(BName)=='$$STAGE') then ! I [ 0 < I < 1000 ]
+              read(FileUnit, *, iostat=ios) DumI(1)
+              CalParams%StageNumber = DumI(1)
+            
             ! TIME DATA
-            if (trim(BName)=='$$NUMBER_OF_LOADSTEPS') then ! I [ 0 < I < 1000 ]
+            else if (trim(BName)=='$$NUMBER_OF_LOADSTEPS') then ! I [ 0 < I < 1000 ]
               read(FileUnit, *, iostat=ios) DumI(1)
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumI(1) > 0, 'CPS file: ' //trim(BName)// ' must be larger than 0.' )
@@ -2883,7 +2896,9 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
 
           ! write CPS data depending on file version
           select case (FileVersion)
-              
+        
+          case(Anura3D_v2025)  
+            call WriteCPS(FileUnit,FileVersion)
           case(Anura3D_v2024)  
             call WriteCPS(FileUnit,FileVersion)
           case(Anura3D_v2023)  
@@ -2921,6 +2936,10 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           integer(INTEGER_TYPE) :: I
           
           select case (FileVersion)
+              case(Anura3D_v2025)  
+                  write(FileUnit, '(A)') Anura3D_v2025
+                  ! STAGE OF CALCULATION    
+                  call WriteInteger(FileUnit, '$$STAGE', [CalParams%StageNumber], 1, .true.)
               case(Anura3D_v2024)  
                   write(FileUnit, '(A)') Anura3D_v2024
               case(Anura3D_v2023)  
@@ -2931,8 +2950,8 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
                   write(FileUnit, '(A)') Anura3D_v2021
               case(Anura3D_v2019_2)  
                   write(FileUnit, '(A)') Anura3D_v2021
-          end select
-          
+              end select
+                            
           ! TIME AND LOAD STEP DATA
           call WriteInteger(FileUnit, '$$NUMBER_OF_LOADSTEPS', [CalParams%NLoadSteps], 1, .true.)
           call WriteReal(FileUnit, '$$TIME_PER_LOADSTEP', [CalParams%TotalTime], 1, .true.)
@@ -3610,3 +3629,7 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
 
       
         
+
+
+
+

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- -*- coding: utf-8; mode: SGML -*- -->
+<container n="Calculation_Data" pn="Calculation Data" icon="calculate.png" open_window="0">
+  <value n="COMPUTATION_METHOD" pn="COMPUTATION METHOD" icon="calculate.png" values="MPM - material point integration,MPM - mixed integration,standard FEM,Updated Lagrangian FEM" v="MPM - mixed integration"></value>
+  <container n="CALCULATION_STEP_DATA" pn="CALCULATION STEP DATA" icon="calculate.png">
+    <value n="number_of_calculation_steps" pn="number of calculation steps [-]" v="1" state="normal"></value>
+    <value n="time_per_calculation_step" pn="time per calculation step [s]" v="0.5" state="normal"></value>
+    <value n="Courant_number" pn="Courant number [-]" v="0.98" state="normal"></value>
+  </container>
+  <value n="GRAVITY_LOAD" pn="GRAVITY LOAD" icon="calculate.png" values="do not apply gravity load,apply gravity load - linear,apply gravity load - stepwise" v="do not apply gravity load" actualize_tree="1">
+    <dependencies node="../value[@n='gravity_multiplier_initial']" att1="state" v1="normal" value="apply gravity load - linear"></dependencies>
+    <dependencies node="../value[@n='gravity_multiplier_initial']" att1="state" v1="normal" value="apply gravity load - stepwise"></dependencies>
+    <dependencies node="../value[@n='gravity_multiplier_initial']" att1="state" v1="hidden" value="do not apply gravity load"></dependencies>
+    <dependencies node="../value[@n='gravity_multiplier_final']" att1="state" v1="normal" value="apply gravity load - linear"></dependencies>
+    <dependencies node="../value[@n='gravity_multiplier_final']" att1="state" v1="normal" value="apply gravity load - stepwise"></dependencies>
+    <dependencies node="../value[@n='gravity_multiplier_final']" att1="state" v1="hidden" value="do not apply gravity load"></dependencies>
+  </value>
+  <value n="gravity_multiplier_initial" pn="gravity multiplier initial [-]" v="0.0" state="hidden"></value>
+  <value n="gravity_multiplier_final" pn="gravity multiplier final [-]" v="1.0" state="hidden"></value>
+  <value n="SOLID_TRACTION_A" pn="SOLID TRACTION A" icon="calculate.png" values="do not apply solid traction,apply solid traction - linear,apply solid traction - stepwise" v="do not apply solid traction" actualize_tree="1">
+    <dependencies node="../value[@n='solid_traction_A_multiplier_initial']" att1="state" v1="normal" value="apply solid traction - linear"></dependencies>
+    <dependencies node="../value[@n='solid_traction_A_multiplier_initial']" att1="state" v1="normal" value="apply solid traction - stepwise"></dependencies>
+    <dependencies node="../value[@n='solid_traction_A_multiplier_initial']" att1="state" v1="hidden" value="do not apply solid traction"></dependencies>
+    <dependencies node="../value[@n='solid_traction_A_multiplier_final']" att1="state" v1="normal" value="apply solid traction - linear"></dependencies>
+    <dependencies node="../value[@n='solid_traction_A_multiplier_final']" att1="state" v1="normal" value="apply solid traction - stepwise"></dependencies>
+    <dependencies node="../value[@n='solid_traction_A_multiplier_final']" att1="state" v1="hidden" value="do not apply solid traction"></dependencies>
+  </value>
+  <value n="solid_traction_A_multiplier_initial" pn="solid traction A multiplier initial [-]" v="0.0" state="hidden"></value>
+  <value n="solid_traction_A_multiplier_final" pn="solid_traction A multiplier final [-]" v="1.0" state="hidden"></value>
+  <value n="SOLID_TRACTION_B" pn="SOLID TRACTION B" icon="calculate.png" values="do not apply solid traction,apply solid traction - linear,apply solid traction - stepwise" v="do not apply solid traction" actualize_tree="1">
+    <dependencies node="../value[@n='solid_traction_B_multiplier_initial']" att1="state" v1="normal" value="apply solid traction - linear"></dependencies>
+    <dependencies node="../value[@n='solid_traction_B_multiplier_initial']" att1="state" v1="normal" value="apply solid traction - stepwise"></dependencies>
+    <dependencies node="../value[@n='solid_traction_B_multiplier_initial']" att1="state" v1="hidden" value="do not apply solid traction"></dependencies>
+    <dependencies node="../value[@n='solid_traction_B_multiplier_final']" att1="state" v1="normal" value="apply solid traction - linear"></dependencies>
+    <dependencies node="../value[@n='solid_traction_B_multiplier_final']" att1="state" v1="normal" value="apply solid traction - stepwise"></dependencies>
+    <dependencies node="../value[@n='solid_traction_B_multiplier_final']" att1="state" v1="hidden" value="do not apply solid traction"></dependencies>
+  </value>
+  <value n="solid_traction_B_multiplier_initial" pn="solid traction B multiplier initial [-]" v="0.0" state="hidden"></value>
+  <value n="solid_traction_B_multiplier_final" pn="solid_traction B multiplier final [-]" v="1.0" state="hidden"></value>
+  <value n="LIQUID_PRESSURE_A" pn="LIQUID PRESSURE A" icon="calculate.png" values="do not apply liquid pressure,apply liquid pressure - linear,apply liquid pressure - stepwise" v="do not apply liquid pressure" actualize_tree="1">
+    <dependencies node="../value[@n='liquid_pressure_A_multiplier_initial']" att1="state" v1="normal" value="apply liquid pressure - linear"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_A_multiplier_initial']" att1="state" v1="normal" value="apply liquid pressure - stepwise"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_A_multiplier_initial']" att1="state" v1="hidden" value="do not apply liquid pressure"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_A_multiplier_final']" att1="state" v1="normal" value="apply liquid pressure - linear"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_A_multiplier_final']" att1="state" v1="normal" value="apply liquid pressure - stepwise"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_A_multiplier_final']" att1="state" v1="hidden" value="do not apply liquid pressure"></dependencies>
+  </value>
+  <value n="liquid_pressure_A_multiplier_initial" pn="liquid pressure A multiplier initial [-]" v="0.0" state="hidden"></value>
+  <value n="liquid_pressure_A_multiplier_final" pn="liquid pressure A multiplier final [-]" v="1.0" state="hidden"></value>
+  <value n="LIQUID_PRESSURE_B" pn="LIQUID PRESSURE B" icon="calculate.png" values="do not apply liquid pressure,apply liquid pressure - linear,apply liquid pressure - stepwise" v="do not apply liquid pressure" actualize_tree="1">
+    <dependencies node="../value[@n='liquid_pressure_B_multiplier_initial']" att1="state" v1="normal" value="apply liquid pressure - linear"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_B_multiplier_initial']" att1="state" v1="normal" value="apply liquid pressure - stepwise"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_B_multiplier_initial']" att1="state" v1="hidden" value="do not apply liquid pressure"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_B_multiplier_final']" att1="state" v1="normal" value="apply liquid pressure - linear"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_B_multiplier_final']" att1="state" v1="normal" value="apply liquid pressure - stepwise"></dependencies>
+    <dependencies node="../value[@n='liquid_pressure_B_multiplier_final']" att1="state" v1="hidden" value="do not apply liquid pressure"></dependencies>
+  </value>
+  <value n="liquid_pressure_B_multiplier_initial" pn="liquid pressure B multiplier initial [-]" v="0.0" state="hidden"></value>
+  <value n="liquid_pressure_B_multiplier_final" pn="liquid pressure B multiplier final [-]" v="1.0" state="hidden"></value>
+  <value n="PRESCRIBED_VELOCITY" pn="PRESCRIBED VELOCITY" icon="calculate.png" values="do not apply prescribed velocity,apply prescribed velocity - linear,apply prescribed velocity - stepwise" v="do not apply prescribed velocity" actualize_tree="1">
+    <dependencies node="../value[@n='velocity_multiplier_initial']" att1="state" v1="normal" value="apply prescribed velocity - linear"></dependencies>
+    <dependencies node="../value[@n='velocity_multiplier_initial']" att1="state" v1="normal" value="apply prescribed velocity - stepwise"></dependencies>
+    <dependencies node="../value[@n='velocity_multiplier_initial']" att1="state" v1="hidden" value="do not apply prescribed velocity"></dependencies>
+    <dependencies node="../value[@n='velocity_multiplier_final']" att1="state" v1="normal" value="apply prescribed velocity - linear"></dependencies>
+    <dependencies node="../value[@n='velocity_multiplier_final']" att1="state" v1="normal" value="apply prescribed velocity - stepwise"></dependencies>
+    <dependencies node="../value[@n='velocity_multiplier_final']" att1="state" v1="hidden" value="do not apply prescribed velocity"></dependencies>
+  </value>
+  <value n="velocity_multiplier_initial" pn="velocity multiplier initial [-]" v="0.0" state="hidden"></value>
+  <value n="velocity_multiplier_final" pn="velocity multiplier final [-]" v="1.0" state="hidden"></value>
+  <value n="HYDRAULIC_HEAD" pn="APPLY HYDRAULIC HEAD" icon="calculate.png" v="[apply_hydraulic_head %W]" state="hidden"></value>
+  <value n="SEEPAGE_FACE" pn="APPLY SEEPAGE FACE" icon="calculate.png" v="[apply_seepage_face %W]" state="hidden"></value>
+  <value n="INFILTRATION" pn="APPLY INFILTRATION" icon="calculate.png" v="[apply_infiltration %W]" state="hidden"></value>
+  <value n="QUASI-STATIC_CONVERGENCE" pn="QUASI-STATIC CONVERGENCE" icon="calculate.png" values="do not apply convergence criteria,apply convergence criteria" v="do not apply convergence criteria" actualize_tree="1">
+    <dependencies node="../value[@n='tolerated_error_solid_energy']" att1="state" v1="normal" value="apply convergence criteria"></dependencies>
+    <dependencies node="../value[@n='tolerated_error_solid_energy']" att1="state" v1="hidden" value="do not apply convergence criteria"></dependencies>
+    <dependencies node="../value[@n='tolerated_error_solid_force']" att1="state" v1="normal" value="apply convergence criteria"></dependencies>
+    <dependencies node="../value[@n='tolerated_error_solid_force']" att1="state" v1="hidden" value="do not apply convergence criteria"></dependencies>
+    <dependencies node="../value[@n='tolerated_error_liquid_energy']" att1="state" v1="normal" value="apply convergence criteria"></dependencies>
+    <dependencies node="../value[@n='tolerated_error_liquid_energy']" att1="state" v1="hidden" value="do not apply convergence criteria"></dependencies>
+    <dependencies node="../value[@n='tolerated_error_liquid_force']" att1="state" v1="normal" value="apply convergence criteria"></dependencies>
+    <dependencies node="../value[@n='tolerated_error_liquid_force']" att1="state" v1="hidden" value="do not apply convergence criteria"></dependencies>
+    <dependencies node="../value[@n='maximum_time_steps']" att1="state" v1="normal" value="apply convergence criteria"></dependencies>
+    <dependencies node="../value[@n='maximum_time_steps']" att1="state" v1="hidden" value="do not apply convergence criteria"></dependencies>
+  </value>
+  <value n="tolerated_error_solid_energy" pn="tolerated error solid energy [-]" v="0.01" state="hidden"></value>
+  <value n="tolerated_error_solid_force" pn="tolerated error solid force [-]" v="0.01" state="hidden"></value>
+  <value n="tolerated_error_liquid_energy" pn="tolerated error liquid energy [-]" v="0.01" state="hidden"></value>
+  <value n="tolerated_error_liquid_force" pn="tolerated error liquid force [-]" v="0.01" state="hidden"></value>
+  <value n="maximum_time_steps" pn="maximum time steps [-]" v="10000" state="hidden"></value>
+  <value n="MASS_SCALING" pn="MASS SCALING" icon="calculate.png" values="do not apply mass scaling,apply mass scaling" v="do not apply mass scaling" actualize_tree="1">
+    <dependencies node="../value[@n='mass_scaling_factor']" att1="state" v1="normal" value="apply mass scaling"></dependencies>
+    <dependencies node="../value[@n='mass_scaling_factor']" att1="state" v1="hidden" value="do not apply mass scaling"></dependencies>
+  </value>
+  <value n="mass_scaling_factor" pn="mass scaling factor [-]" v="1.0" state="hidden"></value>
+  <value n="HOMOGENEOUS_LOCAL_DAMPING" pn="HOMOGENEOUS LOCAL DAMPING" icon="calculate.png" values="do not apply homogeneous local damping,apply homogeneous local damping" v="do not apply homogeneous local damping" actualize_tree="1">
+    <dependencies node="../value[@n='local_damping_coefficient']" att1="state" v1="normal" value="apply homogeneous local damping"></dependencies>
+    <dependencies node="../value[@n='local_damping_coefficient']" att1="state" v1="hidden" value="do not apply homogeneous local damping"></dependencies>
+  </value>
+  <value n="local_damping_coefficient" pn="local damping coefficient [-]" v="0.75" state="hidden"></value>
+  <value n="BULK_VISCOSITY_DAMPING" pn="BULK VISCOSITY DAMPING" icon="calculate.png" values="do not apply viscosity damping,apply viscosity damping" v="do not apply viscosity damping" actualize_tree="1">
+    <dependencies node="../value[@n='linear_coefficient']" att1="state" v1="normal" value="apply viscosity damping"></dependencies>
+    <dependencies node="../value[@n='linear_coefficient']" att1="state" v1="hidden" value="do not apply viscosity damping"></dependencies>
+    <dependencies node="../value[@n='quadratic_coefficient']" att1="state" v1="normal" value="apply viscosity damping"></dependencies>
+    <dependencies node="../value[@n='quadratic_coefficient']" att1="state" v1="hidden" value="do not apply viscosity damping"></dependencies>
+  </value>
+  <value n="linear_coefficient" pn="linear coefficient [-]" v="0.06" state="hidden"></value>
+  <value n="quadratic_coefficient" pn="quadratic coefficient [-]" v="1.2" state="hidden"></value>
+  <value n="STRAIN_SMOOTHING" pn="STRAIN SMOOTHING" icon="calculate.png" values="do not apply strain smoothing,apply strain smoothing" v="do not apply strain smoothing"></value>
+  <value n="LIQUID_PRESSURE_INCREMENT_SMOOTHING" icon="calculate.png" pn="LIQUID PRESSURE INCREMENT SMOOTHING" values="do not apply liquid pressure increment smoothing,apply liquid pressure increment smoothing" v="do not apply liquid pressure increment smoothing"></value>
+  <value n="FIX_SOLID_SKELETON" pn="FIX SOLID SKELETON" icon="calculate.png" values="Solid Skeleton Free,Solid Skeleton Fixed" v="Solid Skeleton Free"></value>
+  <value n="CONTACT" pn="CONTACT" icon="calculate.png" v="[apply_contact %W]" state="hidden"></value>
+  <value n="INITIAL_VELOCITY" pn="INITIAL VELOCITY" icon="calculate.png" state="hidden" v="[apply_initial_velo %W]" help="Note: To be defined in 'Initial_Conditions'"></value>
+  <value n="POROSITY_UPDATE" pn="POROSITY UPDATE" icon="calculate.png" values="do not apply porosity update,apply porosity update" v="do not apply porosity update"></value>
+  <value n="RESET_DISPLACEMENTS" pn="RESET DISPLACEMENTS" icon="calculate.png" values="do not reset displacements,reset displacements" v="do not reset displacements" state="[activate_not_initial_stage %W]"></value>
+  <value n="SUBMERGED_CALCULATION" pn="SUBMERGED CALCULATION" icon="calculate.png" values="do not apply submerged calculation,apply submerged calculation" v="do not apply submerged calculation" actualize_tree="1">
+    <dependencies node="../value[@n='number_of_initialisation_steps']" att1="state" v1="normal" value="apply submerged calculation"></dependencies>
+    <dependencies node="../value[@n='number_of_initialisation_steps']" att1="state" v1="hidden" value="do not apply submerged calculation"></dependencies>
+  </value>
+  <value n="number_of_initialisation_steps" pn="number of initialisation steps [-]" v="1" state="hidden"></value>
+  <value n="OBJECTIVE_STRESS" pn="OBJECTIVE STRESS" icon="calculate.png" values="do not apply objective stress,apply objective stress" v="do not apply objective stress"></value>
+  <value n="degree_of_filling" pn="degree of filling [-]" icon="calculate.png" v="0.9"></value>
+  <value n="DOUBLE-POINT_FORMULATION" pn="DOUBLE-POINT FORMULATION" icon="calculate.png" values="do not define additional parameters,define additional parameters" v="do not define additional parameters" state="[check_points Double_point %W]" actualize_tree="1">
+    <dependencies node="../value[@n='maximum_porosity']" att1="state" v1="normal" value="define additional parameters"></dependencies>
+    <dependencies node="../value[@n='maximum_porosity']" att1="state" v1="hidden" value="do not define additional parameters"></dependencies>
+    <dependencies node="../value[@n='Ergun_constants']" att1="state" v1="normal" value="define additional parameters"></dependencies>
+    <dependencies node="../value[@n='Ergun_constants']" att1="state" v1="hidden" value="do not define additional parameters"></dependencies>
+    <dependencies node="../value[@n='permeability_definition']" att1="state" v1="normal" value="define additional parameters"></dependencies>
+    <dependencies node="../value[@n='permeability_definition']" att1="state" v1="hidden" value="do not define additional parameters"></dependencies>
+    <dependencies node="../value[@n='elevation_liquid_surface_for_K0']" att1="state" v1="normal" value="define additional parameters"></dependencies>
+    <dependencies node="../value[@n='elevation_liquid_surface_for_K0']" att1="state" v1="hidden" value="do not define additional parameters"></dependencies>
+    <dependencies node="../value[@n='strain_smoothing_liquid']" att1="state" v1="normal" value="define additional parameters"></dependencies>
+    <dependencies node="../value[@n='strain_smoothing_liquid']" att1="state" v1="hidden" value="do not define additional parameters"></dependencies>
+    <dependencies node="../value[@n='no_tensile_stress_liquid']" att1="state" v1="normal" value="define additional parameters"></dependencies>
+    <dependencies node="../value[@n='no_tensile_stress_liquid']" att1="state" v1="hidden" value="do not define additional parameters"></dependencies>
+    <dependencies node="../value[@n='detect_free_surface']" att1="state" v1="normal" value="define additional parameters"></dependencies>
+    <dependencies node="../value[@n='detect_free_surface']" att1="state" v1="hidden" value="do not define additional parameters"></dependencies>
+  </value>
+  <value n="maximum_porosity" pn="maximum porosity [-]" v="0.0" state="hidden"></value>
+  <value n="Ergun_constants" pn="Ergun constants a [-] and b [-]" v="150.0  1.75" state="hidden"></value>
+  <value n="permeability_definition" pn="permeability definition" values="please choose,constant permeability,update permeability Darcy,update permeability Ergun" v="please choose" state="hidden">
+    <dependencies node="../value[@n='intrinsic_permeability']" att1="state" v1="hidden" value="please choose"></dependencies>
+    <dependencies node="../value[@n='intrinsic_permeability']" att1="state" v1="normal" value="constant permeability"></dependencies>
+    <dependencies node="../value[@n='intrinsic_permeability']" att1="state" v1="hidden" value="update permeability Darcy"></dependencies>
+    <dependencies node="../value[@n='intrinsic_permeability']" att1="state" v1="hidden" value="update permeability Ergun"></dependencies>
+    <dependencies node="../value[@n='grain_size_diameter']" att1="state" v1="hidden" value="please choose"></dependencies>
+    <dependencies node="../value[@n='grain_size_diameter']" att1="state" v1="hidden" value="constant permeability"></dependencies>
+    <dependencies node="../value[@n='grain_size_diameter']" att1="state" v1="normal" value="update permeability Darcy"></dependencies>
+    <dependencies node="../value[@n='grain_size_diameter']" att1="state" v1="normal" value="update permeability Ergun"></dependencies>
+  </value>
+  <value n="intrinsic_permeability" pn="intrinsic permeability [m2]" v="0.0" state="hidden"></value>
+  <value n="grain_size_diameter" pn="grain size diameter [m]" v="1.0e-3  2.0e-3" state="hidden"></value>
+  <value n="elevation_liquid_surface_for_K0" pn="elevation liquid surface for K0 [m]" v="0.0" state="hidden"></value>
+  <value n="strain_smoothing_liquid" pn="strain smoothing liquid" v="0" state="hidden"></value>
+  <value n="no_tensile_stress_liquid" pn="no tensile stress liquid" v="0" state="hidden"></value>
+  <value n="detect_free_surface" pn="detect free surface" v="1  0.8" state="hidden"></value>
+</container>

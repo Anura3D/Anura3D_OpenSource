@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -120,7 +120,7 @@
         
           ! initialise Particle%ExtLoadVector with distributed load on material points (only in first load step)
           if (.not.IsFollowUpPhase()) then
-            if (NDIM == 3) then ! for 3D only, sprint #2: add 2D functionality
+            if (NDIM == 3) then ! for 3D only
               do I = 1, Counters%NLoadedElementSidesSolidMatPoints
                 call TransferExternalLoadsToParticles(LoadType, N_BOUNDARY_NODES_HOE, N_NODES_HOE, LoadOnMatPointsConnectivitiesSolid(1, I), LoadValuesOnMatPointsSolid(1, 1, I), 1, NodalCoordinates,1)
               end do
@@ -577,3 +577,8 @@
 
       end subroutine Load3D
       
+
+
+
+
+

@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@
       !             this module only contains routines that are directly related to
       !             the output of (material point) data to text files for testing.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (Thu, 14 Apr 2022) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
 
@@ -77,6 +77,9 @@
           
           ! Open problem.OUT file (log information)
           call FileOpen(OUTUnit, trim(ProjectName)//'.OUT')
+          
+          ! Open problem.ERR file 
+          call FileOpen(ERRUnit, trim(ProjectName)//'.ERR')
 
           ! Open problem.TST file for testing
           call FileOpen(TSTUnit, trim(ProjectName)//'.TST')
@@ -87,7 +90,7 @@
           ! Open problem.BMR file for writing benchmark result data
           call FileOpen(BMRUnit, trim(ProjectName)//'.BMR')
           
-          ! Open problem.BMR file for writing benchmark result data
+          ! Open problem.BMS file for writing benchmark result data
           call FileOpen(BMSUnit, trim(ProjectName)//'.BMS')
 
         end subroutine OpenTextOutputFiles
@@ -139,36 +142,73 @@
         
           if ( (CalParams%OutputNumberParticles > 0) .and. (CalParams%OutputNumberParticles <= MAXOUTPUTPARTICLES) ) then
             ! Open files for output of particle data
-            CalParams%ParticleFileCounter = CalParams%ParticleFileCounter + 1
-            call GetStepExt(CalParams%ParticleFileCounter, XXXCounter)
-            do I = 1, CalParams%OutputNumberParticles
-              if (CalParams%OutputParticles(I)>0) then
-                call GetStepExt(IDArray(CalParams%OutputParticles(I)), XXX)
-                CompleteFileName = trim(CalParams%FileNames%ProjectName)// '.PAR_' // XXX 
-                if ( FExist(trim(CompleteFileName)) ) then
-                  call FileOpenAppend(PARUnit + I, CompleteFileName) ! adapt existing file
-                else
-                  call FileOpen(PARUnit + I, CompleteFileName) ! create new file
+            FileVersion = CalParams%CPSversion
+            
+            if(FileVersion /= Anura3D_v2025) then
+                CalParams%ParticleFileCounter = CalParams%ParticleFileCounter + 1
+                call GetStepExt(CalParams%ParticleFileCounter, XXXCounter)
+                do I = 1, CalParams%OutputNumberParticles
+                  if (CalParams%OutputParticles(I)>0) then
+                    call GetStepExt(IDArray(CalParams%OutputParticles(I)), XXX)
+                    CompleteFileName = trim(CalParams%FileNames%ProjectName)// '.PAR_' // XXX 
+                    if ( FExist(trim(CompleteFileName)) ) then
+                      call FileOpenAppend(PARUnit + I, CompleteFileName) ! adapt existing file
+                    else
+                      call FileOpen(PARUnit + I, CompleteFileName) ! create new file
                   
-                  select case(NDIM)
+                      select case(NDIM)
                   
-                    case(3)
-                      write(PARUnit + I, '(28A12)')  &
-                            'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
-                            'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
-                            'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
-                            'IntWeight ', 'MatID '
-                    case(2)
-                      write(PARUnit + I, '(22A12)')  &
-                            'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
-                            'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
-                            'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
-                            'IntWeight ', 'MatID '
-                  end select
+                        case(3)
+                          write(PARUnit + I, '(28A12)')  &
+                                'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
+                                'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
+                                'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
+                                'IntWeight ', 'MatID '
+                        case(2)
+                          write(PARUnit + I, '(22A12)')  &
+                                'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
+                                'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
+                                'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
+                                'IntWeight ', 'MatID '
+                      end select
 
-                end if  
-              end if
-            end do
+                    end if  
+                  end if
+                end do
+            end if
+            
+            if (FileVersion == Anura3D_v2025) then
+                CalParams%ParticleFileCounter = CalParams%ParticleFileCounter + 1
+                call GetStepExt(CalParams%ParticleFileCounter, XXXCounter)
+                do I = 1, CalParams%OutputNumberParticles
+                  if (CalParams%OutputParticles(I)>0) then
+                    call GetStepExt(IDArray(CalParams%OutputParticles(I)), XXX)
+                    CompleteFileName = trim(CalParams%FileNames%ProjectName)// '.PAR_' // XXX 
+                    if ( FExist(trim(CompleteFileName)) ) then
+                      call FileOpenAppend(PARUnit + I, CompleteFileName) ! adapt existing file
+                    else
+                      call FileOpen(PARUnit + I, CompleteFileName) ! create new file
+                  
+                      select case(NDIM)
+                  
+                        case(3)
+                          write(PARUnit + I, '(28A12)')  &
+                                'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', 'Z ', &
+                                'Ux ', 'Uy ', 'Uz ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ', 'SigmaXY ', 'SigmaYZ ', 'SigmaZX ', &
+                                'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ', 'GammaXY ', 'GammaYZ ', 'GammaZX ', &
+                                'IntWeight ', 'MatID '
+                        case(2)
+                          write(PARUnit + I, '(22A12)')  &
+                                'LoadStep ', 'TimeStep ', 'Time', 'PA(1) ','PA(2) ', 'PGravity ', 'ID_MP ', 'X ', 'Y ', &
+                                'Ux ', 'Uy ', 'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
+                                'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ','GammaXY ', &
+                                'IntWeight ', 'MatID '
+                      end select
+
+                    end if  
+                  end if
+                end do
+            end if
           end if
 
         end subroutine InitialiseMaterialPointOutputFiles
@@ -448,7 +488,7 @@
           
           if ( .not.( mod(CalParams%TimeStep, CalParams%OutputCurvesIntervals)==0 .or. CalParams%TimeStep==1 &
                    .or. IsLastTimeStepOfExplicitCalculation() ) ) RETURN
-
+          
           if ( (CalParams%OutputNumberParticles>0) .and. (CalParams%OutputNumberParticles<=MAXOUTPUTPARTICLES) ) then
             do I = 1, CalParams%OutputNumberParticles
 
@@ -464,7 +504,7 @@
                 ParticleIndex = CalParams%OutputParticles(I)
                end if 
                 if (ParticleIndex<=Counters%NParticles) then
-                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 20G12.4, I12)') &
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 20G12.4, I12)') & 
                       CalParams%IStep, &
                       CalParams%TimeStep, &
                       CalParams%OverallRealTime, &
@@ -1266,10 +1306,12 @@
           integer(INTEGER_TYPE) :: I
 
           call CloseFile(OUTunit)
+          call CloseFile(ERRunit)
           call CloseFile(TSTunit)
           call CloseFile(BMRunit)
           !call CloseFile(BMSunit)
           call CloseFile(LOGunit)
+          call CloseFile(PROCUnit)
 
           if ( (CalParams%OutputNumberParticles>0) .and. (CalParams%OutputNumberParticles<=MAXOUTPUTPARTICLES) ) then
             do I = 1, CalParams%OutputNumberParticles
@@ -1310,3 +1352,8 @@
 
 
       end module ModWriteTestData
+
+
+
+
+

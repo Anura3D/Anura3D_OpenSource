@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !             This module should only contain routines that are directly related to
       !             the initialisation of material point data.
       !
-      !     $Revision: 10131 $
-      !     $Date: 2024-04-11 18:44:19 +0200 (Thu, 11 Apr 2024) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
 
@@ -1009,12 +1009,20 @@
           integer(INTEGER_TYPE), dimension(:), intent(inout) :: NumberOfSolidMaterialPoints, NumberOfLiquidMaterialPoints
           
           ! Local variables
-          character(len=1023) :: FileName
+          character(len=1023) :: FileName, FileVersion
           character(len=255) :: BName
+          character(len=3) :: Stage
           integer(INTEGER_TYPE) :: ElementID, ios, DumI1, DumI2
           character(len=21) :: messageIOS = 'GOM file: Can''t read '
         
-          FileName=Trim(CalParams%FileNames%ProjectName)//'.GOM'
+          FileVersion = CalParams%CPSversion
+          
+          if (FileVersion == Anura3D_v2025) then
+            write(Stage,'(I0)') CalParams%StageNumber
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_STAGE_FILE_EXTENSION//Stage
+          else              
+            FileName=Trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+          end if
          
           if (FExist(FileName)) open(GOMunit, FILE = FileName)
           
@@ -1413,3 +1421,8 @@
 
         
       end module ModMPMInit
+
+
+
+
+

@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@ module ModWriteVTKTwoLayer
     !    Function: Contains pointer routines for writing output data in VTK format
     !    for 2 layer formulation
     !
-    !     $Revision: 10111 $
-    !     $Date: 2024-03-20 18:14:36 +0100 (Wed, 20 Mar 2024) $
+    !     $Revision: 10508 $
+    !     $Date: 2025-01-21 17:49:34 +0100 (ma., 21 ene. 2025) $
     !
     !**********************************************************************
     
@@ -471,7 +471,7 @@ module ModWriteVTKTwoLayer
 
     ! open the VTK file for material point data
     VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPScalarSOLID'//'_'// &
-        trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+        trim(CalParams%FileNames%LoadStepExt)//'.vtk'
 
     call FileOpen(VTKUnit, VTKFileName)
 
@@ -539,7 +539,7 @@ module ModWriteVTKTwoLayer
 
     ! open the VTK file for material point data
     VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPVectorSOLID'//'_'// &
-        trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+        trim(CalParams%FileNames%LoadStepExt)//'.vtk'
 
     call FileOpen(VTKUnit, VTKFileName)
 
@@ -610,7 +610,7 @@ module ModWriteVTKTwoLayer
 
     ! open the VTK file for material point data
     VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPTensorSOLID'//'_'// &
-        trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+        trim(CalParams%FileNames%LoadStepExt)//'.vtk'
 
     call FileOpen(VTKUnit, VTKFileName)
 
@@ -1106,7 +1106,7 @@ module ModWriteVTKTwoLayer
 
     ! open the VTK file for material point data
     VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPScalarLIQUID'//'_'// &
-        trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+        trim(CalParams%FileNames%LoadStepExt)//'.vtk'
 
     call FileOpen(VTKUnit, VTKFileName)
 
@@ -1174,7 +1174,7 @@ module ModWriteVTKTwoLayer
 
     ! open the VTK file for material point data
     VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPVectorLIQUID'//'_'// &
-        trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+        trim(CalParams%FileNames%LoadStepExt)//'.vtk'
 
     call FileOpen(VTKUnit, VTKFileName)
 
@@ -1245,7 +1245,7 @@ module ModWriteVTKTwoLayer
 
     ! open the VTK file for material point data
     VTKFileName = trim(CalParams%FileNames%ProjectName)//'_MPTensorLIQUID'//'_'// &
-        trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+        trim(CalParams%FileNames%LoadStepExt)//'.vtk'
 
     call FileOpen(VTKUnit, VTKFileName)
 
@@ -1307,3 +1307,8 @@ module ModWriteVTKTwoLayer
     end subroutine WriteVTKMaterialPointTensor_2LayForm_Liquid
 
     end module ModWriteVTKTwoLayer
+
+
+
+
+

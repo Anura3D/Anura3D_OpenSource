@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -297,8 +297,8 @@
         implicit none
         
           ! Local variables
-          character(len = 255) :: FileName, TName, Bname
-          
+          character(len = 255) :: FileName, FileVersion, TName, Bname
+          character(len=3) :: Stage
           integer(INTEGER_TYPE) :: I, J, L, IDElement, IDConnectivity, IFxN, &
                      NElements, NNodes, NFixNod, FixNodID, NRemFixNod, FixRemNodID, &
                      NLoadedElementSidesSolidNodes, NLoadedElementSidesWaterNodes, NLoadedElementSidesGasNodes, &
@@ -331,8 +331,16 @@
           NLoadedElementSidesGasMatPointsB = 0
           
           ! open GOM file
-          FileName=Trim(CalParams%FileNames%ProjectName)//'.GOM'
-          if (FExist(FileName)) open(GOMunit, FILE=FileName)
+          FileVersion = CalParams%CPSversion
+          
+          if (FileVersion == Anura3D_v2025) then
+            write(Stage,'(I0)') CalParams%StageNumber
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_STAGE_FILE_EXTENSION//Stage
+          else
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+          end if
+          
+          if (FExist(FileName)) open(GOMunit, FILE=FileName)         
 
           do
             read(GOMunit,'(A)') TName
@@ -2250,13 +2258,14 @@
         !**********************************************************************************
         implicit none
           ! local variables       
-          character(len=MAX_FILENAME_LENGTH) :: FileName
+          character(len=MAX_FILENAME_LENGTH) :: FileName, FileVersion
           integer(INTEGER_TYPE) :: I, J, SurfaceID, NSurfaces, IError, ios
           integer(INTEGER_TYPE) :: DumE, DUmI, NumSideNodes
           integer(INTEGER_TYPE), dimension(:), allocatable :: DumN
           character(len=255) :: DumS
           character(len=255) :: BName
           character(len=255), dimension(MAXOUTPUTSURFACES) :: DumSurfaceName
+          character(len=255) :: Stage
           
           allocate(IsReactionNode(Counters%NodTot), stat = Ierror)
           IsReactionNode = .false.
@@ -2272,7 +2281,14 @@
           
           
           ! read GOM file
-          FileName=Trim(CalParams%FileNames%ProjectName)//'.GOM'
+          FileVersion = CalParams%CPSversion
+          
+          if (FileVersion == Anura3D_v2025) then
+            write(Stage,'(I0)') CalParams%StageNumber
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_STAGE_FILE_EXTENSION//Stage
+          else 
+            FileName=Trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+          end if
           
           if (FExist(FileName) ) then
             open(GOMunit,FILE=FileName)
@@ -2526,3 +2542,8 @@
           end subroutine SurfaceNodesCoordinates
         
       end module ModMeshInfo
+
+
+
+
+
