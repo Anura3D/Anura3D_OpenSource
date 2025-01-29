@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- -*- coding: utf-8; mode: SGML -*- -->
+<Anura3D_data version="3.0">
+  <style show_menubutton_about="0" show_menubutton_search="1"></style>
+  <display_options frame_width="151" is_frame_open="1"></display_options>
+  <!-- units -->
+  <units>
+    <!--by now it is compulsory define this node if units are used (could be empty if defaults are enougth)-->
+  </units>
+  <!-- ############ Container of units ############ -->
+  <include path="xml/GeneralData.xml"></include>
+  <!-- ############ Stages ############ -->
+  <include path="xml/Stages.xml"></include>
+</Anura3D_data>

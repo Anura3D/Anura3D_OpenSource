@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,7 +37,7 @@
       !            is necessary to be applied.
       !
       !     $Revision: 10114 $
-      !     $Date: 2024-03-22 15:39:06 +0100 (Fri, 22 Mar 2024) $
+      !     $Date: 2024-03-22 15:39:06 +0100 (vi., 22 mar. 2024) $
       !
       !**********************************************************************
       use ModGlobalConstants
@@ -2648,3 +2648,8 @@
                
             
       end module ModLagrangianPhase
+
+
+
+
+

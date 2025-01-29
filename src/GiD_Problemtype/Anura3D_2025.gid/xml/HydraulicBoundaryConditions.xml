@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- -*- coding: utf-8; mode: SGML -*- -->
+<container n="Hydraulic_Conditions" pn="Hydraulic Conditions" icon="icon_hydraulicBC">
+  <container n="Hydraulic_head" pn="Hydraulic head" icon="icon_hydraulicBC" actualize_tree="1">
+    <value n="Minimum_coordinates_hydraulic_head_2D" pn="x- and y-min" help="Assign the minimum coordinates to define hydraulic 2D head area" fieldtype="vector" format="%.6g" dimensions="2" v="0.0,0.0" pick_coordinates="1" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Minimum_coordinates_hydraulic_head_2D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <value n="Maximum_coordinates_hydraulic_head_2D" pn="x- and y-max" help="Assign the maximum coordinates to define hydraulic 2D head area" fieldtype="vector" format="%.6g" dimensions="2" v="0.0,0.0" pick_coordinates="1" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Maximum_coordinates_hydraulic_head_2D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <value n="Minimum_coordinates_hydraulic_head_3D" pn="x- y- and z-min" help="Assign the minimum coordinates to define hydraulic 3D head area" fieldtype="vector" format="%.6g" dimensions="3" v="0.0,0.0,0.0" pick_coordinates="1" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Minimum_coordinates_hydraulic_head_3D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <value n="Maximum_coordinates_hydraulic_head_3D" pn="x- y- and z-max" help="Assign the maximum coordinates to define hydraulic 3D head area" fieldtype="vector" format="%.6g" dimensions="3" v="0.0,0.0,0.0" pick_coordinates="1" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Maximum_coordinates_hydraulic_head_3D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <container n="Hydraulic_Head_In_Time" pn="Hydraulic head in time" icon="icon_hydraulicBC" help="Define hydraulic head in time" state="normal">
+      <edit_command n="Hydraulic_Head_In_Time_Win" pn="Hydraulic head in time" proc="HydraulicHead::create_table %W" edit_type="exclusive"></edit_command>
+    </container>
+  </container>
+  <container n="Seepage_face" pn="Seepage face" icon="icon_hydraulicBC" actualize_tree="1">
+    <value n="Minimum_coordinates_seepage_face_2D" pn="x- and y-min" help="Assign the minimum coordinates to define seepage face area" fieldtype="vector" format="%.6g" dimensions="2" v="0.0,0.0" pick_coordinates="1" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Minimum_coordinates_seepage_face_2D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <value n="Maximum_coordinates_seepage_face_2D" pn="x- and y-max" help="Assign the maximum coordinates to define seepage face area" fieldtype="vector" format="%.6g" dimensions="2" v="0.0,0.0" pick_coordinates="1" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Maximum_coordinates_seepage_face_2D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <value n="Minimum_coordinates_seepage_face_3D" pn="x- y- and z-min" help="Assign the minimum coordinates to define seepage face area" fieldtype="vector" format="%.6g" dimensions="3" v="0.0,0.0,0.0" pick_coordinates="1" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Minimum_coordinates_seepage_face_3D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <value n="Maximum_coordinates_seepage_face_3D" pn="x- y- and z-max" help="Assign the maximum coordinates to define seepage face area" fieldtype="vector" format="%.6g" dimensions="3" v="0.0,0.0,0.0" pick_coordinates="1" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Maximum_coordinates_seepage_face_3D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+  </container>
+  <container n="Infiltration" pn="Infiltration" icon="icon_hydraulicBC" actualize_tree="1">
+    <value n="Minimum_coordinates_infiltration_2D" pn="x- and y-min" help="Assign the minimum coordinates to define infiltration area" fieldtype="vector" format="%.6g" dimensions="2" v="0.0,0.0" pick_coordinates="1" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Minimum_coordinates_infiltration_2D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <value n="Maximum_coordinates_infiltration_2D" pn="x- and y-max" help="Assign the maximum coordinates to define infiltration area" fieldtype="vector" format="%.6g" dimensions="2" v="0.0,0.0" pick_coordinates="1" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Maximum_coordinates_infiltration_2D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <value n="Minimum_coordinates_infiltration_3D" pn="x- y- and z-min" help="Assign the minimum coordinates to define infiltration area" fieldtype="vector" format="%.6g" dimensions="3" v="0.0,0.0,0.0" pick_coordinates="1" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Minimum_coordinates_infiltration_3D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <value n="Maximum_coordinates_infiltration_3D" pn="x- y- and z-max" help="Assign the maximum coordinates to define infiltration area" fieldtype="vector" format="%.6g" dimensions="3" v="0.0,0.0,0.0" pick_coordinates="1" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1">
+      <dependencies node="../value[@n='Maximum_coordinates_infiltration_3D']" att1="v" v1="{@v}"></dependencies>
+    </value>
+    <container n="Infiltration_rate_value" pn="Infiltration rate value" icon="icon_hydraulicBC">
+      <value n="X_direction" pn="x direction [m/s]" v="0.0"></value>
+      <value n="Y_direction" pn="y direction [m/s]" v="0.0"></value>
+      <value n="Z_direction" pn="z direction [m/s]" v="0.0" state="[check_dim 3D 3D:Axissymmetric %W]"></value>
+    </container>
+  </container>
+</container>

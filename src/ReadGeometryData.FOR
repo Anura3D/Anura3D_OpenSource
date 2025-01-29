@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       ! Note: Version archived subroutines are contained at the end of the module
       !
-      !     $Revision: 10167 $
-      !     $Date: 2024-06-25 15:15:53 +0200 (Tue, 25 Jun 2024) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
 
@@ -164,11 +164,20 @@
           integer(INTEGER_TYPE) :: FileUnit
           character(len=255) :: BName
           integer(INTEGER_TYPE) :: ios
+          character(len=3) :: Stage
 
           ! Initialize GeoParams
           call InitializeGeometryParameters()
           
-          FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+          FileVersion = CalParams%CPSversion
+          
+          if (FileVersion == Anura3D_v2025) then
+            write(Stage,'(I0)') CalParams%StageNumber
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_STAGE_FILE_EXTENSION//Stage
+          else
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+          end if
+          
           FileUnit = TMP_UNIT
           
           ! check if GOM file exists in project folder, otherwise give error and stop execution
@@ -189,6 +198,8 @@
           ! read GOM data              
           select case (FileVersion) ! read GOM data depending on file version
             
+            case (Anura3D_v2025)             
+              call ReadGOM(FileUnit,FileVersion)
             case (Anura3D_v2024)             
               call ReadGOM(FileUnit,FileVersion)
             case (Anura3D_v2023)             
@@ -206,7 +217,8 @@
                 // trim(Anura3D_v2021) // ', ' &
                 // trim(Anura3D_v2022) // ', ' &
                 // trim(Anura3D_v2023) // ', ' &
-                // trim(Anura3D_v2024)     // '.' )
+                // trim(Anura3D_v2024) // ', ' &
+                // trim(Anura3D_v2025)     // '.' )
 
           end select
             
@@ -225,7 +237,7 @@
         implicit none
       
           ! Local variables
-          character(len = 255) :: FileName, TName, Bname, ProjectName
+          character(len = 255) :: FileName, FileName_v2025, TName, Bname, ProjectName
           integer(INTEGER_TYPE) :: ios ! used for error control
           character(len=255) :: DumS = '' ! reading strings
           character(len=21) :: messageIOS = 'GOM file: Can''t read '
@@ -238,8 +250,12 @@
           
           ! open GOM file
           call getarg(1, ProjectName)
-          FileName=Trim(ProjectName)//'.GOM'
+          
+          FileName = Trim(ProjectName)//'.GOM'
+          FileName_v2025 = Trim(ProjectName)//'.GOM_stage0'
+          
           if (FExist(FileName)) open(GOMunit, FILE=FileName)
+          if (FExist(FileName_v2025)) open(GOMunit, FILE=FileName_v2025)
           
           do ! read dimension and elementtype from gom-file
               
@@ -319,6 +335,9 @@
 		            
           ! set GOM version number
             select case (FileVersion)
+            case (Anura3D_v2025)
+                call GiveMessage('Reading... ' // Anura3D_v2025)
+                CalParams%GOMversion = Anura3D_v2025
             case (Anura3D_v2024)
                 call GiveMessage('Reading... ' // Anura3D_v2024)
                 CalParams%GOMversion = Anura3D_v2021
@@ -1169,3 +1188,7 @@
 
         
       end module ModReadGeometryData        
+
+
+
+

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container n="Stress_initialization" pn="Stress Initialization" icon="">
+<value n="Apply_K0" pn="K0-PROCEDURE" icon="icon_K0" values="do not apply,apply" v="do not apply">
+      <dependencies node="../container[@n='Not-horizontal']" att1="state" v1="normal" value="apply"/> 
+      <dependencies node="../container[@n='Not-horizontal']" att1="state" v1="hidden" value="do not apply"/>
+      <dependencies node="../container[@n='Horizontal']" att1="state" v1="normal" value="apply"/>       
+      <dependencies node="../container[@n='Horizontal']" att1="state" v1="hidden" value="do not apply"/>
+      <dependencies node="../value[@n='initial_vertical_load']" att1="state" v1="normal" value="apply"/>
+      <dependencies node="../value[@n='initial_vertical_load']" att1="state" v1="hidden" value="do not apply"/>
+      <dependencies node="../value[@n='INITIAL_WATER_PRESSURE']" att1="state" v1="normal" value="apply"/>
+      <dependencies node="../value[@n='INITIAL_WATER_PRESSURE']" att1="state" v1="hidden" value="do not apply"/>
+</value>
+<container n="Not-horizontal" pn="General condition (not-horizontal surface)" icon="" state="hidden">
+      <include path="xml/SoilSurface.xml"/>
+      <include path="xml/PhreaticSurface.xml"/>
+      <value n="MAX_SUCTION_AT_SOIL_SURFACE" pn="Max suction at soil surface [kPa]" values="do not specify,specify" v="do not specify" state="normal" actualize_tree="1">
+        <dependencies node="../value[@n='suction']" att1="state" v1="normal" value="specify"/> 
+        <dependencies node="../value[@n='suction']" att1="state" v1="hidden" value="do not specify"/>
+      </value>
+      <value n="suction" pn="Suction [kPa]" v="0.0" state="hidden"/>
+</container>
+<container n="Horizontal" pn="Horizontal layered soil" icon="" ov="point" ovm="node" state="hidden">
+      <value n="soil_surface" pn="Soil surface elevation [m]" help="Specify the soil surface elevation" format="%.6g" v="0.0" state="normal">
+      </value>
+      <value n="NUMBER_OF_LAYERS" pn="Number of layers" values="none,1,2,3,4,5,6,7,8,9,10" v="none" state="normal" actualize_tree="1">
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_1']" att1="state" v1="normal" value="10"/>
+        
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_2']" att1="state" v1="normal" value="10"/>
+        
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="hidden" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_3']" att1="state" v1="normal" value="10"/>
+        
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="hidden" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="hidden" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_4']" att1="state" v1="normal" value="10"/>
+        
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_5']" att1="state" v1="normal" value="10"/>
+        
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="hidden" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_6']" att1="state" v1="normal" value="10"/>
+        
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="hidden" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="normal" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="normal" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="normal" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_7']" att1="state" v1="normal" value="10"/>
+        
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="hidden" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="normal" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="normal" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_8']" att1="state" v1="normal" value="10"/>
+        
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="hidden" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="normal" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_9']" att1="state" v1="normal" value="10"/>
+        
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="none"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="2"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="3"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="4"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="5"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="6"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="7"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="8"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="hidden" value="9"/>
+        <dependencies node="../value[@n='layer_thickness_10']" att1="state" v1="normal" value="10"/>
+      </value>
+      <value n="layer_thickness_1" pn="Layer thickness 1 [m]" v="" state="hidden">
+      </value>
+      <value n="layer_thickness_2" pn="Layer thickness 2 [m]" v="" state="hidden">
+      </value>
+      <value n="layer_thickness_3" pn="Layer thickness 3 [m]" v="" state="hidden">
+      </value>
+      <value n="layer_thickness_4" pn="Layer thickness 4 [m]" v="" state="hidden">
+      </value>
+      <value n="layer_thickness_5" pn="Layer thickness 5 [m]" v="" state="hidden">
+      </value>
+      <value n="layer_thickness_6" pn="Layer thickness 6 [m]" v="" state="hidden">
+      </value>
+      <value n="layer_thickness_7" pn="Layer thickness 7 [m]" v="" state="hidden">
+      </value>
+      <value n="layer_thickness_8" pn="Layer thickness 8 [m]" v="" state="hidden">
+      </value>
+      <value n="layer_thickness_9" pn="Layer thickness 9 [m]" v="" state="hidden">
+      </value>
+      <value n="layer_thickness_10" pn="Layer thickness 10 [m]" v="" state="hidden">
+      </value>
+    </container>
+    <value n="initial_vertical_load" pn="Initial vertical load [kPa]" icon="icon_K0" v="0.0" state="hidden"/>
+    <value n="INITIAL_WATER_PRESSURE" pn="Initial water pressure [kPa]" icon="icon_K0" v="0.0" state="hidden"/>
+  <value n="FROM_FILE" pn="FROM FILE" values="do not assign stresses from external file,assign stresses from external file" v="do not assign stresses from external file" actualize_tree="1"/>
+</container>
+

@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@
       !    Function:  This module contains the routine for running a dynamic
       !               load step using explicit time integration.
       !
-      !     $Revision: 9794 $
-      !     $Date: 2022-09-20 15:20:25 +0200 (Tue, 20 Sep 2022) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
 
@@ -59,9 +59,10 @@
       use ModWriteResultData
       use ModTwoLayerFormulation
       use ModGlobalConstants
+      use ModReadOutputParameters
       
       implicit none
-
+      
       contains ! Routines of this module
 
         subroutine RunExplicitDynamicLoadStep()
@@ -74,6 +75,9 @@
         !**********************************************************************
 
         implicit none
+        
+        real(REAL_TYPE) :: NextTime ! variable needed to write MP data in the .PAR file with a frequency defined in .OPD file
+        NextTime = 0.0
 
           !********** 4b - TIME STEP LOOP ******************************
           do while( (.not.CalParams%ConvergenceCheck%DoesConverge) .and. (.not.CalParams%ConvergenceCheck%DoesDiverge) )
@@ -122,9 +126,12 @@
               call EnergyOutput()
             else
               call EnergyOutput2LayForm()
-            end if
-
+            end if  
+          
+          if (CalParams%OverallRealTime>NextTime) then  ! write data in .PAR file if time increment specified in .OPD file is reached
+            NextTime=CalParams%OverallRealTime+OutParams%MP%TimeBetweenMPOutput
             call MaterialPointOutput() ! only if OutputNumberParticles>0
+          end if         
             
             !compute and write on file the sum of nodal reactions on selected surfaces
             call SurfaceReactionOutput() 
@@ -144,3 +151,8 @@
         end subroutine RunExplicitDynamicLoadStep
       
       end module ModDynamicExplicit
+
+
+
+
+

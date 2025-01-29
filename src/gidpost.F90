@@ -64,8 +64,8 @@ MODULE gidpost
   END TYPE
 
   TYPE(GiD_PostMode), PARAMETER, PUBLIC :: GiD_PostAscii       = GiD_PostMode(0) !ascii
-  TYPE(GiD_PostMode), PARAMETER, PUBLIC :: GiD_PostAsciiZipped = GiD_PostMode(1) !compresed ascii
-  TYPE(GiD_PostMode), PARAMETER, PUBLIC :: GiD_PostBinary      = GiD_PostMode(2) !compresed binary
+  TYPE(GiD_PostMode), PARAMETER, PUBLIC :: GiD_PostAsciiZipped = GiD_PostMode(1) !compressed ascii
+  TYPE(GiD_PostMode), PARAMETER, PUBLIC :: GiD_PostBinary      = GiD_PostMode(2) !compressed binary
   TYPE(GiD_PostMode), PARAMETER, PUBLIC :: GiD_PostHDF5        = GiD_PostMode(3) !HDF5
 
 !--------------------------------------------------------------------------
@@ -167,8 +167,6 @@ MODULE gidpost
 ! MESH ROUTINES
 !--------------------------------------------------------------------------
 
-    !SUBROUTINE GiD_OpenPostMeshFile -> REDEFINED
-    !SUBROUTINE GiD_fOpenPostMeshFile -> REDEFINED
 ! ---
     SUBROUTINE GiD_ClosePostMeshFile() BIND(C,NAME='GiD_ClosePostMeshFile')
     END SUBROUTINE GiD_ClosePostMeshFile
@@ -177,24 +175,12 @@ MODULE gidpost
       TYPE(GiD_File), VALUE, INTENT(IN) :: fd
     END SUBROUTINE GiD_fClosePostMeshFile
 ! ---
-    !SUBROUTINE GiD_BeginMeshGroup -> REDEFINED
-    !SUBROUTINE GiD_fBeginMeshGroup -> REDEFINED             
-! ---
     SUBROUTINE GiD_EndMeshGroup() BIND(C,NAME='GiD_EndMeshGroup')
     END SUBROUTINE GiD_EndMeshGroup
     SUBROUTINE GiD_fEndMeshGroup(fd) BIND(C,NAME='GiD_fEndMeshGroup')
       IMPORT :: GiD_File
       TYPE(GiD_File), VALUE, INTENT(IN) :: fd
     END SUBROUTINE GiD_fEndMeshGroup
-! ---
-    !SUBROUTINE GiD_MeshUnit -> REDEFINED
-    !SUBROUTINE GiD_fMeshUnit -> REDEFINED
-! ---
-    !SUBROUTINE GiD_BeginMesh -> REDEFINED
-    !SUBROUTINE GiD_fBeginMesh -> REDEFINED
-! ---
-    !SUBROUTINE GiD_BeginMeshColor -> REDEFINED
-    !SUBROUTINE GiD_fBeginMeshColor -> REDEFINED
 ! ---
     SUBROUTINE GiD_EndMesh() BIND(C,NAME='GiD_EndMesh')
     END SUBROUTINE GiD_EndMesh
@@ -229,9 +215,6 @@ MODULE gidpost
       REAL(C_DOUBLE), VALUE, INTENT(IN) :: x,y
     END SUBROUTINE GiD_fWriteCoordinates2D
 ! ---
-    ! SUBROUTINE GiD_WriteCoordinates  -> SPECIAL INTERFACE
-    ! SUBROUTINE GiD_fWriteCoordinates  -> SPECIAL INTERFACE
-! ---
     SUBROUTINE GiD_BeginElements() BIND(C,NAME='GiD_BeginElements')
     END SUBROUTINE GiD_BeginElements
     SUBROUTINE GiD_fBeginElements(fd) BIND(C,NAME='GiD_fBeginElements')
@@ -257,9 +240,6 @@ MODULE gidpost
       INTEGER(C_INT), VALUE, INTENT(IN) :: id
       INTEGER(C_INT),        INTENT(IN) :: conec(*)
     END SUBROUTINE GiD_fWriteElement
-! ---
-    !SUBROUTINE GiD_WriteElementMat(id,conec) -> SPECIAL INTERFACE
-    !SUBROUTINE GiD_fWriteElementMat(id,conec) -> SPECIAL INTERFACE
 ! ---
     SUBROUTINE GiD_WriteCircle(id,conec,radius,normal_x,normal_y,normal_z) BIND(C,NAME='GiD_WriteCircle')
       IMPORT :: C_DOUBLE, C_INT
@@ -329,18 +309,12 @@ MODULE gidpost
 ! RESULTS ROUTINES
 !--------------------------------------------------------------------------
 
-    !SUBROUTINE GiD_OpenPostResultFile -> REDEFINED
-    !SUBROUTINE GiD_fOpenPostResultFile -> REDEFINED
-
     SUBROUTINE GiD_ClosePostResultFile() BIND(C,NAME='GiD_ClosePostResultFile')
     END SUBROUTINE GiD_ClosePostResultFile
     SUBROUTINE GiD_fClosePostResultFile(fd) BIND(C,NAME='GiD_fClosePostResultFile')
       IMPORT :: GiD_File
       TYPE(GiD_File), VALUE, INTENT(IN) :: fd
     END SUBROUTINE GiD_fClosePostResultFile
-
-    !SUBROUTINE GiD_BeginGaussPoint -> REDEFINED
-    !SUBROUTINE GiD_fBeginGaussPoint -> REDEFINED
 
     SUBROUTINE GiD_EndGaussPoint() BIND(C,NAME='GiD_EndGaussPoint')
     END SUBROUTINE GiD_EndGaussPoint
@@ -369,87 +343,12 @@ MODULE gidpost
       REAL(C_DOUBLE), VALUE, INTENT(IN) :: x,y,z
     END SUBROUTINE GiD_fWriteGaussPoint3D
 
-    !SUBROUTINE GiD_BeginRangeTable -> REDEFINED
-    !SUBROUTINE GiD_fBeginRangeTable -> REDEFINED
-
     SUBROUTINE GiD_EndRangeTable() BIND(C,NAME='GiD_EndRangeTable')
     END SUBROUTINE GiD_EndRangeTable
     SUBROUTINE GiD_fEndRangeTable(fd) BIND(C,NAME='GiD_fEndRangeTable')
       IMPORT :: GiD_File
       TYPE(GiD_File), VALUE, INTENT(IN) :: fd
     END SUBROUTINE GiD_fEndRangeTable
-
-    !SUBROUTINE GiD_WriteMinRange -> REDEFINED
-    !SUBROUTINE GiD_fWriteMinRange -> REDEFINED
-
-    !SUBROUTINE GiD_WriteRange -> REDEFINED
-    !SUBROUTINE GiD_fWriteRange -> REDEFINED
-
-    !SUBROUTINE GiD_WriteMaxRange -> REDEFINED
-    !SUBROUTINE GiD_fWriteMaxRange -> REDEFINED
-
-    !SUBROUTINE GiD_BeginScalarResult -> REDEFINED
-    !SUBROUTINE GiD_fBeginScalarResult -> REDEFINED
-
-    !SUBROUTINE GiD_BeginVectorResult -> REDEFINED
-    !SUBROUTINE GiD_fBeginVectorResult -> REDEFINED
-
-    !SUBROUTINE GiD_Begin2DMatResult -> REDEFINED
-    !SUBROUTINE GiD_fBegin2DMatResult -> REDEFINED
-
-    !SUBROUTINE GiD_Begin3DMatResult -> REDEFINED
-    !SUBROUTINE GiD_fBegin3DMatResult -> REDEFINED
-
-    !SUBROUTINE GiD_BeginPDMMatResult -> REDEFINED
-    !SUBROUTINE GiD_fBeginPDMMatResult -> REDEFINED
-
-    !SUBROUTINE GiD_BeginMainMatResult -> REDEFINED
-    !SUBROUTINE GiD_fBeginMainMatResult -> REDEFINED
-
-    !SUBROUTINE GiD_BeginLAResult -> REDEFINED
-    !SUBROUTINE GiD_fBeginLAResult -> REDEFINED
-    
-    !SUBROUTINE GiD_BeginComplexScalarResult -> REDEFINED
-    !SUBROUTINE GiD_fBeginComplexScalarResult -> REDEFINED
-    
-    !SUBROUTINE GiD_BeginComplexVectorResult -> REDEFINED
-    !SUBROUTINE GiD_fBeginComplexVectorResult -> REDEFINED
-
-    !SUBROUTINE GiD_BeginResultHeader -> REDEFINED
-    !SUBROUTINE GiD_fBeginResultHeader -> REDEFINED
-
-    !SUBROUTINE GiD_ScalarComp -> REDEFINED
-    !SUBROUTINE GiD_fScalarComp -> REDEFINED
-
-    !SUBROUTINE GiD_VectorComp -> REDEFINED
-    !SUBROUTINE GiD_fVectorComp -> REDEFINED
-
-    !SUBROUTINE GiD_2DMatrixComp -> REDEFINED
-    !SUBROUTINE GiD_f2DMatrixComp -> REDEFINED
-
-    !SUBROUTINE GiD_3DMatrixComp -> REDEFINED
-    !SUBROUTINE GiD_f3DMatrixComp -> REDEFINED
-
-    !SUBROUTINE GiD_PDMComp -> REDEFINED
-    !SUBROUTINE GiD_fPDMComp -> REDEFINED
-
-    !SUBROUTINE GiD_MainMatrixComp -> REDEFINED
-    !SUBROUTINE GiD_fMainMatrixComp -> REDEFINED
-
-    !SUBROUTINE GiD_LAComponents -> REDEFINED
-    !SUBROUTINE GiD_fLAComponents -> REDEFINED
-    
-    !SUBROUTINE GiD_ComplexScalarComp -> REDEFINED
-    !SUBROUTINE GiD_fComplexScalarComp -> REDEFINED
-    
-    !SUBROUTINE GiD_ResultUnit -> REDEFINED
-    !SUBROUTINE GiD_fResultUnit -> REDEFINED
-
-    !SUBROUTINE GiD_BeginResultGroup -> REDEFINED
-    !SUBROUTINE GiD_fBeginResultGroup -> REDEFINED
-
-    !SUBROUTINE GiD_ResultDescriptor -> REDEFINED
-    !SUBROUTINE GiD_fResultDescriptor -> REDEFINED
 
     SUBROUTINE GiD_ResultValues() BIND(C,NAME='GiD_ResultValues')
     END SUBROUTINE GiD_ResultValues
@@ -464,9 +363,6 @@ MODULE gidpost
       IMPORT :: GiD_File
       TYPE(GiD_File), VALUE, INTENT(IN) :: fd
     END SUBROUTINE GiD_fEndResult
-
-    !SUBROUTINE GiD_BeginOnMeshGroup -> REDEFINED
-    !SUBROUTINE GiD_fBeginOnMeshGroup -> REDEFINED
 
     SUBROUTINE GiD_EndOnMeshGroup() BIND(C,NAME='GiD_EndOnMeshGroup')
     END SUBROUTINE GiD_EndOnMeshGroup
@@ -505,12 +401,6 @@ MODULE gidpost
       INTEGER(C_INT), VALUE, INTENT(IN) :: id
       REAL(C_DOUBLE), VALUE, INTENT(IN) :: x, y
     END SUBROUTINE GiD_fWrite2DVector
-
-    ! SUBROUTINE GiD_WriteVector -> SPECIAL INTERFACE
-    ! SUBROUTINE GiD_fWriteVector -> SPECIAL INTERFACE
-
-    ! SUBROUTINE GiD_WriteVectorModule -> SPECIAL INTERFACE
-    ! SUBROUTINE GiD_fWriteVectorModule -> SPECIAL INTERFACE
 
     SUBROUTINE GiD_Write2DMatrix(id,Sxx,Syy,Sxy) BIND(C,NAME='GiD_Write2DMatrix')
       IMPORT :: C_DOUBLE, C_INT
@@ -678,11 +568,6 @@ MODULE gidpost
   INTERFACE OPERATOR(==)
     MODULE PROCEDURE GiD_PostMode_Equal
   END INTERFACE
-
-  !INTERFACE ASSIGNMENT(=)
-  !  MODULE PROCEDURE Copy_GiD_File
-  !END INTERFACE
-  !PUBLIC :: ASSIGNMENT(=)
 
 ! AUXILIAR INTERFACES
   INTERFACE GiD_Int
@@ -2843,7 +2728,7 @@ CONTAINS
 
   SUBROUTINE GiD_fResultComponents(fd,nComp,Comp)
 
-    TYPE(GiD_File),   INTENT(IN) :: fd         ! file
+    TYPE(GiD_File),   INTENT(IN) :: fd         
     INTEGER(C_INT),   INTENT(IN) :: nComp
     CHARACTER(LEN=*), INTENT(IN) :: Comp(nComp)
 
@@ -2910,3 +2795,6 @@ ELEMENTAL REAL(GID_REAL_KIND) FUNCTION GiD_Real_8(number)
 END FUNCTION GiD_Real_8
 
 END MODULE gidpost
+
+
+

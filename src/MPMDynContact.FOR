@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       !    Function:  This module contains all routines which are used for the Dynamic MPM contact model
       !
-      !     $Revision: 10167 $
-      !     $Date: 2024-06-25 15:15:53 +0200 (Tue, 25 Jun 2024) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
       use ModCounters
@@ -548,12 +548,21 @@
         implicit none
         
           ! local variables       
-          character(len=MAX_FILENAME_LENGTH) :: FileName 
+          character(len=MAX_FILENAME_LENGTH) :: FileName, FileVersion
           integer(INTEGER_TYPE) :: FileUnit, NContVolElem
           character(len=255) :: BName, AName
           integer(INTEGER_TYPE) :: ios ! used for error control
+          character(len=3) :: Stage
           
-          FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+          FileVersion = CalParams%CPSversion
+          
+          if (FileVersion == Anura3D_v2025) then
+            write(Stage,'(I0)') CalParams%StageNumber
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_STAGE_FILE_EXTENSION//Stage
+          else
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+          end if
+          
           FileUnit = TMP_UNIT
           
           call FileOpen(FileUnit, trim(FileName))
@@ -595,6 +604,8 @@
             call ContactSurfaceNodes_2D(FileUnit)     
           else           
             select case (FileVersion) ! read GOM data depending on file version
+              case (Anura3D_v2025)              
+                call ContactSurfaceNodes_v2021(FileUnit)
               case (Anura3D_v2024)              
                 call ContactSurfaceNodes_v2021(FileUnit) 
               case (Anura3D_v2023)              
@@ -1569,3 +1580,7 @@
          end do
          end subroutine MaxStrainRate
       end module ModMPMDynContact
+
+
+
+

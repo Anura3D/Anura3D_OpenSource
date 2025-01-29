@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,8 @@
       !
       ! Implemented in the frame of the MPM project.
       !
-      !     $Revision: 10167 $
-      !     $Date: 2024-06-25 15:15:53 +0200 (Tue, 25 Jun 2024) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
       implicit none
@@ -138,7 +138,9 @@
         character(len = 8), parameter :: END_STEP_SPECIFIER = 'EndStep='
         character(len = 10), parameter :: START_STEP_SPECIFIER = 'StartStep='
         character(len = 5), parameter :: CPS_FILE_EXTENSION = '.CPS_'
+        character(len = 10), parameter :: OPD_STAGE_FILE_EXTENSION = '.OPD_stage'
         character(len = 4), parameter :: GOM_FILE_EXTENSION = '.GOM'
+        character(len = 10), parameter :: GOM_STAGE_FILE_EXTENSION = '.GOM_stage'
         character(len = 5), parameter :: BRF_FILE_EXTENSION = '.BRF_'
         character(len = 5), parameter :: HYDRAULICHEAD_FILE_EXTENSION = '.HHBF'
         character(len=5), parameter:: MPMAPFROMEXT_FILE_EXTENSION = '.MAPF'
@@ -260,8 +262,10 @@
         ! Used file units
         integer(INTEGER_TYPE), parameter :: TMP_UNIT= 21
         integer(INTEGER_TYPE), parameter :: OUTunit = 22
+        integer(INTEGER_TYPE), parameter :: ERRunit = 23
         integer(INTEGER_TYPE), parameter :: TSTunit = 24
         integer(INTEGER_TYPE), parameter :: LOGunit = 25
+        integer(INTEGER_TYPE), parameter :: PROCunit = 26        
         integer(INTEGER_TYPE), parameter :: BMRunit = 29
         integer(INTEGER_TYPE), parameter :: BMSunit = 347
         
@@ -289,7 +293,7 @@
         integer(INTEGER_TYPE), parameter :: PARUnit = 900 ! first unit for particle output (max until 999)
         integer(INTEGER_TYPE), parameter :: SURFReacUnit = 1000
         
-            ! Prescribed velocity from file 
+        ! Prescribed velocity from file 
         integer(INTEGER_TYPE), parameter :: PVFunit = 70
         
         ! Prescribed acceleration from file
@@ -322,6 +326,7 @@
         integer(INTEGER_TYPE), parameter :: FEEDBACK_LEVEL_ALWAYS  = huge(FEEDBACK_LEVEL_RELEASE)
         
         ! Anura3D file versions
+        character(len=64), parameter :: Anura3D_v2025 = '### Anura3D_2025 ###' ! internal release/debug
         character(len=64), parameter :: Anura3D_v2024 = '### Anura3D_2024 ###' ! internal release/debug
         character(len=64), parameter :: Anura3D_v2023 = '### Anura3D_2023 ###' ! internal release/debug
         character(len=64), parameter :: Anura3D_v2022 = '### Anura3D_2022 ###' ! internal release/debug
@@ -732,4 +737,9 @@
       end subroutine SetAnErrorHappend
 
       end module ModGlobalData
+
+
+
+
+
 

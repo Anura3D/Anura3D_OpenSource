@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- -*- coding: utf-8; mode: SGML -*- -->
+<container n="Contact" pn="Contact" icon="icon_contact" actualize_tree="1">
+  <condition n="Contact_properties" pn="Contact Properties" icon="icon_contact" ov="[check_dim_surface_volume 2D:plane-strain 2D:Axissymmetric %W]" ovm="element" actualize_tree="1">
+    <value n="Number_of_materials" pn="Number of materials" v="1" values="1,2,3,4" actualize_tree="1">
+      <dependencies node="../value[@n='MATERIAL_1']" att1="state" v1="normal" value="1"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_1']" att1="state" v1="normal" value="2"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_1']" att1="state" v1="normal" value="3"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_1']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='Friction_1']" att1="state" v1="normal" value="1"></dependencies>
+      <dependencies node="../value[@n='Friction_1']" att1="state" v1="normal" value="2"></dependencies>
+      <dependencies node="../value[@n='Friction_1']" att1="state" v1="normal" value="3"></dependencies>
+      <dependencies node="../value[@n='Friction_1']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='Adhesion_1']" att1="state" v1="normal" value="1"></dependencies>
+      <dependencies node="../value[@n='Adhesion_1']" att1="state" v1="normal" value="2"></dependencies>
+      <dependencies node="../value[@n='Adhesion_1']" att1="state" v1="normal" value="3"></dependencies>
+      <dependencies node="../value[@n='Adhesion_1']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_2']" att1="state" v1="hidden" value="1"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_2']" att1="state" v1="normal" value="2"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_2']" att1="state" v1="normal" value="3"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_2']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='Friction_2']" att1="state" v1="hidden" value="1"></dependencies>
+      <dependencies node="../value[@n='Friction_2']" att1="state" v1="normal" value="2"></dependencies>
+      <dependencies node="../value[@n='Friction_2']" att1="state" v1="normal" value="3"></dependencies>
+      <dependencies node="../value[@n='Friction_2']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='Adhesion_2']" att1="state" v1="hidden" value="1"></dependencies>
+      <dependencies node="../value[@n='Adhesion_2']" att1="state" v1="normal" value="2"></dependencies>
+      <dependencies node="../value[@n='Adhesion_2']" att1="state" v1="normal" value="3"></dependencies>
+      <dependencies node="../value[@n='Adhesion_2']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_3']" att1="state" v1="hidden" value="1"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_3']" att1="state" v1="hidden" value="2"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_3']" att1="state" v1="normal" value="3"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_3']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='Friction_3']" att1="state" v1="hidden" value="1"></dependencies>
+      <dependencies node="../value[@n='Friction_3']" att1="state" v1="hidden" value="2"></dependencies>
+      <dependencies node="../value[@n='Friction_3']" att1="state" v1="normal" value="3"></dependencies>
+      <dependencies node="../value[@n='Friction_3']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='Adhesion_3']" att1="state" v1="hidden" value="1"></dependencies>
+      <dependencies node="../value[@n='Adhesion_3']" att1="state" v1="hidden" value="2"></dependencies>
+      <dependencies node="../value[@n='Adhesion_3']" att1="state" v1="normal" value="3"></dependencies>
+      <dependencies node="../value[@n='Adhesion_3']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_4']" att1="state" v1="hidden" value="1"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_4']" att1="state" v1="hidden" value="2"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_4']" att1="state" v1="hidden" value="3"></dependencies>
+      <dependencies node="../value[@n='MATERIAL_4']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='Friction_4']" att1="state" v1="hidden" value="1"></dependencies>
+      <dependencies node="../value[@n='Friction_4']" att1="state" v1="hidden" value="2"></dependencies>
+      <dependencies node="../value[@n='Friction_4']" att1="state" v1="hidden" value="3"></dependencies>
+      <dependencies node="../value[@n='Friction_4']" att1="state" v1="normal" value="4"></dependencies>
+      <dependencies node="../value[@n='Adhesion_4']" att1="state" v1="hidden" value="1"></dependencies>
+      <dependencies node="../value[@n='Adhesion_4']" att1="state" v1="hidden" value="2"></dependencies>
+      <dependencies node="../value[@n='Adhesion_4']" att1="state" v1="hidden" value="3"></dependencies>
+      <dependencies node="../value[@n='Adhesion_4']" att1="state" v1="normal" value="4"></dependencies>
+    </value>
+    <value n="MATERIAL_1" pn="MATERIAL 1" v="name" state="normal"></value>
+    <value n="Friction_1" pn="Friction 1" v="0.0" state="normal"></value>
+    <value n="Adhesion_1" pn="Adhesion 1" v="0.0" state="normal"></value>
+    <value n="MATERIAL_2" pn="MATERIAL 2" v="name" state="hidden"></value>
+    <value n="Friction_2" pn="Friction 2" v="0.0" state="hidden"></value>
+    <value n="Adhesion_2" pn="Adhesion 2" v="0.0" state="hidden"></value>
+    <value n="MATERIAL_3" pn="MATERIAL 3" v="name" state="hidden"></value>
+    <value n="Friction_3" pn="Friction 3" v="0.0" state="hidden"></value>
+    <value n="Adhesion_3" pn="Adhesion 3" v="0.0" state="hidden"></value>
+    <value n="MATERIAL_4" pn="MATERIAL 4" v="name" state="hidden"></value>
+    <value n="Friction_4" pn="Friction 4" v="0.0" state="hidden"></value>
+    <value n="Adhesion_4" pn="Adhesion 4" v="0.0" state="hidden"></value>
+  </condition>
+  <value n="node_normal_correction" pn="Node normal correction" values="do not apply,apply" v="do not apply" actualize_tree="1">
+    <dependencies node="../value[@n='number_of_normals']" att1="state" v1="hidden" value="do not apply"></dependencies>
+    <dependencies node="../value[@n='number_of_normals']" att1="state" v1="normal" value="apply"></dependencies>
+  </value>
+  <value n="number_of_normals" pn="Number of normals" values="none,1,2,3,4,5,6,7,8,9,10" v="none" state="hidden" actualize_tree="1">
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_1']" att1="state" v1="normal" value="10"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="hidden" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="normal" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="normal" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="normal" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="normal" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="normal" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="normal" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="normal" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="normal" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_2']" att1="state" v1="normal" value="10"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="hidden" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="hidden" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="normal" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="normal" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="normal" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="normal" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="normal" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="normal" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="normal" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_3']" att1="state" v1="normal" value="10"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="hidden" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="hidden" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="hidden" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="normal" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="normal" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="normal" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="normal" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="normal" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="normal" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_4']" att1="state" v1="normal" value="10"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="hidden" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="hidden" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="hidden" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="hidden" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="normal" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="normal" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="normal" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="normal" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="normal" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_5']" att1="state" v1="normal" value="10"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="hidden" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="hidden" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="hidden" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="hidden" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="hidden" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="normal" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="normal" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="normal" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="normal" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_6']" att1="state" v1="normal" value="10"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="hidden" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="hidden" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="hidden" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="hidden" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="hidden" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="hidden" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="normal" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="normal" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="normal" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_7']" att1="state" v1="normal" value="10"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="hidden" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="hidden" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="hidden" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="hidden" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="hidden" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="hidden" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="hidden" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="normal" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="normal" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_8']" att1="state" v1="normal" value="10"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="hidden" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="hidden" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="hidden" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="hidden" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="hidden" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="hidden" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="hidden" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="hidden" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="normal" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_9']" att1="state" v1="normal" value="10"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="none"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="1"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="2"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="3"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="4"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="5"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="6"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="7"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="8"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="hidden" value="9"></dependencies>
+    <dependencies node="../condition[@n='normal_vector_10']" att1="state" v1="normal" value="10"></dependencies>
+  </value>
+  <condition n="normal_vector_1" pn="Normal vector 1" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+  <condition n="normal_vector_2" pn="Normal vector 2" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+  <condition n="normal_vector_3" pn="Normal vector 3" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+  <condition n="normal_vector_4" pn="Normal vector 4" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+  <condition n="normal_vector_5" pn="Normal vector 5" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+  <condition n="normal_vector_6" pn="Normal vector 6" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+  <condition n="normal_vector_7" pn="Normal vector 7" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+  <condition n="normal_vector_8" pn="Normal vector 8" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+  <condition n="normal_vector_9" pn="Normal vector 9" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+  <condition n="normal_vector_10" pn="Normal vector 10" v="" state="hidden" ov="node" ovm="node" icon="elements.gif" help="Definition example: NodeID x y z (3D) or NodeID x y (2D)">
+  </condition>
+</container>

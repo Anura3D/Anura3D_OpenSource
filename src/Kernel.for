@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -53,6 +53,7 @@
       use ModInitialiseKernel
       use ModInitialiseElementType
       use ModReadCalculationData
+      use ModReadOutputParameters
       use ModReadGeometryData
       use ModReadMaterialData
       use ModWriteTestData
@@ -76,6 +77,7 @@
       use ModDynamicExplicit
       use ModString
       use ModTiming
+      
 
       implicit none
 
@@ -85,10 +87,11 @@
       UserPressedKey = .false.
 
       !********** 1 - kernel initialisation ******************************
-      call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
+      call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)      
       call InitialiseElementType() ! initialises the element type in global variables
       call OpenTextOutputFiles() ! open TextOutputFiles
       call InitialiseCalculationParameters() ! initialises the calculation paramters (CalParams)
+      call InitialiseOutputParameters()     ! initialize the output parameters (OutParams)
       call ShowDisclaimer() ! shows disclaimer on screen
       call ShowKernelInformation() ! shows kernel information on screen
       call ReadCommandLineParameters() ! read project name CalParams%FileNames%ProjectName
@@ -130,12 +133,11 @@
       call ReinitialiseUpdatedNodes() ! for updated mesh, only if IsFollowUpPhase
       call DetermineElementLMin() ! calulate minimum element altitude
 
-      ! ********** 3 - material point data initialisation ******************************
+      ! ********** 3a - material point data initialisation ******************************
       call InitialiseMaterialPointHousekeeping() ! initialise material points and their housekeeping arrays, fill Particles(ID)%...
       call InitialiseMaterialPointPrescribedVelocity() ! only with Moving Mesh
       call TwoLayerData%Initialise() !For Double Point formulation
       call ResetMaterialPointDisplacements() ! only if .CalParams%ApplyResetDisplacements
-      call InitialiseMaterialPointOutputFiles() ! create PAR_XXX files for data output 
       call ComputeInterfaceNodesAdhesion() ! only if ApplyContactAlgorithm: read the normals for contact algorithm
       call InitialiseMeshAdjustment() ! only if ApplyMeshSmoothing: for moving mesh algorithm
       call DetermineDoFMovingMeshStructure() ! only if ApplyMeshSmoothing: for moving mesh algorithm
@@ -156,6 +158,11 @@
       call InitialiseRigidBody() ! only if IsRigidBody
       call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
       call InitialiseSurfaceReactionOutputFiles() ! create RSurf_XXX files for output of reaction surfaces
+      
+      !********** 4b - OUTPUT DATA INITIALIZATION ****************************** 
+      ! In this block all the parameters correspondent to the output (.OPD file) are initialized.      
+      call ReadOutputParameters() ! read OPD-file and assign data into OutParams%...
+      call InitialiseMaterialPointOutputFiles() ! create PAR_XXX files for data output 
 
       !********** 4a - LOAD PHASE LOOP ******************************
       do while(NotFinishedComputation().and.(.not.CalParams%ConvergenceCheck%DoesDiverge))
@@ -230,3 +237,4 @@
       call DestroyPrescribedMPVeloData()
 
       end subroutine Kernel
+

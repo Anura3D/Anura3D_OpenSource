@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@
       !
       ! Function : Contains routines for intialisation and reading material data from GOM file
       !
-      !     $Revision: 10175 $
-      !     $Date: 2024-06-26 15:36:42 +0200 (Wed, 26 Jun 2024) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
 
@@ -166,8 +166,17 @@
           integer(INTEGER_TYPE) :: FileUnit
           character(len=255) :: BName
           integer(INTEGER_TYPE) :: ios
+          character(len=3) :: Stage
 
-          FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+          FileVersion = CalParams%CPSversion
+                
+          if (FileVersion == Anura3D_v2025) then
+            write(Stage,'(I0)') CalParams%StageNumber
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_STAGE_FILE_EXTENSION//Stage
+          else
+            FileName = trim(CalParams%FileNames%ProjectName)//GOM_FILE_EXTENSION
+          end if
+          
           FileUnit = TMP_UNIT
           
           ! check if GOM file exists in project folder, otherwise give error and stop execution
@@ -187,6 +196,8 @@
           
           ! read GOM data 
           select case (FileVersion) ! read GOM data depending on file version
+            case (Anura3D_v2025)               
+              call ReadMaterial_v2021(FileUnit,FileVersion)
             case (Anura3D_v2024)               
               call ReadMaterial_v2021(FileUnit,FileVersion)
             case (Anura3D_v2023)               
@@ -205,7 +216,8 @@
                 // trim(Anura3D_v2021) // ', ' &
                 // trim(Anura3D_v2022) // ', ' &
                 // trim(Anura3D_v2023) // ', ' &
-                // trim(Anura3D_v2024)     // '.' )
+                // trim(Anura3D_v2024) // ', ' &
+                // trim(Anura3D_v2025)     // '.' )
 end select
 
 
@@ -249,7 +261,10 @@ end select
           
           ! set GOM version number          
             select case (FileVersion)
-            case (Anura3D_v2024) 
+            case (Anura3D_v2025) 
+                call GiveMessage('Reading... ' // Anura3D_v2025)
+                CalParams%GOMversion = Anura3D_v2025
+            case (Anura3D_v2024)
                 call GiveMessage('Reading... ' // Anura3D_v2024)
                 CalParams%GOMversion = Anura3D_v2021
             case (Anura3D_v2023) 
@@ -1193,3 +1208,5 @@ end select
 
    
       end module ModReadMaterialData
+
+

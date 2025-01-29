@@ -10,7 +10,7 @@
 	!	Anura3D - Numerical modelling and simulation of large deformations 
     !   and soil–water–structure interaction using the material point method (MPM)
     !
-    !	Copyright (C) 2024  Members of the Anura3D MPM Research Community 
+    !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
     !
     !	This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
       !             This module should only contain routines that are directly related to
       !             the output of result data of load steps and time steps.
       !
-      !     $Revision: 9707 $
-      !     $Date: 2022-04-14 14:56:02 +0200 (Thu, 14 Apr 2022) $
+      !     $Revision: 10460 $
+      !     $Date: 2025-01-03 18:12:14 +0100 (vi., 03 ene. 2025) $
       !
       !**********************************************************************
 
@@ -46,6 +46,7 @@
       use ModMPMData
       use ModCounters
       use ModReadCalculationData
+      use ModReadOutputParameters
       use ModMeshInfo
       use ModMPMDYN2PhaseSP 
       use ModWriteVTKTwoLayer
@@ -210,10 +211,23 @@
 
           ! Local variables
           character(len = MAX_FILENAME_LENGTH) :: Filename
+          integer(INTEGER_TYPE) :: AuxIStepInt
+          real(REAL_TYPE) :: AuxIStep
+          
 
           if (((.not.CalParams%OutputEachLoadStep).and.(CalParams%IStep/=CalParams%NLoadSteps)).or. &
               (CalParams%ApplyImplicitQuasiStatic.and.((CalParams%OutputNumberOfLoadSteps>0).and. &
                (mod(CalParams%IStep, CalParams%OutputNumberOfLoadSteps)/=0)))) RETURN 
+          
+          ! Check if the LoadStep (CalParams%IStep) is multyple of the Load Step writting frequency (OutParams%Frequency%CalculationSteps)
+          ! if not, and loadstep is not a final step, results are not written
+          
+          AuxIStep = real(CalParams%IStep)/real(OutParams%Frequency%CalculationSteps)
+          AuxIStepInt=INT(AuxIStep)
+          
+          if ((.not. (AuxIStep == AuxIStepInt)).and.(.not.(CalParams%IStep==CalParams%NLoadSteps)))then
+            RETURN
+          end if
 
           call GetTimeStep(CalParams%TimeStep, CalParams%FileNames%TimeStepExt) ! current time step stored as string
 
@@ -381,3 +395,8 @@
       end function kBSpace
 
       end module ModWriteResultData
+
+
+
+
+

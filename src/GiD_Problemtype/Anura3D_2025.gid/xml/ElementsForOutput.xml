@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+<condition n="elements_for_output" pn="Elements for output" ov="element" ovm="element" icon="elements.gif" state="normal">    
+    <value n="writing_frequency" pn="Writing frequency [s]" v="0.0" state="normal"/>
+</condition>
