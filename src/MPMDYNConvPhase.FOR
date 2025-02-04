@@ -737,23 +737,37 @@
                 !else 
                 !   
                 !    
-                !    if (CalParams%ApplyFBarSmoothStresses) then 
+                    if (CalParams%ApplyFBarSmoothStresses) then 
+                
+                        call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
+                        call GetNodalStressIncrement_VolLockSmooth()
+                        call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
+                        
+                        !CalParams%ApplyFBarSmoothStresses = .false.
+                
+                    end if 
                 !
-                !        call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
-                !        call GetNodalStressIncrement_VolLockSmooth()
-                !        call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
-                !        
-                !        !CalParams%ApplyFBarSmoothStresses = .false.
-                !
-                !    end if 
-                !
+                    
+                    
+                    
+                    if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWPIncrement) then 
+                    
+                        call MapWPIncrement_VolLockSmooth(WeightedWP_Numerator)
+                        call GetNodalWP_VolLockSmooth()
+                        call MapNodalWPIncrementToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
+                
+                    end if
+                    
+                    
                     if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
                     
                         call MapWP_VolLockSmooth(WeightedWP_Numerator)
                         call GetNodalWP_VolLockSmooth()
                         call MapNodalWPToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
+                        
+                        CalParams%ApplyFBarSmoothWP = .false.
                 
-                    end if 
+                    end if
                 !
                 !end if
                 !--------------------------------------------------------------
@@ -2450,7 +2464,100 @@
        
        end subroutine MapWP_VolLockSmooth  
        
+       !---------------------------------------------------------------------------
        
+       subroutine MapWPIncrement_VolLockSmooth(WeightedWP_Numerator) !(Momentum)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+       
+        implicit none
+        
+        ! Hardcoded NControlPoints for the higher order mesh of patch 1
+        real(REAL_TYPE), dimension(Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedWP_Numerator       !CC added nEntity !--> needs multipatch generalization
+        
+        ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
+          !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: INode !NVECTOR, 
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          real(REAL_TYPE) :: ParticleVolStrain
+          real(REAL_TYPE) :: Time, PartilceMass
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: aa 
+          
+          !!CC - changed to function call - needs to be set to zero here
+          WeightedWP_Numerator = 0.0
+          NoEn = Counters%nEntity
+       
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
+                  
+                  ! the background grid should have the same exact active element discretization 
+                  IEl = ActiveElement(IAEl, IPatch)
+            
+                  !do I = 1, NVECTOR
+                    
+                      ! degree of freedom for active element 
+                      !IDof(I, 1:ELEMENTNODES_VolLockSmooth) = &
+                      !    ReducedDof_VolLockSmooth( IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) ) + I
+              
+                      ! degree of freedom for active element 
+                      INode(1:ELEMENTNODES) = &
+                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+              
+                      
+                      
+                  !end do
+            
+                  do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                      
+                      ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+       
+                          PartilceMass = Particles(ParticleIndex)%IntegrationWeight !MassArray(ParticleIndex) ! particle mass
+                          ParticleShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
+                 
+                          ! reset volumetric strain 
+                          !Particles(ParticleIndex)%VolumetricStrain = 0.0 
+                 
+                          if (CalParams%ApplyContactAlgorithm) then
+                             iEntity = EntityIDArray(ParticleIndex) 
+                          else
+                             iEntity = 1
+                          end if 
+                 
+                          !if ( abs(Particles(ParticleIndex)%WaterPressure) > 1e-5) then 
+                          
+                          !do I = 1, NTENSOR ! nodal i-momentum
+                              WeightedWP_Numerator( INode(1:ELEMENTNODES), iEntity) = & !I, 
+                                  WeightedWP_Numerator( INode(1:ELEMENTNODES), iEntity ) & !I, 
+                                  + ( PartilceMass * ParticleShape * Particles(ParticleIndex)%WaterPressureIncrement )
+                          !end do     
+       
+                         ! end if 
+                          
+                              
+                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+            
+                  end do !Loop over particles
+              
+              end do !elements    
+          
+          end do ! patches
+       
+       end subroutine MapWPIncrement_VolLockSmooth  
        
        !---------------------------------------------------------------------------
        subroutine MapWP_VolLockSmooth_LowerOrder(WeightedWP_Numerator) !(Momentum)
@@ -3652,6 +3759,117 @@
         
        
        end subroutine MapNodalWPToMPs_VolLockSmooth !MapVolumetricStrainToMPs_VolLockSmooth  
+       
+       
+       
+       
+       
+       
+       !--------------------------------------------------------------------------------------------------------------------
+       
+       subroutine MapNodalWPIncrementToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        ! hardcoded on the first patch
+        real(REAL_TYPE), dimension(Counters%NodTot(1),Counters%nEntity), intent(in) :: NodalWP_VolLockSmooth       !CC added nEntity !NTENSOR,
+          
+          
+        ! Local variables
+        integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+        integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: Nodes_Element
+          
+        real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: NodWP !NTENSOR, 
+        real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch
+       
+        !!CC - changed to function call - needs to be set to zero here
+        NoEn = Counters%nEntity
+       
+          
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+                IEl = ActiveElement(IAEl, IPatch)
+              
+                Nodes_Element(1:ELEMENTNODES) = &
+                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
+                
+                !do I = 1, NTENSOR
+              
+                    
+                        !ReducedDof_VolLockSmooth(&!Multipatch_Connecting_Local_To_Global_ControlPoints( &
+                        !IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)) + I !,IPatch) !ElementConnectivities
+       
+                    ! start here 
+                      NodWP( 1:ELEMENTNODES, 1:Counters%nEntity) = & !I,
+                          NodalWP_VolLockSmooth( Nodes_Element(1:ELEMENTNODES), 1:NoEn) !I,
+            
+                !end do
+           
+                  
+                do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 
+                        !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
+                        Particles(ParticleIndex)%WaterPressureIncrement = 0.0
+                        ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 
+                        if (CalParams%ApplyContactAlgorithm) then
+                            iEntity = EntityIDArray(ParticleIndex)
+                        else
+                            iEntity = 1  
+                        end if 
+                 
+                        do INode = 1, ELEMENTNODES
+       
+                            !do I = 1, NTENSOR!NVECTOR  
+       
+                                ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
+                                ! Particle strain 
+                                !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
+                                Particles(ParticleIndex)%WaterPressureIncrement = Particles(ParticleIndex)%WaterPressureIncrement + &
+                                    ( ParticleShape(INode) * NodWP(INode, iEntity) ) !I, 
+                            !end do    
+                                
+                                
+                        
+                        end do !Loop over nodes
+                      
+                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                  
+                    Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressureIncrement + & 
+                                                                        Particles(ParticleIndex)%WaterPressure0
+                    
+                    !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
+                    !if (Particles(ParticleIndex)%WaterPressure>0.0) then ! hardcoded 
+                    !    Particles(ParticleIndex)%WaterPressure = 0.0
+                    !end if
+                end do !Loop over particles
+              
+            end do !elements    
+          
+        end do ! patches
+        
+       
+       end subroutine MapNodalWPIncrementToMPs_VolLockSmooth !MapVolumetricStrainToMPs_VolLockSmooth  
+       
+       
        
        
        !--------------------------------------------------------------------------------------------------------------------
@@ -6850,6 +7068,136 @@
          !    
          !end if 
          
+!         TotalVelocitySoil(1458,1) = TotalVelocitySoil(1188,1)
+!TotalVelocitySoil(1404,1) = TotalVelocitySoil(1188,1)
+!TotalVelocitySoil(1404,1) = TotalVelocitySoil(1188,1)
+!TotalVelocitySoil(1350,1) = TotalVelocitySoil(1188,1)
+!TotalVelocitySoil(1296,1) = TotalVelocitySoil(1188,1)
+!TotalVelocitySoil(1242,1) = TotalVelocitySoil(1188,1)
+!TotalVelocitySoil(1134,1) = TotalVelocitySoil(1188,1)
+!
+!TotalVelocitySoil(1080,1) = TotalVelocitySoil(1188,1)
+!TotalVelocitySoil(1026,1) = TotalVelocitySoil(1188,1)
+!TotalVelocitySoil(972,1) = TotalVelocitySoil(1188,1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!TotalVelocitySoil(1458,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1404,1) = TotalVelocitySoil(1188,1)
+!         !TotalVelocitySoil(1404,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1350,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1296,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1242,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1134,1) = TotalVelocitySoil(1188,1)
+!         
+!         TotalVelocitySoil(1080,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1026,1) = TotalVelocitySoil(1188,1)
+!         
+!         TotalVelocitySoil(972,1) = TotalVelocitySoil(1188,1)
+!         
+!         TotalVelocitySoil(918,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(864,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(810,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(756,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(702,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(648,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(594,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(540,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(486,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(432,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(378,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(324,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(270,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(216,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(162,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(108,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(54,1) = TotalVelocitySoil(1188,1)
+         
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         
+         
+!TotalVelocitySoil(1456,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1402,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1348,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1294,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1240,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1186,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1132,1) = TotalVelocitySoil(1188,1)
+!         
+!         TotalVelocitySoil(1078,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1024,1) = TotalVelocitySoil(1188,1)
+!         
+!         
+!         TotalVelocitySoil(970,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(916,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(862,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(808,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(754,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(700,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(646,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(592,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(538,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(484,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(430,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(376,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(322,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(268,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(214,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(160,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(106,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(52,1) = TotalVelocitySoil(1188,1)
+!         
+!         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!         
+!         
+!TotalVelocitySoil(1454,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1400,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1346,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1292,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1238,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1184,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1130,1) = TotalVelocitySoil(1188,1)
+!         
+!         TotalVelocitySoil(1076,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(1022,1) = TotalVelocitySoil(1188,1)
+!         
+!         
+!         TotalVelocitySoil(968,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(914,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(860,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(806,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(752,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(698,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(644,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(590,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(536,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(482,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(428,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(374,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(320,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(266,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(212,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(158,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(104,1) = TotalVelocitySoil(1188,1)
+!         TotalVelocitySoil(50,1) = TotalVelocitySoil(1188,1)
           
         end subroutine GetNodalVelocityFromNodalMomentumConv
         

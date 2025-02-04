@@ -704,7 +704,7 @@
                 WeightedUpdatedDeformationGradientJacobian = 0.0
               allocate( UpdatedDeformationGradientJacobian(Counters%N_VolLockSmooth, Counters%nEntity) )
                 UpdatedDeformationGradientJacobian = 0.0
-          elseif (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothStrains) then 
+          elseif (CalParams%ApplyFBar ) then!.AND. CalParams%ApplyFBarSmoothStrains) then 
               ! same higher order grid
               allocate( WeightedUpdatedDeformationGradientJacobian(Counters%N, Counters%nEntity) )  
               WeightedUpdatedDeformationGradientJacobian = 0.0
@@ -716,7 +716,7 @@
           
         
         !! Apply F-bar  
-          if (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothStrains) then ! FBar and FBarSmoothStrains
+          if (CalParams%ApplyFBar ) then!.AND. CalParams%ApplyFBarSmoothStrains) then ! FBar and FBarSmoothStrains
               
               if (.not.CalParams%ApplyFBarLowerOrder) then !FBarLowerOrder
           
@@ -4076,10 +4076,12 @@
 
 
           ! Update the helper array and element switches
+          FirstParticle = 1 !--> I moved this here, because the particle count does not reset when we move through patches
           
           do IPatch = 1, Counters%NPatches ! Loop over patches
               
-              FirstParticle = 1!GetParticleIndex(1, )!1
+              !FirstParticle = 1 ! --> I removed this from here
+              !GetParticleIndex(1, )!1
               !counters%NAEl = 0
               Counters%NAEl(IPatch) = 0
               

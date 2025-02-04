@@ -631,6 +631,7 @@
                      ApplyFBarSmoothStrains= .false., &
                      ApplyFBarSmoothStresses= .false., &   
                      ApplyFBarSmoothWP= .false., &
+                     ApplyFBarSmoothWPIncrement= .false., &
                      ApplyGPSmoothFluidPressure= .false. 
           
           
@@ -1588,6 +1589,18 @@
                 if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothWP = .true.
                 
                 
+                
+                
+                
+                
+                
+                ! F-bar volumetric locking technique --> if this is turn on, then we are mapping and remapping water pressures 
+            else if (trim(BName)=='$$F_BAR_SMOOTH_LIQUID_PRESSURE_INCREMENT') then ! S [GaussPoint, File]
+                ! I need to reconstruct the knot vectors for the lower order shape functions 
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothWPIncrement = .true.
                 
                 
               
@@ -3837,7 +3850,7 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
             call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_STRAINS', [CalParams%ApplyFBarSmoothStrains], 1, .true.)
             call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_STRESSES', [CalParams%ApplyFBarSmoothStresses], 1, .true.)
             call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_LIQUID_PRESSURE', [CalParams%ApplyFBarSmoothWP], 1, .true.)
-            
+            call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_LIQUID_PRESSURE_INCREMENT', [CalParams%ApplyFBarSmoothWPIncrement], 1, .true.)
 
           ! GRAVITY DATA
           call WriteReal(FileUnit, '$$GRAVITY_ACCELERATION', [CalParams%GravityData%GAccel], 1, .true.)

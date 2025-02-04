@@ -429,7 +429,7 @@
                (IParticle>=1).and.(IParticle<=NPartEle(IElement,IPatch))            ) then
             EleParticleIndex = EleParticlesHelp(IElement, IPatch) + IParticle - 1
             LocalIElement = IElement
-            res = EleParticles(EleParticleIndex) - LocalIElement * PartFactor
+            res = EleParticleIndex !EleParticles(EleParticleIndex) - LocalIElement * PartFactor
           else
             res = -1
           end if

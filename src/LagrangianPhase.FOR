@@ -673,6 +673,36 @@
          !AccelerationSoil(92,1) = AccelerationSoil(74,1)
          !AccelerationSoil(101,1) = AccelerationSoil(74,1)
          
+         !AccelerationSoil(1458,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(1404,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(1404,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(1350,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(1296,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(1242,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(1134,1) = AccelerationSoil(1188,1)
+         !
+         !AccelerationSoil(1080,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(1026,1) = AccelerationSoil(1188,1)
+         !
+         !
+         !AccelerationSoil(918,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(864,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(810,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(756,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(702,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(648,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(594,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(540,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(486,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(432,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(378,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(324,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(270,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(216,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(162,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(108,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(54,1) = AccelerationSoil(1188,1)
+         !AccelerationSoil(972,1) = AccelerationSoil(1188,1)
          
          if (IS3DCYLINDRIC) then ! 3D function
                ! Rotate acceleration and velocity of soil from local to global coordinate system
