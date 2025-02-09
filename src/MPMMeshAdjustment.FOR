@@ -391,12 +391,16 @@
              
              do I = 1, CalParams%MovingMesh%NMovingMeshDirections(IPatch_MovingMesh)
           
+                 if ( IPatch_DeformingMesh .ne. 0) then 
                  ! dynamic length changes 
                  allocate(InitialStorageAreaLength(CalParams%MovingMesh%NStorageAreas(I, IPatch_DeformingMesh)), stat = IError) !, Counters%NPatches
 
+                 
+                 
                  ! this involves calculating the distance between two planes
                  call DetermineStorageAreaLength(I, ConsideredDirections(I), NodalCoordinates(:,:,IPatch_DeformingMesh), InitialStorageAreaLength, IPatch_DeformingMesh)
          
+                 end if 
 			
                  ! Move the moving mesh with the ground motion. Current implementation is only for 1D movement 
                  if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then 
@@ -416,15 +420,21 @@
                  end if
 
 
-                 
+                 if ( IPatch_DeformingMesh .ne. 0) then 
                  call AdjustParticleStorageAreas(DUVector, I, ConsideredDirections(I), InitialStorageAreaLength, IPatch_DeformingMesh) 
                  ! --> this is for the deforming mesh adjustment
      
                  deallocate(InitialStorageAreaLength, stat = IError)
+                 
+                 end if 
      
              end do
           
           
+             
+             call DirectSimpleShearMeshAdjustment(DUVector)
+             
+             
           !end do ! loop over patches
 
         end subroutine MeshAdjustment_MovingMesh_Multipatch
@@ -432,6 +442,64 @@
         
         
         
+        
+        !---------------------------------------------------------------------------------------------------------
+        !---------------------------------------------------------------------------------------------------------
+        !---------------------------------------------------------------------------------------------------------
+        
+        subroutine DirectSimpleShearMeshAdjustment(DUVector)
+        ! this is a simple fix for the simulation of the direct simple shear test     
+        
+        
+             implicit none
+             
+             ! input 
+             real(REAL_TYPE), intent(in), dimension(NDIM) :: DUVector
+
+             ! local 
+             real(REAL_TYPE) :: CompressingMeshHeight
+             real(REAL_TYPE) :: ControlPointDisplacement
+             integer(INTEGER_TYPE) :: IPatch, IControlPoints
+             
+             ! output 
+             
+             
+!subroutine MovingMeshDirectSimpleShear
+
+if (CalParams%MovingMesh%DirectSimpleShearTest) then ! direct simple shear moving mesh approach 
+
+    do IPatch = 1, Counters%NPatches ! loop over patches
+        
+        if (IPatch == MovingMeshPatchID) cycle ! only choose the other patch
+        
+        ! obtain the height of the patch so that we can find the ratio of horizontal displacement to vertical height
+        CompressingMeshHeight = maxval(NodalCoordinates(1:Counters%NodTot(IPatch),2,IPatch)) ! y-coo
+        
+        
+        ! loop over control points of the other patch so that we can update the nodes based on the vertical height 
+        do IControlPoints = 1, Counters%NodTot(IPatch)
+    
+            ControlPointDisplacement = DUVector(1)/CompressingMeshHeight ! 1 corresponds to the x-direction
+            
+            ! update x-coordinates
+            NodalCoordinates(IControlPoints,1,IPatch) = NodalCoordinates(IControlPoints,1,IPatch) + (NodalCoordinates(IControlPoints,2,IPatch)*ControlPointDisplacement) 
+            ! update the x-coordinate of all the control points belonging to the other mesh 
+            
+        end do ! loop over control points
+    
+    end do  ! loop over patches
+
+end if ! direct simple shear moving mesh approach 
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             end subroutine DirectSimpleShearMeshAdjustment
         
         
         
@@ -689,15 +757,15 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             
-              if ( (AreaNodeAssignment(IMovingMesh, I, IPatch)==FIXEDMESH).or. & !, IPatch
-                 (AreaNodeAssignment(IMovingMesh, I, IPatch)==STORAGE1FIXEDMESH).or. & !, IPatch
-                 (AreaNodeAssignment(IMovingMesh, I, IPatch)==STORAGE2FIXEDMESH).or. & !, IPatch
-                 (AreaNodeAssignment(IMovingMesh, I, IPatch)==PLANEFIXEDMESH) ) then ! Node belongs to the fixed mesh area, including its boundary !, IPatch
+              !if ( (AreaNodeAssignment(IMovingMesh, I, IPatch)==FIXEDMESH).or. & !, IPatch
+              !   (AreaNodeAssignment(IMovingMesh, I, IPatch)==STORAGE1FIXEDMESH).or. & !, IPatch
+              !   (AreaNodeAssignment(IMovingMesh, I, IPatch)==STORAGE2FIXEDMESH).or. & !, IPatch
+              !   (AreaNodeAssignment(IMovingMesh, I, IPatch)==PLANEFIXEDMESH) ) then ! Node belongs to the fixed mesh area, including its boundary !, IPatch
               
                 
                   NodalCoordinates(I, Direction, IPatch) = NodalCoordinates(I, Direction, IPatch) + DUVector(Direction)
             
-                 end if
+                 !end if
           
           end do ! loop over the control points for each patch
           !end do

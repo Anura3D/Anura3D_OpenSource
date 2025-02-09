@@ -1289,7 +1289,7 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
          end if
               
           ! Compute vertical total stress for constant load
-          SigY = SigY + CalParams%InitialVerticalLoadK0 * CalParams%Multipliers%SolidARealised(1)
+          SigY = SigY + CalParams%InitialVerticalLoadK0 !* CalParams%Multipliers%SolidARealised(1) !-- I commented this!
 
           !Calculate water pressure
           if ((Counters%SoilSurfaceNumberofSides > 0) .or. (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)) then

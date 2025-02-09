@@ -899,6 +899,7 @@
            do IPatch = 1, Counters%NPatches
            
                ! 1- loop over every patch that is neither moving or compressing
+               !if ( (IPatch==MovingMeshPatchID) .or. (IPatch==CompressingMeshPatchID) ) cycle
                if ( (IPatch==MovingMeshPatchID) .or. (IPatch==CompressingMeshPatchID) ) cycle
               
                
@@ -920,7 +921,7 @@
                    end do 
                    
                    
-                   
+                   if (CompressingMeshPatchID .ne. 0) then 
                    ! 3- loop over the control points of compressing mesh 
                    do IControlPoint_MovingMesh = 1, Counters%NodTot(CompressingMeshPatchID) 
                        
@@ -931,6 +932,8 @@
                        end if
                        
                    end do 
+                   
+                   end if 
                    
                    
                end do 

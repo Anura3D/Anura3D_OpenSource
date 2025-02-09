@@ -228,6 +228,7 @@
         call ResetDisplacements() ! only if ApplyResetDisplacements=true  
 
         if (CalParams%IStep>1) then
+            !CalParams%TimeIncrement = 0.001
           call CalculateCriticalTimeStep()
         end if
 

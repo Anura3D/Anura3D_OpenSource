@@ -877,21 +877,30 @@
           !allocate( NodeElementOffsets( ( (Maximum_NXiKnotEntriesUNIQUE)*(Maximum_NEtaKnotEntriesUNIQUE)*(Maximum_NZetaKnotEntriesUNIQUE)) + 1, Counters%NPatches), stat = IError )
 
 
-          allocate( NodeElementOffsets( &
-              ( ((NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NURBS%NXiKnotOrder(IPatch_Temporary)+1))*&
-              ((NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NURBS%NEtaKnotOrder(IPatch_Temporary)+1))*&
-              ((NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NURBS%NZetaKnotOrder(IPatch_Temporary)+1))) + 1, Counters%NPatches), stat = IError )
-
+          !allocate( NodeElementOffsets( &
+          !    ( ((NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NURBS%NXiKnotOrder(IPatch_Temporary)+1))*&
+          !    ((NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NURBS%NEtaKnotOrder(IPatch_Temporary)+1))*&
+          !    ((NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NURBS%NZetaKnotOrder(IPatch_Temporary)+1))) + 1, Counters%NPatches), stat = IError )
+          !
+          !
+          !!allocate( ElementsPerNode( (Maximum_NXiKnotEntriesUNIQUE)*&
+          !!    (Maximum_NEtaKnotEntriesUNIQUE)*&
+          !!    (Maximum_NZetaKnotEntriesUNIQUE), Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
+          !
+          !allocate( ElementsPerNode( (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NURBS%NXiKnotOrder(IPatch_Temporary)+1)*&
+          !                           (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NURBS%NEtaKnotOrder(IPatch_Temporary)+1)*&
+          !                          (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NURBS%NZetaKnotOrder(IPatch_Temporary)+1), &
+          !                          Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
+          !    
+          !
+          !
           
-          !allocate( ElementsPerNode( (Maximum_NXiKnotEntriesUNIQUE)*&
-          !    (Maximum_NEtaKnotEntriesUNIQUE)*&
-          !    (Maximum_NZetaKnotEntriesUNIQUE), Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
+          allocate( NodeElementOffsets( NURBS%Maximum_NControlPoints + 1, Counters%NPatches), stat = IError )
+          allocate( NodeElementOffsets_ControlPoints( NURBS%Maximum_NControlPoints + 1, Counters%NPatches), stat = IError )
           
-          allocate( ElementsPerNode( (NURBS%nn_NURBS_NumberOfUnivariateXiKnots(IPatch_Temporary)-NURBS%NXiKnotOrder(IPatch_Temporary)+1)*&
-                                     (NURBS%mm_NURBS_NumberOfUnivariateEtaKnots(IPatch_Temporary)-NURBS%NEtaKnotOrder(IPatch_Temporary)+1)*&
-                                    (NURBS%oo_NURBS_NumberOfUnivariateZetaKnots(IPatch_Temporary)-NURBS%NZetaKnotOrder(IPatch_Temporary)+1), &
-                                    Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans 
-              
+          allocate( ElementsPerNode( NURBS%Maximum_NControlPoints, Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans          
+          allocate( ElementsPerNode_ControlPoints( NURBS%Maximum_NControlPoints, Counters%NPatches ), stat = IError ) ! -> this refers to the knot spans          
+          
               
           end if 
           

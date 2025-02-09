@@ -197,6 +197,11 @@
           integer(INTEGER_TYPE), dimension(:), allocatable :: NStructureNodes ! Number of nodes that define the structure ! Alsardi: Multipatch moving mesh generalization 
           
           integer(INTEGER_TYPE), dimension(:, :), allocatable :: StructureNodes ! Set of nodes defining the structure ! Alsardi: Multipatch moving mesh generalization
+        
+          
+          logical :: DirectSimpleShearTest = .false.
+        
+        
         end type MovingMeshType
         
         type PrescribedVeloType
@@ -1465,6 +1470,20 @@
               call Assert( ios == 0, messageIOS//trim(BName) )
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%ApplyMovingMesh = .true.
+              
+              
+              
+              
+              
+              
+            else if (trim(BName)=='$$MOVING_MESH_DIRECT_SIMPLE_SHEAR') then ! I [ 0, 1 ]
+              read(FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%MovingMesh%DirectSimpleShearTest = .true.
+              
+              
+              
               
               
             else if (trim(BName)=='$$GP_SMOOTHING_FLUID') then 

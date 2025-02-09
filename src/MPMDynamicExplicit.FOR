@@ -173,6 +173,7 @@
             end if
 
             call CalculateCriticalTimeStep()
+            !CalParams%TimeIncrement = 0.001
             call WriteFEMNodeData() ! only if .not.IsMPMComputation
 
           end do ! ----- end TIME STEP LOOP -----

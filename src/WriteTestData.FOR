@@ -202,7 +202,12 @@
                       !    
                             'SigmaXX ', 'SigmaYY ', 'SigmaZZ ','SigmaXY ', &
                             'WPressure', 'EpsilonXX ', 'EpsilonYY ', 'EpsilonZZ ',&
-                            'GammaXY '!, &
+                            'GammaXY ', &
+                          'Kinetic Energy', &
+                            'StrainEnergy', &
+                            'stv1', &
+                            'stv2', &
+                            'stv3'
                             !'IntWeight '!, &
                             !'MatID '
                   end select
@@ -528,7 +533,7 @@
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 56G15.8, I12)') &
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 110G15.8, I12)') &
 
-                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 28G25.8)') &
+                    write(PARUnit + I, '(I12, I12, 4G12.4, I12, 31G25.8)') &
                         
                                         
                     !write(PARUnit + I, '(I12, I12, 4G12.4, I12, 79G25.8)') &
@@ -612,7 +617,13 @@
                     
                       KineticEnergyTotal, &
                         
-                      StrainEnergyTotal  
+                      StrainEnergyTotal, &
+                        
+                      ESMstatevArray(ParticleIndex, 1), &
+                        
+                      ESMstatevArray(ParticleIndex, 2), & 
+                    
+                      ESMstatevArray(ParticleIndex, 3)  
                     
                 end if
               end if

@@ -832,6 +832,9 @@
                 ! assign IPatch = -1 incase it does not read appropriately we know it went wrong here
                 !ILoadSystem = -1
                 ! read patch ID from the GOM file
+                    
+                    if (ILoadSystem == 0) cycle
+                    
                 read(GOMunit, *) NURBS%NLoadSystems_Traction_NumberOfElements(ILoadSystem, IPatch)
                 
                 
