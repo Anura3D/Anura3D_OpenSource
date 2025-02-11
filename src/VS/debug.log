@@ -1,0 +1,45 @@
+[0330/135903.935:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.106:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.107:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.113:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.118:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.121:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.125:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.135:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.139:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.146:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.153:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.157:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.161:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.162:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.163:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0330/135904.690:INFO:CONSOLE(0)] "Refused to execute script from 'https://127.0.0.1:56901/admin-dashboard/admin-dashboard.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.", source: https://127.0.0.1:56901/extension-ui/Session-1-1680199143736?passphrase=36eea1ab-31e2-6abe-dcaf-cb7e0975e1e7 (0)
+[0330/135904.786:ERROR:ssl_client_socket_impl.cc(960)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184205.552:WARNING:chrome_browser_cloud_management_controller.cc(87)] Could not create policy manager as CBCM is not enabled.
+[0524/184211.566:ERROR:cert_verify_proc_builtin.cc(677)] CertVerifyProcBuiltin for 127.0.0.1 failed:
+----- Certificate i=46 (CN=DESKTOP-P5E7J0S) -----
+ERROR: No matching issuer found
+
+
+[0524/184211.570:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.613:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.614:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.621:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.627:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.631:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.635:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.639:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.646:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.650:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.654:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.658:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.665:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.669:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.673:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.676:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184211.680:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184212.389:ERROR:ssl_client_socket_impl.cc(992)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0524/184212.433:INFO:CONSOLE(1)] "Mixed Content: The page at 'https://127.0.0.1:62831/extension-ui/Session-1-1716597731044?passphrase=cd476746-6ad2-2c58-9c0e-58fa7b0fb5e3' was loaded over HTTPS, but requested an insecure element 'https://127.0.0.1:62831/assets/zigzag.svg'. This request was not upgraded to HTTPS because its URL's host is an IP address.", source: https://127.0.0.1:62831/vendor-626047.js (1)
+[0524/184212.446:INFO:CONSOLE(0)] "Mixed Content: The page at 'https://127.0.0.1:62831/extension-ui/Session-1-1716597731044?passphrase=cd476746-6ad2-2c58-9c0e-58fa7b0fb5e3' was loaded over HTTPS, but requested an insecure element 'https://127.0.0.1:62831/assets/no-connection-to-server.192x192.svg'. This request was not upgraded to HTTPS because its URL's host is an IP address.", source: https://127.0.0.1:62831/extension-ui/Session-1-1716597731044?passphrase=cd476746-6ad2-2c58-9c0e-58fa7b0fb5e3 (0)
+[0524/184212.447:INFO:CONSOLE(0)] "Mixed Content: The page at 'https://127.0.0.1:62831/extension-ui/Session-1-1716597731044?passphrase=cd476746-6ad2-2c58-9c0e-58fa7b0fb5e3' was loaded over HTTPS, but requested an insecure element 'https://127.0.0.1:62831/assets/no-connection-to-server.192x192.svg'. This request was not upgraded to HTTPS because its URL's host is an IP address.", source: https://127.0.0.1:62831/extension-ui/Session-1-1716597731044?passphrase=cd476746-6ad2-2c58-9c0e-58fa7b0fb5e3 (0)
+[0524/184212.447:INFO:CONSOLE(0)] "Mixed Content: The page at 'https://127.0.0.1:62831/extension-ui/Session-1-1716597731044?passphrase=cd476746-6ad2-2c58-9c0e-58fa7b0fb5e3' was loaded over HTTPS, but requested an insecure element 'https://127.0.0.1:62831/assets/no-connection-to-server.192x192.svg'. This request was not upgraded to HTTPS because its URL's host is an IP address.", source: https://127.0.0.1:62831/extension-ui/Session-1-1716597731044?passphrase=cd476746-6ad2-2c58-9c0e-58fa7b0fb5e3 (0)

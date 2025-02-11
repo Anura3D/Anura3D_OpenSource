@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<condition n="Reaction_forces" pn="Reaction Forces" icon="icon_reactionforce" ov="[check_dim_line_surface 2D:plane-strain 2D:Axissymmetric %W]" ovm="face_element">
+    <value n="surface_identifier" pn="surface identifier" v="" state="[check_dim 3D 3D:Axissymmetric %W]" />
+    <value n="line_identifier" pn="line identifier" v="" state="[check_dim 2D:plane-strain 2D:Axissymmetric %W]" />
+</condition>

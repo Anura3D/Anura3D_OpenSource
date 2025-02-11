@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectType="typeDynamicLibrary" ProjectCreator="Intel Fortran" Keyword="Dll" Version="11.0" ProjectIdGuid="{2130A59E-ECD6-4C64-BF63-E9B2575202FE}">
+	<Platforms>
+		<Platform Name="x64"/></Platforms>
+	<Configurations>
+		<Configuration Name="Debug|x64" OutputDirectory="Debug\SoilModels" IntermediateDirectory="Debug\Intermediate\A3DLinearElasticity" TargetName="A3DLinearElasticity" ConfigurationType="typeDynamicLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" ReentrantCode="reentrancyThreaded" FixedFormLineLength="fixedLength132" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" RuntimeLibrary="rtMultiThreadedDebug" UseMkl="mklSequential"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\A3DLinearElasticity.dll" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole" LinkDLL="true"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="Release|x64" OutputDirectory="Release\SoilModels" IntermediateDirectory="Release\Intermediate\A3DLinearElasticity" TargetName="A3DLinearElasticity" ConfigurationType="typeDynamicLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" ReentrantCode="reentrancyThreaded" FixedFormLineLength="fixedLength132" RealKIND="realKIND8" LocalVariableStorage="localStorageAutomatic" FloatingPointModel="strict" ExtendSinglePrecisionConstants="true" UseMkl="mklSequential"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\A3DLinearElasticity.dll" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" SubSystem="subSystemConsole" LinkDLL="true"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Header Files" Filter="fi;fd"/>
+		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<File RelativePath="..\Soilmodels\A3DLinearElasticity.f"/>
+		<File RelativePath="..\Soilmodels\UMAT_LinearElasticity.f"/></Filter></Files>
+	<Globals/></VisualStudioProject>

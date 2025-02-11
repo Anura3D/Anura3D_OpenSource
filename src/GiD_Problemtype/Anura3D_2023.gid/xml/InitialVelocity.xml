@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+  <condition  n="Initial_MP_velocity" pn="Initial Velocity (on material points)" icon="icon_initial" ov="[check_dim_surface_volume 2D:plane-strain 2D:Axissymmetric %W]" ovm="element" help= "Use this condition to apply an initial velocity on material points">
+    <value n="X_direction" pn="x direction [m/s]" v="0.0" > </value>
+    <value n="Y_direction" pn="y direction [m/s]" v="0.0" > </value>
+    <value n="Z_direction" pn="z direction [m/s]" v="0.0" state="[check_dim 3D 3D:Axissymmetric %W]" actualize_tree="1"> </value>
+  </condition>

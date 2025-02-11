@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container  n="Fixities" pn="Fixities" icon="icon_fixity" help= "Use this condition to set the fixities of the problem" >
+<condition n="solid_fixities" pn="Solid Fixities" icon="icon_fixity" ov="point,line,surface" ovm="node" help="Use this condition to apply fixities associated only with solid phase materials">
+  	<value n="X_Constraint" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = fixed direction"> </value>
+  	<value n="Y_Constraint" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = fixed direction"> </value>
+    <value n="Z_Constraint" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = fixed direction" state="[check_dim 3D 3D:Axissymmetric %W]"> </value>
+</condition>
+<condition n="liquid_fixities" pn="Liquid Fixities" icon="icon_fixity" ov="point,line,surface" help="Use this condition to apply fixities associated only with the liquid phase">
+    <value n="X_Constraint_liq" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = fixed direction"> </value>
+  	<value n="Y_Constraint_liq" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = fixed direction"> </value>
+    <value n="Z_Constraint_liq" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = fixed direction" state="[check_dim 3D 3D:Axissymmetric %W]"> </value>
+</condition>
+<condition n="gas_fixities" pn="Gas Fixities" icon="icon_fixity" ov="point,line,surface" help="Use this condition to apply fixities associated only with the gas phase">
+  	<value n="X_Constraint_gas" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = fixed direction"> </value>
+  	<value n="Y_Constraint_gas" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = fixed direction"> </value>
+    <value n="Z_Constraint_gas" pn="z direction" v="0" values="1,0" help="OFF = free direction, ON = fixed direction" state="[check_dim 3D 3D:Axissymmetric %W]"> </value>
+</condition>
+</container >

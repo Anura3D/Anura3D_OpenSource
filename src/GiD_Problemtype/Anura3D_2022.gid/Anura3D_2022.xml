@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Infoproblemtype version="2021">
+    <Program>
+        <Name>Anura3D</Name>
+        <Version>2022</Version>        
+        <MinimumGiDVersion>14.0</MinimumGiDVersion>
+        <ImageFileBrowser>images/icon_anura3d.png</ImageFileBrowser>
+	<ShortDescription>Interface to Anura3D (MPM analysis)</ShortDescription>
+        <Description>The graphical user interface between GiD and Anura3D MPM Software (http://www.anura3D.com) allows the user to grahically create the necessary input files.
+	                 With the help of this interface the user can define the boundary conditions and material properties. </Description>
+        <NewsInVersion version="2022" date="2022-04-20">* First version 2022</NewsInVersion>
+    </Program>
+</Infoproblemtype>
