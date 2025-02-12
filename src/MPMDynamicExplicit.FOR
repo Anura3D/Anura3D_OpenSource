@@ -91,7 +91,7 @@
                 !CalParams%ApplyFBar = .true.
                 !CalParams%ApplyFBarWater = .true.
                 CalParams%ApplyFBarSmoothWP = .true.
-                !CalParams%ApplyFBarSmoothStresses = .true.
+                CalParams%ApplyFBarSmoothStresses = .true.
                 !CalParams%ApplyFBarSmoothStresses = .true.
                 CalParams%FBarTimeStep = 0
                 

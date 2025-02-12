@@ -743,7 +743,7 @@
                         call GetNodalStressIncrement_VolLockSmooth()
                         call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
                         
-                        !CalParams%ApplyFBarSmoothStresses = .false.
+                        CalParams%ApplyFBarSmoothStresses = .false.
                 
                     end if 
                 !
@@ -2118,8 +2118,10 @@
         implicit none
         
         ! Hardcoded NControlPoints for the higher order mesh of patch 1
-        real(REAL_TYPE), dimension(NTENSOR, Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedStressIncrementTensor_Numerator       !CC added nEntity
+        !real(REAL_TYPE), dimension(NTENSOR, Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedStressIncrementTensor_Numerator       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR, NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(out) :: WeightedStressIncrementTensor_Numerator
         
+        !NumberOfGlobalControlPointsUniqueMultipatch
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
           !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
@@ -2152,7 +2154,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch ) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -2164,7 +2166,7 @@
               
                       if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
        
-                          PartilceMass = MassArray(ParticleIndex) ! particle mass
+                          PartilceMass = Particles(ParticleIndex)%IntegrationWeight !MassArray(ParticleIndex) ! particle mass
                           ParticleShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
                  
                           ! reset volumetric strain 
@@ -2388,7 +2390,7 @@
         
         ! Hardcoded NControlPoints for the higher order mesh of patch 1
         real(REAL_TYPE), dimension(Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedWP_Numerator       !CC added nEntity
-        
+        !Multipatch_Connecting_Local_To_Global_ControlPoints(NodeID, IPatch)
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
           !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
@@ -2482,7 +2484,8 @@
         implicit none
         
         ! Hardcoded NControlPoints for the higher order mesh of patch 1
-        real(REAL_TYPE), dimension(Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedWP_Numerator       !CC added nEntity !--> needs multipatch generalization
+        !real(REAL_TYPE), dimension(Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedWP_Numerator       !CC added nEntity !--> needs multipatch generalization
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(out) :: WeightedWP_Numerator       !CC added nEntity !--> needs multipatch generalization
         
         ! Local variables
           integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
@@ -2516,7 +2519,7 @@
               
                       ! degree of freedom for active element 
                       INode(1:ELEMENTNODES) = &
-                          ElementConnectivities(1:ELEMENTNODES, IEl, IPatch) !ReducedDof_VolLockSmooth( ) + I
+                          Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch ) !ReducedDof_VolLockSmooth( ) + I
               
                       
                       
@@ -3376,8 +3379,9 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(NTENSOR,Counters%NodTot(1),Counters%nEntity), intent(in) :: NodalStressIncrement_VolLockSmooth       !CC added nEntity
-          
+        !real(REAL_TYPE), dimension(NTENSOR,Counters%NodTot(1),Counters%nEntity), intent(in) :: NodalStressIncrement_VolLockSmooth       !CC added nEntity
+        real(REAL_TYPE), dimension(NTENSOR,NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(in) :: NodalStressIncrement_VolLockSmooth       !CC added nEntity
+  
           
         ! Local variables
         integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
@@ -3401,7 +3405,7 @@
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES) = &
-                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
+                        Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)
                 
                 do I = 1, NTENSOR
               
@@ -3783,8 +3787,8 @@
         implicit none
         
         ! hardcoded on the first patch
-        real(REAL_TYPE), dimension(Counters%NodTot(1),Counters%nEntity), intent(in) :: NodalWP_VolLockSmooth       !CC added nEntity !NTENSOR,
-          
+        !real(REAL_TYPE), dimension(Counters%NodTot(1),Counters%nEntity), intent(in) :: NodalWP_VolLockSmooth       !CC added nEntity !NTENSOR,
+        real(REAL_TYPE), dimension(NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(in) :: NodalWP_VolLockSmooth  
           
         ! Local variables
         integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
@@ -3808,7 +3812,7 @@
                 IEl = ActiveElement(IAEl, IPatch)
               
                 Nodes_Element(1:ELEMENTNODES) = &
-                        ElementConnectivities(1:ELEMENTNODES, IEl, IPatch)
+                        Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)
                 
                 !do I = 1, NTENSOR
               
@@ -7355,16 +7359,19 @@
         implicit none
         
         
-        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
+        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary, IPatch
         integer(INTEGER_TYPE) :: INode, ITens
         
         IPatch_Temporary = 1
         
-        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        
+        do IPatch = 1, Counters%NPatches
+        
+        do INode = 1, Counters%NodTot(IPatch) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
-                IDOF = ReducedDof(INode)+1 ! obtain the x dof so that we can find the mass. 
+                IDOF = ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch) ) +1 ! obtain the x dof so that we can find the mass. 
                                            ! It does not matter what dof you choose (here x-direction), 
                                            ! because mass is scalar. 
                 
@@ -7373,7 +7380,7 @@
                     if(LumpedMassDry(IDOF,J)/=0) then
                 
                     NodalStressIncrement_VolLockSmooth(ITens,INode,J) = ( WeightedStressIncrementTensor_Numerator(ITens,INode,J) &
-                                                                            / LumpedMassDry(IDOF,J) ) !*  &
+                                                                           / LumpedVolume(IDOF,J) ) !  / LumpedMassDry(IDOF,J) ) !*  &
                                                 !PBoundary(IDOF)
                 
                     else
@@ -7389,6 +7396,9 @@
           
         end do
           
+        
+        end do ! loop over patches
+        
         
         end subroutine GetNodalStressIncrement_VolLockSmooth
         
@@ -7410,16 +7420,19 @@
         implicit none
         
         
-        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary
+        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary, IPatch
         integer(INTEGER_TYPE) :: INode, ITens
         
         IPatch_Temporary = 1
         
-        do INode = 1, Counters%NodTot(IPatch_Temporary) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        
+        do IPatch = 1, Counters%NPatches
+        
+        do INode = 1, Counters%NodTot(IPatch) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
         
             do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
             
-                IDOF = ReducedDof(INode)+1 ! obtain the x dof so that we can find the mass. 
+                IDOF = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch))+1 ! obtain the x dof so that we can find the mass. 
                                            ! It does not matter what dof you choose (here x-direction), 
                                            ! because mass is scalar. 
                 
@@ -7443,6 +7456,8 @@
             end do
           
         end do
+        
+        end do 
           
         
         end subroutine GetNodalWP_VolLockSmooth
