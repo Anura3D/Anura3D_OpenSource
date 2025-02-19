@@ -508,6 +508,7 @@
                      OutputNumberOfLoadSteps, &
                      TimeStep, & ! Current time step
                      FBarTimeStep, & ! F-bar time step   
+                     FBarWaterTimeStep, & ! F-bar time step   
                      MaxTimeSteps, & ! The maximum time step per load step in quasi-static calculation
                      NThreads, & ! Number of parallelized threads
                      NMaterialPoints, & ! initial number of all (solid+liquid) material points per element (default = 4)     

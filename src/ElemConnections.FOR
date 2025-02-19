@@ -1674,7 +1674,7 @@
             !
             !
             
-            if (ELEMENTTYPE ==  QUAD4_NURBS) then
+            if ( (ELEMENTTYPE ==  QUAD4_NURBS) .OR. (ELEMENTTYPE ==  HEXA_NURBS) ) then
             do INode = 1, ELEMENTNODES !ELEMENTBOUNDARYNODES!4!ELEMENTBOUNDARYNODES !ELEMENTSIDES ! loop over all nodes of the element
               
                 ! in the 2D parameter space, there are 4 nodes to form a square

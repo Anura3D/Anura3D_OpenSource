@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{5981CACF-B133-49CD-A4B1-FB8BD7983C3F}">
 	<Configurations>
-		<Configuration Name="Debug|x64" CommandArguments="32_DSS_Wide_Run_SF1000_" WorkingDirectory="D:\Research projects\15_LANL_ChrisLong2024\32_DSS_Wide_Quadratic_2m\32_DSS_Wide_Run_SF1000_.A3D">
+		<Configuration Name="Debug|x64" CommandArguments="30_ShallowFoundation_Run" WorkingDirectory="D:\Research projects\15_LANL_ChrisLong2024\56_3D_ShallowFooting\42_ShallowFdn_3D.A3D">
 		</Configuration>
 		<Configuration Name="Release|x64">
 		</Configuration>

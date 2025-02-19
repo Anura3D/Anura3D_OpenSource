@@ -623,7 +623,7 @@
             
             call SmoothVolumetricStrains() ! --> ApplyFBar and ApplyFBarSmoothStrains
             
-            call SmoothVolumetricStrains_FBar() ! --> ApplyFBar and ApplyFBarSmoothStrains
+            !call SmoothVolumetricStrains_FBar() ! --> ApplyFBar and ApplyFBarSmoothStrains
 
         !    if (CalParams%ApplyFBar .and. CalParams%ApplyFBarSmoothStrains) then ! only FBar smooth strains turned on
         !        
@@ -664,7 +664,10 @@
           
          if (((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)).and.(NFORMULATION==1)) then
            call CalculateWaterVolumetricStrain(IncrementalDisplacementWater)
-           call SmoothVolumetricStrains_Water() ! --> ApplyFBar and ApplyFBarSmoothStrains
+           
+           call SmoothWaterVolumetricStrains()
+           
+           !call SmoothVolumetricStrains_Water() ! --> ApplyFBar and ApplyFBarSmoothStrains
              
            if (IsMPMComputation()) then  ! MPM
                !update particle displacement (water)
@@ -737,37 +740,45 @@
                 !else 
                 !   
                 !    
-                    if (CalParams%ApplyFBarSmoothStresses) then 
+                    if (CalParams%ApplyFBarSmoothStresses) then ! --> this does not work
                 
-                        call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
-                        call GetNodalStressIncrement_VolLockSmooth()
-                        call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
                         
-                        CalParams%ApplyFBarSmoothStresses = .false.
+                        call SmoothVolumetricStresses() 
+                        
+                        !call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
+                        !call GetNodalStressIncrement_VolLockSmooth()
+                        !call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
+                        !
+                        !CalParams%ApplyFBarSmoothStresses = .false.
                 
                     end if 
                 !
                     
                     
                     
-                    if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWPIncrement) then 
-                    
-                        call MapWPIncrement_VolLockSmooth(WeightedWP_Numerator)
-                        call GetNodalWP_VolLockSmooth()
-                        call MapNodalWPIncrementToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
-                
-                    end if
-                    
-                    
                     if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
                     
-                        call MapWP_VolLockSmooth(WeightedWP_Numerator)
-                        call GetNodalWP_VolLockSmooth()
-                        call MapNodalWPToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
+                        
+                        call SmoothWaterVolumetricStresses() 
+                        
+                        !call MapWPIncrement_VolLockSmooth(WeightedWP_Numerator)
+                        !call GetNodalWP_VolLockSmooth()
+                        !call MapNodalWPIncrementToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
                         
                         CalParams%ApplyFBarSmoothWP = .false.
-                
+                    
                     end if
+                    
+                    
+                    !if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
+                    !
+                    !    call MapWP_VolLockSmooth(WeightedWP_Numerator)
+                    !    call GetNodalWP_VolLockSmooth()
+                    !    call MapNodalWPToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
+                    !    
+                    !    CalParams%ApplyFBarSmoothWP = .false.
+                    !
+                    !end if
                 !
                 !end if
                 !--------------------------------------------------------------

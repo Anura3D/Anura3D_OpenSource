@@ -182,6 +182,13 @@
           
           real(REAL_TYPE) :: VolStrainOriginal
           real(REAL_TYPE) :: VolStrainSmoothed
+          
+
+          real(REAL_TYPE) :: VolStressOriginal
+          real(REAL_TYPE) :: VolStressSmoothed
+          
+          
+          
           !> Incremental strains (Exx, Eyy, Ezz, Gxy, Gyz, Gxz) of the particle during a load step
           !real(REAL_TYPE), dimension(:), allocatable :: EpsStepW 
           !> Strain Rates (dExx, dEyy, dEzz, dGxy, dGyz, dGxz) of the particle during a load step
@@ -194,6 +201,7 @@
           real(REAL_TYPE), dimension(tsize) :: SigmaPrin != 0.0
           real(REAL_TYPE) :: WaterPressure = 0.0 ! Water pressure of the particle
           real(REAL_TYPE) :: WaterPressureIncrement = 0.0 ! Water pressure of the particle
+          real(REAL_TYPE) :: WaterPressureIncrementSmoothed = 0.0 ! Water pressure of the particle
 
           real(REAL_TYPE) :: WaterPressure0 = 0.0 ! Initial water pressure of the particle from the last load step
           real(REAL_TYPE) :: HydraulicHead = 0.0 ! 
@@ -1588,6 +1596,106 @@
     
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    subroutine UpdateStressSmoothed(Particle, SigmaEffArray)!, EpsStep) , IParticle
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          !real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+        
+        real(REAL_TYPE), dimension(NTENSOR), intent(inout) :: SigmaEffArray
+ 
+        
+        !integer(INTEGER_TYPE) :: IParticle
+
+          integer(INTEGER_TYPE) :: IDIM
+          real(REAL_TYPE) :: Factor
+          
+          Factor = real(1.0)/real(NDIM)
+          
+          do IDIM = 1, NDIM 
+          
+          !Particle%EpsStep(IDIM) = Particle%EpsStep(IDIM) &
+          !    - (Factor*(Particle%VolStrainOriginal &
+          !    - Particle%VolStrainSmoothed) )
+          
+          SigmaEffArray(IDIM) = SigmaEffArray(IDIM) &
+              - (Factor*(Particle%VolStressOriginal & !s(IParticle)
+              - Particle%VolStressSmoothed) ) !s(IParticle)
+          end do 
+          
+    end subroutine UpdateStressSmoothed
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    subroutine UpdateWaterStressSmoothed(Particle)!, EpsStep) , IParticle
+        !**********************************************************************
+        !
+        !    Function:  Sets EpsStep of Particle to the provided EpsStep.
+        !
+        !   Particle : Particle whose incremental strain data is set
+        !   EpsStep : Values assigned to the particle
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          type(ParticleType(NTENSOR, NVECTOR,MAX_LOAD_SYSTEMS)), intent(inout) :: Particle
+          !real(REAL_TYPE), dimension(NTENSOR), intent(in) :: EpsStep
+        
+        !real(REAL_TYPE), dimension(NTENSOR), intent(inout) :: SigmaEffArray
+ 
+        
+        !integer(INTEGER_TYPE) :: IParticle
+
+          integer(INTEGER_TYPE) :: IDIM
+          real(REAL_TYPE) :: Factor
+          
+          Factor = real(1.0)/real(NDIM)
+          
+          do IDIM = 1, NDIM 
+          
+          Particle%WaterPressure = Particle%WaterPressure &
+              - (Particle%WaterPressureIncrement &
+              - Particle%WaterPressureIncrementSmoothed) 
+          
+          
+          Particle%WaterPressureIncrement = Particle%WaterPressureIncrementSmoothed
+          
+          !SigmaEffArray(IDIM) = SigmaEffArray(IDIM) &
+          !    - (Factor*(Particle%VolStressOriginal & !s(IParticle)
+          !    - Particle%VolStressSmoothed) ) !s(IParticle)
+          end do 
+          
+    end subroutine UpdateWaterStressSmoothed
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
     
     subroutine SetRelDefGradient(Particle, RelativeDeformationGradient)
         !**********************************************************************

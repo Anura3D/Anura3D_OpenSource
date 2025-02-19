@@ -1821,9 +1821,9 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
           real(REAL_TYPE), intent(in) :: DSigWP
           real(REAL_TYPE), intent(in) :: DSigGP
           ! Local variables
-          if (.NOT. CalParams%ApplyFBarSmoothWPIncrement) then 
+          !if (.NOT. CalParams%ApplyFBarSmoothWPIncrement) then 
           Particles(IntGlo)%WaterPressure = Particles(IntGlo)%WaterPressure0 + DSigWP 
-          end if
+          !end if
           Particles(IntGlo)%WaterPressureIncrement = DSigWP ! I changed this to increment
           Particles(IntGlo)%GasPressure = Particles(IntGlo)%GasPressure0 + DSigGP
           

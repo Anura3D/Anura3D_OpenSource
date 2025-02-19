@@ -680,6 +680,364 @@
         
         !----------------------------------------------------------------------------------
         
+        
+        
+        !----------------------------------------------------------------------------------
+        
+        subroutine SmoothWaterVolumetricStrains() 
+        !-----------------------------------------------------
+        ! Smooth volumetric strains within the framework of MPM
+        !-----------------------------------------------------
+        implicit none
+        
+        ! local real variables
+        real(REAL_TYPE), allocatable, dimension(:,:) :: &
+              WeightedUpdatedDeformationGradientJacobian
+         
+        real(REAL_TYPE), allocatable, dimension(:,:) :: &
+              UpdatedDeformationGradientJacobian
+          
+        
+        ! local integer variable
+        integer(INTEGER_TYPE) :: IParticle
+          
+          
+          if (CalParams%ApplyFBarLowerOrder .AND. CalParams%ApplyFBarSmoothStrains) then 
+              ! lower order grid
+              allocate( WeightedUpdatedDeformationGradientJacobian(Counters%N_VolLockSmooth, Counters%nEntity) )   
+                WeightedUpdatedDeformationGradientJacobian = 0.0
+              allocate( UpdatedDeformationGradientJacobian(Counters%N_VolLockSmooth, Counters%nEntity) )
+                UpdatedDeformationGradientJacobian = 0.0
+          elseif (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothStrains) then 
+              ! same higher order grid
+              allocate( WeightedUpdatedDeformationGradientJacobian(Counters%N, Counters%nEntity) )  
+              WeightedUpdatedDeformationGradientJacobian = 0.0
+              allocate( UpdatedDeformationGradientJacobian(Counters%N, Counters%nEntity) )    
+              UpdatedDeformationGradientJacobian = 0.0  
+          end if
+          
+          
+          
+        
+        !! Apply F-bar  
+          if (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothStrains) then ! FBar and FBarSmoothStrains
+              
+              if (.not.CalParams%ApplyFBarLowerOrder) then !FBarLowerOrder
+          
+              ! we map the jacobian of the updated deformation gradient times the lumped mass to the background mesh
+              call MapWeightedUpdDefGradJacobToNodes_WaterStrain(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
+          
+              ! we divide by the lumped mass to get the nodal updated deformation gradient
+              call NormWeightedUpdDefGradJacobAtNodes(UpdatedDeformationGradientJacobian, &
+                                                    WeightedUpdatedDeformationGradientJacobian)
+            
+              ! we map the updated deformation gradient to the material points
+              call MapUpdatedDeformationGradientJacobianAtNodesToMPs_WaterStrain(UpdatedDeformationGradientJacobian)
+                      
+              else
+              
+              call MapWeightedUpdDefGradJacobToNodes_VolLockSmooth(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
+          
+          
+              call NormWeightedUpdDefGradJacobAtNodes_VolLockSmooth(UpdatedDeformationGradientJacobian, &
+                                                    WeightedUpdatedDeformationGradientJacobian)
+                      
+              call MapUpdatedDeformationGradientJacobianAtNodesToMPs_VolLockSmooth(UpdatedDeformationGradientJacobian)
+              
+                  
+              end if 
+              
+          
+              !do IParticle = 1, Counters%NParticles
+              !    ! Update deformation gradients
+              !    !call UpdateRelativeDeformationGradient(Particles(IParticle), IParticle)
+              !    !call UpdateDeformationGradientPrevious(Particles(IParticle)) 
+              !    !
+              !    !! Update strains 
+              !    !call CalculateTensorialInfinitesimalStrain(Particles(IParticle), TensorialStrainIncrement)
+              !    !call CalculateEpsVoigt(Particles(IParticle), TensorialStrainIncrement, Eps)
+              !    !call SetEpsStep(Particles(IParticle), Eps)
+              !  
+              !    call UpdateEpsSmoothed(Particles(IParticle))
+              !    
+              !    !if (.not.CalParams%ApplyFBarSmoothStrains) then 
+              !    call IncreaseEps(Particles(IParticle), Particles(IParticle)%EpsStep)
+              !    !end if 
+              !end do 
+        
+        
+              
+              
+              deallocate( WeightedUpdatedDeformationGradientJacobian )  
+              deallocate( UpdatedDeformationGradientJacobian )
+              
+              
+              
+        
+              end if 
+        
+        
+        end subroutine SmoothWaterVolumetricStrains
+        
+        
+        
+        !----------------------------------------------------------------------------------
+        
+        subroutine SmoothVolumetricStresses() 
+        !-----------------------------------------------------
+        ! Smooth volumetric strains within the framework of MPM
+        !-----------------------------------------------------
+        implicit none
+        
+        ! local real variables
+        real(REAL_TYPE), allocatable, dimension(:,:) :: &
+              WeightedUpdatedDeformationGradientJacobian
+         
+        real(REAL_TYPE), allocatable, dimension(:,:) :: &
+              UpdatedDeformationGradientJacobian
+          
+        
+        ! local integer variable
+        integer(INTEGER_TYPE) :: IParticle
+          
+          
+          if (CalParams%ApplyFBarLowerOrder .AND. CalParams%ApplyFBarSmoothStresses) then 
+              ! lower order grid
+              allocate( WeightedUpdatedDeformationGradientJacobian(Counters%N_VolLockSmooth, Counters%nEntity) )   
+                WeightedUpdatedDeformationGradientJacobian = 0.0
+              allocate( UpdatedDeformationGradientJacobian(Counters%N_VolLockSmooth, Counters%nEntity) )
+                UpdatedDeformationGradientJacobian = 0.0
+          elseif (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothStresses) then 
+              ! same higher order grid
+              allocate( WeightedUpdatedDeformationGradientJacobian(Counters%N, Counters%nEntity) )  
+              WeightedUpdatedDeformationGradientJacobian = 0.0
+              allocate( UpdatedDeformationGradientJacobian(Counters%N, Counters%nEntity) )    
+              UpdatedDeformationGradientJacobian = 0.0  
+          end if
+          
+          
+          
+        
+         ! Apply F-bar  
+          if (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothStresses) then ! FBar and FBarSmoothStrains
+              
+              ! calculate volumetric stresses
+              call CalculateOriginalVolumetricStresses()
+              
+              if (.not.CalParams%ApplyFBarLowerOrder) then !FBarLowerOrder
+          
+              ! we map the jacobian of the updated deformation gradient times the lumped mass to the background mesh
+              call MapWeightedUpdDefGradJacobToNodes_Stresses(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
+          
+              ! we divide by the lumped mass to get the nodal updated deformation gradient
+              call NormWeightedUpdDefGradJacobAtNodes(UpdatedDeformationGradientJacobian, & ! _Stresses
+                                                    WeightedUpdatedDeformationGradientJacobian)
+            
+              ! we map the updated deformation gradient to the material points
+              call MapUpdatedDeformationGradientJacobianAtNodesToMPs_Stresses(UpdatedDeformationGradientJacobian)
+                      
+              else
+              
+              !call MapWeightedUpdDefGradJacobToNodes_Stress_VolLockSmooth(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
+              !
+              !
+              !call NormWeightedUpdDefGradJacobAtNodes_VolLockSmooth(UpdatedDeformationGradientJacobian, &
+              !                                      WeightedUpdatedDeformationGradientJacobian)
+              !        
+              !call MapUpdatedDeformationGradientJacobianAtNodesToMPs_VolLockSmooth(UpdatedDeformationGradientJacobian)
+              
+                  
+              end if 
+              
+          
+              do IParticle = 1, Counters%NParticles
+                  ! Update deformation gradients
+                  !call UpdateRelativeDeformationGradient(Particles(IParticle), IParticle)
+                  !call UpdateDeformationGradientPrevious(Particles(IParticle)) 
+                  !
+                  !! Update strains 
+                  !call CalculateTensorialInfinitesimalStrain(Particles(IParticle), TensorialStrainIncrement)
+                  !call CalculateEpsVoigt(Particles(IParticle), TensorialStrainIncrement, Eps)
+                  !call SetEpsStep(Particles(IParticle), Eps)
+                
+                  
+                  call UpdateStressSmoothed(Particles(IParticle), SigmaEffArray(IParticle, :)) !UpdateEpsSmoothed
+                  
+                  !if (.not.CalParams%ApplyFBarSmoothStrains) then 
+                  !call IncreaseEps(Particles(IParticle), Particles(IParticle)%EpsStep)
+                  !end if 
+              end do 
+        
+        
+              
+              
+              deallocate( WeightedUpdatedDeformationGradientJacobian )  
+              deallocate( UpdatedDeformationGradientJacobian )
+              
+              
+              
+        
+              end if 
+        
+        
+        end subroutine SmoothVolumetricStresses
+        
+        
+        
+        !----------------------------------------------------------------------------------
+        
+        
+          !----------------------------------------------------------------------------------
+        
+        subroutine SmoothWaterVolumetricStresses() 
+        !-----------------------------------------------------
+        ! Smooth volumetric strains within the framework of MPM
+        !-----------------------------------------------------
+        implicit none
+        
+        ! local real variables
+        real(REAL_TYPE), allocatable, dimension(:,:) :: &
+              WeightedUpdatedDeformationGradientJacobian
+         
+        real(REAL_TYPE), allocatable, dimension(:,:) :: &
+              UpdatedDeformationGradientJacobian
+          
+        
+        ! local integer variable
+        integer(INTEGER_TYPE) :: IParticle
+          
+          
+          if (CalParams%ApplyFBarLowerOrder .AND. CalParams%ApplyFBarSmoothWPIncrement) then 
+              ! lower order grid
+              allocate( WeightedUpdatedDeformationGradientJacobian(Counters%N_VolLockSmooth, Counters%nEntity) )   
+                WeightedUpdatedDeformationGradientJacobian = 0.0
+              allocate( UpdatedDeformationGradientJacobian(Counters%N_VolLockSmooth, Counters%nEntity) )
+                UpdatedDeformationGradientJacobian = 0.0
+          elseif (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothWPIncrement) then 
+              ! same higher order grid
+              allocate( WeightedUpdatedDeformationGradientJacobian(Counters%N, Counters%nEntity) )  
+              WeightedUpdatedDeformationGradientJacobian = 0.0
+              allocate( UpdatedDeformationGradientJacobian(Counters%N, Counters%nEntity) )    
+              UpdatedDeformationGradientJacobian = 0.0  
+          end if
+          
+          
+          
+        
+         ! Apply F-bar  
+          if (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothWPIncrement) then ! FBar and FBarSmoothStrains
+              
+              ! calculate volumetric stresses
+              !call CalculateOriginalVolumetricStresses()
+              
+              if (.not.CalParams%ApplyFBarLowerOrder) then !FBarLowerOrder
+          
+              ! we map the jacobian of the updated deformation gradient times the lumped mass to the background mesh
+              call MapWeightedUpdDefGradJacobToNodes_WaterStresses(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
+          
+              ! we divide by the lumped mass to get the nodal updated deformation gradient
+              call NormWeightedUpdDefGradJacobAtNodes(UpdatedDeformationGradientJacobian, & ! _Stresses
+                                                    WeightedUpdatedDeformationGradientJacobian)
+            
+              ! we map the updated deformation gradient to the material points
+              call MapUpdatedDeformationGradientJacobianAtNodesToMPs_WaterStresses(UpdatedDeformationGradientJacobian)
+                      
+              else
+              
+              !call MapWeightedUpdDefGradJacobToNodes_Stress_VolLockSmooth(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
+              !
+              !
+              !call NormWeightedUpdDefGradJacobAtNodes_VolLockSmooth(UpdatedDeformationGradientJacobian, &
+              !                                      WeightedUpdatedDeformationGradientJacobian)
+              !        
+              !call MapUpdatedDeformationGradientJacobianAtNodesToMPs_VolLockSmooth(UpdatedDeformationGradientJacobian)
+              
+                  
+              end if 
+              
+          
+              !do IParticle = 1, Counters%NParticles
+              !    ! Update deformation gradients
+              !    !call UpdateRelativeDeformationGradient(Particles(IParticle), IParticle)
+              !    !call UpdateDeformationGradientPrevious(Particles(IParticle)) 
+              !    !
+              !    !! Update strains 
+              !    !call CalculateTensorialInfinitesimalStrain(Particles(IParticle), TensorialStrainIncrement)
+              !    !call CalculateEpsVoigt(Particles(IParticle), TensorialStrainIncrement, Eps)
+              !    !call SetEpsStep(Particles(IParticle), Eps)
+              !  
+              !    
+              !    call UpdateWaterStressSmoothed(Particles(IParticle)) !UpdateEpsSmoothed !, SigmaEffArray(IParticle, :)
+              !    
+              !    !if (.not.CalParams%ApplyFBarSmoothStrains) then 
+              !    !call IncreaseEps(Particles(IParticle), Particles(IParticle)%EpsStep)
+              !    !end if 
+              !end do 
+        
+        
+              
+              
+              deallocate( WeightedUpdatedDeformationGradientJacobian )  
+              deallocate( UpdatedDeformationGradientJacobian )
+              
+              
+              
+        
+              end if 
+        
+        
+        end subroutine SmoothWaterVolumetricStresses
+        
+        
+        
+        !----------------------------------------------------------------------------------
+        
+        subroutine CalculateOriginalVolumetricStresses() 
+        ! we need to calculate the old volumetric stresses
+        
+        implicit none
+        
+        ! real type variables 
+        !REAL(REAL_TYPE) :: NormalizationFactor
+        
+        ! integer type variables 
+        integer(INTEGER_TYPE) :: IParticle
+        integer(INTEGER_TYPE) :: IDim 
+        
+        
+        
+        !NormalizationFactor = REAL(1.0)/REAL(NDIM)        
+        
+        
+        do IParticle = 1, Counters%NParticles ! loop over particles
+            
+            Particles(IParticle)%VolStressOriginal = 0.0 ! reset volumetric stresses
+            
+            do IDIM = 1, NDIM ! loop over dimensions 
+                
+                ! find volumetric stress increment
+               Particles(IParticle)%VolStressOriginal = Particles(IParticle)%VolStressOriginal + ( SigmaEffArray(IParticle, IDIM) - SigmaEff0Array(IParticle, IDIM) )  !* NormalizationFactor
+                
+            end do ! loop over dimensions  
+            
+        end do ! loop over particles
+        
+        
+        
+        
+        end subroutine !CalculateOriginalVolumetricStresses
+        
+        
+        !-------------------------------------------------------------------------------------
+        
+        
+        
+        
+        
+        
+        
+        
+        
         subroutine SmoothVolumetricStrains_Water() 
         !-----------------------------------------------------
         ! Smooth volumetric strains within the framework of MPM
@@ -1046,7 +1404,120 @@
        
        
        
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        
+       
+       
+       
+       subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs_WaterStrain(UpdatedDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        ! hardcoded on the first patch
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
+          !NumberOfGlobalControlPointsUniqueMultipatch
+          
+        ! Local variables
+        integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+        !integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: Nodes_Element
+        
+
+        integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
+
+        
+        real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodUpdatedDefGradientJacobian !NodStrain NTENSOR, 
+        real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch
+       
+        !!CC - changed to function call - needs to be set to zero here
+        NoEn = Counters%nEntity
+       
+          
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+                IEl = ActiveElement(IAEl, IPatch)
+              
+                !Nodes_Element(1:ELEMENTNODES) = &
+                !        Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)
+                
+                !do I = 1, NTENSOR
+              do I = 1, 1!NVECTOR
+                    
+                        !ReducedDof_VolLockSmooth(&!Multipatch_Connecting_Local_To_Global_ControlPoints( &
+                        !IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)) + I !,IPatch) !ElementConnectivities
+       
+                  IDof(I, 1:ELEMENTNODES) = &
+           ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints( &
+           ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch)) + I
+       
+                  
+                    ! start here 
+                      NodUpdatedDefGradientJacobian(I, 1:ELEMENTNODES, 1:Counters%nEntity) = &
+                          UpdatedDeformationGradientJacobian(IDof(I, 1:ELEMENTNODES), 1:NoEn) !(Nodes_Element(1:ELEMENTNODES), 1:NoEn) 
+            
+                end do
+           
+                  
+                do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 
+                        !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
+                        Particles(ParticleIndex)%WaterVolumetricStrain = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
+                        ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 
+                        if (CalParams%ApplyContactAlgorithm) then
+                            iEntity = EntityIDArray(ParticleIndex)
+                        else
+                            iEntity = 1  
+                        end if 
+                 
+                        do INode = 1, ELEMENTNODES
+       
+                            !do I = 1, NTENSOR!NVECTOR  
+       
+                                ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
+                                ! Particle strain 
+                                
+                            !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
+                            !Particles(ParticleIndex)%DeformationGradientJacobian = Particles(ParticleIndex)%DeformationGradientJacobian + &
+                            !    ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(INode, iEntity) )
+                            
+                            Particles(ParticleIndex)%WaterVolumetricStrain = Particles(ParticleIndex)%WaterVolumetricStrain + &
+                                ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(1, INode, iEntity) )
+                            
+                            !end do    
+                        
+                        end do !Loop over nodes
+                      
+                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                  
+                    
+                    !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
+                    
+                end do !Loop over particles
+              
+            end do !elements    
+          
+        end do ! patches
+        
+       
+       end subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs_WaterStrain !MapVolumetricStrainToMPs_VolLockSmooth  
        
        
        
@@ -1055,7 +1526,272 @@
        
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        
+       
+       
+       
+       subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs_Stresses(UpdatedDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        ! hardcoded on the first patch
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
+          !NumberOfGlobalControlPointsUniqueMultipatch
+          
+        ! Local variables
+        integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+        !integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: Nodes_Element
+        
+
+        integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
+
+        
+        real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodUpdatedDefGradientJacobian !NodStrain NTENSOR, 
+        real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch
+       
+        !!CC - changed to function call - needs to be set to zero here
+        NoEn = Counters%nEntity
+       
+          
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+                IEl = ActiveElement(IAEl, IPatch)
+              
+                !Nodes_Element(1:ELEMENTNODES) = &
+                !        Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)
+                
+                !do I = 1, NTENSOR
+              do I = 1, 1!NVECTOR ! --> we only want the scalar portion
+                    
+                        !ReducedDof_VolLockSmooth(&!Multipatch_Connecting_Local_To_Global_ControlPoints( &
+                        !IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)) + I !,IPatch) !ElementConnectivities
+       
+                  IDof(I, 1:ELEMENTNODES) = &
+           ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints( &
+           ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch)) + I
+       
+                  
+                    ! start here 
+                      NodUpdatedDefGradientJacobian(I, 1:ELEMENTNODES, 1:Counters%nEntity) = &
+                          UpdatedDeformationGradientJacobian(IDof(I, 1:ELEMENTNODES), 1:NoEn) !(Nodes_Element(1:ELEMENTNODES), 1:NoEn) 
+            
+                end do
+           
+                  
+                do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 
+                        !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
+                        Particles(ParticleIndex)%VolStressSmoothed = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
+                        ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 
+                        if (CalParams%ApplyContactAlgorithm) then
+                            iEntity = EntityIDArray(ParticleIndex)
+                        else
+                            iEntity = 1  
+                        end if 
+                 
+                        do INode = 1, ELEMENTNODES
+       
+                            !do I = 1, NTENSOR!NVECTOR  
+       
+                                ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
+                                ! Particle strain 
+                                
+                            !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
+                            !Particles(ParticleIndex)%DeformationGradientJacobian = Particles(ParticleIndex)%DeformationGradientJacobian + &
+                            !    ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(INode, iEntity) )
+                            
+                            Particles(ParticleIndex)%VolStressSmoothed = Particles(ParticleIndex)%VolStressSmoothed + &
+                                ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(1, INode, iEntity) )
+                            
+                            !end do    
+                        
+                        end do !Loop over nodes
+                      
+                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                  
+                    
+                    !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
+                    
+                end do !Loop over particles
+              
+            end do !elements    
+          
+        end do ! patches
+        
+       
+    end subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs_Stresses !MapVolumetricStrainToMPs_VolLockSmooth  
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       
+       
+       
+       
+       subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs_WaterStresses(UpdatedDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        ! hardcoded on the first patch
+        real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: UpdatedDeformationGradientJacobian       !CC added nEntity
+          !NumberOfGlobalControlPointsUniqueMultipatch
+          
+        ! Local variables
+        integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+        !integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: Nodes_Element
+        
+
+        integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
+
+        
+        real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodUpdatedDefGradientJacobian !NodStrain NTENSOR, 
+        real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch
+       
+        !!CC - changed to function call - needs to be set to zero here
+        NoEn = Counters%nEntity
+       
+          
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+                IEl = ActiveElement(IAEl, IPatch)
+              
+                !Nodes_Element(1:ELEMENTNODES) = &
+                !        Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)
+                
+                !do I = 1, NTENSOR
+              do I = 1, 1!NVECTOR ! --> we only want the scalar portion
+                    
+                        !ReducedDof_VolLockSmooth(&!Multipatch_Connecting_Local_To_Global_ControlPoints( &
+                        !IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)) + I !,IPatch) !ElementConnectivities
+       
+                  IDof(I, 1:ELEMENTNODES) = &
+           ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints( &
+           ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch)) + I
+       
+                  
+                    ! start here 
+                      NodUpdatedDefGradientJacobian(I, 1:ELEMENTNODES, 1:Counters%nEntity) = &
+                          UpdatedDeformationGradientJacobian(IDof(I, 1:ELEMENTNODES), 1:NoEn) !(Nodes_Element(1:ELEMENTNODES), 1:NoEn) 
+            
+                end do
+           
+                  
+                do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 
+                        !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
+                        Particles(ParticleIndex)%WaterPressure = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
+                        ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 
+                        if (CalParams%ApplyContactAlgorithm) then
+                            iEntity = EntityIDArray(ParticleIndex)
+                        else
+                            iEntity = 1  
+                        end if 
+                 
+                        do INode = 1, ELEMENTNODES
+       
+                            !do I = 1, NTENSOR!NVECTOR  
+       
+                                ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
+                                ! Particle strain 
+                                
+                            !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
+                            !Particles(ParticleIndex)%DeformationGradientJacobian = Particles(ParticleIndex)%DeformationGradientJacobian + &
+                            !    ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(INode, iEntity) )
+                            
+                            Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressure + &
+                                ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(1, INode, iEntity) )
+                            
+                            !end do    
+                        
+                        end do !Loop over nodes
+                      
+                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                  
+                    
+                    !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
+                    
+                end do !Loop over particles
+              
+            end do !elements    
+          
+        end do ! patches
+        
+       
+       end subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs_WaterStresses !MapVolumetricStrainToMPs_VolLockSmooth  
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        
        
        subroutine MapUpdatedDeformationGradientJacobianAtNodesToMPs_Water(UpdatedDeformationGradientJacobian)
@@ -1969,7 +2705,18 @@
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        subroutine MapWeightedUpdDefGradJacobToNodes_Water(WeightedUpdatedDeformationGradientJacobian) !(Momentum)
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        subroutine MapWeightedUpdDefGradJacobToNodes_WaterStrain(WeightedUpdatedDeformationGradientJacobian) !(Momentum)
         !**********************************************************************
         !
         !    Function:  To map weighted deformation gradient to the nodes. 
@@ -2071,6 +2818,458 @@
                           ! nodal x-mass
                           LumVolumeX(:, iEntity) = LumVolumeX(:, iEntity) + ( ParticleVolume * PartShape(:) )!use shape functions to map to mass to nodes
 
+                          
+                          !do I = 1, NTENSOR ! nodal i-momentum
+                              !WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES), iEntity) = &
+                              !    WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES), iEntity ) &
+                              !    + (  ParticleShape * Particles(ParticleIndex)%IntegrationWeight * & !PartilceMass *
+                              !      Particles(ParticleIndex)%VolStrainOriginal )
+                                  
+                                  !Particles(ParticleIndex)%RelativeDeformationGradientJacobian * &
+                                  !Particles(ParticleIndex)%DeformationGradientPreviousJacobian )
+                          !end do     
+       
+                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+            
+                  end do !Loop over particles
+              
+                  
+                  do I = 1, NVECTOR
+          
+          ! I tried sum but that is wrong...
+          WeightedUpdatedDeformationGradientJacobian( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+              LumVolumeX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+          
+          !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+          !    Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+      end do
+                  
+                  
+              end do !elements    
+          
+          end do ! patches
+       
+          
+        end subroutine MapWeightedUpdDefGradJacobToNodes_WaterStrain !MapWeightedUpdatedDeformationGradientJacobianToNodes  
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        subroutine MapWeightedUpdDefGradJacobToNodes_Stresses(WeightedUpdatedDeformationGradientJacobian) !(Momentum)
+        !**********************************************************************
+        !
+        !    Function:  To map weighted deformation gradient to the nodes. 
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+       
+        implicit none
+        
+        !integer(INTEGER_TYPE), intent(in) :: IPatch
+        ! this is a scalar for each node
+        real(REAL_TYPE), dimension(Counters%N ,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
+        !NumberOfGlobalControlPointsUniqueMultipatch
+        ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
+          !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: INode !NVECTOR, 
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape
+          real(REAL_TYPE) :: ParticleVolume
+          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumVolumeX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+  
+          !real(REAL_TYPE) :: ParticleVolStrain
+          real(REAL_TYPE) :: Time, PartilceVolume
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: aa 
+        
+          ! Lower order mapping generalization
+          !integer(INTEGER_TYPE), intent(in) :: ELEMENTNODES_input
+          !integer(INTEGER_TYPE), intent(in) :: nen_NURBS_input
+          !integer(INTEGER_TYPE), intent(in) :: nel_NURBS_input
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
+          !integer(INTEGER_TYPE), dimension(nen_NURBS_input, nel_NURBS_input, Counters%NPatches), intent(in) :: IEN 
+
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+
+          
+          !!CC - changed to function call - needs to be set to zero here
+          WeightedUpdatedDeformationGradientJacobian = 0.0
+          NoEn = Counters%nEntity
+       
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+              Ni = 0
+              
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
+                  
+                  ! the background grid should have the same exact active element discretization 
+                  IEl = ActiveElement(IAEl, IPatch)
+            do I = 1, NVECTOR
+                  !IDof(I, 1:ELEMENTNODES) = &
+                  !    ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) ) + I
+
+                  Ni(I, 1:ELEMENTNODES) = &
+              ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(&
+              ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
+                  
+            end do 
+            
+                  
+                      ! degree of freedom for active element 
+                      !INode(1:ELEMENTNODES) = &
+                      !    Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) !ReducedDof_VolLockSmooth( ) + I
+              
+                      
+
+            LumVolumeX = & 
+          WeightedUpdatedDeformationGradientJacobian( Ni(1, 1:ELEMENTNODES), 1:NoEn) !--> wtf is this 1
+
+                      
+                  !end do
+            
+                  do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                      ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+       
+                          !PartilceMass = MassArray(ParticleIndex) ! particle mass
+                          PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
+                 
+                          ParticleVolume = Particles(ParticleIndex)%VolStressOriginal*Particles(ParticleIndex)%IntegrationWeight
+                          
+                          ! reset volumetric strain 
+                          !Particles(ParticleIndex)%VolumetricStrain = 0.0 
+                 
+                          if (CalParams%ApplyContactAlgorithm) then
+                             iEntity = EntityIDArray(ParticleIndex) 
+                          else
+                             iEntity = 1
+                          end if 
+                 
+                          
+                          
+                          ! nodal x-mass
+                          LumVolumeX(:, iEntity) = LumVolumeX(:, iEntity) + ( ParticleVolume * PartShape(:) )!use shape functions to map to mass to nodes
+
+                          
+                          !do I = 1, NTENSOR ! nodal i-momentum
+                              !WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES), iEntity) = &
+                              !    WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES), iEntity ) &
+                              !    + (  ParticleShape * Particles(ParticleIndex)%IntegrationWeight * & !PartilceMass *
+                              !      Particles(ParticleIndex)%VolStrainOriginal )
+                                  
+                                  !Particles(ParticleIndex)%RelativeDeformationGradientJacobian * &
+                                  !Particles(ParticleIndex)%DeformationGradientPreviousJacobian )
+                          !end do     
+       
+                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+            
+                  end do !Loop over particles
+              
+                  
+                  do I = 1, NVECTOR
+          
+          ! I tried sum but that is wrong...
+          WeightedUpdatedDeformationGradientJacobian( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+              LumVolumeX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+          
+          !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+          !    Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+      end do
+                  
+                  
+              end do !elements    
+          
+          end do ! patches
+       
+          
+    end subroutine MapWeightedUpdDefGradJacobToNodes_Stresses !MapWeightedUpdatedDeformationGradientJacobianToNodes  
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        subroutine MapWeightedUpdDefGradJacobToNodes_WaterStresses(WeightedUpdatedDeformationGradientJacobian) !(Momentum)
+        !**********************************************************************
+        !
+        !    Function:  To map weighted deformation gradient to the nodes. 
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+       
+        implicit none
+        
+        !integer(INTEGER_TYPE), intent(in) :: IPatch
+        ! this is a scalar for each node
+        real(REAL_TYPE), dimension(Counters%N ,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
+        !NumberOfGlobalControlPointsUniqueMultipatch
+        ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
+          !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: INode !NVECTOR, 
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape
+          real(REAL_TYPE) :: ParticleVolume
+          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumVolumeX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+  
+          !real(REAL_TYPE) :: ParticleVolStrain
+          real(REAL_TYPE) :: Time, PartilceVolume
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: aa 
+        
+          ! Lower order mapping generalization
+          !integer(INTEGER_TYPE), intent(in) :: ELEMENTNODES_input
+          !integer(INTEGER_TYPE), intent(in) :: nen_NURBS_input
+          !integer(INTEGER_TYPE), intent(in) :: nel_NURBS_input
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
+          !integer(INTEGER_TYPE), dimension(nen_NURBS_input, nel_NURBS_input, Counters%NPatches), intent(in) :: IEN 
+
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+
+          
+          !!CC - changed to function call - needs to be set to zero here
+          WeightedUpdatedDeformationGradientJacobian = 0.0
+          NoEn = Counters%nEntity
+       
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+              Ni = 0
+              
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
+                  
+                  ! the background grid should have the same exact active element discretization 
+                  IEl = ActiveElement(IAEl, IPatch)
+            do I = 1, NVECTOR
+                  !IDof(I, 1:ELEMENTNODES) = &
+                  !    ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) ) + I
+
+                  Ni(I, 1:ELEMENTNODES) = &
+              ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(&
+              ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
+                  
+            end do 
+            
+                  
+                      ! degree of freedom for active element 
+                      !INode(1:ELEMENTNODES) = &
+                      !    Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) !ReducedDof_VolLockSmooth( ) + I
+              
+                      
+
+            LumVolumeX = & 
+          WeightedUpdatedDeformationGradientJacobian( Ni(1, 1:ELEMENTNODES), 1:NoEn) !--> wtf is this 1
+
+                      
+                  !end do
+            
+                  do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                      ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+       
+                          !PartilceMass = MassArray(ParticleIndex) ! particle mass
+                          PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
+                 
+                          ParticleVolume = Particles(ParticleIndex)%WaterPressure*Particles(ParticleIndex)%IntegrationWeight
+                          
+                          ! reset volumetric strain 
+                          !Particles(ParticleIndex)%VolumetricStrain = 0.0 
+                 
+                          if (CalParams%ApplyContactAlgorithm) then
+                             iEntity = EntityIDArray(ParticleIndex) 
+                          else
+                             iEntity = 1
+                          end if 
+                 
+                          
+                          
+                          ! nodal x-mass
+                          LumVolumeX(:, iEntity) = LumVolumeX(:, iEntity) + ( ParticleVolume * PartShape(:) )!use shape functions to map to mass to nodes
+
+                          
+                          !do I = 1, NTENSOR ! nodal i-momentum
+                              !WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES), iEntity) = &
+                              !    WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES), iEntity ) &
+                              !    + (  ParticleShape * Particles(ParticleIndex)%IntegrationWeight * & !PartilceMass *
+                              !      Particles(ParticleIndex)%VolStrainOriginal )
+                                  
+                                  !Particles(ParticleIndex)%RelativeDeformationGradientJacobian * &
+                                  !Particles(ParticleIndex)%DeformationGradientPreviousJacobian )
+                          !end do     
+       
+                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+            
+                  end do !Loop over particles
+              
+                  
+                  do I = 1, NVECTOR
+          
+          ! I tried sum but that is wrong...
+          WeightedUpdatedDeformationGradientJacobian( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+              LumVolumeX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+          
+          !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+          !    Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+      end do
+                  
+                  
+              end do !elements    
+          
+          end do ! patches
+       
+          
+        end subroutine MapWeightedUpdDefGradJacobToNodes_WaterStresses !MapWeightedUpdatedDeformationGradientJacobianToNodes  
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+        subroutine MapWeightedUpdDefGradJacobToNodes_Water(WeightedUpdatedDeformationGradientJacobian) !(Momentum)
+        !**********************************************************************
+        !
+        !    Function:  To map weighted deformation gradient to the nodes. 
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+       
+        implicit none
+        
+        !integer(INTEGER_TYPE), intent(in) :: IPatch
+        ! this is a scalar for each node
+        real(REAL_TYPE), dimension(Counters%N ,Counters%nEntity), intent(out) :: WeightedUpdatedDeformationGradientJacobian       !CC added nEntity
+        !NumberOfGlobalControlPointsUniqueMultipatch
+        ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
+          !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: INode !NVECTOR, 
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape
+          real(REAL_TYPE) :: ParticleVolume
+          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumVolumeX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+      
+          !real(REAL_TYPE) :: ParticleVolStrain
+          real(REAL_TYPE) :: Time, PartilceVolume
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: aa 
+        
+          ! Lower order mapping generalization
+          !integer(INTEGER_TYPE), intent(in) :: ELEMENTNODES_input
+          !integer(INTEGER_TYPE), intent(in) :: nen_NURBS_input
+          !integer(INTEGER_TYPE), intent(in) :: nel_NURBS_input
+          !real(REAL_TYPE), dimension(Counters%NParticles, ELEMENTNODES), intent(in) :: ShapeValuesArray
+          !integer(INTEGER_TYPE), dimension(nen_NURBS_input, nel_NURBS_input, Counters%NPatches), intent(in) :: IEN 
+      
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+      
+          
+          !!CC - changed to function call - needs to be set to zero here
+          WeightedUpdatedDeformationGradientJacobian = 0.0
+          NoEn = Counters%nEntity
+       
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+              Ni = 0
+              
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
+                  
+                  ! the background grid should have the same exact active element discretization 
+                  IEl = ActiveElement(IAEl, IPatch)
+            do I = 1, NVECTOR
+                  !IDof(I, 1:ELEMENTNODES) = &
+                  !    ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) ) + I
+      
+                  Ni(I, 1:ELEMENTNODES) = &
+              ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(&
+              ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
+                  
+            end do 
+            
+                  
+                      ! degree of freedom for active element 
+                      !INode(1:ELEMENTNODES) = &
+                      !    Multipatch_Connecting_Local_To_Global_ControlPoints(ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch) !ReducedDof_VolLockSmooth( ) + I
+              
+                      
+      
+            LumVolumeX = & 
+          WeightedUpdatedDeformationGradientJacobian( Ni(1, 1:ELEMENTNODES), 1:NoEn) !--> wtf is this 1
+      
+                      
+                  !end do
+            
+                  do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                      ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+       
+                          !PartilceMass = MassArray(ParticleIndex) ! particle mass
+                          PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
+                 
+                          ParticleVolume = Particles(ParticleIndex)%WaterVolumetricStrain*Particles(ParticleIndex)%IntegrationWeight
+                          
+                          ! reset volumetric strain 
+                          !Particles(ParticleIndex)%VolumetricStrain = 0.0 
+                 
+                          if (CalParams%ApplyContactAlgorithm) then
+                             iEntity = EntityIDArray(ParticleIndex) 
+                          else
+                             iEntity = 1
+                          end if 
+                 
+                          
+                          
+                          ! nodal x-mass
+                          LumVolumeX(:, iEntity) = LumVolumeX(:, iEntity) + ( ParticleVolume * PartShape(:) )!use shape functions to map to mass to nodes
+      
                           
                           !do I = 1, NTENSOR ! nodal i-momentum
                               !WeightedUpdatedDeformationGradientJacobian(INode(1:ELEMENTNODES), iEntity) = &
@@ -2561,7 +3760,13 @@
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         

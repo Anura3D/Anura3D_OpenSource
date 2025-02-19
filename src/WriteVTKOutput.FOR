@@ -454,6 +454,20 @@ module ModWriteVTKOutput
     call WriteVTKScalarDataPointer('hydraulic_head',DataSetScalar)
     
     call WriteVTKScalarDataPointer('virtual_material_point',Particles(:)%Kind)
+    
+    
+    
+    
+    
+    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+        DataSetScalar(MaterialPointID) = ( GetEpsI(Particles(MaterialPointID),1) + &
+            GetEpsI(Particles(MaterialPointID),2) ) ! volumetric strain ! valid for 2D and 3D
+    end do
+    call WriteVTKScalarDataPointer('volumetric_strain_solid_2D',DataSetScalar)
+    
+    
+    
+    
 
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         DataSetScalar(MaterialPointID) = GetEpsI(Particles(MaterialPointID),1) + &
@@ -475,6 +489,16 @@ module ModWriteVTKOutput
     !    end do 
     ! 
     !else
+    
+    
+    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+            DataSetScalar(MaterialPointID) = (  SigmaEffArray(MaterialPointID,1) &
+            + SigmaEffArray(MaterialPointID,2) ) / 2.0 ! mean effective stress ! valid for 2D and 3D
+        end do
+     !end if
+     
+    call WriteVTKScalarDataPointer('mean_effective_stress_2D',DataSetScalar)
+    
 
         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
             DataSetScalar(MaterialPointID) =(  SigmaEffArray(MaterialPointID,1) &
