@@ -5153,7 +5153,12 @@
           !DumN = -1
           
           ! This is for control point coordinate
+          !if (NDIM == 2) then 
           allocate(DumR(NumSideNodes*NVECTOR), Stat = Ierror) ! NumSideNodes --> ELEMENTBOUNDARYNODES
+          !else if (NDIM == 3) then 
+          !allocate(DumR(NumSideNodes*NVECTOR), Stat = Ierror) ! NumSideNodes --> ELEMENTBOUNDARYNODES    
+          !end if 
+          
           DumR = -1
           
           
@@ -5182,6 +5187,10 @@
           if (trim(BName) == '$$START_OUTPUT_REACTION_FORCES') then
            read(GOMUnit, *) DumI
            if (DumI < 1) EXIT
+           
+           
+           !if (NDIM == 2) then 
+           
            do J=1,DumI                   ! I changed this to real number coordinates
             read(GOMunit, *) DumS, DumE, DumR(1:(NumSideNodes*NVECTOR)) !DumN(1:NumSideNodes)
             !DumSurfaceName(J) = DumS
@@ -5196,8 +5205,38 @@
               end if
             end do
             
+           
+           
+            
+            
+           !else if (NDIM == 3) then 
+           !    
+           !do J=1,DumI                   ! I changed this to real number coordinates
+           ! read(GOMunit, *) DumS, DumE, DumR(1:(NumSideNodes*NumSideNodes*NVECTOR)) !DumN(1:NumSideNodes)
+           ! !DumSurfaceName(J) = DumS
+           ! !do while (trim(DumS) /= '$$END_OUTPUT_REACTION_FORCES')
+           ! do I=1,MAXOUTPUTSURFACES
+           !   if (DumSurfaceName(I) == DumS) then !the surface has already been specified before !, PatchID
+           !      EXIT
+           !   else if (DumSurfaceName(I) == '/') then !first non-assigned position of the array !, PatchID
+           !     DumSurfaceName(I) = DumS !Assign the surface name to this position !, PatchID
+           !     NSurfaces = NSurfaces + 1 !increment the number of surfaces !(PatchID) !(PatchID)
+           !     EXIT
+           !   end if
+           ! end do
+           !    
+           !end do
+           !    
+           !    
+           !    
+           !end if 
+           
+            
             
             counter = 0
+            
+            if (NDIM == 2) then 
+            
             
             ! loop over all control points in the surface
             do IControlPoint_Surface = 1, NumSideNodes
@@ -5214,6 +5253,7 @@
                 ! loop over all control points in the patch
                 do IControlPoint_Full = 1, Counters%NodTot(PatchID) 
                     
+                    !do IDIM = 1, NDIM 
                     if (ControlPointSurface(1) == NodalCoordinates(IControlPoint_Full, 1, PatchID) &
                         .and. ControlPointSurface(2) == NodalCoordinates(IControlPoint_Full, 2, PatchID)) then 
                
@@ -5221,7 +5261,10 @@
                         IsReactionNode(IControlPoint_Full, PatchID) = .true. 
                         ! turn reaction on 
                         
-                    end if 
+                        end if 
+                        
+                    !enddo
+                    
                     
                     
                 end do ! loop over all control points in the patch
@@ -5231,12 +5274,54 @@
             end do ! loop over all control points in the surface
             
             
+            else if (NDIM == 3) then 
+                
+                ! loop over all control points in the surface
+            do IControlPoint_Surface = 1, NumSideNodes!*NumSideNodes
+                
+                counter = counter + 1
+                
+                FirstIndex = 1 + ((counter - 1)*3) ! integer for 1, 4, 8, 7, ...
+                LastIndex = 3 + ((counter - 1)*3) ! integer for 3, 7, 10, ...
+                
+                ControlPointSurface = DumR(FirstIndex:LastIndex)
+                
+                do PatchID = 1, Counters%NPatches
+                
+                ! loop over all control points in the patch
+                do IControlPoint_Full = 1, Counters%NodTot(PatchID) 
+                    
+                    !do IDIM = 1, NDIM 
+                    if (ControlPointSurface(1) == NodalCoordinates(IControlPoint_Full, 1, PatchID) &
+                        .and. ControlPointSurface(2) == NodalCoordinates(IControlPoint_Full, 2, PatchID) &
+                        .and. ControlPointSurface(3) == NodalCoordinates(IControlPoint_Full, 3, PatchID)) then 
+               
+                        !IsReactionNode(Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_Full, PatchID)) = .true. 
+                        IsReactionNode(IControlPoint_Full, PatchID) = .true. 
+                        ! turn reaction on 
+                        
+                        end if 
+                        
+                    !enddo
+                    
+                    
+                    
+                end do ! loop over all control points in the patch
+                
+                end do ! loop over patches
+                
+            end do ! loop over all control points in the surface
+            
+            
+            end if 
+            
+            end do 
             
             
             !read(GOMunit, *) DumE, DumN(1:6)
               !IsReactionNode(DumN(1:NumSideNodes), PatchID) = .true.
               !read(GOMUnit,*) DumS, DumE, DumN(1:6)
-           end do
+           !end do
            EXIT
           else if (trim(BName) == '$$FINISH') then
            EXIT 
@@ -5278,6 +5363,10 @@
                   
                   counter = 0
             
+                  
+                  if (NDIM == 2) then 
+                      
+                  
             ! loop over all control points in the surface
             do IControlPoint_Surface = 1, NumSideNodes
                 
@@ -5315,6 +5404,58 @@
             
             
                   
+                  else if (NDIM == 3) then 
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      ! loop over all control points in the surface
+            do IControlPoint_Surface = 1, NumSideNodes!*NumSideNodes
+                
+                counter = counter + 1
+                
+                FirstIndex = 1 + ((counter - 1)*3) ! integer for 1, 4, 8, 7, ...
+                LastIndex = 3 + ((counter - 1)*3) ! integer for 3, 7, 10, ...
+                
+                ControlPointSurface = DumR(FirstIndex:LastIndex)
+                
+                do PatchID = 1, Counters%NPatches
+                
+                ! loop over all control points in the patch
+                do IControlPoint_Full = 1, Counters%NodTot(PatchID) 
+                    
+                    if (ControlPointSurface(1) == NodalCoordinates(IControlPoint_Full, 1, PatchID) &
+                        .and. ControlPointSurface(2) == NodalCoordinates(IControlPoint_Full, 2, PatchID) &
+                        .and. ControlPointSurface(3) == NodalCoordinates(IControlPoint_Full, 3, PatchID)) then 
+               
+                        !IsReactionNode(IControlPoint_Surface, PatchID) = .true. 
+                        ! turn reaction on 
+                        
+                        !IsReactionNodeSurface(DumN(1:NumSideNodes),SurfaceID, PatchID) = .true.
+                        !IsReactionNodeSurface(Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_Full,PatchID),SurfaceID, PatchID) = &
+                        !    .true.
+                        IsReactionNodeSurface(IControlPoint_Full,SurfaceID, PatchID) = &
+                            .true.
+                    end if 
+                    
+                    
+                end do ! loop over all control points in the patch
+                
+                end do ! loop over patches
+                
+            end do ! loop over all control points in the surface
+            
+            
+            
+                      
+                      
+                      
+                  end if 
                   
                   
                   
@@ -5338,7 +5479,7 @@
                   
                   
                   
-                  EXIT
+                  !EXIT
                   
                  end if
                 end do

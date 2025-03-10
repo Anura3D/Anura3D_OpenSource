@@ -357,6 +357,17 @@
          
           ! End: Shallow foundation example -------------------------------------------------------------------------------
          
+          !do ii=1, 1080!216 !428!214!1080 !214
+          !        
+          !        VelocityArray(ii , 1) = 0.0!+4.0 !2.0
+          !        VelocityArray(ii , 2) = 0.0!+4.0 !2.0
+          !        VelocityArray(ii , 3) = 0.20!+4.0 !2.0
+          !        
+          !end do 
+                   
+          ! End: Shallow foundation example -------------------------------------------------------------------------------
+
+          
           ! START: Two balls colliding example 
           !if ( (CalParams%TimeStep == 1) .and. (CalParams%IStep ==1) ) then
           !
@@ -391,10 +402,38 @@
          call ApplyMPPrescribedVelocity_BoundLocus(TotalVelocitySys) 
          call ApplyMPPrescribedVelocity(TotalVelocitySys)
          call ApplyNodalPrescribedVelocity(DummyRotationVector1)
+         
+         
+         
+         ! End: Shallow foundation example -------------------------------------------------------------------------------
+         
+          !do ii=1, 1080!216!428!214 !1080!214
+          !        
+          !        VelocityArray(ii , 1) = 0.0!+4.0 !2.0
+          !        VelocityArray(ii , 2) = 0.0!+4.0 !2.0
+          !        VelocityArray(ii , 3) = 0.20!+4.0 !2.0
+          !        
+          !end do 
+                   
+          ! End: Shallow foundation example -------------------------------------------------------------------------------
+
 
          if (IsMPMComputation()) then ! if MPM update particle velocity....
            call UpdateParticleVelocityAndMapMomentum(Momentum)!, Momentum_VolLockSmooth) ! From accelerations in global coordinate system
            
+           
+           ! End: Shallow foundation example -------------------------------------------------------------------------------
+         
+          !do ii=1, 1080!216!428!214!1080!214
+          !        
+          !        VelocityArray(ii , 1) = 0.0!+4.0 !2.0
+          !        VelocityArray(ii , 2) = 0.0!+4.0 !2.0
+          !        VelocityArray(ii , 3) = 0.20!+4.0 !2.0
+          !        
+          !end do 
+                   
+          ! End: Shallow foundation example -------------------------------------------------------------------------------
+
            
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
              call UpdateParticleWaterVelocityAndMapMomentumW(MomentumW) ! From accelerations in global coordinate system
@@ -493,7 +532,13 @@
          call ApplyMPPrescribedVelocity(TotalVelocitySys)
          call ApplyNodalPrescribedVelocity(DummyRotationVector1)
          
-         
+         !do ii=1, 1080!216!428!214 !1080!
+         !         
+         !         VelocityArray(ii , 1) = 0.0!+4.0 !2.0
+         !         VelocityArray(ii , 2) = 0.0!+4.0 !2.0
+         !         VelocityArray(ii , 3) = 0.20!+4.0 !2.0
+         !         
+         ! end do 
 
           ! Rotate Momentum and TotalVelocitySoil from local to global coordinate system (but not for FEM which is already global)
           if (IS3DCYLINDRIC) then
@@ -756,7 +801,7 @@
                     
                     
                     
-                    if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
+                    if ( CalParams%ApplyFBarSmoothWP) then !(CalParams%NumberOfPhases==2) .and.
                     
                         
                         call SmoothWaterVolumetricStresses() 
@@ -765,7 +810,7 @@
                         !call GetNodalWP_VolLockSmooth()
                         !call MapNodalWPIncrementToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
                         
-                        CalParams%ApplyFBarSmoothWP = .false.
+                        !CalParams%ApplyFBarSmoothWP = .false.
                     
                     end if
                     

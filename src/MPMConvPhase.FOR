@@ -956,7 +956,21 @@
               end if 
               
           
-              !do IParticle = 1, Counters%NParticles
+              do IParticle = 1, Counters%NParticles
+                  
+                  if (MaterialPointTypeArray(IParticle)==MaterialPointTypeLiquid) then 
+                  
+                  SigmaEffArray(IParticle, :) = 0.0
+                  
+                  SigmaEffArray(IParticle, 1) = Particles(IParticle)%WaterPressure
+                  SigmaEffArray(IParticle, 2) = Particles(IParticle)%WaterPressure
+                  SigmaEffArray(IParticle, 3) = Particles(IParticle)%WaterPressure
+                  
+                  end if 
+                  
+                  
+                  Particles(IParticle)%WaterPressure = 0.0
+                  
               !    ! Update deformation gradients
               !    !call UpdateRelativeDeformationGradient(Particles(IParticle), IParticle)
               !    !call UpdateDeformationGradientPrevious(Particles(IParticle)) 
@@ -972,7 +986,7 @@
               !    !if (.not.CalParams%ApplyFBarSmoothStrains) then 
               !    !call IncreaseEps(Particles(IParticle), Particles(IParticle)%EpsStep)
               !    !end if 
-              !end do 
+              end do 
         
         
               
@@ -1765,6 +1779,11 @@
                       
                     end if ! NumbOfLayers = 1 or SOLID MatPoint
                   
+                    !if () then 
+                    !    
+                    !    SigmaEffArray()
+                    !    
+                    !end if 
                     
                     !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
                     

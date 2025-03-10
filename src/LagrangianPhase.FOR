@@ -2783,10 +2783,21 @@
                   
                   
                   
-                  
-                  
-                  
-                  
+                  ! HARDCODED
+                  !if (MaterialIDArray(ParticleIndex) == 1) then 
+                  !                
+                  !                
+                  !                
+                  !    CalParams%SoilSurfacePoint(2) = 0.292!2.0
+                  !    
+                  !else 
+                  !
+                  !
+                  !    CalParams%SoilSurfacePoint(2) = 0.08!0.55
+                  !    
+                  !    
+                  !    
+                  !    end if 
                   
                   
                   
@@ -2823,6 +2834,10 @@
                   
                           if(NFORMULATION==1) then
                      
+                              
+                                  
+                                  
+                              
                               call ComputeVerticalStressForK0(MaterialIndex, GaussPointGlobalCoord(1:2), UpdatedFluidDensity, SigY, SigWP, SoilSurfaceNodeCoordMatrix, PhreaticSurfaceNodeCoordMatrix)
                   
                           else
