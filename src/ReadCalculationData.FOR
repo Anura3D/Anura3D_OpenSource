@@ -1050,7 +1050,7 @@
                 CalParams%CPSversion = Anura3D_v2025
             case (Anura3D_v2024) 
                 call GiveMessage('Reading... ' // Anura3D_v2024)
-                CalParams%CPSversion = Anura3D_v2021
+                CalParams%CPSversion = Anura3D_v2024
             case (Anura3D_v2023) 
                 call GiveMessage('Reading... ' // Anura3D_v2023)
                 CalParams%CPSversion = Anura3D_v2021

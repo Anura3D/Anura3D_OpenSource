@@ -340,7 +340,7 @@
                 CalParams%GOMversion = Anura3D_v2025
             case (Anura3D_v2024)
                 call GiveMessage('Reading... ' // Anura3D_v2024)
-                CalParams%GOMversion = Anura3D_v2021
+                CalParams%GOMversion = Anura3D_v2024
             case (Anura3D_v2023)
                 call GiveMessage('Reading... ' // Anura3D_v2023)
                 CalParams%GOMversion = Anura3D_v2021

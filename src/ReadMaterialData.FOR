@@ -65,7 +65,8 @@
                  RetentionCurve = "UNDEFINED", & ! van_genuchten, linear
                  HydraulicConductivityCurve = "UNDEFINED" ! costant, Hillel, Mualem. Hydraulic conductivity k=k(Sr)
           character(len=64) :: &
-                 SoilModelDLL = "UNDEFINED"   ! name of the external DLL containing the soil consititutive model in UMAT/VUMAT format
+                 SoilModelDLL = "UNDEFINED", &   ! name of the external DLL containing the soil consititutive model in UMAT/VUMAT
+                 SoilModelName = "UNDEFINED"   ! name of the external soil consititutive model
           integer(handle) :: SoilModelDLLHandle ! This is handle to dll
           
           real(REAL_TYPE) :: &
@@ -810,7 +811,6 @@ end select
                   call ReadReal(FileUnit, BName, DumR) ! tensile strength, T, $$TENSILE_STRENGTH
                   MatParams(I)%TensileStrength = DumR
 
-                  ! initialise DLL
                   MatParams(I)%ESM_POINTER => ESM_MC              
                   
                   if ( NDIM == 2 ) then
@@ -864,19 +864,29 @@ end select
                    
                   
                 case (ESM_EXTERNAL_SOIL_MODEL)
-                    
-                  !if (MatParams(I)%MaterialName=="MyModel")  MatParams(I)%ESM_POINTER => ESM_Mymodel  !Example of the pointer definition
-                    
-                  call ReadString(FileUnit, BName, DumS) ! soil model DLL, $$SOIL_MODEL_DLL
+                  call ReadString(FileUnit, BName, DumS)
+                  if ((CalParams%CPSversion==Anura3D_v2024).or.(CalParams%CPSversion==Anura3D_v2025)) then
+                  MatParams(I)%SoilModelName = DumS
+                  !if (MatParams(I)%SoilModelName=="MyModel")  MatParams(I)%ESM_POINTER => ESM_Mymodel  !Example of the pointer definition
+                  !if (MatParams(I)%SoilModelName=="MyModel2")  MatParams(I)%ESM_POINTER => ESM_Mymodel2  !Example of the pointer definition
+                  else  
                   MatParams(I)%SoilModelDLL = DumS
-
+                  lib_handle = loadlibrary(trim(DumS)//char(0))
+                  if (lib_handle == 0) call Error_NoDLL(DumS) ! error handling
+                  
+                  ! initialise UMAT  This is just for a check to see if no error
+                    p = GetProcAddress(lib_handle, "ESM"C) ! TODO: Check to see if multiple materials works ?
+                    if (p == 0) call Error_NoUMAT(DumS) ! error handling
+                  
+                  MatParams(I)%SoilModelDLLHandle = lib_handle
+                  end if
 
                   
                   call ReadString(FileUnit, BName, DumS) ! Umat Dimension, $$UMAT_DIMENSION
                   if (DumS=='2D_plane_strain') then
-                   MatParams(I)%UMATDimension = 4                  ! 3D Umat
+                   MatParams(I)%UMATDimension = 4                  ! 2D Umat
                   else !full_3D_(default)
-                   MatParams(I)%UMATDimension = 6                  ! 2D Umat
+                   MatParams(I)%UMATDimension = 6                  ! 3D Umat
                   end if
 
                   if (MatParams(I)%UMATDimension < NTENSOR) call GiveError('UMAT-ERROR: UMAT Dimension is lower then Geometyry Dimension ') ! error                   

@@ -212,7 +212,7 @@ proc MaterialParameters::save_data { w domNode number_mat_params number_state_va
             set pn [lrange [split $n "_"] 0 end-1]        
             lappend matList $n
             $containerNode appendChildTag value \
-                [list attributes() n $n pn $pn v $matval state hidden]                    
+                [list attributes() n $n pn $pn v $matval state hidden type number_mat_params]                    
         }                           
     }  
     for {set i 1} {$i <= $number_state_var} {incr i} {             
@@ -244,7 +244,7 @@ proc MaterialParameters::save_data { w domNode number_mat_params number_state_va
             set pn [lrange [split $n "_"] 0 end-1] 
             lappend statevarList $n        
             $containerNode appendChildTag value \
-                [list attributes() n $n pn $pn v $statevarval state hidden]          
+                [list attributes() n $n pn $pn v $statevarval state hidden type number_state_var]          
         }                           
     }
     foreach iNode [$containerNode selectNodes {value}] {

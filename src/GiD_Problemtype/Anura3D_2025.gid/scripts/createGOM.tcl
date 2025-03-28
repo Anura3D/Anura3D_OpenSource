@@ -2508,414 +2508,94 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
             } elseif {$typemodel == "External Material Model"} {
                 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_model_dll_"]}]]
                 set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_DLL} 
+                GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_NAME} 
                 GiD_WriteCalculationFile puts $type                
                 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_model_dll_dim_"]}]]
                 set type [$node getAttribute "v"]
                 GiD_WriteCalculationFile puts {$$UMAT_DIMENSION} 
                 GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_01_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_01} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_02_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_02} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_03_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_03} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_04_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_04} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_05_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_05} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_06_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_06} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_07_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_07} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_08_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_08} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_09_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_09} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_10_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_10} 
-                GiD_WriteCalculationFile puts $type                        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_11_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_11} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_12_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_12} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_13_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_13} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_14_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_14} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_15_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_15} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_16_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_16} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_17_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_17} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_18_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_18} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_19_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_19} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_20_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_20} 
-                GiD_WriteCalculationFile puts $type                        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_21_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_21} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_22_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_22} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_23_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_23} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_24_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_24} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_25_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_25} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_26_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_26} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_27_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_27} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_28_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_28} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_29_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_29} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_30_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_30} 
-                GiD_WriteCalculationFile puts $type                        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_31_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_31} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_32_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_32} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_33_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_33} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_34_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_34} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_35_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_35} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_36_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_36} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_37_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_37} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_38_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_38} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_39_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_39} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_40_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_40} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_41_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_41} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_42_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_42} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_43_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_43} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_44_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_44} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_45_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_45} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_46_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_46} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_47_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_47} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_48_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_48} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_49_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_49} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_parameter_solid_50_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_50} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_01_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_01} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_02_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_02} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_03_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_03} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_04_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_04} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_05_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_05} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_06_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_06} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_07_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_07} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_08_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_08} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_09_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_09} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_10_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_10} 
-                GiD_WriteCalculationFile puts $type                        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_11_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_11} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_12_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_12} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_13_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_13} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_14_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_14} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_15_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_15} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_16_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_16} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_17_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_17} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_18_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_18} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_19_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_19} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_20_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_20} 
-                GiD_WriteCalculationFile puts $type                        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_21_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_21} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_22_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_22} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_23_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_23} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_24_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_24} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_25_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_25} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_26_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_26} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_27_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_27} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_28_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_28} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_29_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_29} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_30_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_30} 
-                GiD_WriteCalculationFile puts $type                        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_31_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_31} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_32_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_32} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_33_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_33} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_34_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_34} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_35_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_35} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_36_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_36} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_37_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_37} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_38_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_38} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_39_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_39} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_40_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_40} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_41_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_41} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_42_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_42} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_43_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_43} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_44_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_44} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_45_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_45} 
-                GiD_WriteCalculationFile puts $type                
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_46_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_46} 
-                GiD_WriteCalculationFile puts $type
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_47_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_47} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_48_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_48} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_49_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_49} 
-                GiD_WriteCalculationFile puts $type        
-                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_state_variable_solid_50_"]}]]
-                set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$INITIAL_STATE_VARIABLE_SOLID_50} 
-                GiD_WriteCalculationFile puts $type                                                        
-            }         
-        }
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/container[@n="mat_params"]/container[@n="list_material_parameter_state_var"]}]]
+                set number_mat_paramsNode [$gNode selectNodes {container[@n="_material_constitutive_model"]/container[@n="mat_params"]/value[@n="number_mat_params"]}] 
+                set number_mat_params [$number_mat_paramsNode @v]
+                set number_state_varNode [$gNode selectNodes {container[@n="_material_constitutive_model"]/container[@n="mat_params"]/value[@n="number_state_var"]}]                                                
+                set number_state_var [$number_state_varNode @v]                
+                if {$node != ""} {
+                    set icount 1
+                    foreach iNode [$node selectNodes {value}] {
+                        set type [$iNode @type]
+                        if {$type != "number_mat_params"} { continue }
+                        set vv [$iNode @v]
+                        set nn [$iNode @n]
+                        set nn [string range $nn 0 end-1]
+                        set nn [string toupper $nn]
+                        GiD_WriteCalculationFile puts $nn
+                        GiD_WriteCalculationFile puts $vv
+                        incr icount                       
+                    }
+                    set var [regsub {_[0-9]+$} $nn ""]
+                    for { set j $icount } { $j <= 50 } { incr j } {
+                        if { $j<= 9 } {
+                            set jj "0$j" 
+                        } else {
+                            set jj "$j"
+                        }  
+                        set nn ${var}_${jj}
+                        set vv 0.0
+                        GiD_WriteCalculationFile puts $nn
+                        GiD_WriteCalculationFile puts $vv                        
+                    }                   
+                    set icount 1
+                    foreach iNode [$node selectNodes {value}] {
+                        set type [$iNode @type]
+                        if {$type != "number_state_var"} { continue } 
+                        set vv [$iNode @v]
+                        set nn [$iNode @n]
+                        set nn [string range $nn 0 end-1]
+                        set nn [string toupper $nn]
+                        GiD_WriteCalculationFile puts $nn
+                        GiD_WriteCalculationFile puts $vv
+                        incr icount                              
+                    }
+                    set var [regsub {_[0-9]+$} $nn ""]
+                    for { set j $icount } { $j <= 50 } { incr j } {
+                        if { $j<= 9 } {
+                            set jj "0$j" 
+                        } else {
+                            set jj "$j"
+                        }  
+                        set nn ${var}_${jj}
+                        set vv 0.0
+                        GiD_WriteCalculationFile puts $nn
+                        GiD_WriteCalculationFile puts $vv                        
+                    }                                                                         
+                } else {                        
+                    set var "MATERIAL_PARAMETER_SOLID"
+                    for { set j 1 } { $j <= 50 } { incr j } {
+                        if { $j<= 9 } {
+                            set jj "0$j" 
+                        } else {
+                            set jj "$j"
+                        }  
+                        set nn ${var}_${jj}
+                        set vv 0.0
+                        GiD_WriteCalculationFile puts $nn
+                        GiD_WriteCalculationFile puts $vv                        
+                    }
+                    set var "INITIAL_STATE_VARIABLE_SOLID"
+                    for { set j 1 } { $j <= 50 } { incr j } {
+                        if { $j<= 9 } {
+                            set jj "0$j" 
+                        } else {
+                            set jj "$j"
+                        }  
+                        set nn ${var}_${jj}
+                        set vv 0.0
+                        GiD_WriteCalculationFile puts $nn
+                        GiD_WriteCalculationFile puts $vv                        
+                    }
+                }
+            }   
+        }                
         if {$typename == "Liquid"} {
             set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="_material_model_liquid_"]}]]
             set typemodel [$node getAttribute "v"]

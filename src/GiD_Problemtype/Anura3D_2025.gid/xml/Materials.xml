@@ -22,8 +22,8 @@
     </container>
     <container n="_material_constitutive_model" pn="MATERIAL CONSTITUTIVE MODEL" state="[hide_show_const_model_mat_type_n Liquid %W]">
       <value n="_material_model_solid_" pn="Solid material model" values="Rigid body,Linear Elasticity,Mohr-Coulomb,External Material Model" v="Rigid body" state="[hide_show_const_model_mat_type_n Liquid %W]" actualize_tree="1"/>
-      <value n="material_model_dll_" pn="Name of the external material model .dll" v="" state="[hide_show_const_model {External Material Model} %W]"/>
-      <value n="material_model_dll_dim_" pn="Size of stress tensor in .dll" values="2D,3D" v="3D" state="[hide_show_const_model {External Material Model} %W]"/>
+      <value n="material_model_dll_" pn="Name of the external material model" v="" state="[hide_show_const_model {External Material Model} %W]"/>
+      <value n="material_model_dll_dim_" pn="Size of stress tensor" values="2D,3D" v="3D" state="[hide_show_const_model {External Material Model} %W]"/>
       <value n="x-constr" pn="Constraint x-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model {Rigid body} %W]"/>
       <value n="y-constr" pn="Constraint y-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model {Rigid body} %W]"/>
       <value n="z-constr" pn="Constraint z-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model_z {Rigid body} %W]"/>
