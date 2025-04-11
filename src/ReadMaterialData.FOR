@@ -941,11 +941,7 @@ end select
                   call GiveError('GOM-ERROR: $$MATERIAL_MODEL is ' //trim(MatParams(I)%MaterialModel)// ' and is therefore not properly specified.')
                 
                 end select ! constitutive models for solid or liquid
-                
-          !---------------------------------------------------------------------------------------------
-          ! READING UNSATURATED MATERIAL PROPERTIES
-          ! NOT YED IN GID
-          !------------------------------------------------------------------------------------
+   
 
                 If (MatParams(I)%MaterialType==UNSATURATED_SOIL_TWOPHASE.or.MatParams(I)%MaterialType==UNSATURATED_SOIL_THREEPHASE) then
                     
