@@ -966,10 +966,12 @@
                   SigmaEffArray(IParticle, 2) = Particles(IParticle)%WaterPressure
                   SigmaEffArray(IParticle, 3) = Particles(IParticle)%WaterPressure
                   
+                  Particles(IParticle)%WaterPressure = 0.0
+                  
                   end if 
                   
                   
-                  Particles(IParticle)%WaterPressure = 0.0
+                  
                   
               !    ! Update deformation gradients
               !    !call UpdateRelativeDeformationGradient(Particles(IParticle), IParticle)
