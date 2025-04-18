@@ -299,7 +299,7 @@
           ! Local variables
           character(len = 255) :: FileName, FileVersion, TName, Bname
           character(len=3) :: Stage
-          integer(INTEGER_TYPE) :: I, J, L, IDElement, IDConnectivity, IFxN, &
+          integer(INTEGER_TYPE) :: I, J, L,Idim, IDElement, IDConnectivity, IFxN, &
                      NElements, NNodes, NFixNod, FixNodID, NRemFixNod, FixRemNodID, &
                      NLoadedElementSidesSolidNodes, NLoadedElementSidesWaterNodes, NLoadedElementSidesGasNodes, &
                      NLoadedElementSidesSolidMatPoints, NLoadedElementSidesWaterMatPoints, NLoadedElementSidesGasmatPoints, &
@@ -965,49 +965,27 @@
                 end if      
                 
                               
-                  else if (trim(BName)=='$$BOUNDARY_HYDRAULIC_HEAD_AREA') then
-                      if (NDIM == 3) then
-                          allocate(HydrHeadArea(NDIM,2), stat = IError)
-                          do L=1, 2! loop over x,y,z bounding coordinate
-                              read(GOMunit,*) HydrHeadArea(1,L), HydrHeadArea(2,L), HydrHeadArea(3,L)
-                          end do
-                      else if (NDIM == 2) then
-                          allocate(HydrHeadArea(NDIM,2), stat = IError)
-                          do L=1, 2! loop over x,y,z bounding coordinate
-                              read(GOMunit,*) HydrHeadArea(1,L), HydrHeadArea(2,L)
-                          end do
-                      end if
+          else if (trim(BName)=='$$BOUNDARY_HYDRAULIC_HEAD_AREA') then
+                allocate(HydrHeadArea(2,NDIM), stat = IError)
+                do Idim=1, NDIM! loop over x,y,z bounding coordinate
+                   read(GOMunit,*) HydrHeadArea(1,Idim), HydrHeadArea(2,Idim)
+                end do                     
            
                     
           else if (trim(BName)=='$$BOUNDARY_SEEPAGE_AREA') then
-                  if (NDIM == 3) then
-                          allocate(SeepageArea(NDIM,2), stat = IError)
-                          do L=1, 2! loop over x,y,z bounding coordinate
-                              read(GOMunit,*) SeepageArea(1,L), SeepageArea(2,L), SeepageArea(3,L)
-                          end do
-                      else if (NDIM == 2) then
-                          allocate(SeepageArea(NDIM,2), stat = IError)
-                          do L=1, 2! loop over x,y,z bounding coordinate
-                              read(GOMunit,*) SeepageArea(1,L), SeepageArea(2,L)
-                          end do
-                      end if
-            
+                allocate(SeepageArea(2,NDIM), stat = IError)
+                do Idim=1, NDIM! loop over x,y,z bounding coordinate
+                   read(GOMunit,*) SeepageArea(1,Idim), SeepageArea(2,Idim)
+                end do           
         
       
       
         else if (trim(BName)=='$$BOUNDARY_INFILTRATION_AREA') then
-         if (NDIM == 3) then
-                          allocate(InfiltrationArea(NDIM,2), stat = IError)
-                          do L=1, 2! loop over x,y,z bounding coordinate
-                              read(GOMunit,*) InfiltrationArea(1,L), InfiltrationArea(2,L), InfiltrationArea(3,L)
-                          end do
-                      else if (NDIM == 2) then
-                          allocate(InfiltrationArea(NDIM,2), stat = IError)
-                          do L=1, 2! loop over x,y,z bounding coordinate
-                              read(GOMunit,*) InfiltrationArea(1,L), InfiltrationArea(2,L)
-                          end do
-                      end if
-               
+                allocate(InfiltrationArea(2,NDIM), stat = IError)
+                do Idim=1, NDIM! loop over x,y,z bounding coordinate
+                   read(GOMunit,*) InfiltrationArea(1,Idim), InfiltrationArea(2,Idim)
+                end do
+
         
       else if (trim(BName)=='$$INFILTRATION_RATE') then
           allocate(InfiltrationRate(NDIM), stat = IError)
