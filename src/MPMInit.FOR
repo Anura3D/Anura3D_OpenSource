@@ -2817,7 +2817,7 @@
          integer(INTEGER_TYPE), intent(in) :: NXiKnotEntries_SideSpecific 
          real(REAL_TYPE), intent(in), dimension(NXiKnotEntries_SideSpecific) :: XiKnotEntries_SideSpecific
          
-         
+         REAL(REAL_TYPE) :: TriangleFactor
          
          RLoad_DEBUG = 0.0
          !LoadOnNodesConnectivitiesSolid
@@ -3029,8 +3029,20 @@
         ! add to global load vector
         do I = 1, ELEMENTBOUNDARYNODES!NNod  ! --> ELEMENTBOUNDARYNODES is the number of nodes in the element (eg. 2*2 if traction on a linear square element)
           ND = NDOF(Traction_Connecting_Local_To_Global_ControlPoints(NURBS%ElementConnectivities_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch), ILoadSystem, IPatch))!NDof(ILoadConLocal(I))
+          
+          
+          
+          ! finding the numbering of node
+          NN = NURBS%ElementConnectivities_TRACTION(I,ElementUponWhichLoadIsApplied, ILoadSystem, IPatch)
+          
+          ! we're trying to do the triangular distribution 
+          TriangleFactor = 0.1 * (10.0 - NodalCoordinates_Traction(NN, 2, ILoadSystem, IPatch)) !--> use y-coordinate 
+          
+          
           do J = 1, NVECTOR
-            RLoad(ND + J) = RLoad(ND + J) + (SE(I,J) )!* -1.0) ! HARDCODED NEGATIVE 1 
+            RLoad(ND + J) = RLoad(ND + J) + (SE(I,J) * TriangleFactor)!* -1.0) ! HARDCODED NEGATIVE 1
+            
+            !RLoad(ND + J) = RLoad(ND + J) + (SE(I,J) )!* -1.0) ! HARDCODED NEGATIVE 1 
             RLoad_DEBUG = RLoad_DEBUG + SE(I,J)!RLoad(ND + J)
           end do
         end do
