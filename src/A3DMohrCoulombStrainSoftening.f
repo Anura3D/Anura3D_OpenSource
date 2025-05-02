@@ -310,8 +310,8 @@
       end if
 
       !Tolerances
-      SSTOL = 0.0001d0 !Tolerance Relative Error (10-3 to 10-5)
-      YTOL = 0.00000001d0 !Tolerance Error on the Yield surface (10-6 to 10-9)
+      SSTOL = 0.000001d0 !Tolerance Relative Error (10-3 to 10-5)
+      YTOL = 0.0000000001d0 !Tolerance Error on the Yield surface (10-6 to 10-9)
       SPTOL = 0.0001d0 !Tolerance Softening Parameters (0.0001d0)
       ctol = abs(cp-cr)*SPTOL
       phitol = abs(phip-phir)*SPTOL

@@ -4322,11 +4322,11 @@
           end do ! loop all nodes (i.e., control points)
           end do ! loop over patches
  
-          do I = 1, Counters%N ! loop all dof's
-            if (NTreatWater(I) == 0) then
-              PBoundaryWater(I) = 0.0
-            end if
-          end do
+          !do I = 1, Counters%N ! loop all dof's
+          !  if (NTreatWater(I) == 0) then
+          !    PBoundaryWater(I) = 0.0
+          !  end if
+          !end do
           
         end subroutine FillNPBoundaryWater
 
@@ -4658,11 +4658,12 @@
           real(REAL_TYPE) :: aux
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           integer(INTEGER_TYPE) :: GlobalNodeID
           
-          allocate(NodAct(Counters%Sum_NodTot), stat = IError)
+          !allocate(NodAct(Counters%Sum_NodTot), stat = IError)
+          allocate(NodAct(NumberOfGlobalControlPointsUniqueMultipatch), stat = IError)
  
           NodAct = 1
           do IPatch = 1, Counters%NPatches ! loop over patches
@@ -4672,12 +4673,28 @@
               
             aux = 0.0
             do J = 1, NDOFL
-              aux = aux + dabs(NodalPrescibedDispWater(I, J,IPatch_Temporary))
+              aux = aux + dabs(NodalPrescibedDispWater(I, J,IPatch))
             end do
             if (aux == 0) NodAct(I) = 0
           end do ! loop over control points 
           end do ! loop over patches
                    
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
           NTreatWater = 1
           do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points
@@ -4685,12 +4702,19 @@
               GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(I,IPatch)
               
             do J = 1, NDOFL ! loop on element dof's
-              if (NodalPrescibedDispWater(I, J,IPatch_Temporary) == 0) then
+              if (NodalPrescibedDispWater(I, J,IPatch) == 0) then
                 NTreatWater(ReducedDof(GlobalNodeID) + J) = 0
               end If
             end do
           end do ! loop over control points 
           end do ! loop over patches
+          
+          
+          
+          
+          
+          
+          
           
           do IPatch = 1, Counters%NPatches ! loop over patches
           do I = 1, Counters%NodTot(IPatch)!Counters%NodTot ! loop over control points

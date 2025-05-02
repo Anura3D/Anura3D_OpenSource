@@ -4413,7 +4413,7 @@
         
           Lmin = d_min
           
-          !Lmin = 0.1 !--> hardcoded
+          !Lmin = 0.5 !--> hardcoded
           
         end subroutine
         

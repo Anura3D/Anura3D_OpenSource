@@ -170,7 +170,7 @@
                     write(PARUnit + I, '(A)')  & 
                     'LoadStep TimeStep Time PA(1) PA(2) PGravity ID_MP X Y Z ' // &
                     'Ux Uy Uz Vx Vy Vz Ax Ay Az SigmaXX SigmaYY SigmaZZ SigmaXY SigmaYZ SigmaZX ' // &
-                    'WPressure EpsilonXX EpsilonYY EpsilonZZ GammaXY GammaYZ GammaZX IntWeight MatID'
+                    'WPressure EpsilonXX EpsilonYY EpsilonZZ GammaXY GammaYZ GammaZX IntWeight MatID    stv1  stv2   stv3'
                       
                     case(2)
                       !write(PARUnit + I, '(117A17)')  & !117 !79
