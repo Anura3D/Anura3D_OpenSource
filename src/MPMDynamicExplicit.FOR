@@ -88,25 +88,25 @@
             
 
             
-            !if (CalParams%FBarWaterTimeStep == 40) then 
-            !!    
-            !!    !CalParams%ApplyFBar = .true.
-            !!    !CalParams%ApplyFBarWater = .true.
-            !    CalParams%ApplyFBarSmoothWP = .true.
-            !!    !CalParams%ApplyFBarSmoothStresses = .true.
-            !!    !CalParams%ApplyFBarSmoothStresses = .true.
-            !!    
-            !    CalParams%FBarWaterTimeStep = 0
-            !!    
-            !else 
-            !!    
-            !!    !CalParams%ApplyFBar = .false.
-            !!    !CalParams%ApplyFBarWater = .false.
-            !    CalParams%ApplyFBarSmoothWP = .false.
-            !!    !CalParams%ApplyFBarSmoothStresses = .false.
-            !!    !CalParams%ApplyFBarSmoothStresses = .false.
-            !!    
-            !end if 
+            if (CalParams%FBarWaterTimeStep == 40) then 
+            !    
+            !    !CalParams%ApplyFBar = .true.
+            !    !CalParams%ApplyFBarWater = .true.
+                CalParams%ApplyFBarSmoothWP = .true.
+            !    !CalParams%ApplyFBarSmoothStresses = .true.
+            !    !CalParams%ApplyFBarSmoothStresses = .true.
+            !    
+                CalParams%FBarWaterTimeStep = 0
+            !    
+            else 
+            !    
+            !    !CalParams%ApplyFBar = .false.
+            !    !CalParams%ApplyFBarWater = .false.
+                CalParams%ApplyFBarSmoothWP = .false.
+            !    !CalParams%ApplyFBarSmoothStresses = .false.
+            !    !CalParams%ApplyFBarSmoothStresses = .false.
+            !    
+            end if 
             
             
             !if (CalParams%FBarTimeStep == 100) then 
