@@ -1523,11 +1523,11 @@
         SigWP=0.0d0
         Sr=1.0d0
         
-         if(NFORMULATION==2) then
+         if (IsFollowUpPhase().or.(.not.CalParams%ApplyMapMPStressFromExtFile)) then
+             RETURN
+         elseif((NFORMULATION==2).and.(CalParams%ApplyMapMPStressFromExtFile)) then
              call GiveError('Stress initialization from file not available for Double-point')
-             RETURN
-         elseif (IsFollowUpPhase().or.(.not.CalParams%ApplyMapMPStressFromExtFile)) then
-             RETURN
+             RETURN         
          end if
        
              !reading the external file for Mapping and store the nodal variable in a matrix, plus build the vector for variable identification
