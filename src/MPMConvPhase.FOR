@@ -317,7 +317,7 @@
           integer(INTEGER_TYPE) :: IElement, NElemPart, IParticle, ParticleIndex, I, iEntity, iEntityDefault, IActiveElement
           
           ! Multipatch variables 
-          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
           integer(INTEGER_TYPE) :: IPatch
           
           ! Volumetric locking variables 
@@ -465,28 +465,28 @@
                       
                       !---------F evaluation ----------------------------------------------------
                       ! Relative deformation gradient --> DeltaF_MP
-                      call Get_RelativeDeformationGradient(IElement, ParticleIndex, &
-                                ElementConnectivities(:,:,IPatch), & 
-                                BMatrixDeformed, DUTotEnt, ReducedDof, &
-                                RelativeDeformationGradient, &
-                                IPatch) ! RelativeDeformationGradient = relative deformation gradient at material point
+                      !call Get_RelativeDeformationGradient(IElement, ParticleIndex, &
+                      !          ElementConnectivities(:,:,IPatch), & 
+                      !          BMatrixDeformed, DUTotEnt, ReducedDof, &
+                      !          RelativeDeformationGradient, &
+                      !          IPatch) ! RelativeDeformationGradient = relative deformation gradient at material point
                         
                       ! Evaluate the jacobian of the relative deformation gradient --> DeltaJ
-                      call RJacInv(NDIM, RelativeDeformationGradient, RelativeDeformationGradientInverse, &
-                      RelativeDeformationGradientJacobian, RelativeDeformationGradientInverseJacobian)
-                        
-                      ! Evaluate the jacobian of the previous deformation gradient --> Jn
-                      call RJacInv(NDIM, Particles(ParticleIndex)%DeformationGradientPrevious, DeformationGradientPreviousInverse, &
-                      DeformationGradientPreviousJacobian, DeformationGradientPreviousInverseJacobian)
-                      
-                      ! Set Relative deformation gradient in particles type --> 
-                      call SetRelDefGradient(Particles(ParticleIndex), RelativeDeformationGradient) 
-                        
-                      ! Set Relative deformation gradient jacobian in particles type 
-                      call SetRelDefGradientJacobian(Particles(ParticleIndex), RelativeDeformationGradientJacobian) 
-                      
-                      ! Set Previous  deformation gradient in particles type
-                      call SetDefGradientJacobianPrevious(Particles(ParticleIndex), DeformationGradientPreviousJacobian) 
+                      !call RJacInv(NDIM, RelativeDeformationGradient, RelativeDeformationGradientInverse, &
+                      !RelativeDeformationGradientJacobian, RelativeDeformationGradientInverseJacobian)
+                      !  
+                      !! Evaluate the jacobian of the previous deformation gradient --> Jn
+                      !call RJacInv(NDIM, Particles(ParticleIndex)%DeformationGradientPrevious, DeformationGradientPreviousInverse, &
+                      !DeformationGradientPreviousJacobian, DeformationGradientPreviousInverseJacobian)
+                      !
+                      !! Set Relative deformation gradient in particles type --> 
+                      !call SetRelDefGradient(Particles(ParticleIndex), RelativeDeformationGradient) 
+                      !  
+                      !! Set Relative deformation gradient jacobian in particles type 
+                      !call SetRelDefGradientJacobian(Particles(ParticleIndex), RelativeDeformationGradientJacobian) 
+                      !
+                      !! Set Previous  deformation gradient in particles type
+                      !call SetDefGradientJacobianPrevious(Particles(ParticleIndex), DeformationGradientPreviousJacobian) 
                       !------------------------------------------------------------------------------------------------
                       
                   end if
@@ -720,7 +720,7 @@
           
         
         !! Apply F-bar  
-          if (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothStrains) then ! FBar and FBarSmoothStrains
+          if (CalParams%ApplyFBarWater .AND. CalParams%ApplyFBarSmoothStrains) then ! FBar and FBarSmoothStrains
               
               if (.not.CalParams%ApplyFBarLowerOrder) then !FBarLowerOrder
           
@@ -728,7 +728,7 @@
               call MapWeightedUpdDefGradJacobToNodes_WaterStrain(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
           
               ! we divide by the lumped mass to get the nodal updated deformation gradient
-              call NormWeightedUpdDefGradJacobAtNodes(UpdatedDeformationGradientJacobian, &
+              call NormWeightedUpdDefGradJacobAtNodes_Water(UpdatedDeformationGradientJacobian, &
                                                     WeightedUpdatedDeformationGradientJacobian)
             
               ! we map the updated deformation gradient to the material points
@@ -936,7 +936,7 @@
               call MapWeightedUpdDefGradJacobToNodes_WaterStresses(WeightedUpdatedDeformationGradientJacobian) !CalculateUpdatedNodalDeformationGradientJacobian()
           
               ! we divide by the lumped mass to get the nodal updated deformation gradient
-              call NormWeightedUpdDefGradJacobAtNodes(UpdatedDeformationGradientJacobian, & ! _Stresses
+              call NormWeightedUpdDefGradJacobAtNodes_Water(UpdatedDeformationGradientJacobian, & ! _Stresses
                                                     WeightedUpdatedDeformationGradientJacobian)
             
               ! we map the updated deformation gradient to the material points
@@ -965,6 +965,10 @@
                   SigmaEffArray(IParticle, 1) = Particles(IParticle)%WaterPressure
                   SigmaEffArray(IParticle, 2) = Particles(IParticle)%WaterPressure
                   SigmaEffArray(IParticle, 3) = Particles(IParticle)%WaterPressure
+                  
+
+                  else 
+                      
                   
                   Particles(IParticle)%WaterPressure = 0.0
                   
@@ -1491,8 +1495,8 @@
               
                     ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
-                 
+                    !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then 
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
                         Particles(ParticleIndex)%WaterVolumetricStrain = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
                         ParticleShape = ShapeValuesArray(ParticleIndex,:)
@@ -1613,8 +1617,8 @@
               
                     ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
-                 
+                    !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeMixture) ) then 
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
                         Particles(ParticleIndex)%VolStressSmoothed = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
                         ParticleShape = ShapeValuesArray(ParticleIndex,:)
@@ -1748,8 +1752,9 @@
                 do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
               
                     ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
-              
-                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+             
+                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then  
+                    !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
                         Particles(ParticleIndex)%WaterPressure = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
@@ -2818,8 +2823,9 @@
               
                       ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                      !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
        
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
                           !PartilceMass = MassArray(ParticleIndex) ! particle mass
                           PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
                  
@@ -2979,8 +2985,9 @@
               
                       ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                      !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
        
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeMixture) ) then 
                           !PartilceMass = MassArray(ParticleIndex) ! particle mass
                           PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
                  
@@ -3122,7 +3129,7 @@
               
                       ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) ) then ! NumbOfLayers = 1 or SOLID MatPoint .or. (NFORMULATION==1)
        
                           !PartilceMass = MassArray(ParticleIndex) ! particle mass
                           PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
@@ -3959,6 +3966,60 @@
             
             
             
+            subroutine NormWeightedUpdDefGradJacobAtNodes_Water(UpdatedDeformationGradientJacobian, & !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
+            WeightedUpdatedDeformationGradientJacobian)
+        !**********************************************************************
+        !
+        !    Function:  To calculate the nodal velocities from nodal mass and momentum
+        !
+        !    Momentum : Nodal momentum vector
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        
+        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary, IPatch, GlobalNodeID
+        integer(INTEGER_TYPE) :: INode, ITens
+        
+        real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(out) :: UpdatedDeformationGradientJacobian
+        real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(in) :: WeightedUpdatedDeformationGradientJacobian
+        !NURBS%Maximum_NControlPoints
+        !NumberOfGlobalControlPointsUniqueMultipatch
+        IPatch_Temporary = 1
+        ! initialisation --> not necessary here
+        UpdatedDeformationGradientJacobian = 0.0
+        
+        !do IPatch = 1, Counters%NPatches
+        !do INode = 1, Counters%NodTot(IPatch) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        do IDOF = 1, Counters%N ! loop over all degrees of freedom
+            do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
+            
+                !IDOF = ReducedDof(Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch))+1 ! obtain the x dof so that we can find the mass. 
+                                           ! It does not matter what dof you choose (here x-direction), 
+                                           ! because mass is scalar. 
+                !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch)
+                !do ITens = 1, NTENSOR
+                
+                    if (LumpedVolume(IDOF,J)/=0) then
+                        UpdatedDeformationGradientJacobian(IDOF,J) = ( WeightedUpdatedDeformationGradientJacobian(IDOF,J) &
+                                                                            / LumpedVolume_Water(IDOF,J) )
+                    else
+                        UpdatedDeformationGradientJacobian(IDOF,J) = 0.0 
+                    end if
+                
+                !end do 
+            
+            end do
+          
+        end do
+        !
+        !end do 
+        
+        
+            end subroutine NormWeightedUpdDefGradJacobAtNodes_Water !NormalizeWeightedUpdatedDeformationGradientJacobianAtNodes
             
             
             

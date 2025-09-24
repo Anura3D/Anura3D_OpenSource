@@ -101,7 +101,7 @@
         integer(INTEGER_TYPE), parameter :: INITIAL_STEP = 1
         integer(INTEGER_TYPE), parameter :: MAXIMUM_STEP = 100000
         integer(INTEGER_TYPE), parameter :: ID_UNDEFINED = -1
-        integer(INTEGER_TYPE), parameter :: NSTATEVAR = 50
+        integer(INTEGER_TYPE), parameter :: NSTATEVAR = 114 !50 ! I increased this for PM4Sand
         integer(INTEGER_TYPE), parameter :: NPROPERTIES = 50
 
         real(REAL_TYPE), dimension(:), allocatable, protected :: DEFAULT_GRAVITY_DIRECTION 
@@ -139,6 +139,7 @@
         character(len = 11), parameter :: MP_INITIALIZATION_GAUSSPOINT_SPECIFIER = 'gauss_point'
         character(len = 4), parameter :: MP_INITIALIZATION_FILE_SPECIFIER = 'file'
         
+        
         ! Convergence-related constants
         integer(INTEGER_TYPE), parameter :: CONVERGENCE_ERROR_NOT_USED = 999999
         real(REAL_TYPE), parameter :: N_PERCENT_TOLERATED_INACCURATE_PLASTIC_POINTS = 0.1
@@ -159,6 +160,15 @@
         character(len = 4), parameter :: PRESCRIBEDVELOCITY_FILE_EXTENSION = '.PVF'
         character(len = 4), parameter :: PRESCRIBEDACCELERATION_FILE_EXTENSION = '.PAF'
         character(len = 5), parameter :: PHREATIC_SURFACE_FILE_EXTENSION = '.PSF_'
+        ! - PEER file extension 
+        character(len = 4), parameter :: PRESCRIBED_ACCELERATION_PEER_FILE_EXTENSION = '.AT2'
+        character(len = 4), parameter :: PRESCRIBED_VELOCITY_PEER_FILE_EXTENSION = '.VT2'
+        character(len = 4), parameter :: PRESCRIBED_DISPLACEMENT_PEER_FILE_EXTENSION = '.DT2'
+        character(len = 4), parameter :: SEISMIC_ACTION_FILE_TYPE_PEER = 'AT2'
+        character(len = 5), parameter :: SEISMIC_ACTION_FILE_TYPE_TABLE = 'PAF'
+        character(len = 12), parameter :: DISPLACEMENT_SEISMIC_ACTION = 'DISPLACEMENT'
+        character(len = 12), parameter :: VELOCITY_SEISMIC_ACTION = 'VELOCITY'
+        character(len = 12), parameter :: ACCELERATION_SEISMIC_ACTION = 'ACCELERATION'
         
         character(len = 8), parameter :: &
             MPINIT_FILE_EXTENSION = '.MP_INIT' ! contains MP global position and its material assignment
@@ -212,6 +222,7 @@
         character(len=64), parameter :: ESM_FRICTIONAL_LIQUID = 'frictional_liquid'
         character(len=64), parameter :: ESM_RIGID_BODY = 'rigid_body'
         character(len=64), parameter :: ESM_ARB_Model = 'Arb_Model'
+        character(len=64), parameter :: ESM_PM4Sand_Model = 'PM4Sand'
 		
        ! User-defined hydraulic model names
         character(len=64), parameter :: SWRC_VANGENUCHTEN = 'van_genuchten'
@@ -316,20 +327,24 @@
         integer(INTEGER_TYPE), parameter :: PVFunit = 70
         
         ! Prescribed acceleration from file
-        integer(INTEGER_TYPE), parameter :: PAFunit = 71
+        integer(INTEGER_TYPE), parameter :: TableUnit = 71 !PAFunit
+        
+        
+        ! Prescribed PEER physical quantity from file        
+        integer(INTEGER_TYPE), parameter :: PEERunit = 75
+        
         
         ! Hydraulic Head from file 
         integer(INTEGER_TYPE), parameter :: HHBFUnit = 72
         
         ! Material point initialization from file 
         integer(INTEGER_TYPE), parameter :: MPInitUnit = 73 
-
         
         
         !Material Point Mapping from external file
         integer(INTEGER_TYPE), parameter :: MAPUnit = 73
         
-           ! Initial phreatic surface from file (for K0 procedure) 
+        ! Initial phreatic surface from file (for K0 procedure) 
         integer(INTEGER_TYPE), parameter :: PSFUnit = 74
 
         ! Temporarily introduced constant in the frame of code cleanup
@@ -696,6 +711,9 @@
         real(REAL_TYPE), dimension(:, :), allocatable :: BulkViscLoad
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry ! Lumped mass vector of dry soil
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedVolume ! Lumped mass vector of dry soil
+
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedVolume_Water ! Lumped mass vector of water MPs
+
         
         real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDry_VolLockSmooth ! Lumped mass vector of dry soil
         

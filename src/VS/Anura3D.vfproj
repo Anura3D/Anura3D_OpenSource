@@ -54,9 +54,13 @@
 			</Filter>
 			<Filter Name="MaterialModels">
 				<File RelativePath="..\Soilmodels\A3DBingham.f"/>
-				<File RelativePath="..\Soilmodels\A3DLinearElasticity.f"/>
+				<File RelativePath="..\Soilmodels\A3DLinearElasticity.f">
+				</File>
 				<File RelativePath="..\Soilmodels\A3DMohrCoulombStandard.f"/>
-				<File RelativePath="..\A3DMohrCoulombStrainSoftening.f"/>
+				<File RelativePath="..\A3DMohrCoulombStrainSoftening.f">
+				</File>
+				<File RelativePath=".\A3DPM4Sand.f">
+				</File>
 				<File RelativePath="..\ExternalSoilModel.for"/>
 				<File RelativePath="..\Liquid.FOR"/>
 			</Filter>

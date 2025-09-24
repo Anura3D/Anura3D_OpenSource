@@ -50,6 +50,7 @@
       use ModMohrCoulomb
       use ModBingham
       use ModMohrCoulombStrainSoftening
+      use PM4SandMaterialModule
       
       !External :: FExist
       
@@ -891,13 +892,22 @@ end select
                   MatParams(I)%ShapeFactor = DumR
                   MatParams(I)%ESM_Solid(9) = DumR
                   
-				  !MatParams(I)%ESM_POINTER => ESM_MCSS                    
-                   
+				  !MatParams(I)%ESM_POINTER => ESM_MCSS    
+                  
+                  
+                  
+                  
+                  
+                  
+                  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
                   
                 case (ESM_EXTERNAL_SOIL_MODEL)
                     
-                  !if (MatParams(I)%MaterialName=="MyModel")  MatParams(I)%ESM_POINTER => ESM_Mymodel  !Example of the pointer definition
-                     if (MatParams(I)%MaterialName=="ESM_MCSS") MatParams(I)%ESM_POINTER => ESM_MohrCoulombStrainSoftening
+                  !if (MatParams(I)%MaterialName=="MyModel")  MatParams(I)%ESM_POINTER => ESM_Mymodel  !Example of the pointer definition 
+                    
+                    if (MatParams(I)%MaterialName=="ESM_MCSS") MatParams(I)%ESM_POINTER => ESM_MohrCoulombStrainSoftening
+                    if (MatParams(I)%MaterialName=="ESM_PM4Sand") MatParams(I)%ESM_POINTER => ESM_AM_PM4SAND
                      
                   call ReadString(FileUnit, BName, DumS) ! soil model DLL, $$SOIL_MODEL_DLL
                   MatParams(I)%SoilModelDLL = DumS
@@ -911,7 +921,7 @@ end select
                    MatParams(I)%UMATDimension = 6                  ! 2D Umat
                   end if
 
-                  if (MatParams(I)%UMATDimension < NTENSOR) call GiveError('UMAT-ERROR: UMAT Dimension is lower then Geometyry Dimension ') ! error                   
+                  if (MatParams(I)%UMATDimension < NTENSOR) call GiveError('UMAT-ERROR: UMAT Dimension is lower then Geometry Dimension ') ! error                   
                   
                   do J = 1, NPROPERTIES ! reading material parameters (n=NPROPERTIES) solid the dimension of the array of properties is defined as a global constant
                     call ReadReal(FileUnit, BName, DumR)
@@ -922,6 +932,27 @@ end select
                     call ReadReal(FileUnit, BName, DumR)
                     MatParams(I)%ESM_Statvar_in(J) = DumR
                   end do
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
                   
                 case (ESM_NEWTONIAN_LIQUID) 
                     

@@ -74,8 +74,10 @@
               ContactProperties, & !
               !PrescribedVeloElValue, & ! (PrescribedVeloNElem,vsize) stores the values of prescribed velocity at elements
 		      InitialVelocityonMP, & ! (Number of elements with initial velocities, vsize+1) store the element ID and the initial velocities of particles insde the element
-			  ConstructionElementsStages
+			  ConstructionElementsStages, &
+              PrescribedSeismicActionScalingFactor
 				!I moved this here to add a rank for the multipatch
+          
           real(REAL_TYPE), dimension(:,:, :), allocatable :: PrescribedVeloElValue
           
           integer(INTEGER_TYPE), allocatable  :: &
@@ -84,7 +86,9 @@
               MovingMeshMovingCorners(:, :), & ! dsize * (dsize - 1) + ExtraNodesMovingMesh  | (default = -1)    ! multipatch generalization added a rank
               ContactLocation(:,:), &
               PrescribedVeloElemID(:, :),&!stores the ID of element on which velocity is prescribed ! multipatch generalization added a rank ,: ! REMOVED RANK ! Added the rank back again
+              PrescribedSeismicActionElemID(:), &
               PrescribedVeloElDirection(:,:, :), & !0/1 define the direction where velocity is prescribed ! multipatch generalization added a rank
+              PrescribedSeismicActionDirection(:,:), &
               WaterSurfaceMaterialID(:) ! Material Index on which a given water surface is assigned
           
           
@@ -102,7 +106,11 @@
               NABPointNodesGas, &
               ExtraNodesMovingMesh = 2, & !Number of extra nodes for moving mesh areas ! this is kind of a dummy variable to generalize the moving mesh to 2D/3D
               AbsorbingBoundaryReferenceMaterialID = 0, &  ! the material_id of the reference material for the absorbing boundaries    
-              NumberWaterSurfaceMaterials!, &
+              NumberWaterSurfaceMaterials, &
+              PrescribedSeismicActionNElem = 0 !Number of element on which velocity is prescribed at MP
+              !PrescribedVeloNElem = 0, & !Number of element on which velocity is prescribed at MP
+              
+          !, &
               !PrescribedVeloNElem = 0 !Number of element on which velocity is prescribed at MP ! this probably needs multipatch generalization
 
           
@@ -122,6 +130,13 @@
           character(len=255), allocatable, dimension(:) :: &
               MovingMeshDirection
           
+          
+          character(len=255), allocatable :: &
+              PrescribedSeismicActionInputFormat(:,:), &
+              PrescribedSeismicActionFileName(:,:), &
+              PrescribedSeismicActionPhysicalQuantityType(:,:)
+          
+          
           character(len=255), allocatable :: &
               ContactMaterials(:,:) , &
               WaterSurfaceFileNumber(:)  ! Name and location of text file including initial water surface
@@ -135,8 +150,13 @@
               ApplyNodalVelocityPoint, & !.true. if prescribed velcity is assigned to nodes
               ApplyMPVelocityVolume, & !.true. if prescribed velcity is assigned to volumes
               ApplyMPVelocitySurface, & !.true. if prescribed velcity is assigned to surfaces
-              ApplyInitialWaterSurfaceFromFile
-              
+              ApplyInitialWaterSurfaceFromFile, &
+              ApplyNodalPrescribedSeismicActionVolume, & !.true. if prescribed seismic action is assigned to volumes
+              ApplyNodalPrescribedSeismicActionSurface, & !.true. if prescribed seismic action is assigned to surfaces
+              ApplyNodalPrescribedSeismicActionLine, & !.true. if prescribed seismic action is assigned to lines
+              ApplyNodalPrescribedSeismicActionPoint, & !.true. if prescribed seismic action is assigned to nodes
+              ApplyMPPrescribedSeismicActionVolume, & !.true. if prescribed seismic action is assigned to volumes
+              ApplyMPPrescribedSeismicActionSurface !.true. if prescribed seismic action is assigned to surfaces
               
         end type GeometryParameterType
 
@@ -1682,7 +1702,38 @@
                   if (NURBS%NNodePrescribedVelocity(IPatch)>0) then 
                 GeoParams%ApplyNodalVelocityPoint=.true.
                 call ReadPrescribedVelocityNode(FileUnit, IPatch)
-                end if
+                  end if
+                  
+                  
+                  
+                  
+                   !!! DATA FOR PRESCRIBED SEISMIC ACTION
+              else if (trim(BName)=='$$PRESCRIBED_MATERIAL_POINT_SEISMIC_ACTION_VOLUME') then !prescribed seismic action is assigned
+                GeoParams%ApplyMPPrescribedSeismicActionVolume=.true.
+                call ReadPrescribedSeismicActionMaterialPoint(FileUnit)
+         
+              else if (trim(BName)=='$$PRESCRIBED_MATERIAL_POINT_SEISMIC_ACTION_SURFACE') then !prescribed seismic action is assigned
+                GeoParams%ApplyMPPrescribedSeismicActionSurface=.true.
+                call ReadPrescribedSeismicActionMaterialPoint(FileUnit)
+                
+              else if (trim(BName)=='$$PRESCRIBED_NODAL_SEISMIC_ACTION_VOLUME') then !prescribed seismic action is assigned
+                GeoParams%ApplyNodalVelocityVolume=.true.
+                call ReadPrescribedSeismicActionNode(FileUnit)
+                
+              else if (trim(BName)=='$$PRESCRIBED_NODAL_SEISMIC_ACTION_SURFACE') then !prescribed seismic action is assigned
+                GeoParams%ApplyNodalPrescribedSeismicActionSurface=.true.
+                call ReadPrescribedSeismicActionNode(FileUnit)
+                
+              else if (trim(BName)=='$$PRESCRIBED_NODAL_SEISMIC_ACTION_LINE') then !prescribed seismic action is assigned
+                GeoParams%ApplyNodalPrescribedSeismicActionLine=.true.
+                call ReadPrescribedSeismicActionNode(FileUnit)
+                
+              else if (trim(BName)=='$$PRESCRIBED_NODAL_SEISMIC_ACTION_POINT') then !prescribed seismic action is assigned
+                GeoParams%ApplyNodalPrescribedSeismicActionPoint=.true.
+                call ReadPrescribedSeismicActionNode(FileUnit)
+                
+                
+                
 				
 		      !!! DATA FOR INITIAL VELOCITY ON MP
 			  !--> not multipatch generalized
@@ -2158,6 +2209,83 @@
          end if
 
         end subroutine DestroyPrescribedMPVeloData
+        
+        
+        
+        
+        
+        
+        
+        subroutine DestroyPrescribedMPSeismicActionData()
+        !**********************************************************************
+        !
+        ! Function:  Deallocates the arrays used in this module
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IError
+
+          if (allocated(GeoParams%PrescribedSeismicActionElemID)) then
+            deallocate(GeoParams%PrescribedSeismicActionElemID, stat = IError)
+          end if
+          
+         !if (allocated(GeoParams%PrescribedSeismicActionElValue)) then
+         !   deallocate(GeoParams%PrescribedSeismicActionElValue, stat = IError)
+         !end if
+                    
+         if (allocated(GeoParams%PrescribedSeismicActionDirection)) then
+            deallocate(GeoParams%PrescribedSeismicActionDirection, stat = IError)
+         end if
+
+        end subroutine DestroyPrescribedMPSeismicActionData
+        
+        
+        
+        
+        
+        
+        
+        subroutine InitialisePrescribedMPSeismicActionData(Nnode)
+        !**********************************************************************
+        !
+        ! Function:  To initialise the arrays relate to prescribed seismic action
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IError, Nnode
+
+          allocate( GeoParams%PrescribedSeismicActionElemID(Nnode), stat = IError)
+             GeoParams%PrescribedSeismicActionElemID = -1
+          !allocate( GeoParams%PrescribedSeismicActionValue(Nnode, NVECTOR), stat = IError)
+          !   GeoParams%PrescribedSeismicActionElValue = 0.0
+          allocate( GeoParams%PrescribedSeismicActionDirection(Nnode, NVECTOR), stat = IError)
+             GeoParams%PrescribedSeismicActionDirection = 1
+          allocate( GeoParams%PrescribedSeismicActionFileName(Nnode, NVECTOR), stat = IError)
+          !   GeoParams%PrescribedSeismicActionDirection = 1
+          allocate( GeoParams%PrescribedSeismicActionInputFormat(Nnode, NVECTOR), stat = IError)
+          !   GeoParams%PrescribedSeismicActionDirection = 1
+          allocate( GeoParams%PrescribedSeismicActionScalingFactor(Nnode, NVECTOR), stat = IError)
+          allocate( GeoParams%PrescribedSeismicActionPhysicalQuantityType(Nnode, NVECTOR), stat = IError)
+          !
+          !GeoParams%(I, 1:NVECTOR) = DumS_InputFormat(1:NVECTOR)
+          !  GeoParams%PrescribedSeismicActionPhysicalQuantityType(I, 1:NVECTOR) = DumS_PhysicalQuantityType(1:NVECTOR)
+          !  GeoParams%PrescribedSeismicActionFileName(I, 1:NVECTOR) = DumS_FileName(1:NVECTOR)
+          !  GeoParams%PrescribedSeismicActionScalingFactor(I, 1:NVECTOR) = DumR(1:NVECTOR)
+
+
+        end subroutine InitialisePrescribedMPSeismicActionData
+        
+        
+        
+        
+        
+        
 
 
         subroutine InitialisePrescribedMPVeloData()!Nnode)!, PatchID)
@@ -2262,6 +2390,54 @@
           end if
 
         end subroutine DestroyPrescribedNodalVeloData
+        
+        
+        
+        subroutine DestroyPrescribedNodalSeismicActionData()
+        !**********************************************************************
+        !
+        ! Function:  Deallocates the arrays used in this module
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IError
+
+          if (allocated(CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction)) then
+            deallocate(CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction, stat = IError)
+          end if
+          !if (allocated(CalParams%PrescribedSeismicAction%NodalPrescribedSeismicActionValue)) then
+          !  deallocate(CalParams%PrescribedSeismicAction%NodalPrescribedSeismicActionValue, stat = IError)
+          !end if
+          if (allocated(CalParams%PrescribedSeismicAction%PrescribedSeismicActionDirection)) then
+            deallocate(CalParams%PrescribedSeismicAction%PrescribedSeismicActionDirection, stat = IError)
+          end if
+
+        end subroutine DestroyPrescribedNodalSeismicActionData
+        
+        subroutine InitialisePrescribedNodalSeismicActionData(Nnode)
+        !**********************************************************************
+        !
+        ! Function:  To initialise the arrays relate to prescribed velocity
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IError, Nnode
+
+          allocate( CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction(Nnode), stat = IError)
+          CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction = -1 ! Nodal
+          
+          allocate( CalParams%PrescribedSeismicAction%PrescribedSeismicActionDirection(Nnode, NVECTOR), stat = IError)
+          CalParams%PrescribedSeismicAction%PrescribedSeismicActionDirection = -1 ! initialize ! Nodal
+
+        end subroutine InitialisePrescribedNodalSeismicActionData
+        
+        
 
 
         subroutine InitialisePrescribedNodalVeloData()!Nnode)
@@ -2296,6 +2472,77 @@
           !CalParams%PrescribedVelo%NodalPrescribedVelocityDirection = 1
 
         end subroutine InitialisePrescribedNodalVeloData
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine ReadPrescribedSeismicActionMaterialPoint(FileUnit)
+        !**********************************************************************
+        !
+        ! Function:  To read data for prescribed seismic action in material points
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+        
+          ! local variables
+          integer(INTEGER_TYPE) :: I
+          
+          integer(INTEGER_TYPE), dimension(NVECTOR+1) :: DumI
+          real(REAL_TYPE), dimension(NVECTOR) :: DumR
+          character, dimension(NVECTOR) :: DumS_InputFormat 
+          character, dimension(NVECTOR) :: DumS_PhysicalQuantityType
+          character, dimension(NVECTOR) :: DumS_FileName
+          
+          
+        
+          call DestroyPrescribedMPSeismicActionData()
+                
+          read(FileUnit,*) DumI(1)
+          GeoParams%PrescribedSeismicActionNElem = DumI(1)
+                
+          call InitialisePrescribedMPSeismicActionData(GeoParams%PrescribedSeismicActionNElem)
+                                
+          do I = 1, GeoParams%PrescribedSeismicActionNElem
+            read(FileUnit,*) DumI(1:NVECTOR+1), DumS_InputFormat(1:NVECTOR), DumS_PhysicalQuantityType(1:NVECTOR), DumS_FileName(1:NVECTOR), DumR(1:NVECTOR) 
+            GeoParams%PrescribedSeismicActionElemID(I) = DumI(1)
+            GeoParams%PrescribedSeismicActionDirection(I, 1:NVECTOR) = DumI(2:NVECTOR+1)
+            GeoParams%PrescribedSeismicActionInputFormat(I, 1:NVECTOR) = DumS_InputFormat(1:NVECTOR)
+            GeoParams%PrescribedSeismicActionPhysicalQuantityType(I, 1:NVECTOR) = DumS_PhysicalQuantityType(1:NVECTOR)
+            GeoParams%PrescribedSeismicActionFileName(I, 1:NVECTOR) = DumS_FileName(1:NVECTOR)
+            GeoParams%PrescribedSeismicActionScalingFactor(I, 1:NVECTOR) = DumR(1:NVECTOR)
+            !GeoParams%PrescribedSeismicActionElValue(I, 1:NVECTOR) = DumR(1:NVECTOR)
+          end do 
+
+        
+        end subroutine ReadPrescribedSeismicActionMaterialPoint
+        
+        
+        
+        
+        
+        
+        
         
         
         subroutine ReadPrescribedVelocityMaterialPoint(FileUnit, IPatch)!PatchID)
@@ -2393,6 +2640,56 @@
           
           
         end subroutine ReadPrescribedVelocityNode  
+        
+        
+        
+        
+        
+        
+        subroutine ReadPrescribedSeismicActionNode(FileUnit)
+        !**********************************************************************
+        !
+        ! Function:  To read data for prescribed seismic action in nodes
+        !
+        !**********************************************************************
+
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: FileUnit
+        
+          ! local variables
+          integer(INTEGER_TYPE) :: I
+          integer(INTEGER_TYPE), dimension(NVECTOR+1) :: DumI
+          real(REAL_TYPE), dimension(NVECTOR) :: DumR
+          character(len=255), dimension(NVECTOR) :: DumS_InputFormat 
+          character(len=255), dimension(NVECTOR) :: DumS_PhysicalQuantityType
+          character(len=255), dimension(NVECTOR) :: DumS_FileName
+          
+                
+          call DestroyPrescribedNodalSeismicActionData()   
+          
+          read(FileUnit,*) DumI(1) 
+          CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction = DumI(1)
+                
+          call InitialisePrescribedNodalSeismicActionData(CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction)
+                
+          do I = 1, CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction
+            
+              read(FileUnit,*) DumI(1:NVECTOR+1) !, DumS_InputFormat(1:NVECTOR), DumS_PhysicalQuantityType(1:NVECTOR), DumS_FileName(1:NVECTOR), DumR(1:NVECTOR)
+              CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction(I) = DumI(1)
+              CalParams%PrescribedSeismicAction%PrescribedSeismicActionDirection(I, 1:NVECTOR) = DumI(2:NVECTOR+1)
+            
+            !CalParams%PrescribedSeismicAction%PrescribedSeismicActionInputFormat(I, 1:NVECTOR) = DumS_InputFormat(1:NVECTOR)
+            !CalParams%PrescribedSeismicAction%PrescribedSeismicActionPhysicalQuantityType(I, 1:NVECTOR) = DumS_PhysicalQuantityType(1:NVECTOR)
+            !CalParams%PrescribedSeismicAction%PrescribedSeismicActionFileName(I, 1:NVECTOR) = DumS_FileName(1:NVECTOR)
+            !CalParams%PrescribedSeismicAction%PrescribedSeismicActionScalingFactor(I, 1:NVECTOR) = DumR(1:NVECTOR)
+
+          end do  
+          
+        end subroutine ReadPrescribedSeismicActionNode 
+        
+        
+        
                 
         
         subroutine CheckMovingMeshData()
@@ -2439,7 +2736,7 @@
           CalParams%MovingMesh%NAreaNodes(IPatch) = NDIM * (NDIM - 1) + GeoParams%ExtraNodesMovingMesh ! 4 for 2D (square), 8 for 3D (cube), 6 for cylindrical 3D
 
           ! check if extending and/or compressing mesh areas are defined and determine 'NStorageAreas'
-          if ( CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then ! .or. ELEMENTTYPE == QUAD4_NURBS  --> I commented this out
+          if ( (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) .or. (CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch == .TRUE.) ) then ! .or. ELEMENTTYPE == QUAD4_NURBS  --> I commented this out
               ! no deforming mesh is defined for prescribed velocity from file
               CalParams%MovingMesh%NStorageAreas(:,IPatch) = 0
           else if ( GeoParams%MovingMeshExtendingCorners(1, IPatch) == -1 .and. GeoParams%MovingMeshCompressingCorners(1, IPatch) == -1 .and. Counters%NPatches==1) then 

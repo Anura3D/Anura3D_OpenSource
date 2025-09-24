@@ -793,13 +793,14 @@
           real(REAL_TYPE) :: GammaMixture, GammaLiquid
           real(REAL_TYPE) :: Depth, SoilSurfDepth, PhreaticSurfDepth,  Elevation, SDepth
           real(REAL_TYPE), dimension(2):: NewReferenceSoil, NewReferencePhreatic
+          real(REAL_TYPE) :: X1, X2, X3, X4, Y1, Y2, WaterCorrection
           !real(REAL_TYPE) :: Depth
           !integer(INTEGER_TYPE) :: SoilSurfaceNumberofSides, PhreaticSurfaceNumberofSides
           logical :: IsUndrEffectiveStress, IsUndrTotalStress
           
           
           SoilSurfDepth = 0.0
-          PhreaticSurfDepth = 0.0
+          PhreaticSurfDepth = 0.0 !6.0 !0.0 !6.0
           SigY = 0.0
           SigWP = 0.0
           
@@ -948,11 +949,77 @@
           ! Compute vertical total stress for constant load
           SigY = SigY + CalParams%InitialVerticalLoadK0 !* CalParams%Multipliers%SolidARealised(1) ! I commented this to remove load dependency on this multiplier
 
+          
+          
+          
+          
+          !---------------------------------------------------------------
+          !
+          ! !This is for dry embankment over saturated 
+          !X1 = 15.0
+          !X2 = 19.5
+          !X3 = 25.25
+          !X4 = 29.75
+          !        
+          !Y1 = 6.0
+          !Y2 = 10.5
+          !
+          !
+          !
+          !
+          !if (SoilPoint(1) < X1) then 
+          !
+          !    !CalParams%SoilSurfacePoint(2) = Y1
+          !    WaterCorrection = Y1 - Y1
+          !    
+          !elseif ( (SoilPoint(1) < X2) .and. (SoilPoint(1) > X1) ) then
+          !
+          !    WaterCorrection = Y1 + (((Y2-Y1)/(X2-X1))* (SoilPoint(1)-X1)) - Y1
+          !
+          !
+          !else if ((SoilPoint(1) < X3) .and. (SoilPoint(1) > X2)) then 
+          !
+          !    WaterCorrection = Y2 - Y1
+          !    
+          !elseif ((SoilPoint(1) < X4) .and. (SoilPoint(1) > X3)) then 
+          !
+          !    WaterCorrection = Y2 - (((Y2-Y1)/(X4-X3))* (SoilPoint(1)-X3)) - Y1
+          !    
+          !elseif ( (SoilPoint(1) > X4)) then !(GlobPosArray(ParticleIndex, 1) < X5) .and.
+          !
+          !    WaterCorrection = Y1 - Y1
+          !end if
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          
+          !-----------------------------------------------------------------
+          
+          
+          
+          
+          
           !Calculate water pressure
           if ((Counters%SoilSurfaceNumberofSides > 0) .or. (GeoParams%ApplyInitialWaterSurfaceFromFile == .true.)) then
               SigWP = - PhreaticSurfDepth * GammaLiquid * CalParams%Multipliers%GravityRealised
           else
-              SigWP = Depth * GammaLiquid * CalParams%Multipliers%GravityRealised
+              !if (Depth < -6.0) then 
+              !    SigWP = -6.0 * GammaLiquid * CalParams%Multipliers%GravityRealised
+              !else 
+                  
+              !SigWP = (Depth + WaterCorrection) * GammaLiquid * CalParams%Multipliers%GravityRealised
+              
+              SigWP = (Depth) * GammaLiquid * CalParams%Multipliers%GravityRealised
+              
+              !end if 
+              
           end if
          !add initial water pressure
           SigWP = SigWP + CalParams%InitialWaterPressure*CalParams%Multipliers%WaterARealised(1)
@@ -1820,11 +1887,262 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
           integer(INTEGER_TYPE), intent(in) :: IntGlo
           real(REAL_TYPE), intent(in) :: DSigWP
           real(REAL_TYPE), intent(in) :: DSigGP
+          
+          
+
+          !if (.not. any(IntGlo == CalParams%SkipPwpParticles)) then
+!          if (IntGlo == 6372 .OR. &
+!IntGlo == 6375
+!IntGlo == 6376
+!IntGlo == 6379
+!6380
+!6383
+!6384
+!6387
+!6388
+!6389
+!6390
+!6391
+!6392
+!6393
+!6394
+!6395
+!6396
+!6723
+!6724
+!6727
+!6728
+!6731
+!6732
+!6735
+!6736
+!6738
+!6739
+!6740
+!6741
+!6742
+!6743
+!6744
+!6745
+!6746
+!6747
+!6748
+!6749
+!6750
+!6751
+!6752
+!6753
+!6754
+!6755
+!6756
+!7036
+!7039
+!7040
+!7043
+!7044
+!7047
+!7048
+!7051
+!7052
+!7054
+!7055
+!7056
+!7057
+!7058
+!7059
+!7060
+!7061
+!7062
+!7063
+!7064
+!7065
+!7066
+!7067
+!7068
+!7069
+!7070
+!7071
+!7303
+!7306
+!7307
+!7310
+!7311
+!7314
+!7315
+!7318
+!7319
+!7322
+!7323
+!7324
+!7325
+!7326
+!7327
+!7328
+!7329
+!7330
+!7331
+!7332
+!7333
+!7334
+!7335
+!7336
+!7337
+!7338
+!7339
+!7340
+!7531
+!7532
+!7535
+!7536
+!7539
+!7540
+!7543
+!7544
+!7545
+!7546
+!7547
+!7548
+!7549
+!7550
+!7551
+!7552
+!7553
+!7554
+!7555
+!7556
+!7557
+!7558
+!7559
+!7560
+!7561
+!7562
+!7563
+!7706
+!7707
+!7710
+!7711
+!7714
+!7715
+!7718
+!7719
+!7722
+!7723
+!7725
+!7726
+!7727
+!7728
+!7729
+!7730
+!7731
+!7732
+!7733
+!7734
+!7735
+!7736
+!7737
+!7738
+!7739
+!7740
+!7836
+!7839
+!7840
+!7843
+!7844
+!7847
+!7848
+!7851
+!7852
+!7854
+!7855
+!7856
+!7857
+!7858
+!7859
+!7860
+!7861
+!7862
+!7863
+!7864
+!7865
+!7866
+!7867
+!7868
+!7869
+!7870
+!7871
+!7923
+!7926
+!7927
+!7930
+!7931
+!7934
+!7935
+!7936
+!7937
+!7938
+!7939
+!7940
+!7941
+!7942
+!7943
+!7944
+!7945
+!7946
+!7947
+!7948
+!7949
+!7950
+!7951
+!7952
+!7953
+!7954
+!7955
+!7956
+!7959
+!7960
+!7963
+!7964
+!7967
+!7968
+!7971
+!7972
+!7975
+!7976
+!7978
+!7979
+!7980
+!7981
+!7982
+!7983
+!7984
+!7985
+!7986
+!7987
+!7988
+!7989
+!7990
+!7991
+!7992
+!7993
+!7994
+!7995
+!7996
+!7997
+!7998
+!7999
+!8000
+
+          
+          
+          
           ! Local variables
           !if (.NOT. CalParams%ApplyFBarSmoothWPIncrement) then 
           Particles(IntGlo)%WaterPressure = Particles(IntGlo)%WaterPressure0 + DSigWP 
           !end if
-          Particles(IntGlo)%WaterPressureIncrement = DSigWP ! I changed this to increment
+          
+          Particles(IntGlo)%WaterPressureIncrement = &
+              Particles(IntGlo)%WaterPressureIncrement + DSigWP ! I changed this to increment
+          
           Particles(IntGlo)%GasPressure = Particles(IntGlo)%GasPressure0 + DSigGP
           
           ! Ensure that the gas pressure is = 0 when the material point is saturated
@@ -1837,7 +2155,12 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
               Particles(IntGlo)%GasPressure=0.0
           end if 
           
-
+          
+          !else 
+          !    
+          !end if 
+          
+          
           
         end subroutine AssignWatandgasPressureToGlobalArray
         

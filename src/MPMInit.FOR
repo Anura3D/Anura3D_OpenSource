@@ -638,7 +638,10 @@
                         !IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID)!ElementSpace(ElementID,PatchID)/NSolidEle(ElementID,PatchID)
                         !NSolidEle(101,PatchID)
                         !GaussPointLocalCoordinates_Backcalculate(WeiGP, PosGP, ELEMENTGAUSSPOINTS)
-                        IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID) ! --> hardcoded to element 1
+                        
+                        
+                        
+                        !IntegrationWeight = 4.0/NSolidEle(ElementID,PatchID) ! --> hardcoded to element 1
                         
                         
                         
@@ -646,7 +649,7 @@
                         
 !                        if (ElementMaterialID(ElementID,PatchID) ==1) then 
 ! 
-!    call GaussPointLocalCoordinates_Backcalculate(IntegrationWeight, LocPos, 4) !NSolidEle(ElementID,PatchID))
+    call GaussPointLocalCoordinates_Backcalculate(IntegrationWeight, LocPos, NSolidEle(1,PatchID)) !NSolidEle(ElementID,PatchID))
 !    
 !else 
 !    

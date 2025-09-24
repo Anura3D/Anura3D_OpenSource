@@ -147,6 +147,9 @@
           integer(INTEGER_TYPE) :: IControlPoint_MovingMesh
           integer(INTEGER_TYPE) :: GlobalID
           
+          integer(INTEGER_TYPE) :: sign_multiplier
+          real(REAL_TYPE) :: T, multiplier
+          real(REAL_TYPE) :: t_in_cycle
           
           ! Start: Bending elastic beam example ------------------------------------------------------------------------
           EntityUsed = 1   !!CC - each node has nEntity displacements, choose entity used for nodal update
@@ -391,13 +394,60 @@
           !    
           !end if 
           ! END: Two balls colliding example 
+        !
+        !  !--------------------------------------------------------------------------------------------------
+        !  ! START: Simple shear 
+        !  ! Compute sign multiplier: -1 for even steps, +1 for odd
+        !
+        !  !sign_multiplier = 1
+        !  !if (mod(CalParams%IStep, 2) == 0) then
+        !  !    sign_multiplier = -1
+        !  !end if
+        !
+        !  T = 0.3
+        !  
+        !  ! T = total period, e.g. 1.0d0
+        !  t_in_cycle = mod(CalParams%OverallRealTime, T)
+        !
+        !  
+        !
+        !if (t_in_cycle < T/4.0d0) then
+        !    multiplier = (4.0d0 / T) * t_in_cycle
+        !elseif (t_in_cycle < T/2.0d0) then
+        !    multiplier = 2.0d0 - (4.0d0 / T) * t_in_cycle
+        !elseif (t_in_cycle < 3.0d0*T/4.0d0) then
+        !    multiplier = - (4.0d0 / T) * t_in_cycle + 2.0d0
+        !else
+        !    multiplier = (4.0d0 / T) * t_in_cycle - 4.0d0
+        !end if
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  ! loop over material points 
+        !        do ii = 1, Counters%NParticles
+        !      
+        !            !GlobPosArray 
+        !            ! Y-coordinate 
+        !            VelocityArray(ii,1) = multiplier * ( 1 + (GlobPosArray(ii,2))*(-2.0/1.9) )
+        !            ! X-coordinate
+        !            VelocityArray(ii,2) = 0.0
+        !        end do 
+        !  
+        !  
+        !  !--------------------------------------------------------------------------------------------------
 
-          !--------------------------------------------------------------------------------------------------
-          ! START: 
           
+          call ApplySeismicPrescribedPhysicalQuantity_Velocity() ! <-- PrescribedSeismicActionType <-- apply velocity here 
+
           
-          
-          
+        !  !--------------------------------------------------------------------------------------------------
          ! Applying prescribed velocity
          call ApplyMPPrescribedVelocity_BoundLocus(TotalVelocitySys) 
          call ApplyMPPrescribedVelocity(TotalVelocitySys)
@@ -526,6 +576,11 @@
          end if      
          
          
+         
+         
+         call ApplySeismicPrescribedPhysicalQuantity_Velocity() ! <-- PrescribedSeismicActionType <-- apply velocity here 
+
+         
          ! I repeated this here to make sure the body behaves as a rigid body
          ! Applying prescribed velocity
          call ApplyMPPrescribedVelocity_BoundLocus(TotalVelocitySys) 
@@ -570,6 +625,363 @@
             end if
           end if ! Unsat calculation 
           
+          
+          
+          
+          
+          !!--------------------------------------------------------------------------------------------------
+          !! START: Simple shear 
+          !! Compute sign multiplier: -1 for even steps, +1 for odd
+          !
+          !sign_multiplier = 2
+          !if (mod(CalParams%IStep, 2) == 0) then
+          !    sign_multiplier = -2
+          !end if
+          !! loop over material points 
+          !      do ii = 1, Counters%NParticles
+          !    
+          !          !GlobPosArray 
+          !          ! Y-coordinate 
+          !          !VelocityArray(ii,1) = sign_multiplier * ( 1 + (GlobPosArray(ii,2)-0.30)*(-2.0/1.3) )
+          !          VelocityArray(ii,1) = sign_multiplier * ( 1 + (GlobPosArray(ii,2))*(-2.0/1.9) )
+          !
+          !          ! X-coordinate
+          !          VelocityArray(ii,2) = 0.0
+          !      end do 
+          !
+          !
+          !
+          !!--------------------------------------------------------------------------------------------------
+          
+          
+          
+        !  !--------------------------------------------------------------------------------------------------
+        !  ! START: Simple shear 
+        !  ! Compute sign multiplier: -1 for even steps, +1 for odd
+        !
+        !  !sign_multiplier = 1
+        !  !if (mod(CalParams%IStep, 2) == 0) then
+        !  !    sign_multiplier = -1
+        !  !end if
+        !
+        !  T = 0.3
+        !  
+        !  ! T = total period, e.g. 1.0d0
+        !  t_in_cycle = mod(CalParams%OverallRealTime, T)
+        !
+        !  
+        !
+        !if (t_in_cycle < T/4.0d0) then
+        !    multiplier = (4.0d0 / T) * t_in_cycle
+        !elseif (t_in_cycle < T/2.0d0) then
+        !    multiplier = 2.0d0 - (4.0d0 / T) * t_in_cycle
+        !elseif (t_in_cycle < 3.0d0*T/4.0d0) then
+        !    multiplier = - (4.0d0 / T) * t_in_cycle + 2.0d0
+        !else
+        !    multiplier = (4.0d0 / T) * t_in_cycle - 4.0d0
+        !end if
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  ! loop over material points 
+        !        do ii = 1, Counters%NodTot(1)
+        !      
+        !            if (NodalCoordinates(ii,2,1)==0.0 .OR. NodalCoordinates(ii,2,1)==1.9) then 
+        !            !GlobPosArray 
+        !            ! Y-coordinate 
+        !            TotalVelocitySoil((ii*2)-1,1) = multiplier * ( 1 + (NodalCoordinates(ii,2,1))*(-2.0/1.9) )
+        !            ! X-coordinate
+        !            TotalVelocitySoil((ii*2),1) = 0.0
+        !            end if 
+        !            
+        !        end do 
+        !  
+        !  
+        !  
+        !  !--------------------------------------------------------------------------------------------------
+        !    !--------------------------------------------------------------------------------------------------
+        !  ! START: Simple shear 
+        !  ! Compute sign multiplier: -1 for even steps, +1 for odd
+        !
+        !  !sign_multiplier = 1
+        !  !if (mod(CalParams%IStep, 2) == 0) then
+        !  !    sign_multiplier = -1
+        !  !end if
+        !  
+        !  
+        !
+        !  T = 0.01
+        !  
+        !  ! T = total period, e.g. 1.0d0
+        !  t_in_cycle = mod(CalParams%OverallRealTime, T)
+        !
+        !  
+        !
+        !if (t_in_cycle < T/4.0d0) then
+        !    multiplier = -1!(4.0d0 / T) * t_in_cycle
+        !elseif (t_in_cycle < T/2.0d0) then
+        !    multiplier = +1!2.0d0 - (4.0d0 / T) * t_in_cycle
+        !elseif (t_in_cycle < 3.0d0*T/4.0d0) then
+        !    multiplier = +1 !- (4.0d0 / T) * t_in_cycle + 2.0d0
+        !else
+        !    multiplier = -1 !(4.0d0 / T) * t_in_cycle - 4.0d0
+        !end if
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  
+        !  ! loop over material points 
+        !        do ii = 1, Counters%NParticles
+        !      
+        !            if (MaterialIDArray(ii)==2) then 
+        !            !GlobPosArray 
+        !            ! Y-coordinate 
+        !            VelocityArray(ii,1) = multiplier * ( 1 + (GlobPosArray(ii,2))*(-2.0/1.9) )
+        !            ! X-coordinate
+        !            VelocityArray(ii,2) = 0.0
+        !            end if 
+        !            
+        !        end do 
+        !  
+        !    !! loop over material points 
+        !    !    do ii = 1, Counters%NodTot(1)
+        !    !  
+        !    !        if (NodalCoordinates(ii,2,1)==0.0 .OR. NodalCoordinates(ii,2,1)==1.9 &
+        !    !            .OR. NodalCoordinates(ii,1,1)==0.0 .OR. NodalCoordinates(ii,1,1)==1.9) then 
+        !    !        !GlobPosArray 
+        !    !        ! Y-coordinate 
+        !    !        TotalVelocitySoil((ii*2)-1,1) = multiplier * ( 1 + (NodalCoordinates(ii,2,1))*(-2.0/1.9) )
+        !    !        ! X-coordinate
+        !    !        TotalVelocitySoil((ii*2),1) = 0.0
+        !    !        end if 
+        !    !        
+        !    !    end do 
+        !  
+        !  !--------------------------------------------------------------------------------------------------
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !        
+        !   !---------------------------------------------------------------------------------------------------     
+        !        
+        !        do ii = 1, Counters%NodTot(1)
+        !      
+        !            !if (NodalCoordinates(ii,2,1)==0.0 .OR. NodalCoordinates(ii,2,1)==1.9) then 
+        !            !GlobPosArray 
+        !            ! Y-coordinate 
+        !            NodalCoordinates(ii,1,1) = NodalCoordinates(ii,1,1) + &
+        !            CalParams%TimeIncrement*(multiplier * ( 1 + (NodalCoordinates(ii,2,1))*(-2.0/1.9) ) )
+        !            ! X-coordinate
+        !            !TotalVelocitySoil((ii*2),1) = 0.0
+        !            !end if 
+        !            
+        !        end do 
+        !  
+        !        
+        !        
+        !        
+        !        
+        !         
+        !        !--------------------------------------------------------------------------------------------------
+                
+                ! - we need to develop a stress controlled cyclic simple shear test that switches in sign when we reach prescribed 
+                !   shear stress value for a particular material point 
+                ! - we need to input the following: 
+                !   1) cycle duration, T  
+                !   2) targetted stress amplitude based on variable shear_stress_targetted 
+                !   3) we choose a small enough prescribed velocity so that we reach the threshold stress as close as possible 
+                !   4) MP # to check the strain for 
+                
+          
+          if (CalParams%ApplyDSSConditions%Switch) then ! if cyclic simple shear test
+          
+                call CheckMPStressForStressControlledDSS( &
+                CalParams%ApplyDSSConditions%MPNumberToControlStress, &! integer 
+                CalParams%ApplyDSSConditions%ThresholdStressTargeted, & ! real 
+                CalParams%ApplyDSSConditions%StressComponentControlled, &
+                CalParams%ApplyDSSConditions%VelocityMultiplier, &
+                CalParams%ApplyDSSConditions%TargetSign) ! integer
+                
+                !call ReversePrescribedVelocityForStressControlledDSS(CalParams%ApplyDSSConditions%StrainSwitchSign, &
+                !    CalParams%ApplyDSSConditions%VelocityMultiplier)
+                
+                call UpdateMPVelocityForStressControlledDSS()
+                
+                
+                call UpdateNodalCoordinatesForStressControlledDSS()
+                      
+          end if ! if cyclic simple shear test 
+          
+                
+                
+           !---------------------------------------------------------------------------------------------------    
+                
+                
+                    !--------------------------------------------------------------------------------------------------
+          ! START: Simple shear 
+          ! Compute sign multiplier: -1 for even steps, +1 for odd
+        
+          !sign_multiplier = 1
+          !if (mod(CalParams%IStep, 2) == 0) then
+          !    sign_multiplier = -1
+          !end if
+          
+          
+        
+        !  T = 0.01
+        !  
+        !  ! T = total period, e.g. 1.0d0
+        !  t_in_cycle = mod(CalParams%OverallRealTime, T)
+        !
+        !  
+        !
+        !if (t_in_cycle < T/4.0d0) then
+        !    multiplier = -1!(4.0d0 / T) * t_in_cycle
+        !elseif (t_in_cycle < T/2.0d0) then
+        !    multiplier = +1!2.0d0 - (4.0d0 / T) * t_in_cycle
+        !elseif (t_in_cycle < 3.0d0*T/4.0d0) then
+        !    multiplier = +1 !- (4.0d0 / T) * t_in_cycle + 2.0d0
+        !else
+        !    multiplier = -1 !(4.0d0 / T) * t_in_cycle - 4.0d0
+        !end if
+          
+          
+          
+          
+          
+          
+          
+          
+          !subroutine UpdateMPVelocityForStressControlledDSS() 
+          !!-------------------------------------------------------
+          !! This subroutine updates the velocity of the MPs related
+          !! to the shear box. 
+          !!-------------------------------------------------------
+          !
+          !integer(INTEGER_TYPE) :: ii 
+          !
+          !! loop over material points 
+          !      do ii = 1, Counters%NParticles
+          !    
+          !          if (MaterialIDArray(ii)==CalParams%ApplyDSSConditions%ShearBoxMatID) then 
+          !          !GlobPosArray 
+          !          ! Y-coordinate 
+          !          VelocityArray(ii,1) = &
+          !              CalParams%ApplyDSSConditions%VelocityMultiplier * CalParams%ApplyDSSConditions%VelocityValue * &
+          !              ( 1 + (GlobPosArray(ii,2))*(-2.0/1.9) ) 
+          !          !--> 1.9 is geometry specific. We need to update this if we update the geometry
+          !          ! X-coordinate
+          !          VelocityArray(ii,2) = 0.0
+          !          end if 
+          !          
+          !      end do 
+          !      
+          !      
+          !end subroutine UpdateMPVelocityForStressControlledDSS 
+          
+          
+            !! loop over material points 
+            !    do ii = 1, Counters%NodTot(1)
+            !  
+            !        if (NodalCoordinates(ii,2,1)==0.0 .OR. NodalCoordinates(ii,2,1)==1.9 &
+            !            .OR. NodalCoordinates(ii,1,1)==0.0 .OR. NodalCoordinates(ii,1,1)==1.9) then 
+            !        !GlobPosArray 
+            !        ! Y-coordinate 
+            !        TotalVelocitySoil((ii*2)-1,1) = multiplier * ( 1 + (NodalCoordinates(ii,2,1))*(-2.0/1.9) )
+            !        ! X-coordinate
+            !        TotalVelocitySoil((ii*2),1) = 0.0
+            !        end if 
+            !        
+            !    end do 
+          
+          !--------------------------------------------------------------------------------------------------
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+           !---------------------------------------------------------------------------------------------------     
+
+                
+           !subroutine UpdateNodalCoordinatesForStressControlledDSS()
+           !!----------------------------------------------------------------     
+           !! In this subroutine, we update the nodal coordinates based on the 
+           !! velocity value applied in the stress-controlled test. 
+           !!----------------------------------------------------------------     
+           !
+           !integer(INTEGER_TYPE) :: IPatch 
+           !integer(INTEGER_TYPE) :: ii
+           !
+           !
+           !     do IPatch = 1, Counters%NPatches ! loop over patches 
+           !
+           !         do ii = 1, Counters%NodTot(IPatch) ! loop over nodes --> this is not multipatch generalized 
+           !   
+           !         !if (NodalCoordinates(ii,2,1)==0.0 .OR. NodalCoordinates(ii,2,1)==1.9) then 
+           !         !GlobPosArray 
+           !         ! Y-coordinate 
+           !         
+           !             NodalCoordinates(ii,1,1) = NodalCoordinates(ii,1,1) + &
+           !                 CalParams%TimeIncrement*(CalParams%ApplyDSSConditions%VelocityMultiplier * CalParams%ApplyDSSConditions%VelocityValue * ( 1 + (NodalCoordinates(ii,2,1))*(-2.0/1.9) ) )
+           !         ! X-coordinate
+           !         !TotalVelocitySoil((ii*2),1) = 0.0
+           !         !end if 
+           !         
+           !
+           !         end do 
+           !     
+           !     end do 
+           !
+           !     
+           !     
+           !     
+           !end subroutine UpdateNodalCoordinatesForStressControlledDSS
+           
+                 
+                !--------------------------------------------------------------------------------------------------
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+          !--------------------------------------------------------------------------------------------------
+
           ! Overwrite nodal velocity and particle velocity if prescribed
            call ApplyMPPrescribedVelocity(TotalVelocitySys)
            call ApplyNodalPrescribedVelocity(DummyRotationVector1)    
@@ -649,6 +1061,8 @@
           end if
          
          !call ComputeStructureMoments()
+          
+         !call ApplySeismicPrescribedPhysicalQuantity_DisplacementIncrement()
          
          call UpdateNodalTotalDisplacement(EntityUsed)
          !call UpdateNodalTotalDisplacement_VolLockSmooth(EntityUsed)
@@ -785,6 +1199,10 @@
                 !else 
                 !   
                 !    
+        
+        
+        
+        !!!! SMOOTH STRESSES 
                     if (CalParams%ApplyFBarSmoothStresses) then ! --> this does not work
                 
                         
@@ -794,6 +1212,8 @@
                         !call GetNodalStressIncrement_VolLockSmooth()
                         !call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
                         !
+                        
+                        
                         !CalParams%ApplyFBarSmoothStresses = .false.
                 
                     end if 
@@ -801,6 +1221,8 @@
                     
                     
                     
+
+                    !!!! SMOOTH PORE WATER PRESSURE
                     if ( CalParams%ApplyFBarSmoothWP) then !(CalParams%NumberOfPhases==2) .and.
                     
                         
@@ -810,7 +1232,7 @@
                         !call GetNodalWP_VolLockSmooth()
                         !call MapNodalWPIncrementToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
                         
-                        !CalParams%ApplyFBarSmoothWP = .false.
+                        CalParams%ApplyFBarSmoothWP = .false.
                     
                     end if
                     
@@ -838,10 +1260,10 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
       ! Update particle stress data for fully filled elements
-       if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
-         call AssignStressesToParticles() ! Need to check for parallelization
-         call AssignStateParametersToParticles()  
-       end if
+       !!!if (IsMPMWithMixedIntegration() .and. .not.IsMPMSkipConvection()) then ! Not needed for pure MPM and FEM
+       !!!  call AssignStressesToParticles() ! Need to check for parallelization
+       !!!  call AssignStateParametersToParticles()  
+       !!!end if
 
        !if (CalParams%ApplyFBar) then ! if apply B-bar volumetric locking smoothing technique
            
@@ -950,52 +1372,56 @@
            
            
            
-           
+           ! 14 August 2025: I commented this for the moving mesh
            ! we need to loop the patches that do not belong to either of the moving nor the compressing mesh
-           do IPatch = 1, Counters%NPatches
-           
-               ! 1- loop over every patch that is neither moving or compressing
-               !if ( (IPatch==MovingMeshPatchID) .or. (IPatch==CompressingMeshPatchID) ) cycle
-               if ( (IPatch==MovingMeshPatchID) .or. (IPatch==CompressingMeshPatchID) ) cycle
-              
-               
-               ! 2- loop over control points of "other" patch
-               do IControlPoint_Other = 1, Counters%NodTot(IPatch) 
-                   
-                   GlobalID = Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_Other, IPatch)
-                   
-               
-                   ! 3- loop over the control points of moving mesh 
-                   do IControlPoint_MovingMesh = 1, Counters%NodTot(MovingMeshPatchID) 
-                       
-                   
-                       if (Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_MovingMesh, MovingMeshPatchID) == GlobalID) then 
-                           ! update the nodes
-                           NodalCoordinates(IControlPoint_Other,:,IPatch) = NodalCoordinates(IControlPoint_MovingMesh,:,MovingMeshPatchID)
-                       end if
-                       
-                   end do 
-                   
-                   
-                   if (CompressingMeshPatchID .ne. 0) then 
-                   ! 3- loop over the control points of compressing mesh 
-                   do IControlPoint_MovingMesh = 1, Counters%NodTot(CompressingMeshPatchID) 
-                       
-                   
-                       if (Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_MovingMesh, CompressingMeshPatchID) == GlobalID) then 
-                           ! update the nodes
-                           NodalCoordinates(IControlPoint_Other,:,IPatch) = NodalCoordinates(IControlPoint_MovingMesh,:,CompressingMeshPatchID)
-                       end if
-                       
-                   end do 
-                   
-                   end if 
-                   
-                   
-               end do 
-               
-           end do 
-           
+           !do IPatch = 1, Counters%NPatches
+           !
+           !    ! 1- loop over every patch that is neither moving or compressing
+           !    !if ( (IPatch==MovingMeshPatchID) .or. (IPatch==CompressingMeshPatchID) ) cycle
+           !    if ( (IPatch==MovingMeshPatchID) .or. (IPatch==CompressingMeshPatchID) ) cycle
+           !   
+           !    
+           !    ! 2- loop over control points of "other" patch
+           !    do IControlPoint_Other = 1, Counters%NodTot(IPatch) 
+           !        
+           !        GlobalID = Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_Other, IPatch)
+           !        
+           !    
+           !        ! 3- loop over the control points of moving mesh 
+           !        do IControlPoint_MovingMesh = 1, Counters%NodTot(MovingMeshPatchID) 
+           !            
+           !        
+           !            if (Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_MovingMesh, MovingMeshPatchID) == GlobalID) then 
+           !                ! update the nodes
+           !                NodalCoordinates(IControlPoint_Other,:,IPatch) = NodalCoordinates(IControlPoint_MovingMesh,:,MovingMeshPatchID)
+           !            end if
+           !            
+           !        end do 
+           !        
+           !        
+           !        if (CompressingMeshPatchID .ne. 0) then 
+           !        ! 3- loop over the control points of compressing mesh 
+           !        do IControlPoint_MovingMesh = 1, Counters%NodTot(CompressingMeshPatchID) 
+           !            
+           !        
+           !            if (Multipatch_Connecting_Local_To_Global_ControlPoints(IControlPoint_MovingMesh, CompressingMeshPatchID) == GlobalID) then 
+           !                ! update the nodes
+           !                NodalCoordinates(IControlPoint_Other,:,IPatch) = NodalCoordinates(IControlPoint_MovingMesh,:,CompressingMeshPatchID)
+           !            end if
+           !            
+           !        end do 
+           !        
+           !        end if 
+           !        
+           !        
+           !    end do 
+           !    
+           !end do 
+           !if (CalParams%ApplyMovingMesh) then 
+           !
+           !call MeshAdjustment_MovingMesh_Multipatch(MovingMeshPatchID, CompressingMeshPatchID) ! Hardcoded patch number for now
+           !
+           !end if 
            
            if (IsULFEMComputation()) then
              call UpdateMeshAdjacencyInformation(NodalCoordinatesUpd)!(:,:,IPatch_Temporary))
@@ -1202,6 +1628,223 @@
 
        
       end subroutine DYNConvectivePhase
+      
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      
+      
+      
+      
+      
+      
+      subroutine CheckMPStressForStressControlledDSS(MPNumberToControlStress, ThresholdStress, StressComponentControlled, &
+                    StrainVelocitySign, TargetSign)
+      
+      
+      !--------------------------------------------------------------------
+      ! This subroutine checks if we have achieved the target threshold stress.
+      ! When the threshold stress is achieved in magnitude, we reverse the prescribed
+      ! velocity sign to simulate the cyclic "stress-controlled" tests.         
+      !--------------------------------------------------------------------
+                
+                implicit none 
+                
+                integer(INTEGER_TYPE), intent(in) :: MPNumberToControlStress 
+                REAL(REAL_TYPE), intent(in) :: ThresholdStress 
+                
+                integer(INTEGER_TYPE), intent(in) :: StressComponentControlled
+                
+                REAL(REAL_TYPE) :: CurrentStressValue
+                 
+                REAL(REAL_TYPE), intent(inout) :: StrainVelocitySign   ! +1 or -1, for velocity direction
+
+                !logical, intent(inout) :: StrainSwitchSign
+                integer(INTEGER_TYPE), intent(inout) :: TargetSign     ! +1 or -1, tracks target stress sign
+
+                
+                CurrentStressValue = SigmaEffArray(MPNumberToControlStress, StressComponentControlled) ! Maybe SigmaEff0Array
+                
+                !if (abs(CurrentStressValue) > abs(ThresholdStress)) then 
+                !    
+                !    StrainSwitchSign = .TRUE.
+                !    
+                !else 
+                !    
+                !    StrainSwitchSign = .FALSE.
+                !    
+                !end if 
+                
+                
+                
+                 ! Check if we exceeded the target
+  
+                if (TargetSign == -1 .and. CurrentStressValue .le. -ThresholdStress) then
+                    TargetSign = 1
+                    StrainVelocitySign = 1.0
+                elseif (TargetSign == 1 .and. CurrentStressValue .ge. ThresholdStress) then
+                    TargetSign = -1
+                    StrainVelocitySign = -1.0
+                 end if
+                
+                    end subroutine CheckMPStressForStressControlledDSS
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    !--------------------------------------------------------------------------------
+                    
+                    
+                    
+                    
+                    
+                    
+                    subroutine UpdateMPVelocityForStressControlledDSS() 
+            
+                    !-------------------------------------------------------
+                    ! This subroutine updates the velocity of the MPs related
+                    ! to the shear box. 
+                    !-------------------------------------------------------
+
+
+                    integer(INTEGER_TYPE) :: ii 
+
+
+                    ! loop over material points 
+      do ii = 1, Counters%NParticles
+    
+          if (MaterialIDArray(ii)==CalParams%ApplyDSSConditions%ShearBoxMatID) then 
+          !GlobPosArray 
+          ! Y-coordinate 
+          VelocityArray(ii,1) = &
+              CalParams%ApplyDSSConditions%VelocityMultiplier * CalParams%ApplyDSSConditions%VelocityValue * &
+              ( 1 + (GlobPosArray(ii,2))*(-2.0/1.9) ) 
+          !--> 1.9 is geometry specific. We need to update this if we update the geometry
+          ! X-coordinate
+          VelocityArray(ii,2) = 0.0
+          end if 
+          
+      end do 
+      
+      
+
+                    end subroutine UpdateMPVelocityForStressControlledDSS 
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    !---------------------------------------------------------------------------------
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+      
+      
+      
+      
+      
+      
+                    
+                    
+                    
+                  
+                    subroutine UpdateNodalCoordinatesForStressControlledDSS()
+                !----------------------------------------------------------------     
+                ! In this subroutine, we update the nodal coordinates based on the 
+                ! velocity value applied in the stress-controlled test. 
+                !----------------------------------------------------------------     
+
+
+                    integer(INTEGER_TYPE) :: IPatch 
+                    integer(INTEGER_TYPE) :: ii
+
+
+     
+                    do IPatch = 1, Counters%NPatches ! loop over patches 
+ 
+
+                        do ii = 1, Counters%NodTot(IPatch) ! loop over nodes --> this is not multipatch generalized 
+   
+         !if (NodalCoordinates(ii,2,1)==0.0 .OR. NodalCoordinates(ii,2,1)==1.9) then 
+         !GlobPosArray 
+         ! Y-coordinate 
+         
+
+                            NodalCoordinates(ii,1,1) = NodalCoordinates(ii,1,1) + &
+                                CalParams%TimeIncrement*(CalParams%ApplyDSSConditions%VelocityMultiplier * CalParams%ApplyDSSConditions%VelocityValue * ( 1 + (NodalCoordinates(ii,2,1))*(-2.0/1.9) ) )
+         ! X-coordinate
+         !TotalVelocitySoil((ii*2),1) = 0.0
+         !end if 
+         
+
+
+                        end do 
+     
+    
+                    end do 
+     
+            end subroutine UpdateNodalCoordinatesForStressControlledDSS
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+
+        subroutine ReversePrescribedVelocityForStressControlledDSS(StrainSwitchSign, Multiplier)
+                
+                
+                implicit none 
+                
+                
+                logical, intent(in) :: StrainSwitchSign
+                integer(INTEGER_TYPE), intent(inout) :: Multiplier
+                
+                if (StrainSwitchSign) then 
+                
+                    Multiplier = Multiplier * -1.0
+                
+                end if 
+                
+                
+        end subroutine ReversePrescribedVelocityForStressControlledDSS
+      
       
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

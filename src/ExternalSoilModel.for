@@ -50,6 +50,7 @@ use ModLinearElasticity
 use ModMohrCoulomb
 use ModBingham
 use ModMohrCoulombStrainSoftening
+use PM4SandMaterialModule
 
 contains
 
@@ -145,11 +146,11 @@ implicit none
     enddo 
           
     ! initialise state variables (only for very first time and load step)
-    !if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
-    !StateVar = MatParams(IDset)%ESM_Statvar_in
-    !else 
+    if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
+    StateVar = MatParams(IDset)%ESM_Statvar_in
+    else 
     StateVar = ESMstatevArray(IDpt,:)
-    !end if 
+    end if 
           
     
     
@@ -178,6 +179,7 @@ implicit none
     cmname = MatParams(IDSet)%SoilModelDLL
     ! get material properties  
     props = MatParams(IDSet)%ESM_Solid
+    !statev = MatParams(IDSet)%ESM_Statvar_in
     !props = ESMpropsArray(IDpt,:)
          
     if (trim(NameModel)//char(0) == trim('linear_elasticity')//char(0)) then

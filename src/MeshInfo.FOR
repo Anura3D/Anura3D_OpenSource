@@ -3662,6 +3662,15 @@
             deallocate(LumpedVolume, stat = IError)
           end if
           
+          
+          
+          if (allocated(LumpedVolume_Water)) then
+            deallocate(LumpedVolume_Water, stat = IError)
+          end if
+          
+          
+          
+          
           if (allocated(LumpedMassDry_VolLockSmooth)) then
             deallocate(LumpedMassDry_VolLockSmooth, stat = IError)
           end if
@@ -4867,6 +4876,12 @@
           
           allocate(LumpedVolume(Counters%N, Counters%NEntity), stat = IError)
           LumpedVolume = 0.0
+          
+          
+          allocate(LumpedVolume_Water(Counters%N, Counters%NEntity), stat = IError)
+          LumpedVolume_Water = 0.0
+          
+          
           
           !allocate(NodalStress_VolLockSmooth(Counters%N, Counters%NEntity), stat = IError) ! nodal stress mapped to the actual mesh
           !NodalStress_VolLockSmooth = 0.0

@@ -76,7 +76,7 @@
 
           
         ! Local variables
-        integer(INTEGER_TYPE) :: IEntity, I
+        integer(INTEGER_TYPE) :: IEntity, I, DirectionOfShaking
         integer(INTEGER_TYPE) :: iDof, J, ILoadSystem
         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: &
             Momentum, MomentumW, RateofMomentumW, WaterInertia, &
@@ -104,6 +104,7 @@
           if (.not.IsMPMSkipConvection()) then
             call MapMomentumAndMassP2N(Momentum, LumpedMassDry) !  Map mass and momentum from particle to node (global coord system)
             call MapVolumeP2N(LumpedVolume)
+            call MapVolumeP2N_Water(LumpedVolume_Water)
             if (CalParams%ApplyFBarLowerOrder) then 
                 call MapMassP2N_VolLockSmooth(LumpedMassDry_VolLockSmooth) !  Map mass and momentum from particle to node (global coord system)
             endif
@@ -246,6 +247,14 @@
 
               RateofMomentumW = (RateofMomentumW + QVW - VisDampForceWat)/CalParams%ScalingMassFactor ! momentum of liquid
 
+              
+              
+              ! We zero the RateofMomentumW of the liquid so that we do not get any changes in water pressure --> fixed water
+              if (CalParams%ApplyFixedLiquidPressure) then 
+                  RateofMomentumW = 0.0
+              end if 
+              
+              
               
               ! Hardcoded
               !do ii = 1, 50
@@ -427,6 +436,16 @@
            ! liquid, local coordinate system. This is only a portion of the mixture. 
            RateofMomentumW = (ExtLoadWaterPorosity + GravityLoadWaterPorosity - IntLoadWaterPorosity)/CalParams%ScalingMassFactor
 
+           
+           
+           ! We zero the RateofMomentumW of the liquid so that we do not get any changes in water pressure --> fixed water   
+           if (CalParams%ApplyFixedLiquidPressure) then
+               RateofMomentumW = 0.0
+               WaterInertia = 0.0
+           end if
+           
+           
+           
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (applied for complete domain)
              if (CalParams%DampingFactor>0.0) then ! apply damping (liquid)
                call ApplyDampingForceWater (RateofMomentumW) ! apply the local damping on liquid phase everywhere, local coordinate system
@@ -655,6 +674,71 @@
          
          
          call CalculateIncrementalNodalAcceleration() ! local coordinate system      
+         
+         
+         
+         
+         do DirectionOfShaking = 1,CalParams%PrescribedSeismicAction%SumOfDirection
+            
+             select case (DirectionOfShaking)
+             case (1) ! XX
+
+                 CalParams%PrescribedSeismicAction%AccelerationPrecomputed = 0.0
+                 CalParams%PrescribedSeismicAction%VelocityPrecomputed = 0.0
+                 CalParams%PrescribedSeismicAction%IncrementalDisplacementPrecomputed = 0.0
+                 
+                 ! Acceleration -------------------------------------------------------------
+                 call GetPrescribedPhysicalQuantityForTimeStep(CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1), CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,2), &
+                                                            CalParams%PrescribedSeismicAction%NPTS(1), &
+                                                            CalParams%PrescribedSeismicAction%AccelerationPrecomputed(1) ) ! This is done in effort to generalize the seismic boundary condition
+                ! Velocity 
+                 call GetPrescribedPhysicalQuantityForTimeStep(CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1), CalParams%PrescribedSeismicAction%Prescribed_XX_Velocity, &
+                                                            CalParams%PrescribedSeismicAction%NPTS(1), &
+                                                            CalParams%PrescribedSeismicAction%VelocityPrecomputed(1) ) ! This is done in effort to generalize the seismic boundary condition
+
+                 ! Displacement 
+                 call GetPrescribedPhysicalQuantityForTimeStep(CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1), CalParams%PrescribedSeismicAction%Prescribed_XX_IncrementalDisplacement, &
+                                                            CalParams%PrescribedSeismicAction%NPTS(1), &
+                                                            CalParams%PrescribedSeismicAction%IncrementalDisplacementPrecomputed(1) ) ! This is done in effort to generalize the seismic boundary condition
+
+             case (2) ! XX and YY
+         
+                 call GetPrescribedPhysicalQuantityForTimeStep(CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1), CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,2), &
+                                                            CalParams%PrescribedSeismicAction%NPTS(1), &
+                                                            CalParams%PrescribedSeismicAction%AccelerationPrecomputed(1) ) ! This is done in effort to generalize the seismic boundary condition
+
+                 
+                 call GetPrescribedPhysicalQuantityForTimeStep(CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,1), CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,2), &
+                                                            CalParams%PrescribedSeismicAction%NPTS(2), &
+                                                            CalParams%PrescribedSeismicAction%AccelerationPrecomputed(2) ) ! This is done in effort to generalize the seismic boundary condition
+                 
+             case(3)
+                 
+                 call GetPrescribedPhysicalQuantityForTimeStep(CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1), CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,2), &
+                                                            CalParams%PrescribedSeismicAction%NPTS(1), &
+                                                            CalParams%PrescribedSeismicAction%AccelerationPrecomputed(1) ) ! This is done in effort to generalize the seismic boundary condition
+
+                 
+                 call GetPrescribedPhysicalQuantityForTimeStep(CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,1), CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,2), &
+                                                            CalParams%PrescribedSeismicAction%NPTS(2), &
+                                                            CalParams%PrescribedSeismicAction%AccelerationPrecomputed(2) ) ! This is done in effort to generalize the seismic boundary condition
+                 
+                 
+
+                 call GetPrescribedPhysicalQuantityForTimeStep(CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration(:,1), CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration(:,2), &
+                                                            CalParams%PrescribedSeismicAction%NPTS(3), &
+                                                            CalParams%PrescribedSeismicAction%AccelerationPrecomputed(3) ) ! This is done in effort to generalize the seismic boundary condition
+                                                                          
+             end select
+         end do
+         
+         !call ApplySeismicPrescribedPhysicalQuantity('Acceleration') ! <-- PrescribedSeismicActionType <-- apply acceleration here 
+         call ApplySeismicPrescribedPhysicalQuantity_Acceleration() ! <-- PrescribedSeismicActionType <-- apply acceleration here
+         
+         
+         
+         
+         
          
          ! hardcoded
          !AccelerationSoil(8,1) = -8
@@ -934,7 +1018,7 @@
 
              end if ! if NumbOfPhases=2
 
-         end if ! if NumbOfLayers=2
+      end if ! if NumbOfLayers=2
 
              ! **  *********************************          END             *******************************************************************
              ! **  ******************************************************************************************************************************
@@ -943,10 +1027,240 @@
              ! **  ******************************************************************************************************************************
              ! **  ******************************************************************************************************************************
 
-          
+      
+      
+      
+      
+      ! We zero the acceleration of the liquid so that we do not get any changes in water pressure
+      if (CalParams%ApplyFixedLiquidPressure) then 
+          AccelerationWater = 0.0
+      end if 
+      
  
-        end subroutine LagrangianPhase 
+        end subroutine LagrangianPhase
 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !subroutine ApplySeismicPrescribedPhysicalQuantity(InputPhysicalQuantity)
+        !
+        !!real(REAL_TYPE), dimension(Counters%N), intent(inout):: Array
+        !! local variables
+        !integer(INTEGER_TYPE) :: INode, IDof, I, IEntity, NodeID
+        !integer(INTEGER_TYPE) :: IPatch_Temporary
+        !character, intent(in) :: InputPhysicalQuantity
+        ! 
+        !IPatch_Temporary = 1
+        ! 
+        !if (.not.(NFORMULATION==1)) RETURN
+        !if (.not.CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch) RETURN
+        !if (CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction<=0) RETURN !NO prescribed seismic action at the nodes, return
+        !  
+        !do IEntity=1,Counters%NEntity    !loop over entity, prescribed nodal velocity is applied to all entity
+        !  do INode=1, CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction
+        !      
+        !    NodeID = CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction(INode)
+        !    IDof = ReducedDof(NodeID)
+        !    do I=1,NVECTOR
+        !      if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(I)==1) then 
+        !        
+        !      ! Fully reflective  prescribed velocity boundary conditions on the nodes    
+        !      if (InputPhysicalQuantity == 'Acceleration') then 
+        !      AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedSeismicActionI(I, INode, InputPhysicalQuantity)
+        !      else if (InputPhysicalQuantity == 'Velocity') then 
+        !      TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedSeismicActionI(I, INode, InputPhysicalQuantity)
+        !      end if 
+        !      !AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode) !Not needed further in the computation
+        !      !if (CalParams%ApplyContactAlgorithm) then
+        !      !  Array(IDof + I) = GetNodalPrescribedSeismicActionI(I, INode)
+        !      !end if  
+        !        
+        !      if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+        !          AccelerationWater(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode, IPatch_Temporary)
+        !          TotalVelocityWater(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode, IPatch_Temporary)
+        !      end if
+        !      
+        !      end if
+        !      
+        !    end do
+        !  end do
+        !end do
+        ! 
+        ! 
+        ! 
+        ! 
+        !end subroutine ApplySeismicPrescribedPhysicalQuantity 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine ApplySeismicPrescribedPhysicalQuantity_Acceleration() !(InputPhysicalQuantity)
+        
+        !real(REAL_TYPE), dimension(Counters%N), intent(inout):: Array
+        ! local variables
+        integer(INTEGER_TYPE) :: INode, IDof, I, IEntity, NodeID
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        !character, intent(in) :: InputPhysicalQuantity
+         
+        IPatch_Temporary = 1
+         
+        if (.not.CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch) RETURN
+        if (CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction<=0) RETURN !NO prescribed seismic action at the nodes, return
+          
+        do IEntity=1,Counters%NEntity    !loop over entity, prescribed nodal velocity is applied to all entity
+          do INode=1, CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction
+              
+            NodeID = CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction(INode) ! get node ID 
+            IDof = ReducedDof(NodeID) ! get node DOF
+            do I=1,NVECTOR
+              if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(I)==1) then 
+                
+              ! Fully reflective  prescribed velocity boundary conditions on the nodes    
+              AccelerationSoil(IDof + I, IEntity) = GetNodalPrescribedSeismicActionI_Acceleration(I, INode)!, InputPhysicalQuantity)
+
+                
+              if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+                  AccelerationWater(IDof + I, IEntity) = GetNodalPrescribedSeismicActionI_Acceleration(I, INode)!, IPatch_Temporary) !GetNodalPrescribedAccelerationI
+                  !TotalVelocityWater(IDof + I, IEntity) = GetNodalPrescribedVelocityI(I, INode, IPatch_Temporary)
+              end if
+              
+              end if
+              
+            end do
+          end do
+        end do
+         
+         
+         
+         
+         end subroutine ApplySeismicPrescribedPhysicalQuantity_Acceleration
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine ApplySeismicPrescribedPhysicalQuantity_Velocity() !(InputPhysicalQuantity)
+        
+        !real(REAL_TYPE), dimension(Counters%N), intent(inout):: Array
+        ! local variables
+        integer(INTEGER_TYPE) :: INode, IDof, I, IEntity, NodeID
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        !character, intent(in) :: InputPhysicalQuantity
+         
+        IPatch_Temporary = 1
+         
+        !if (.not.(NFORMULATION==1)) RETURN
+        if (.not.CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch) RETURN
+        if (CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction<=0) RETURN !NO prescribed seismic action at the nodes, return
+          
+        do IEntity=1,Counters%NEntity    !loop over entity, prescribed nodal velocity is applied to all entity
+          do INode=1, CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction
+              
+            NodeID = CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction(INode)
+            IDof = ReducedDof(NodeID)
+            do I=1,NVECTOR
+              if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(I)== 1) then 
+                
+              ! Fully reflective  prescribed velocity boundary conditions on the nodes    
+              TotalVelocitySoil(IDof + I, IEntity) = GetNodalPrescribedSeismicActionI_Velocity(I, INode)
+
+                
+              if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+                  !AccelerationWater(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode, IPatch_Temporary)
+                  TotalVelocityWater(IDof + I, IEntity) = GetNodalPrescribedSeismicActionI_Velocity(I, INode)!, IPatch_Temporary)
+              end if
+              
+              end if
+              
+            end do
+          end do
+        end do
+         
+         
+         
+         
+         end subroutine ApplySeismicPrescribedPhysicalQuantity_Velocity
+        
+        
+        
+        
+        subroutine ApplySeismicPrescribedPhysicalQuantity_DisplacementIncrement() !(InputPhysicalQuantity)
+        
+        !real(REAL_TYPE), dimension(Counters%N), intent(inout):: Array
+        ! local variables
+        integer(INTEGER_TYPE) :: INode, IDof, I, IEntity, NodeID
+        integer(INTEGER_TYPE) :: IPatch_Temporary
+        !character, intent(in) :: InputPhysicalQuantity
+         
+        IPatch_Temporary = 1
+         
+        !if (.not.(NFORMULATION==1)) RETURN
+        if (.not.CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch) RETURN
+        if (CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction<=0) RETURN !NO prescribed seismic action at the nodes, return
+          
+        do IEntity=1,Counters%NEntity    !loop over entity, prescribed nodal velocity is applied to all entity
+          do INode=1, CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction
+              
+            NodeID = CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction(INode)
+            IDof = ReducedDof(NodeID)
+            do I=1,NVECTOR
+              if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(I)== 1) then 
+                
+              ! Fully reflective  prescribed velocity boundary conditions on the nodes    
+              IncrementalDisplacementSoil(IDof + I, IEntity) = GetNodalPrescribedSeismicActionI_IncrementalDisplacement(I, INode)
+              
+              if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3)) then
+                  !AccelerationWater(IDof + I, IEntity) = GetNodalPrescribedAccelerationI(I, INode, IPatch_Temporary)
+                  IncrementalDisplacementWater(IDof + I, IEntity) = GetNodalPrescribedSeismicActionI_IncrementalDisplacement(I, INode)!, IPatch_Temporary)
+              end if
+              
+              end if
+              
+            end do
+          end do
+        end do
+         
+         
+         
+         
+         end subroutine ApplySeismicPrescribedPhysicalQuantity_DisplacementIncrement
+        
+        
+        
+        
+        
+        
+        
+        
    
         subroutine GetNonAdvectiveFluxes(NonAdvectiveFluxAirInWater, NonAdvectiveFluxVapourInGas)
         !**********************************************************************
@@ -1143,6 +1457,148 @@
         end subroutine GetAdvectiveFluxes
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        real(REAL_TYPE) function GetNodalPrescribedSeismicActionI_Acceleration(IDim, INode)
+        
+        !This function gives the value of prescribed velocity along coordinate IDim of node INode
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IDim, INode
+          !character, intent(in) :: PhysicalQuantity
+          
+          !AccelerationSolidPrecomputed
+          !  real(REAL_TYPE), dimension(3,1) :: VelocitySolidPrecomputed
+          !  real(REAL_TYPE), dimension(3,1) :: IncrementalDisplacementSolidPrecomputed
+          
+          
+          !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed = AccelerationPrecomputed
+          !      CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed = VelocityPrecomputed
+          !      CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed = IncrementalDisplacementPrecomputed
+          
+          !if (PhysicalQuantity == 'Acceleration') then 
+          GetNodalPrescribedSeismicActionI_Acceleration = &
+              CalParams%PrescribedSeismicAction%AccelerationPrecomputed(IDim) * CalParams%PrescribedSeismicAction%ScalingFactor(IDim) * &
+              CalParams%PrescribedSeismicAction%PrescribedSeismicActionDirection(INode, IDim) !* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)
+          !else if (PhysicalQuantity == 'Velocity') then 
+          !GetNodalPrescribedSeismicActionI = &
+          !    CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed(IDim)!* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)
+          !else if (PhysicalQuantity == 'Displacement') then 
+          !GetNodalPrescribedSeismicActionI = &
+          !    CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed(IDim)!* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)    
+          !end if
+          
+          
+        end function GetNodalPrescribedSeismicActionI_Acceleration
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        real(REAL_TYPE) function GetNodalPrescribedSeismicActionI_Velocity(IDim, INode)
+        
+        !This function gives the value of prescribed velocity along coordinate IDim of node INode
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IDim, INode
+          !character, intent(in) :: PhysicalQuantity
+          
+          !AccelerationSolidPrecomputed
+          !  real(REAL_TYPE), dimension(3,1) :: VelocitySolidPrecomputed
+          !  real(REAL_TYPE), dimension(3,1) :: IncrementalDisplacementSolidPrecomputed
+          
+          
+          !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed = AccelerationPrecomputed
+          !      CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed = VelocityPrecomputed
+          !      CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed = IncrementalDisplacementPrecomputed
+          
+          !if (PhysicalQuantity == 'Acceleration') then 
+          !GetNodalPrescribedSeismicActionI = &
+          !    CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed(IDim)!* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)
+          !else if (PhysicalQuantity == 'Velocity') then 
+          GetNodalPrescribedSeismicActionI_Velocity = &
+              CalParams%PrescribedSeismicAction%VelocityPrecomputed(IDim) * CalParams%PrescribedSeismicAction%ScalingFactor(IDim) * &
+              CalParams%PrescribedSeismicAction%PrescribedSeismicActionDirection(INode, IDim) !* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)
+          !else if (PhysicalQuantity == 'Displacement') then 
+          !GetNodalPrescribedSeismicActionI = &
+          !    CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed(IDim)!* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)    
+          !end if
+          
+          
+        end function GetNodalPrescribedSeismicActionI_Velocity
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !real(REAL_TYPE) function GetNodalPrescribedSeismicActionI_IncrementalDisplacement(IDim, INode)
+        !
+        !!This function gives the value of prescribed velocity along coordinate IDim of node INode
+        !
+        !implicit none
+        !
+        !  integer(INTEGER_TYPE), intent(in) :: IDim, INode
+        !  !character, intent(in) :: PhysicalQuantity
+        !  
+        !  !AccelerationSolidPrecomputed
+        !  !  real(REAL_TYPE), dimension(3,1) :: VelocitySolidPrecomputed
+        !  !  real(REAL_TYPE), dimension(3,1) :: IncrementalDisplacementSolidPrecomputed
+        !  
+        !  
+        !  !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed = AccelerationPrecomputed
+        !  !      CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed = VelocityPrecomputed
+        !  !      CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed = IncrementalDisplacementPrecomputed
+        !  
+        !  !if (PhysicalQuantity == 'Acceleration') then 
+        !  !GetNodalPrescribedSeismicActionI = &
+        !  !    CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed(IDim)!* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)
+        !  !else if (PhysicalQuantity == 'Velocity') then 
+        !  GetNodalPrescribedSeismicActionI_IncrementalDisplacement = &
+        !      CalParams%PrescribedSeismicAction%IncrementalDisplacementPrecomputed(IDim) * CalParams%PrescribedSeismicAction%ScalingFactor(IDim) * &
+        !      CalParams%PrescribedSeismicAction%PrescribedSeismicActionDirection(INode, IDim) !* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)
+        !  !else if (PhysicalQuantity == 'Displacement') then 
+        !  !GetNodalPrescribedSeismicActionI = &
+        !  !    CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed(IDim)!* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)    
+        !  !end if
+        !  
+        !  
+        !end function GetNodalPrescribedSeismicActionI_IncrementalDisplacement
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         real(REAL_TYPE) function GetParticlePrescribedVelocityI(IDim, ParticleIndex)
         !**********************************************************************
@@ -1203,7 +1659,7 @@
         !
         !**********************************************************************
         implicit none
-
+        
           integer(INTEGER_TYPE), intent(in) :: IDim, INode
           ! Multipatch generalization 
           integer(INTEGER_TYPE), intent(in) :: IPatch
@@ -1986,6 +2442,7 @@
 
                   if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
 
+                  !if((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
                       !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
                       ParticleVolume = Particles(ParticleIndex)%IntegrationWeight !MassArray(ParticleIndex) !get particle's mass
                       PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
@@ -2030,7 +2487,118 @@
         
         
         
+        subroutine MapVolumeP2N_Water(LumpedVolume) !Momentum, 
+        !**********************************************************************
+        !
+        ! Function:  to form the lumped mass vector and map momentum from material points to nodes
+        !
+        ! O  Momentum : nodal momentum vector, the output of this subroutine
+        ! O  LumpedMass : lumped soil mass
+        !
+        !**********************************************************************
+
+        implicit none
         
+          real(REAL_TYPE), dimension(Counters%N, Counters%nEntity), intent(inout) ::   &
+              LumpedVolume
+              !Momentum,  &
+              
+          
+          ! Multipatch variables 
+          !integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE) :: IPatch
+          
+          ! Local variables
+          !real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: PartShape !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+          real(REAL_TYPE), dimension(ELEMENTNODES, Counters%nEntity) :: LumVolumeX !(NXiKnotOrder(1)+1)*(NEtaKnotOrder(1)+1)*(NZetaKnotOrder(1)+1)
+          
+          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1)) :: PartShape
+          !real(REAL_TYPE), dimension((NXiKnotOrder(IPatch_Temporary)+1)*(NEtaKnotOrder(IPatch_Temporary)+1)*(NZetaKnotOrder(IPatch_Temporary)+1), Counters%nEntity) :: LumMassX
+          
+          
+          
+          real(REAL_TYPE) :: ParticleVolume !Mass
+          
+          integer(INTEGER_TYPE) :: I, IEl, IPart, IAEl, ParticleIndex, iEntity, NoEn
+
+          integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: Ni ! number of columns is equal to the number of nodes of the element
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: Mom
+         
+          
+          
+          
+          LumpedVolume = 0.0
+          !Momentum = 0.0
+          NoEn = Counters%nEntity
+          
+          do IPatch = 1, Counters%NPatches ! loop over all patches
+              
+              Ni = 0
+              Mom = 0
+              
+          do IAEl = 1, Counters%NAEl(IPatch) !Counters%NAEl ! loop over all elements
+
+              
+              IEl = ActiveElement(IAEl,IPatch)
+              
+
+              do I = 1, NVECTOR
+                  !Ni(I, 1:(NXiKnotOrder(IPatch)+1)*(NEtaKnotOrder(IPatch)+1)*(NZetaKnotOrder(IPatch)+1)) = &
+                  
+                      
+                  Ni(I, 1:ELEMENTNODES) = &
+                      ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(&
+                      ElementConnectivities(1:ELEMENTNODES, IEl, IPatch),IPatch) ) + I ! ElementNodes correspond to Element control points in IGA
+                  !Mom(I, 1:ELEMENTNODES, 1:Counters%nEntity) = &
+                  !    Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn)
+              end do
+              LumVolumeX = & 
+                  LumpedVolume( Ni(1, 1:ELEMENTNODES), 1:NoEn) !--> wtf is this 1
+
+              do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
+                  ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+
+                  if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+                  !if((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
+                      !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
+                      ParticleVolume = Particles(ParticleIndex)%IntegrationWeight !MassArray(ParticleIndex) !get particle's mass
+                      PartShape = ShapeValuesArray(ParticleIndex,:) !get particle shape fucntions
+
+                      if (CalParams%ApplyContactAlgorithm) then
+                          iEntity = EntityIDArray(ParticleIndex)
+                      else
+                          iEntity = 1
+                      end if
+
+                      ! nodal x-mass
+                      LumVolumeX(:, iEntity) = LumVolumeX(:, iEntity) + ( ParticleVolume * PartShape(:) )!use shape functions to map to mass to nodes
+
+                      ! nodal momentum in directions from 1 to NDIM
+                      !do I=1,NVECTOR
+                      !    Mom(I, :, iEntity) = Mom(I, :, iEntity) + ( ParticleMass * PartShape(:) * ParticleVelocity(I) )
+                      !end do
+
+                  end if ! Only if NumberOfLayers = 1 or SOLID Material Point
+
+              end do ! loop over material points in element
+
+              do I = 1, NVECTOR
+                  
+                  ! I tried sum but that is wrong...
+                  LumpedVolume( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+                      LumVolumeX( 1:ELEMENTNODES, 1:NoEn ) !LumpedMass( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+                  
+                  !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) =  &
+                  !    Mom( I, 1:ELEMENTNODES, 1:NoEn ) !Momentum( Ni(I, 1:ELEMENTNODES), 1:NoEn ) +
+              end do
+
+          end do ! loop over elements
+          
+          end do ! loop over patches
+          
+        end subroutine MapVolumeP2N_Water
         
         
         
@@ -2517,6 +3085,7 @@
           
           
           ! Hardcoded slope geometry 
+          real(REAL_TYPE) :: X1
           real(REAL_TYPE) :: X2
           real(REAL_TYPE) :: X3
           real(REAL_TYPE) :: X4
@@ -2525,13 +3094,13 @@
           real(REAL_TYPE) :: Y1
           real(REAL_TYPE) :: Y2
           
-          X2 = 0.0
-          X3 = 18.0
-          X4 = 36.0
-          X5 = 56.0
-          
-          Y1 = 6.0
-          Y2 = 15.0
+          !X2 = 0.0
+          !X3 = 18.0
+          !X4 = 36.0
+          !X5 = 56.0
+          !
+          !Y1 = 6.0
+          !Y2 = 15.0
           
           
           if (IsFollowUpPhase().or.(.not.CalParams%ApplyK0Procedure)) RETURN
@@ -2724,20 +3293,23 @@
                   
                   
                           
-                            X2 = 0.0
-                            X3 = 18.0
-                            X4 = 36.0
-          
-                            X5 = 56.0
-          
-                            Y1 = 6.0
-                            Y2 = 15.0
+                          
+                  !-----------------------------------------------------------------------------------------------------        
+                          
+                            !X2 = 0.0
+                            !X3 = 15.0
+                            !X4 = 36.0
+                            !
+                            !X5 = 56.0
+                            !
+                            !Y1 = 6.0
+                            !Y2 = 15.0
                           
                           
                           
                           
                   
-                  ! HARDCODED------------------------------------------------------------------------------------------
+                  ! HARDCODED TRAPEZOIDAL STRESS INITIALIZATION ------------------------------------------------------------------------------------------
                   ! Update CalParams%SoilSurfacePoint so that we  
                   !if (GlobPosArray(ParticleIndex, 1) < X3) then 
                   !    CalParams%SoilSurfacePoint(2) = Y2
@@ -2750,40 +3322,55 @@
                   !    CalParams%SoilSurfacePoint(2) = Y1
                   !    
                   !    
-                  !!elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
-                  !!    CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X3))
-                  !!    
-                  !!elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
-                  !!    CalParams%SoilSurfacePoint(2) = Y1
-                  !    
-                  !end if
-                  
-                  
-                  !if (GlobPosArray(ParticleIndex, 1) < X1) then 
-                  !    CalParams%SoilSurfacePoint(2) = Y1
-                  !    
-                  !elseif ( (GlobPosArray(ParticleIndex, 1) < X2) .and. (GlobPosArray(ParticleIndex, 1) > X1) ) then
-                  !    CalParams%SoilSurfacePoint(2) = Y1 + (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X1))
-                      
-                      
-                  !if ((GlobPosArray(ParticleIndex, 1) < X3) .and. (GlobPosArray(ParticleIndex, 1) > X2)) then 
-                  !    CalParams%SoilSurfacePoint(2) = Y2
-                  !    
-                  !    
                   !elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
-                  !    CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X4-X3))* (GlobPosArray(ParticleIndex, 1)-X3))
+                  !    CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X3))
                   !    
                   !elseif ((GlobPosArray(ParticleIndex, 1) < X5) .and. (GlobPosArray(ParticleIndex, 1) > X4)) then 
                   !    CalParams%SoilSurfacePoint(2) = Y1
                   !    
                   !end if
                   
+                          
+                          
+                  !!-----------------------------------------------------------------------------------------------        
+                  !! Seismic embankment K0 initialization  
+                  !          !X1 = 0.0
+                  !          X1 = 15.0
+                  !          X2 = 19.5
+                  !          X3 = 25.25
+                  !          X4 = 29.75
+                  !
+                  !          Y1 = 6.0
+                  !          Y2 = 10.5
+                  !          
+                  !          
+                  !
+                  !if (GlobPosArray(ParticleIndex, 1) < X1) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y1
+                  !    
+                  !elseif ( (GlobPosArray(ParticleIndex, 1) < X2) .and. (GlobPosArray(ParticleIndex, 1) > X1) ) then
+                  !    CalParams%SoilSurfacePoint(2) = Y1 + (((Y2-Y1)/(X2-X1))* (GlobPosArray(ParticleIndex, 1)-X1))
+                  !          
+                  !else if ((GlobPosArray(ParticleIndex, 1) < X3) .and. (GlobPosArray(ParticleIndex, 1) > X2)) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y2
+                  !    
+                  !    
+                  !elseif ((GlobPosArray(ParticleIndex, 1) < X4) .and. (GlobPosArray(ParticleIndex, 1) > X3)) then 
+                  !    CalParams%SoilSurfacePoint(2) = Y2 - (((Y2-Y1)/(X4-X3))* (GlobPosArray(ParticleIndex, 1)-X3))
+                  !    
+                  !elseif ( (GlobPosArray(ParticleIndex, 1) > X4)) then !(GlobPosArray(ParticleIndex, 1) < X5) .and.
+                  !    CalParams%SoilSurfacePoint(2) = Y1
+                  !    
+                  !end if
+                  !
+                  !PhreaticSurfaceNodeCoordMatrix = 0.0
+                  !PhreaticSurfaceNodeCoordMatrix(:,2) = Y1
+                  !
+                  !!----------------------------------------------------------------------------------------------------
                   
-                  !----------------------------------------------------------------------------------------------------
                   
                   
-                  
-                  ! HARDCODED
+                  ! HARDCODED for the FSI column problem
                   !if (MaterialIDArray(ParticleIndex) == 1) then 
                   !                
                   !                
@@ -2797,14 +3384,20 @@
                   !    
                   !    
                   !    
-                  !    end if 
+                  !    end if                 
+                  !----------------------------------------------------------------------------------------------------
+
+                  ! HARDCODED          
+                  ! sloping centrifuge test geometry  
                   
-                  
-                  
-                  
-                  
-                  
-                  
+
+                   !CalParams%SoilSurfacePoint(2) = ((-0.0875)* GlobPosArray(ParticleIndex, 1) ) + 4.875
+                            
+                            
+                            
+
+                  !----------------------------------------------------------------------------------------------------
+          
                           ! initialize GaussPointPosition in the element          
                           GaussPointGlobalCoord = 0
                           MaterialIndex = MaterialIDArray(ParticleIndex)

@@ -444,6 +444,51 @@ module ModWriteVTKOutput
 
     call WriteVTKScalarDataPointer('pressure_liquid',DataSetScalar)
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+        DataSetScalar(MaterialPointID) = (SigmaEffArray(MaterialPointID,1) + & ! assign output data to material points
+            SigmaEffArray(MaterialPointID,2) + &
+            SigmaEffArray(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
+        else
+            DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%WaterPressureIncrement
+        end if
+    end do
+
+    call WriteVTKScalarDataPointer('excess_pressure_liquid',DataSetScalar)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
      do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
          Particles(MaterialPointID)%HydraulicHead =  -Particles(MaterialPointID)%WaterPressure/CalParams%GammaWater + GlobPosArray(MaterialPointID,2)
@@ -589,7 +634,7 @@ module ModWriteVTKOutput
         if (StId < 10) then
             format_string = "(A4,I1)"
         else
-            format_string = "(A4,I2)"
+            format_string = "(A4,I3.3)" !"(A4,I2)"
         endif
             write(strst, format_string) "stv_", StId
             call WriteVTKScalarDataPointer(trim(strst),   ESMstatevArray(:,StId))

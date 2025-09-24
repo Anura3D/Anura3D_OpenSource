@@ -473,8 +473,8 @@
                     call ReadBlockESMUnload(BRFunit, NBytes, BlockUnchecked)
                   else if (BlockName=='$$PICHPSPR$$') then ! state parameters of ICH and HP models
                     call ReadBlockPICHPSPR(BRFunit, NBytes, BlockCheck)
-                  else if (BlockName=='$$DPBVD__R$$') then
-                    call ReadBlockDPBVD__R(BRFunit, NBytes)
+                  !else if (BlockName=='$$DPBVD__R$$') then
+                  !  call ReadBlockDPBVD__R(BRFunit, NBytes)
                   else if (BlockName=='$$PADAT__I$$') then ! Read integer(INTEGER_TYPE) particle data
                     call ReadBlockPADAT__I(BRFunit, NBytes, BlockCheck)
                   else if (BlockName=='$$BOUNPARI$$') then ! Read boundary particle status
@@ -483,8 +483,8 @@
                     call ReadBlockMATPAR_I(BRFunit, NBytes, BlockUnchecked)
                   else if (BlockName=='$$MATTYPEI$$') then
                     call ReadBlockMATTYPEI(BRFunit, NBytes, BlockUnchecked)
-                  !else if (BlockName=='$$FPREV___$$') then ! Read Damping
-                  !  call ReadBlockFPREV(BRFunit, NBytes, BlockCheck)
+                  else if (BlockName=='$$FPREV___$$') then ! Read Damping
+                    call ReadBlockFPREV(BRFunit, NBytes, BlockCheck)
                   else ! Skip bytes of block
                     call Skip(BRFunit, NBytes)! Abdelrahman Alsardi: I commented this
                   end if  
@@ -1088,7 +1088,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, NVals
         
-          NVals = 50
+          NVals = NSTATEVAR!50
           if ( (NBytes / NVals / 8)==Counters%NParticles) then
             do I = 1, Counters%NParticles
               read(FileUnit) (ESMstatevArray(I,J), J=1, NSTATEVAR)
@@ -2909,7 +2909,7 @@
           integer(INTEGER_TYPE) :: I
           real(REAL_TYPE) :: PlasticStrainValue
 
-          if ( (NBytes / 8)==Counters%NParticles) then
+          if ( (NBytes / 8)==Counters%NParticles) then !8
           
             do I = 1, Counters%NParticles
               read(FileUnit) PlasticStrainValue

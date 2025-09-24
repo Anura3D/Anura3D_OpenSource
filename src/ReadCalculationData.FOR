@@ -60,7 +60,12 @@
         real(REAL_TYPE), dimension(:,:), allocatable :: HydraulicHeadFileMatrix
         ! Initiating matrices to read prescribed velocity/acceleration from file
         ! These matrices are only allocated if prescribed velocity/acceleration from file feature is used
-        real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedVelocityFileMatrix
+        !real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedVelocityFileMatrix
+        !real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedSeismicPhysicalQuantityFileMatrix
+        !real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedPhysicalQuantityFileMatrixReshaped
+        
+        
+        
         ! Material point intialization file that stores data from file *.MP_INIT
         real(REAL_TYPE), dimension(:,:), allocatable :: MPInitFileMatrix
         
@@ -224,6 +229,86 @@
         
         
         
+        
+        
+        
+        
+        type PrescribedSeismicActionType
+            logical :: ApplyGroundMotionSwitch = .FALSE.
+            integer, dimension(:), allocatable  :: ApplyGroundMotionDirection !3,1 ! logical
+            !ApplyGroundMotionSwitch
+            !AccelerationSwitch = .FALSE. 
+            !logical, dimension(3,1)  :: VelocitySwitch = .FALSE. 
+            !logical, dimension(3,1)  :: DisplacementSwitch = .FALSE. 
+            !character(len=255), dimension(3,1)  :: FileType = ''
+            !character(len=255), dimension(3,1)  :: FileName = ''
+            real(REAL_TYPE) :: TransientBoundaryConditionStaringTime ! Start time of the transient boundary condition !, allocatable, dimension(:)
+            
+            real(REAL_TYPE), dimension(:), allocatable :: AccelerationPrecomputed !(3,1) 
+            real(REAL_TYPE), dimension(:), allocatable :: VelocityPrecomputed !(3,1) 
+            real(REAL_TYPE), dimension(:), allocatable :: IncrementalDisplacementPrecomputed !(3,1)
+            
+            
+            !integer(INTEGER_TYPE) :: InputFileNumberOfLines
+            integer(INTEGER_TYPE) :: SumOfDirection = 0
+            integer(INTEGER_TYPE) :: NNodePrescribedSeismicAction = 0 ! Number of nodes on which the velocity is prescribed
+
+            integer(INTEGER_TYPE), dimension(:), allocatable :: NPTS ! number of points to replace the number of lines
+            integer(INTEGER_TYPE), dimension(:), allocatable :: NodePrescribedSeismicAction ! Set of nodes on which the velocity is prescribed
+            integer(INTEGER_TYPE), dimension(:, :), allocatable :: PrescribedSeismicActionDirection ! Set of nodes on which the velocity is prescribed
+            
+            
+            !integer(REAL_TYPE), dimension(:), allocatable :: Direction !0/1 prescribed direction
+            character(len=255), dimension(:), allocatable :: InputFileFormat ! --> only one rank for NVECTOR
+            !character(len=255), dimension(:), allocatable :: PhysicalKinematicQuantityType ! --> only one rank for NVECTOR
+            character(len=255), dimension(:), allocatable :: InputFileName ! --> only one rank for NVECTOR
+            
+            real(REAL_TYPE), dimension(:), allocatable :: ScalingFactor ! Prescribed velocity at the nodes
+            
+            ! time is included in the acceleration --> rank 2
+            real(REAL_TYPE), dimension(:,:), allocatable :: Prescribed_XX_Acceleration !Horizontal PEER converted to TABLE 
+            real(REAL_TYPE), dimension(:,:), allocatable :: Prescribed_YY_Acceleration !Horizontal PEER converted to TABLE 
+            real(REAL_TYPE), dimension(:,:), allocatable :: Prescribed_ZZ_Acceleration !Horizontal PEER converted to TABLE 
+            
+            ! rank 1 only
+            real(REAL_TYPE), dimension(:), allocatable :: Prescribed_XX_Velocity !Horizontal PEER converted to TABLE 
+            real(REAL_TYPE), dimension(:), allocatable :: Prescribed_YY_Velocity !Horizontal PEER converted to TABLE 
+            real(REAL_TYPE), dimension(:), allocatable :: Prescribed_ZZ_Velocity !Horizontal PEER converted to TABLE 
+            
+            ! rank 1 only
+            real(REAL_TYPE), dimension(:), allocatable :: Prescribed_XX_IncrementalDisplacement !Horizontal PEER converted to TABLE 
+            real(REAL_TYPE), dimension(:), allocatable :: Prescribed_YY_IncrementalDisplacement !Horizontal PEER converted to TABLE 
+            real(REAL_TYPE), dimension(:), allocatable :: Prescribed_ZZ_IncrementalDisplacement !Horizontal PEER converted to TABLE 
+            
+        end type PrescribedSeismicActionType
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         type MPInitializationType
             integer(INTEGER_TYPE) :: NumberOfMPs = 0
             integer(INTEGER_TYPE) :: MPInitFormat
@@ -255,12 +340,32 @@
             real(REAL_TYPE) :: Beta = 0.0 ! Beta = calculated numerical parameter for displacement as a function of rho_infty
             real(REAL_TYPE) :: Gamma = 0.0 ! Gamma = calculated numerical parameter for velocity as a function of rho_infty
             
-        end type ApplyGeneralizedAlphaTimeSchemeType
+         end type ApplyGeneralizedAlphaTimeSchemeType
          
          
          
          
          
+         
+         type ApplyDSSConditionsType 
+             ! --> This feature was developed to enable the simulation of 
+             ! the stress controlled cyclic simple shear test.  
+         
+             real(REAL_TYPE) :: ThresholdStressTargeted ! e.g., 10 kPa
+             integer(INTEGER_TYPE) :: MPNumberToControlStress ! e.g., MP #2586
+             integer(INTEGER_TYPE) :: StressComponentControlled ! 1 to 6
+             
+             logical :: StrainSwitchSign ! true or false
+             logical :: Switch
+             real(REAL_TYPE) :: VelocityMultiplier ! velocity value  ! integer
+             
+             real(REAL_TYPE) :: VelocityValue
+             
+             integer(INTEGER_TYPE) :: ShearBoxMatID
+             
+             integer(INTEGER_TYPE) :: TargetSign
+         
+         end type ApplyDSSConditionsType
          
          
          
@@ -425,7 +530,14 @@
           type(HydraulicHeadType):: PrescribedHead
           type(BoundaryConditionsType) :: BoundaryConditions !(:,:)), allocatable :: BoundaryConditions
           type(ApplyGeneralizedAlphaTimeSchemeType):: ApplyGeneralizedAlphaTimeScheme  ! generalized alpha scheme
+          type(PrescribedSeismicActionType) :: PrescribedSeismicAction  
 
+          
+          
+          type(ApplyDSSConditionsType):: ApplyDSSConditions
+          
+          
+          
      
           real(REAL_TYPE) :: TimeIncrement, & ! The size of time increment
                               TotalTime, & ! The total time of simulation
@@ -492,8 +604,10 @@
 							  ContactScalingFactor, &
                               ManuallyDefinedVectors(MAXNUMBERSOILLAYERS,1+vsize) !manually modified normal vectors
 
+          integer(INTEGER_TYPE), dimension(:), allocatable :: SkipPwpParticles
 
           integer(INTEGER_TYPE) :: OutputNumberParticles, & ! number of material points for which output data is exported
+                     SkipPwpNumberParticles, & ! number of material points for which we need to skip the pore water pressure calculation
                      OutputNumberElements, & ! number of elements for which output data is exported
                      OutputParticles(MAXOUTPUTPARTICLES), & ! array of material point IDs for which output data is exported
                      OutputElements(MAX_OUTPUT_ELEMENTS), & ! array of elements IDs for which output data is exported
@@ -610,7 +724,8 @@
                      ApplyFillEmptyElements, & 
                      ApplyCloseBoundaryforDike, &
                      ExternalSoilModel, & ! TRUE - soil model implemented in the NGGS framework is used 
-                     ApplyFixedSolidSkeleton, & ! TRUE - solid momentum = 0
+                     ApplyFixedSolidSkeleton, & ! TRUE - solid momentum = 0 
+                     ApplyFixedLiquidPressure, &   
                      ResetParticleDisplacement, &
                      SkipConvection, &
                      AutomaticSkipConvection, &
@@ -1237,6 +1352,7 @@
         CalParams%ApplyFillEmptyElements = .false.
         CalParams%ExternalSoilModel = .false.
         CalParams%ApplyFixedSolidSkeleton = .false.
+        CalParams%ApplyFixedLiquidPressure = .false.
         CalParams%ResetParticleDisplacement = .false.
         CalParams%SkipConvection  = .false.
         CalParams%AutomaticSkipConvection = .false.
@@ -1393,9 +1509,10 @@
 
           ! local variables
           integer(INTEGER_TYPE) :: I
+          integer(INTEGER_TYPE) :: iDirection
           integer(INTEGER_TYPE) :: ios ! used for error control
           integer(INTEGER_TYPE) :: DumI(3)
-          character(len=255) :: DumS
+          character(len=255) :: DumS(3,4) 
           real(REAL_TYPE) :: DumR(4)
           character(len=255) :: DumFileName
           character(len=21) :: messageIOS = 'CPS file: Can''t read '
@@ -1499,15 +1616,15 @@
 
             ! CALCULATION DATA  
             else if (trim(BName)=='$$COMPUTATION_METHOD') then ! S [ MPM-MIXED, MPM-MP, FEM, UL-FEM ]
-              read(FileUnit, *, iostat=ios) DumS
+              read(FileUnit, *, iostat=ios) DumS(1,1)
               call Assert( ios == 0, messageIOS//trim(BName) )
-              if (trim(Upcase(DumS))==MPM_MIXED_INTEGRATION_SPECIFIER) then
+              if (trim(Upcase(DumS(1,1)))==MPM_MIXED_INTEGRATION_SPECIFIER) then
                 CalParams%ComputationMethod = MPM_MIXED_INTEGRATION
-              else if (trim(Upcase(DumS))==MPM_MP_INTEGRATION_SPECIFIER) then
+              else if (trim(Upcase(DumS(1,1)))==MPM_MP_INTEGRATION_SPECIFIER) then
                 CalParams%ComputationMethod = MPM_MP_INTEGRATION
-              else if (trim(Upcase(DumS))==FEM_SPECIFIER) then
+              else if (trim(Upcase(DumS(1,1)))==FEM_SPECIFIER) then
                 CalParams%ComputationMethod = FEM
-              else if (trim(Upcase(DumS))==UL_FEM_SPECIFIER) then
+              else if (trim(Upcase(DumS(1,1)))==UL_FEM_SPECIFIER) then
                 CalParams%ComputationMethod = UL_FEM
               else
                 call GiveError( 'CPS file: ' //trim(BName)// ' must be ' //MPM_MIXED_INTEGRATION_SPECIFIER// ' or ' &
@@ -1520,12 +1637,12 @@
             else if (trim(BName)=='$$MP_INITIALIZATION') then ! S [GaussPoint, File]
                 ! this was developed so that you can choose your material point locations,
                 ! and the local position is back caluclated from the global position.
-                read(FileUnit, *, iostat=ios) DumS
+                read(FileUnit, *, iostat=ios) DumS(1,1)
                 call Assert( ios == 0, messageIOS//trim(BName) )
                 
-                if (trim(DumS)==MP_INITIALIZATION_GAUSSPOINT_SPECIFIER) then
+                if (trim(DumS(1,1))==MP_INITIALIZATION_GAUSSPOINT_SPECIFIER) then
                     CalParams%MPInitialization%MPInitFormat = MP_INIT_GAUSSPT
-                else if (trim(DumS)==MP_INITIALIZATION_FILE_SPECIFIER) then
+                else if (trim(DumS(1,1))==MP_INITIALIZATION_FILE_SPECIFIER) then
                     CalParams%MPInitialization%MPInitFormat = MP_INIT_FILE
                 else
                     call GiveError( 'CPS file: ' //trim(BName)// ' must be ' //MP_INITIALIZATION_GAUSSPOINT_SPECIFIER// ' or ' &
@@ -1650,11 +1767,11 @@
             ! LOADING DATA  
 
             else if (trim(BName)=='$$GRAVITY_LOAD') then ! R(1:2) [ 0.0 <= R(i) ]
-              read(FileUnit, *, iostat=ios) DumS, DumR(1:2)
+              read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1:2)
               call Assert( ios == 0, messageIOS//trim(BName) )
-              call Assert( DumS == LOAD_TYPE_LINEAR .or. DumS == LOAD_TYPE_STEP .or. DumS == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
+              call Assert( DumS(1,1) == LOAD_TYPE_LINEAR .or. DumS(1,1) == LOAD_TYPE_STEP .or. DumS(1,1) == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
                   //LOAD_TYPE_LINEAR// '" or "' //LOAD_TYPE_STEP// '" or "' //LOAD_TYPE_OFF// '".' )
-              CalParams%Multipliers%GravityLoadType = DumS
+              CalParams%Multipliers%GravityLoadType = DumS(1,1)
               if (CalParams%Multipliers%GravityLoadType == LOAD_TYPE_OFF) then
                 CalParams%Multipliers%GravityRealised = 0.0
                 CalParams%Multipliers%GravityFinal = 0.0
@@ -1665,11 +1782,11 @@
               
 
             else if (trim(BName)=='$$SOLID_TRACTION') then ! R(1:2) [ 0.0 <= R(i) ]
-              read(FileUnit, *, iostat=ios) DumS, DumR(1:2)
+              read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1:2)
               call Assert( ios == 0, messageIOS//trim(BName) )
-              call Assert( DumS == LOAD_TYPE_LINEAR .or. DumS == LOAD_TYPE_STEP .or. DumS == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
+              call Assert( DumS(1,1) == LOAD_TYPE_LINEAR .or. DumS(1,1) == LOAD_TYPE_STEP .or. DumS(1,1) == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
                   //LOAD_TYPE_LINEAR// '" or "' //LOAD_TYPE_STEP// '" or "' //LOAD_TYPE_OFF// '".' )
-              CalParams%Multipliers%SolidALoadType(1) = DumS
+              CalParams%Multipliers%SolidALoadType(1) = DumS(1,1)
               if (CalParams%Multipliers%SolidALoadType(1) == LOAD_TYPE_OFF) then
                 CalParams%Multipliers%SolidARealised(1) = 0.0
                 CalParams%Multipliers%SolidAFinal(1) = 0.0
@@ -1679,11 +1796,11 @@
               end if
               
            else if (trim(BName)=='$$SOLID_TRACTION_B') then ! R(1:2) [ 0.0 <= R(i) ]
-              read(FileUnit, *, iostat=ios) DumS, DumR(1:2)
+              read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1:2)
               call Assert( ios == 0, messageIOS//trim(BName) )
-              call Assert( DumS == LOAD_TYPE_LINEAR .or. DumS == LOAD_TYPE_STEP .or. DumS == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
+              call Assert( DumS(1,1) == LOAD_TYPE_LINEAR .or. DumS(1,1) == LOAD_TYPE_STEP .or. DumS(1,1) == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
                   //LOAD_TYPE_LINEAR// '" or "' //LOAD_TYPE_STEP// '" or "' //LOAD_TYPE_OFF// '".' )
-              CalParams%Multipliers%SolidALoadType(2) = DumS
+              CalParams%Multipliers%SolidALoadType(2) = DumS(1,1)
               if (CalParams%Multipliers%SolidALoadType(2) == LOAD_TYPE_OFF) then
                 CalParams%Multipliers%SolidARealised(2) = 0.0
                 CalParams%Multipliers%SolidAFinal(2) = 0.0
@@ -1694,9 +1811,9 @@
               
 
             else if (trim(BName)=='$$LIQUID_PRESSURE') then ! R(1:2) [ 0.0 <= R(i) ]
-              read(FileUnit, *, iostat=ios) DumS, DumR(1:2)
+              read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1:2)
       
-              CalParams%Multipliers%WaterALoadType(1) = DumS
+              CalParams%Multipliers%WaterALoadType(1) = DumS(1,1)
               if (CalParams%Multipliers%WaterALoadType(1) == LOAD_TYPE_OFF) then
                 CalParams%Multipliers%WaterARealised(1) = 0.0
                 CalParams%Multipliers%WaterAFinal(1) = 0.0
@@ -1706,13 +1823,13 @@
               end if
               
               else if (trim(BName)=='$$LIQUID_PRESSURE_B') then ! R(1:2) [ 0.0 <= R(i) ]
-                  read(FileUnit, *, iostat=ios) DumS, DumR(1:2)
+                  read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1:2)
                   call Assert( ios == 0, messageIOS//trim(BName) )
-                  call Assert( DumS == LOAD_TYPE_LINEAR .or. DumS == LOAD_TYPE_STEP .or. DumS == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' &
+                  call Assert( DumS(1,1) == LOAD_TYPE_LINEAR .or. DumS(1,1) == LOAD_TYPE_STEP .or. DumS(1,1) == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' &
                       //LOAD_TYPE_LINEAR// '" or "' //LOAD_TYPE_STEP// '" or "' //LOAD_TYPE_OFF// '".' )
                   !call Assert( DumR(1) >= 0.0, 'CPS file: Multipliers in ' //trim(BName)// ' must be larger than or equal to 0.0.' )
                   !call Assert( DumR(2) >= 0.0, 'CPS file: Multipliers in ' //trim(BName)// ' must be larger than or equal to 0.0.' )
-                  CalParams%Multipliers%WaterALoadType(2) = DumS
+                  CalParams%Multipliers%WaterALoadType(2) = DumS(1,1)
                   if (CalParams%Multipliers%WaterALoadType(2) == LOAD_TYPE_OFF) then
                       CalParams%Multipliers%WaterARealised(2) = 0.0
                       CalParams%Multipliers%WaterAFinal(2) = 0.0
@@ -1723,11 +1840,11 @@
               
               
             else if (trim(BName)=='$$GAS_PRESSURE') then ! R(1:2) [ 0.0 <= R(i) ]
-              read(FileUnit, *, iostat=ios) DumS, DumR(1:2)
+              read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1:2)
               call Assert( ios == 0, messageIOS//trim(BName) )
-              call Assert( DumS == LOAD_TYPE_LINEAR .or. DumS == LOAD_TYPE_STEP .or. DumS == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
+              call Assert( DumS(1,1) == LOAD_TYPE_LINEAR .or. DumS(1,1) == LOAD_TYPE_STEP .or. DumS(1,1) == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
                   //LOAD_TYPE_LINEAR// '" or "' //LOAD_TYPE_STEP// '" or "' //LOAD_TYPE_OFF// '".' )
-              CalParams%Multipliers%GasALoadType(1) = DumS
+              CalParams%Multipliers%GasALoadType(1) = DumS(1,1)
               if (CalParams%Multipliers%GasALoadType(1) == LOAD_TYPE_OFF) then
                 CalParams%Multipliers%GasARealised(1) = 0.0
                 CalParams%Multipliers%GasAFinal(1) = 0.0
@@ -1737,11 +1854,11 @@
               end if
               
                           else if (trim(BName)=='$$GAS_PRESSURE_B') then ! R(1:2) [ 0.0 <= R(i) ]
-              read(FileUnit, *, iostat=ios) DumS, DumR(1:2)
+              read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1:2)
               call Assert( ios == 0, messageIOS//trim(BName) )
-              call Assert( DumS == LOAD_TYPE_LINEAR .or. DumS == LOAD_TYPE_STEP .or. DumS == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
+              call Assert( DumS(1,1) == LOAD_TYPE_LINEAR .or. DumS(1,1) == LOAD_TYPE_STEP .or. DumS(1,1) == LOAD_TYPE_OFF, 'CPS file: Load type in ' //trim(BName)// ' must be "' & 
                   //LOAD_TYPE_LINEAR// '" or "' //LOAD_TYPE_STEP// '" or "' //LOAD_TYPE_OFF// '".' )
-              CalParams%Multipliers%GasALoadType(2) = DumS
+              CalParams%Multipliers%GasALoadType(2) = DumS(1,1)
               if (CalParams%Multipliers%GasALoadType(2) == LOAD_TYPE_OFF) then
                 CalParams%Multipliers%GasARealised(2) = 0.0
                 CalParams%Multipliers%GasAFinal(2) = 0.0
@@ -1751,12 +1868,12 @@
               end if
               
                else if (trim(BName)=='$$HYDRAULIC_HEAD') then ! R(1:2) [ 0.0 <= R(i) ]
-                 read(FileUnit, *, iostat=ios) DumS, DumR(1) !:2) ! [  file, off ]
-                 if ( (trim(DumS) == LOAD_TYPE_FILE) ) then
+                 read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1) !:2) ! [  file, off ]
+                 if ( (trim(DumS(1,1)) == LOAD_TYPE_FILE) ) then
 
                      CalParams%PrescribedHead%HydraulicHead = .true.
-                     CalParams%Multipliers%HydraulicHeadType  = DumS
-                  else if (trim(DumS) == LOAD_TYPE_OFF) then
+                     CalParams%Multipliers%HydraulicHeadType  = DumS(1,1)
+                  else if (trim(DumS(1,1)) == LOAD_TYPE_OFF) then
                      CalParams%PrescribedHead%HydraulicHead = .false.
                  else
                     call GiveError( 'CPS file: ' //trim(BName)// ' must be equal to ' &
@@ -1785,20 +1902,99 @@
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%BoundaryConditions%UseInfiltration = .true.
 
+              
+              
+              
+              
+              
+          else if (trim(BName)=='$$PRESCRIBED_SEISMIC_ACTION') then 
+              
+              CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch = .TRUE.
+              !allocate(CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch(NVECTOR) )
+              
+              
+              ! allocate variables based on NVECTOR for each shaking direction -----------------
+              
+              allocate(CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(NVECTOR) )
+              CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection = .FALSE.
+              allocate(CalParams%PrescribedSeismicAction%AccelerationPrecomputed(NVECTOR) )
+              allocate(CalParams%PrescribedSeismicAction%VelocityPrecomputed(NVECTOR) )
+              allocate(CalParams%PrescribedSeismicAction%IncrementalDisplacementPrecomputed(NVECTOR) )
+              
+              !allocate(CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction(NVECTOR) )
+              
+              !allocate(CalParams%PrescribedSeismicAction%PhysicalKinematicQuantityType(NVECTOR) )
+              allocate(CalParams%PrescribedSeismicAction%InputFileFormat(NVECTOR) )
+              allocate(CalParams%PrescribedSeismicAction%InputFileName(NVECTOR) )
+              
+              allocate(CalParams%PrescribedSeismicAction%ScalingFactor(NVECTOR) )
+              !---------------------------------------------------------------------------------
+              
+              
+              
+                !read(FileUnit, *, iostat=ios) DumS(1, 1:4)
+                !read(FileUnit, *, iostat=ios) DumI, DumS(1, 1:3), DumI_2)
+                !call Assert( ios == 0, messageIOS//trim(BName) )
+                
+                
+                
+                
+                do iDirection = 1, NVECTOR
+                    
+                    read(FileUnit, *, iostat=ios) DumI(1), DumS(iDirection, 1:2), DumI(2)
+                    call Assert( ios == 0, messageIOS//trim(BName) )
+                
+                    CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(iDirection) = DumI(1) ! on/off
+                    !CalParams%PrescribedSeismicAction%PhysicalKinematicQuantityType(iDirection) = DumS(iDirection, 1) ! Acceleration/Velocity/Displacement
+                    CalParams%PrescribedSeismicAction%InputFileFormat(iDirection) = DumS(iDirection, 1) ! PEER/Table
+                    CalParams%PrescribedSeismicAction%InputFileName(iDirection) = DumS(iDirection, 2) ! file name 
+                    CalParams%PrescribedSeismicAction%ScalingFactor(iDirection) = DumI(2) ! integer scaling factor
+                    
+                end do 
+                
+                
+                
+                
+                
+                
+                !if (DumS(1, 1) == 'on') then 
+                !    CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch = .TRUE.
+                !else 
+                !    RETURN 
+                !end if 
+                !
+                !CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection = .FALSE.
+                !
+                !if (DumS(1, 2) == 'on') then 
+                !    CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(1,1) = .TRUE.
+                !end if 
+                !
+                !if (DumS(1, 3) == 'on') then 
+                !    CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(2,1) = .TRUE.
+                !end if 
+                !
+                !if (DumS(1, 4) == 'on') then 
+                !    CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(3,1) = .TRUE.
+                !end if 
+                    
         
+                
+                
+                
+                
                   
                               
             elseif (trim(BName)=='$$PRESCRIBED_VELOCITY') then 
-              read(FileUnit, *, iostat=ios) DumS, DumR(1:2) !, DumFileName ! [ step, linear, file, off ] 
-              if ( (trim(DumS) == LOAD_TYPE_LINEAR).or.(trim(DumS) == LOAD_TYPE_STEP).or.(trim(DumS) == LOAD_TYPE_FILE) ) then
+              read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1:2) !, DumFileName ! [ step, linear, file, off ] 
+              if ( (trim(DumS(1,1)) == LOAD_TYPE_LINEAR).or.(trim(DumS(1,1)) == LOAD_TYPE_STEP).or.(trim(DumS(1,1)) == LOAD_TYPE_FILE) ) then
                 CalParams%PrescribedVelo%ApplyPrescribedVelo = .true.
-              else if (trim(DumS) == LOAD_TYPE_OFF) then
+              else if (trim(DumS(1,1)) == LOAD_TYPE_OFF) then
                 CalParams%PrescribedVelo%ApplyPrescribedVelo = .false.
               else
                 call GiveError( 'CPS file: ' //trim(BName)// ' must be equal to ' &
                            // LOAD_TYPE_LINEAR // ' or ' // LOAD_TYPE_STEP // ' or ' // LOAD_TYPE_FILE // ' or ' // LOAD_TYPE_OFF // '.' )  
               end if    
-              CalParams%Multipliers%VelocitySolidLoadType = DumS
+              CalParams%Multipliers%VelocitySolidLoadType = DumS(1,1)
               if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_OFF) then
                 CalParams%Multipliers%VelocitySolidRealised = 0.0
                 CalParams%Multipliers%VelocitySolidRealised = 0.0
@@ -1832,6 +2028,54 @@
                 call CalculateGeneralizedAlphaTimeSchemeParameters()
               
               
+                
+                
+                
+            !----------------------------------------------------------------------------------------------
+            ! STRESS CONTROLLED DIRECT SIMPLE SHEAR TEST     
+                
+                
+                
+            else if (trim(BName)=='$$DSS_SWITCH') then
+                read(FileUnit, *, iostat=ios) DumI(1) ! DumI = switch on/off; DumR = rho_infty 
+                CalParams%ApplyDSSConditions%Switch = DumI(1)
+                
+                
+                
+                
+            else if (trim(BName)=='$$DSS_THRESHOLD_STRESS_TARGETED') then
+                read(FileUnit, *, iostat=ios) DumR(1) ! DumI = switch on/off; DumR = rho_infty 
+                CalParams%ApplyDSSConditions%ThresholdStressTargeted = DumR(1)
+                
+            
+                
+                
+            else if (trim(BName)=='$$DSS_MP_NUMBER_TO_CONTROL_STRESS') then
+                read(FileUnit, *, iostat=ios) DumI(1) ! DumI = switch on/off; DumR = rho_infty 
+                CalParams%ApplyDSSConditions%MPNumberToControlStress = DumI(1)
+                
+                
+                
+            else if (trim(BName)=='$$DSS_STRESS_COMPONENT_CONTROLLED') then
+                read(FileUnit, *, iostat=ios) DumI(1) ! DumI = switch on/off; DumR = rho_infty 
+                CalParams%ApplyDSSConditions%StressComponentControlled = DumI(1)
+                CalParams%ApplyDSSConditions%TargetSign = 1
+                
+            else if (trim(BName)=='$$DSS_VELOCITY_VALUE') then
+                read(FileUnit, *, iostat=ios) DumR(1) ! DumI = switch on/off; DumR = rho_infty 
+                CalParams%ApplyDSSConditions%VelocityValue = DumR(1)
+                
+                CalParams%ApplyDSSConditions%VelocityMultiplier = 1.0
+                
+                
+            else if (trim(BName)=='$$DSS_SHEAR_BOX_MAT_ID') then
+                read(FileUnit, *, iostat=ios) DumI(1) ! DumI = switch on/off; DumR = rho_infty 
+                CalParams%ApplyDSSConditions%ShearBoxMatID = DumI(1)
+                
+            !------------------------------------------------------------------------------------------------
+                
+                
+                
               
               
               
@@ -2153,6 +2397,17 @@
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
               if ( DumI(1) == 1 ) CalParams%ApplyFixedSolidSkeleton = .true.
  
+              
+ 
+              ! FIXED LIQUID PRESSURE
+            else if (trim(BName)=='$$FIX_LIQUID_PRESSURE') then ! Input is an integer either [ 0 = false (solid MPs are allowed to water pressure), 1 = true (water pressure update is skipped)]
+              read(FileUnit, *, iostat=ios) DumI(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+              if ( DumI(1) == 1 ) CalParams%ApplyFixedLiquidPressure = .true.
+ 
+              
+              
               ! RESET DISPLACEMENT --> keep UArray zero
             else if (trim(BName)=='$$RESET_PARTICLE_DISPLACEMENT') then ! Input is an integer either [ 0 = false (solid MPs are allowed to move), 1 = true (solid MP position update is skipped)]
               read(FileUnit, *, iostat=ios) DumI(1)
@@ -2185,13 +2440,13 @@
 
             ! TWO LAYER FORMULATION :: CHECK IF APPLY UPDATE PERMEABILITY              
             else if (trim(BName)=='$$PERMEABILITY_UPDATE') then  
-              read(FileUnit, *, iostat=ios) DumS
+              read(FileUnit, *, iostat=ios) DumS(1,1)
               call Assert( ios == 0, messageIOS//trim(BName) )
-              if (trim(Upcase(DumS))=="CONSTANT_PERMEABILITY") then
+              if (trim(Upcase(DumS(1,1)))=="CONSTANT_PERMEABILITY") then
                 continue
-              else if (trim(Upcase(DumS))=="DARCY_UPDATE") then
+              else if (trim(Upcase(DumS(1,1)))=="DARCY_UPDATE") then
                 CalParams%TwoLayerApplyUpdatePermeability = .true.
-              else if (trim(Upcase(DumS))=="ERGUN_UPDATE") then
+              else if (trim(Upcase(DumS(1,1)))=="ERGUN_UPDATE") then
                 CalParams%TwoLayerApplyUpdatePermeability = .true.
                 CalParams%TwoLayerApplyErgunLaw = .true.
               end if
@@ -2396,9 +2651,9 @@
             
             ! VISUALIZATION
             else if (trim(BName)=='$$VISUALIZATION_OPTION') then ! S [ Paraview, GiD-ASCII, GiD-Binary, Paraview-GiD ]
-              read(FileUnit, *, iostat=ios) DumS
+              read(FileUnit, *, iostat=ios) DumS(1,1)
               call Assert( ios == 0, messageIOS//trim(BName) )
-              CalParams%Visualization = DumS
+              CalParams%Visualization = DumS(1,1)
  
             ! OUTPUT
             else if (trim(BName)=='$$OUTPUT_NUMBER_OF_MATERIAL_POINTS') then
@@ -2417,6 +2672,29 @@
                 read(FileUnit, *, iostat=ios) DumI(1)
                 call Assert( ios == 0, messageIOS//trim(BName) )
               end if
+              
+              
+              ! SKIP PWP UPDATE
+            else if (trim(BName)=='$$SKIP_PWP_NUMBER_OF_MATERIAL_POINTS') then
+              read(FileUnit, *, iostat=ios) CalParams%SkipPwpNumberParticles
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              !call Assert(CalParams%OutputNumberParticles <= MAXOUTPUTPARTICLES, 'CPS-ERROR: maximum value for $$OUTPUT_NUMBER_OF_MATERIAL_POINTS is '//trim(String(MAXOUTPUTPARTICLES)))
+
+              allocate( CalParams%SkipPwpParticles(CalParams%SkipPwpNumberParticles) )
+              CalParams%SkipPwpParticles = 0
+            
+            else if (trim(BName)=='$$SKIP_PWP_MATERIAL_POINTS') then
+              if (CalParams%SkipPwpNumberParticles>0) then
+                do I = 1, CalParams%SkipPwpNumberParticles
+                  read(FileUnit, *, iostat=ios) CalParams%SkipPwpParticles(I)
+                  call Assert( ios == 0, messageIOS//trim(BName) )
+                end do
+              else
+                ! read the dummy value
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+              end if
+            
 
             else if (trim(BName)=='$$OUTPUT_BASIC_DATA') then
               read (FileUnit, *, iostat=ios) DumI(1)
@@ -2917,6 +3195,636 @@
           end if
 
         end subroutine UpdateMultipliersForLoadStep
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine ObtainPrescribedSeismicAction()
+        !--------------------------------------------------------
+        ! This subroutine 
+        
+        
+        implicit none 
+        
+        
+        
+        !Vectors for prescribing seismic action (i.e., can be displacement, velocity, acceleration)
+          !real(REAL_TYPE), dimension(:,:), allocatable :: Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped !Horizontal PEER converted to TABLE 
+          !real(REAL_TYPE), dimension(:,:), allocatable :: Prescribed_YY_SeismicPhysicalQuantityFileMatrixReshaped !Horizontal PEER converted to TABLE 
+          !real(REAL_TYPE), dimension(:,:), allocatable :: Prescribed_ZZ_SeismicPhysicalQuantityFileMatrixReshaped !Horizontal PEER converted to TABLE 
+          
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicAccelerationI_XX
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicAccelerationI_YY
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicAccelerationI_ZZ
+          
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicAccelerationII_XX
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicAccelerationII_YY
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicAccelerationII_ZZ
+          
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicVelocityI_XX
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicVelocityI_YY
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicVelocityI_ZZ
+          
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicVelocityII_XX
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicVelocityII_YY
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicVelocityII_ZZ
+          
+          real(REAL_TYPE), dimension(:), allocatable :: SeismicTimeSeries_XX
+          real(REAL_TYPE), dimension(:), allocatable :: SeismicTimeSeries_YY
+          real(REAL_TYPE), dimension(:), allocatable :: SeismicTimeSeries_ZZ
+          
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicDisplacementII_XX
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicDisplacementII_YY
+          real(REAL_TYPE), dimension(:), allocatable :: PrescribedSeismicDisplacementII_ZZ
+          
+          real(REAL_TYPE), dimension(:), allocatable :: IncrementalPrescribedSeismicDisplacementII_XX
+          real(REAL_TYPE), dimension(:), allocatable :: IncrementalPrescribedSeismicDisplacementII_YY
+          real(REAL_TYPE), dimension(:), allocatable :: IncrementalPrescribedSeismicDisplacementII_ZZ
+          
+          real(REAL_TYPE), dimension(NVECTOR) :: DT !this is should be NVECTOR
+          integer(INTEGER_TYPE), dimension(NVECTOR) :: NPTS !this is should be NVECTOR
+          
+          ! initialize base line correction variables
+          real(REAL_TYPE) :: a_XX=0, a_YY=0, a_ZZ=0 
+          real(REAL_TYPE) :: b_XX=0, b_YY=0, b_ZZ=0
+          real(REAL_TYPE) :: c_XX=0, c_YY=0, c_ZZ=0
+          real(REAL_TYPE) :: d_XX=0, d_YY=0, d_ZZ=0
+          
+          real(REAL_TYPE), dimension(NVECTOR) :: AccelerationPrecomputed
+          real(REAL_TYPE), dimension(NVECTOR) :: VelocityPrecomputed
+          real(REAL_TYPE), dimension(NVECTOR) :: IncrementalDisplacementPrecomputed
+          
+          integer(INTEGER_TYPE) :: ii!, SumOfDirection
+          
+          integer(INTEGER_TYPE) :: DirectionOfShaking
+          
+          
+          
+          if (CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch == .FALSE.) RETURN
+          
+          
+          ! Step 1: we calculate the number of directions we need to loop on 
+    if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(1) .AND. &
+        .NOT.CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(2)) then !.AND. &        .NOT.CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(3)
+
+        
+        CalParams%PrescribedSeismicAction%SumOfDirection = 1
+        
+        else if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(1) .AND. &
+             CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(2)) then
+  
+            CalParams%PrescribedSeismicAction%SumOfDirection = 2
+    
+         else if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(1) .AND. &
+             CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(2) ) then
+        
+              CalParams%PrescribedSeismicAction%SumOfDirection = 3
+    
+             else
+        
+                 CalParams%PrescribedSeismicAction%SumOfDirection = 0   ! none active   
+    end if            
+        !-------------------------------------------------------------------------
+    
+
+    ! allocate NPTS to know the size of each matrix so that we can loop accorss it later on. 
+    allocate( CalParams%PrescribedSeismicAction%NPTS(CalParams%PrescribedSeismicAction%SumOfDirection) )
+    CalParams%PrescribedSeismicAction%NPTS = 0
+    
+          ! Step 2: check if we are going with table or PEER ground motion, and based on that read the external file         
+          do DirectionOfShaking = 1,CalParams%PrescribedSeismicAction%SumOfDirection!SumOfDirection ! loop over direction
+
+              ! Read input file
+              if ( CalParams%PrescribedSeismicAction%InputFileFormat(DirectionOfShaking) == SEISMIC_ACTION_FILE_TYPE_PEER ) then ! PEER
+
+                  if (DirectionOfShaking == 1) then ! direction of shaking ! x-direction 
+                  
+                      ! read PEER file 
+                      call ReadPrescribedSeismicAction_AT2_VT2_PEERFile( CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration, DirectionOfShaking, &
+                                                                         DT(DirectionOfShaking), CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), &
+                                                                         CalParams%PrescribedSeismicAction%InputFileFormat(DirectionOfShaking) ) ! AT2/VT2
+                      ! generate time series 
+                      call GenerateTimeSeriesForPEERPhysicalQuantity(CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1), & ! time
+                                                                     DT(DirectionOfShaking), CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) )!, DirectionOfShaking) !XX !SeismicTimeSeries_XX
+                      
+                      ! to maintain consistancy with the table format, we add an extra points with (0,0)
+                      CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) = CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) + 1
+
+                      
+                  else if (DirectionOfShaking == 2) then ! y-direction 
+                      
+                  
+                      ! read PEER file 
+                      call ReadPrescribedSeismicAction_AT2_VT2_PEERFile( CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration, DirectionOfShaking, &
+                                                                         DT(DirectionOfShaking), CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), &
+                                                                         CalParams%PrescribedSeismicAction%InputFileFormat(DirectionOfShaking) ) ! AT2/VT2
+                      ! generate time series 
+                      call GenerateTimeSeriesForPEERPhysicalQuantity(CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,1), & ! time
+                                                                     DT(DirectionOfShaking), CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking))!, DirectionOfShaking) !XX !SeismicTimeSeries_XX
+                      
+                                          
+                      ! to maintain consistancy with the table format, we add an extra points with (0,0)
+                      CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) = CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) + 1
+                  
+                      
+                  else if (DirectionOfShaking == 3) then ! z-direction
+                      
+                  
+                          ! read PEER file 
+                      call ReadPrescribedSeismicAction_AT2_VT2_PEERFile( CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration, DirectionOfShaking, &
+                                                                         DT(DirectionOfShaking), CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), &
+                                                                         CalParams%PrescribedSeismicAction%InputFileFormat(DirectionOfShaking) ) ! AT2/VT2
+                      ! generate time series 
+                      call GenerateTimeSeriesForPEERPhysicalQuantity(CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration(:,1), & ! time
+                                                                     DT(DirectionOfShaking), CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking))!, DirectionOfShaking) !XX !SeismicTimeSeries_XX
+                      
+                      ! to maintain consistancy with the table format, we add an extra points with (0,0)
+                      CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) = CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) + 1
+
+                      
+                  end if ! direction of shaking 
+                  
+                  
+              else if ( CalParams%PrescribedSeismicAction%InputFileFormat(DirectionOfShaking) == SEISMIC_ACTION_FILE_TYPE_TABLE ) then ! Table
+                      
+
+                  if (DirectionOfShaking == 1) then ! direction of shaking ! x-direction 
+
+                      ! read table
+                      call ReadPrescribedSeismicAction_PAF_PVF_TableFile( CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration, DirectionOfShaking, &
+                                                                          CalParams%PrescribedSeismicAction%InputFileFormat(DirectionOfShaking), &
+                                                                          CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) ) ! PAF/PVF                      
+
+                      
+                      
+                  elseif  (DirectionOfShaking == 2) then ! direction of shaking ! y-direction 
+
+                  
+                      call ReadPrescribedSeismicAction_PAF_PVF_TableFile( CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration, DirectionOfShaking, &
+                                                                         CalParams%PrescribedSeismicAction%InputFileFormat(DirectionOfShaking), &
+                                                                          CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) ) ! PAF/PVF
+
+                  elseif  (DirectionOfShaking == 3) then ! direction of shaking ! y-direction 
+
+
+                      call ReadPrescribedSeismicAction_PAF_PVF_TableFile( CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration, DirectionOfShaking, &
+                                                                         CalParams%PrescribedSeismicAction%InputFileFormat(DirectionOfShaking), &
+                                                                          CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) ) ! PAF/PVF
+                
+                  end if 
+                  
+                  
+                  
+              end if
+              
+              
+              
+          end do ! loop over direction
+          !-------------------------------------------------------------------------
+              
+              
+                        
+          
+          
+          
+          
+          
+          ! Step 3: Update the ground motion transient time, correct base line, perform integration 
+          do DirectionOfShaking = 1,CalParams%PrescribedSeismicAction%SumOfDirection ! loop over direction
+
+                  if (DirectionOfShaking == 1) then ! direction of shaking ! x-direction 
+                      
+                      ! update time series so that it starts from the current overall real time 
+                      call UpdateTransientGroundMotionTime(CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1), &
+                                                            CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) )
+                      
+                      !Subtract straight line from recorded acceleration motion  
+	                  call BaseLineCorrection(CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1), &
+                                              CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,2), &
+                                              CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), a_XX, b_XX, PrescribedSeismicAccelerationI_XX)      
+                      
+                      !Integrate AccelerationI to get VelocityI       
+	                  call IntegrateToGetVelocity( CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,2),CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), &
+                          DT(DirectionOfShaking), PrescribedSeismicVelocityI_XX, CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+	                    
+                      !Linear least square fit through VelocityI to get cc and dd
+	                  call linear_regression( CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1),PrescribedSeismicVelocityI_XX, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) , c_XX, d_XX)
+	                  
+                      !Subtract dd term coefficient from AccelerationI
+	                  call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_XX,PrescribedSeismicAccelerationI_XX, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) , d_XX, CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+	                  
+                      !Integrate AccelerationII to get VelocityII
+	                  call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_XX, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), DT(DirectionOfShaking), PrescribedSeismicVelocityII_XX, CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+	                  
+                      !Integrate AccelerationII to get DisplacementII 
+	                  call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_XX, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), DT(DirectionOfShaking), PrescribedSeismicVelocityI_XX, PrescribedSeismicDisplacementII_XX, IncrementalPrescribedSeismicDisplacementII_XX, &
+                          CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+                    
+                      !PrescribedSeismicAccelerationII_XX
+                      
+                      !allocate(CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking),2) ) !Horizontal PEER converted to TABLE 
+                      !allocate(CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking),2) ) !Horizontal PEER converted to TABLE 
+                      !allocate(CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking),2) ) !Horizontal PEER converted to TABLE 
+                      
+                      CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,2) = PrescribedSeismicAccelerationII_XX
+                      allocate(CalParams%PrescribedSeismicAction%Prescribed_XX_Velocity(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                      CalParams%PrescribedSeismicAction%Prescribed_XX_Velocity = PrescribedSeismicVelocityII_XX
+                      allocate(CalParams%PrescribedSeismicAction%Prescribed_XX_IncrementalDisplacement(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                      CalParams%PrescribedSeismicAction%Prescribed_XX_IncrementalDisplacement = IncrementalPrescribedSeismicDisplacementII_XX
+                      
+                      
+                      
+                      !allocate(CalParams%PrescribedSeismicAction%Prescribed_YY_Velocity(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                      !CalParams%PrescribedSeismicAction%Prescribed_YY_Velocity = PrescribedSeismicVelocityII_YY
+                      !allocate(CalParams%PrescribedSeismicAction%Prescribed_ZZ_Velocity(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                      !CalParams%PrescribedSeismicAction%Prescribed_ZZ_Velocity = PrescribedSeismicVelocityII_ZZ
+                      !
+                      !
+                      !allocate(CalParams%PrescribedSeismicAction%Prescribed_YY_IncrementalDisplacement(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                      !CalParams%PrescribedSeismicAction%Prescribed_YY_IncrementalDisplacement = IncrementalPrescribedSeismicDisplacementII_YY
+                      !allocate(CalParams%PrescribedSeismicAction%Prescribed_ZZ_IncrementalDisplacement(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                      !CalParams%PrescribedSeismicAction%Prescribed_ZZ_IncrementalDisplacement = IncrementalPrescribedSeismicDisplacementII_ZZ
+
+                      
+                  else if (DirectionOfShaking == 2) then ! y-direction 
+                      
+                  
+                      ! update time series so that it starts from the current overall real time 
+                      call UpdateTransientGroundMotionTime(CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,1), &
+                                                            NPTS(DirectionOfShaking))
+                      
+                    !Subtract straight line from recorded acceleration motion  
+                    call BaseLineCorrection(CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,1), &
+                        CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,2), &
+                        NPTS(DirectionOfShaking) , a_YY, b_YY, PrescribedSeismicAccelerationI_YY)      
+                    
+                    !Integrate AccelerationI to get VelocityI       
+                    call IntegrateToGetVelocity(CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,2),CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), &
+                                DT(DirectionOfShaking), PrescribedSeismicVelocityI_YY, CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1) )
+                    
+                    !Linear least square fit through VelocityI to get cc and dd
+                    call linear_regression(CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,1),PrescribedSeismicVelocityI_YY, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) , c_YY, d_YY)
+	                   
+                    
+                    !Subtract dd term coefficient from AccelerationI
+                    call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_YY,PrescribedSeismicAccelerationI_YY, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) , d_YY, CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+	                   
+                    
+                    !Integrate AccelerationII to get VelocityII
+                    call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_YY, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), DT(DirectionOfShaking), PrescribedSeismicVelocityII_YY, CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+	                   
+                    
+                    !Integrate AccelerationII to get DisplacementII 
+                    call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_YY, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), DT(DirectionOfShaking), PrescribedSeismicVelocityI_YY, PrescribedSeismicDisplacementII_YY, IncrementalPrescribedSeismicDisplacementII_YY, &
+                          CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+	                
+                    
+                    
+                    
+                    CalParams%PrescribedSeismicAction%Prescribed_YY_Acceleration(:,2) = PrescribedSeismicAccelerationII_YY
+                    allocate(CalParams%PrescribedSeismicAction%Prescribed_YY_Velocity(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                    CalParams%PrescribedSeismicAction%Prescribed_YY_Velocity = PrescribedSeismicVelocityII_YY
+                    allocate(CalParams%PrescribedSeismicAction%Prescribed_YY_IncrementalDisplacement(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                    CalParams%PrescribedSeismicAction%Prescribed_YY_IncrementalDisplacement = IncrementalPrescribedSeismicDisplacementII_YY
+                      
+                    
+                    
+                  else if (DirectionOfShaking == 3) then ! z-direction
+                      
+                      ! update time series so that it starts from the current overall real time 
+                      call UpdateTransientGroundMotionTime(CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration(:,1), &
+                                                            CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking))
+                      
+                    !Subtract straight line from recorded acceleration motion  
+                    call BaseLineCorrection(CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration(:,1), &
+                        CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration(:,2), &
+                        CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) , a_ZZ, b_ZZ, PrescribedSeismicAccelerationI_ZZ)      
+                    
+                    !Integrate AccelerationI to get VelocityI       
+                    call IntegrateToGetVelocity(CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration,CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), &
+                                DT(DirectionOfShaking), PrescribedSeismicVelocityI_ZZ, CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1) )
+                    
+                    !Linear least square fit through VelocityI to get cc and dd
+                    call linear_regression(CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration(:,1),PrescribedSeismicVelocityI_ZZ, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) , c_ZZ, d_ZZ)   
+                    
+                    !Subtract dd term coefficient from AccelerationI
+                    call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_ZZ,PrescribedSeismicAccelerationI_ZZ, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking) , d_ZZ, CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+                    
+                    !Integrate AccelerationII to get VelocityII
+                    call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_ZZ, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), DT(DirectionOfShaking), PrescribedSeismicVelocityII_ZZ, CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+	                
+                    !Integrate AccelerationII to get DisplacementII 
+                    call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_ZZ, CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking), DT(DirectionOfShaking), PrescribedSeismicVelocityI_ZZ, PrescribedSeismicDisplacementII_ZZ, IncrementalPrescribedSeismicDisplacementII_ZZ, &
+                          CalParams%PrescribedSeismicAction%Prescribed_XX_Acceleration(:,1))
+	                
+                    
+                    
+                    
+                    CalParams%PrescribedSeismicAction%Prescribed_ZZ_Acceleration(:,2) = PrescribedSeismicAccelerationII_ZZ
+                    allocate(CalParams%PrescribedSeismicAction%Prescribed_ZZ_Velocity(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                    CalParams%PrescribedSeismicAction%Prescribed_ZZ_Velocity = PrescribedSeismicVelocityII_ZZ
+                    allocate(CalParams%PrescribedSeismicAction%Prescribed_ZZ_IncrementalDisplacement(CalParams%PrescribedSeismicAction%NPTS(DirectionOfShaking)) ) !Horizontal PEER converted to TABLE 
+                    CalParams%PrescribedSeismicAction%Prescribed_ZZ_IncrementalDisplacement = IncrementalPrescribedSeismicDisplacementII_ZZ
+                      
+                    
+                    
+                    
+                  end if ! direction of shaking 
+                  
+          end do ! loop over direction
+          
+                  
+                          
+                !call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, PrescribedSeismicAccelerationII_XX, NPTS(1,1), 1, AccelerationPrecomputed(1,1)) ! Acceleration XX based on groundmotion
+                !!Velocity precomputed 
+                !call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, PrescribedSeismicVelocityII_XX, NPTS(1,1), 1, VelocityPrecomputed(1,1)) ! Velocity XX based on groundmotion
+                !!Displacement precomputed 
+                !call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, IncrementalPrescribedSeismicDisplacementII_XX, NPTS(1,1), 1, IncrementalDisplacementPrecomputed(1,1)) ! Displacement XX based on groundmotion
+                !
+                !  
+                !
+                !
+                !
+                !
+                !
+                !
+                !
+                !! assign the precomputed values to the multiplier
+                !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed = AccelerationPrecomputed
+                !CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed = VelocityPrecomputed
+                !CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed = IncrementalDisplacementPrecomputed
+          
+                
+                
+                
+                
+                
+                
+          
+          ! - perform the base line correction
+          
+        
+        
+        
+        
+        
+        
+        !if (CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch == .TRUE.) then 
+        !    !find multipliers for X, Y and Z
+        !    !do ii = 1,NVECTOR 
+        !        
+        !        !Read PEER files and reshape to vector form    
+        !        call ReadPrescribed_AT2_VT2_DT2_PEERFile(Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped, 1, DT(1,1), NPTS(1,1)) !XX
+        !        call ReadPrescribed_AT2_VT2_DT2_PEERFile(Prescribed_YY_SeismicPhysicalQuantityFileMatrixReshaped, 2, DT(2,1), NPTS(2,1)) !YY
+        !        call ReadPrescribed_AT2_VT2_DT2_PEERFile(Prescribed_ZZ_SeismicPhysicalQuantityFileMatrixReshaped, 3, DT(3,1), NPTS(3,1)) !ZZ
+        !        !Generate time series for each read PEER file
+        !        call GenerateTimeSeriesForPEERPhysicalQuantity(SeismicTimeSeries_XX, DT(1,1), NPTS(1,1), 1) !XX
+        !        call GenerateTimeSeriesForPEERPhysicalQuantity(SeismicTimeSeries_YY, DT(2,1), NPTS(2,1), 2) !YY
+        !        call GenerateTimeSeriesForPEERPhysicalQuantity(SeismicTimeSeries_ZZ, DT(3,1), NPTS(3,1), 3) !ZZ
+        !        !Linear square fit line through recorded acceleration time history, a(t)
+        !        if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(1,1) == .TRUE.) then 
+        !        call linear_regression(SeismicTimeSeries_XX,Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(1,1) , a_XX, b_XX, 1)
+        !        !Subtract straight line from recorded acceleration motion  
+        !        call BaseLineCorrection(SeismicTimeSeries_XX, Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(1,1) , a_XX, b_XX, PrescribedSeismicAccelerationI_XX, 1)      
+        !        !Integrate AccelerationI to get VelocityI       
+        !        call IntegrateToGetVelocity(Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped,NPTS(1,1), DT(1,1), PrescribedSeismicVelocityI_XX, 1)
+        !        !Linear least square fit through VelocityI to get cc and dd
+        !        call linear_regression(SeismicTimeSeries_XX,PrescribedSeismicVelocityI_XX, NPTS(1,1) , c_XX, d_XX, 1)
+        !        !Subtract dd term coefficient from AccelerationI
+        !        call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_XX,PrescribedSeismicAccelerationI_XX, NPTS(1,1) , d_XX, 1)
+        !        !Integrate AccelerationII to get VelocityII
+        !        call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_XX,NPTS(1,1), DT(1,1), PrescribedSeismicVelocityII_XX, 1)
+        !        !Integrate AccelerationII to get DisplacementII 
+        !        call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_XX, NPTS(1,1), DT(1,1), PrescribedSeismicVelocityI_XX, PrescribedSeismicDisplacementII_XX, IncrementalPrescribedSeismicDisplacementII_XX, 1)
+        !        !Acceleration precomputed 
+        !        call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, PrescribedSeismicAccelerationII_XX, NPTS(1,1), 1, AccelerationPrecomputed(1,1)) ! Acceleration XX based on groundmotion
+        !        !Velocity precomputed 
+        !        call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, PrescribedSeismicVelocityII_XX, NPTS(1,1), 1, VelocityPrecomputed(1,1)) ! Velocity XX based on groundmotion
+        !        !Displacement precomputed 
+        !        call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, IncrementalPrescribedSeismicDisplacementII_XX, NPTS(1,1), 1, IncrementalDisplacementPrecomputed(1,1)) ! Displacement XX based on groundmotion
+        !        
+        !        end if 
+                
+                
+                
+                
+                
+                !if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(2,1) == .TRUE.) then
+                !call linear_regression(SeismicTimeSeries_YY,Prescribed_YY_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(2,1) , a_YY, b_YY, 2)
+                !call BaseLineCorrection(SeismicTimeSeries_YY, Prescribed_YY_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(2,1) , a_YY, b_YY, PrescribedSeismicAccelerationI_YY, 2)
+                !call IntegrateToGetVelocity(Prescribed_YY_SeismicPhysicalQuantityFileMatrixReshaped,NPTS(2,1), DT(2,1), PrescribedSeismicVelocityI_YY, 2)
+                !call linear_regression(SeismicTimeSeries_YY,PrescribedSeismicVelocityI_YY, NPTS(2,1) , c_YY, d_YY, 2)
+                !call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_YY,PrescribedSeismicAccelerationI_YY, NPTS(2,1) , d_YY, 2)
+                !call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_YY,NPTS(2,1), DT(2,1), PrescribedSeismicVelocityII_YY, 2)
+                !call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_YY, NPTS(2,1), DT(2,1), PrescribedSeismicVelocityII_YY, PrescribedSeismicDisplacementII_YY, IncrementalPrescribedSeismicDisplacementII_YY, 2)
+                !call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_YY, PrescribedSeismicAccelerationII_YY, NPTS(2,1), 2, AccelerationPrecomputed(2,1)) ! Acceleration YY based on groundmotion
+                !call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_YY, PrescribedSeismicVelocityII_YY, NPTS(2,1), 2, VelocityPrecomputed(2,1)) ! Velocity YY based on groundmotion
+                !call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_YY, IncrementalPrescribedSeismicDisplacementII_YY, NPTS(2,1), 2, IncrementalDisplacementPrecomputed(2,1)) ! Displacement YY based on groundmotion
+                !
+                !end if 
+                !
+                !if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(3,1) == .TRUE.) then
+                !call linear_regression(SeismicTimeSeries_ZZ,Prescribed_ZZ_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(3,1) , a_ZZ, b_ZZ, 3)
+                !call BaseLineCorrection(SeismicTimeSeries_ZZ, Prescribed_ZZ_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(3,1) , a_ZZ, b_ZZ, PrescribedSeismicAccelerationI_ZZ, 3)
+                !call IntegrateToGetVelocity(Prescribed_ZZ_SeismicPhysicalQuantityFileMatrixReshaped,NPTS(3,1), DT(3,1), PrescribedSeismicVelocityI_ZZ, 3)
+                !call linear_regression(SeismicTimeSeries_ZZ,PrescribedSeismicVelocityI_ZZ, NPTS(3,1) , c_ZZ, d_ZZ, 3)
+                !call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_ZZ,PrescribedSeismicAccelerationI_ZZ, NPTS(3,1) , d_ZZ, 3)
+                !call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_ZZ,NPTS(3,1), DT(3,1), PrescribedSeismicVelocityII_ZZ, 3)
+                !call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_ZZ, NPTS(3,1), DT(3,1), PrescribedSeismicVelocityII_ZZ, PrescribedSeismicDisplacementII_ZZ, IncrementalPrescribedSeismicDisplacementII_ZZ, 3)
+                !call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_ZZ, PrescribedSeismicAccelerationII_ZZ, NPTS(3,1), 3, AccelerationPrecomputed(3,1)) ! Acceleration ZZ based on groundmotion
+                !call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_ZZ, PrescribedSeismicVelocityII_ZZ, NPTS(3,1), 3, VelocityPrecomputed(3,1)) ! Velocity ZZ based on groundmotion
+                !call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_ZZ, IncrementalPrescribedSeismicDisplacementII_ZZ, NPTS(3,1), 3, IncrementalDisplacementPrecomputed(3,1)) ! Displacement ZZ based on groundmotion
+                !
+                !end if 
+        
+                
+                
+                
+                
+                
+                
+                
+            !    
+            !    real(REAL_TYPE), dimension(3,1) :: AccelerationSolidPrecomputed
+            !real(REAL_TYPE), dimension(3,1) :: VelocitySolidPrecomputed
+            !real(REAL_TYPE), dimension(3,1) :: IncrementalDisplacementSolidPrecomputed
+                
+                
+            !    if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(ii,1) == .TRUE.) then 
+            !        
+            !        !generate time series for the prescribed seismic physical quantity 
+            !        call GenerateTimeSeriesForPEERPhysicalQuantity(SeismicTimeSeries_XX, DT(1,1), NPTS(1,1)) !XX
+            !        !Linear square fit line through recorded acceleration time history, a(t)
+            !        call linear_regression(SeismicTimeSeries_XX,Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(1,1) , a_XX, b_XX)
+            !        !Subtract straight line from recorded acceleration motion     
+            !        call BaseLineCorrection(SeismicTimeSeries_XX, Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(1,1) , a_XX, b_XX, PrescribedSeismicAccelerationI_XX)
+            !        !Integrate AccelerationI to get VelocityI
+            !        call IntegrateToGetVelocity(Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped,NPTS(1,1), DT(1,1), PrescribedSeismicVelocityI_XX)
+            !        !Linear least square fit through VelocityI to get cc and dd
+            !        call linear_regression(SeismicTimeSeries_XX,PrescribedSeismicVelocityI_XX, NPTS(1,1) , c_XX, d_XX)
+            !        !Subtract dd term coefficient from AccelerationI
+            !        call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_XX,PrescribedSeismicAccelerationI_XX, NPTS(1,1) , d_XX)
+            !        !Integrate AccelerationII to get VelocityII
+            !        call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_XX,NPTS(1,1), DT(1,1), PrescribedSeismicVelocityII_XX)
+            !        !Integrate AccelerationII to get DisplacementII 
+            !        call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_XX, NPTS(1,1), DT(1,1), PrescribedSeismicVelocityII_XX, PrescribedSeismicDisplacementII_XX, IncrementalPrescribedSeismicDisplacementII_XX)
+            !        !Acceleration precomputed 
+            !        call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, PrescribedSeismicAccelerationII_XX, NPTS(1,1), 1, AccelerationPrecomputed(1,1)) ! Acceleration XX based on groundmotion
+            !        call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, PrescribedSeismicVelocityII_XX, NPTS(1,1), 1, VelocityPrecomputed(1,1)) ! Velocity XX based on groundmotion
+            !        call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, IncrementalPrescribedSeismicDisplacementII_XX, NPTS(1,1), 1, IncrementalDisplacementPrecomputed(1,1)) ! Displacement XX based on groundmotion
+            !        
+            !        !call BaseLineCorrection(SeismicTimeSeries_XX, Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(1,1) , a_XX, b_XX, PrescribedSeismicAccelerationI_XX)
+            !        !call IntegrateToGetVelocity(Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped,NPTS(1,1), DT(1,1), PrescribedSeismicVelocityI_XX)
+            !        !call linear_regression(SeismicTimeSeries_XX,PrescribedSeismicVelocityI_XX, NPTS(1,1) , c_XX, d_XX)
+            !    
+            !    end if 
+            !end do 
+            
+        !!!else 
+        !!!    RETURN 
+        !!!end if 
+        
+        
+        
+
+        !      
+        !      
+        !      
+        !      
+        !      
+        !      call BaseLineCorrection(SeismicTimeSeries_XX, Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(1,1) , a_XX, b_XX, PrescribedSeismicAccelerationI_XX)
+        !      !, dimension(:,:), intent(inout), allocatable ::
+        !      call BaseLineCorrection(SeismicTimeSeries_YY, Prescribed_YY_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(2,1) , a_YY, b_YY, PrescribedSeismicAccelerationI_YY)
+        !      call BaseLineCorrection(SeismicTimeSeries_ZZ, Prescribed_ZZ_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(3,1) , a_ZZ, b_ZZ, PrescribedSeismicAccelerationI_ZZ)
+        !      
+        !      
+        !      call IntegrateToGetVelocity(Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped,NPTS(1,1), DT(1,1), PrescribedSeismicVelocityI_XX)
+        !      call IntegrateToGetVelocity(Prescribed_YY_SeismicPhysicalQuantityFileMatrixReshaped,NPTS(2,1), DT(2,1), PrescribedSeismicVelocityI_YY)
+        !      call IntegrateToGetVelocity(Prescribed_ZZ_SeismicPhysicalQuantityFileMatrixReshaped,NPTS(3,1), DT(3,1), PrescribedSeismicVelocityI_ZZ)
+        !      
+        !      
+        !      call linear_regression(SeismicTimeSeries_XX,PrescribedSeismicVelocityI_XX, NPTS(1,1) , c_XX, d_XX)
+        !      call linear_regression(SeismicTimeSeries_YY,PrescribedSeismicVelocityI_YY, NPTS(2,1) , c_YY, d_YY)
+        !      call linear_regression(SeismicTimeSeries_ZZ,PrescribedSeismicVelocityI_ZZ, NPTS(3,1) , c_ZZ, d_ZZ)
+        !      
+        !      
+        !      call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_XX,PrescribedSeismicAccelerationI_XX, NPTS(1,1) , d_XX)
+        !      call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_YY,PrescribedSeismicAccelerationI_YY, NPTS(2,1) , d_YY)
+        !      call SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_ZZ,PrescribedSeismicAccelerationI_ZZ, NPTS(3,1) , d_ZZ)
+        !      
+        !      
+        !      call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_XX,NPTS(1,1), DT(1,1), PrescribedSeismicVelocityII_XX)
+        !      call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_YY,NPTS(2,1), DT(2,1), PrescribedSeismicVelocityII_YY)
+        !      call IntegrateToGetVelocity(PrescribedSeismicAccelerationII_ZZ,NPTS(3,1), DT(3,1), PrescribedSeismicVelocityII_ZZ)
+        !      
+        !      
+        !      call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_XX, NPTS(1,1), DT(1,1), PrescribedSeismicVelocityII_XX, PrescribedSeismicDisplacementII_XX, IncrementalPrescribedSeismicDisplacementII_XX)
+        !      call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_YY, NPTS(2,1), DT(2,1), PrescribedSeismicVelocityII_YY, PrescribedSeismicDisplacementII_YY, IncrementalPrescribedSeismicDisplacementII_YY)
+        !      call IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_ZZ, NPTS(3,1), DT(3,1), PrescribedSeismicVelocityII_ZZ, PrescribedSeismicDisplacementII_ZZ, IncrementalPrescribedSeismicDisplacementII_ZZ)
+        !    
+        !      !end if 
+        !      
+        !      !GetPrescribedAccelerationVelocityDisplacementForTimeStep(TimeSeriesVector, PhysicalQuantityInputVector, &
+        !      !                                                              NPTS, &
+        !      !                                                              DirectionOfShaking)
+        !      
+        !      call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, PrescribedSeismicAccelerationII_XX, NPTS(1,1), 1, AccelerationPrecomputed(1,1)) ! Acceleration XX based on groundmotion
+        !      call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_YY, PrescribedSeismicAccelerationII_YY, NPTS(2,1), 2, AccelerationPrecomputed(2,1)) ! Acceleration YY based on groundmotion
+        !      call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_ZZ, PrescribedSeismicAccelerationII_ZZ, NPTS(3,1), 3, AccelerationPrecomputed(3,1)) ! Acceleration ZZ based on groundmotion
+        !      
+        !      call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, PrescribedSeismicVelocityII_XX, NPTS(1,1), 1, VelocityPrecomputed(1,1)) ! Velocity XX based on groundmotion
+        !      call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_YY, PrescribedSeismicVelocityII_YY, NPTS(2,1), 2, VelocityPrecomputed(2,1)) ! Velocity YY based on groundmotion
+        !      call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_ZZ, PrescribedSeismicVelocityII_ZZ, NPTS(3,1), 3, VelocityPrecomputed(3,1)) ! Velocity ZZ based on groundmotion
+        !      
+        !      call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_XX, IncrementalPrescribedSeismicDisplacementII_XX, NPTS(1,1), 1, IncrementalDisplacementPrecomputed(1,1)) ! Displacement XX based on groundmotion
+        !      call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_YY, IncrementalPrescribedSeismicDisplacementII_YY, NPTS(2,1), 2, IncrementalDisplacementPrecomputed(2,1)) ! Displacement YY based on groundmotion
+        !      call GetPrescribedAccelerationVelocityDisplacementForTimeStep(SeismicTimeSeries_ZZ, IncrementalPrescribedSeismicDisplacementII_ZZ, NPTS(3,1), 3, IncrementalDisplacementPrecomputed(3,1)) ! Displacement ZZ based on groundmotion
+        !      
+        !      
+        
+        
+        ! 1) If statement on the type of file type (PEER or Table) --> GOM
+        ! 2) For each direction, read the corresponding --> GOM
+        ! 3) Integrated to get Acc, Velo, Disp --> 
+        ! 4) 
+        ! 5) 
+        
+        
+        
+        
+        !else if (trim(BName)=='$$PRESCRIBED_SEISMIC_ACTION') then 
+        !        read(FileUnit, *, iostat=ios) DumS(1, 1:4)
+        !        call Assert( ios == 0, messageIOS//trim(BName) )
+        !        
+        !        if (DumS(1, 1) == 'on') then 
+        !            CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch = .TRUE.
+        !        else 
+        !            RETURN 
+        !        end if 
+        !        
+        !        if (DumS(1, 2) == 'on') then 
+        !            CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(1,1) = .TRUE.
+        !        end if 
+        !        
+        !        if (DumS(1, 3) == 'on') then 
+        !            CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(2,1) = .TRUE.
+        !        end if 
+        !        
+        !        if (DumS(1, 4) == 'on') then 
+        !            CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(3,1) = .TRUE.
+        !        end if 
+        
+        
+        
+        end subroutine ObtainPrescribedSeismicAction
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 
         subroutine UpdateMultipliersForTimeDepencency()
@@ -2993,12 +3901,12 @@
               CalParams%Multipliers%AccelerationSolid = 0.0
             end if
           end if
-          if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then !Velocity
-              !reading the prescribed velocity file 
-              call ReadPrescribedAccelerationOrVelocityFromFile
-              !finding the multiplier specific using the overall real time
-              call GetPrescribedVelocityOrAccelerationForTimeStep
-          end if
+          !if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then !Velocity
+          !    !reading the prescribed velocity file 
+          !    call ReadPrescribedAccelerationOrVelocityFromFile
+          !    !finding the multiplier specific using the overall real time
+          !    call GetPrescribedVelocityOrAccelerationForTimeStep
+          !end if
           
 
           
@@ -3007,85 +3915,1156 @@
           end if
                   
         end subroutine UpdateMultipliersForTimeDepencency
+        
+        
+        subroutine UpdateTransientGroundMotionTime(TimeSeriesVector, &
+                                                     NPTS) ! This is done in effort to generalize the seismic boundary condition
+                                                                            !TimeSeriesAcceleration, AccelerationInput, & !Acceleration 
+                                                                            !TimeSeriesVelocity, VelocityInput, & !Velocity
+                                                                            !TimeSeriesDisplacement, DisplacementInput, & !Displacement 
+                                                                            
+        !This subroutine updates the time series to start the ground motion time 
+        implicit none 
+        
+        integer(INTEGER_TYPE), intent(in) :: NPTS
+        !integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking
+        real(REAL_TYPE), dimension(NPTS), intent(inout) :: TimeSeriesVector
+        !real(REAL_TYPE), dimension(NPTS+1), intent(in) :: PhysicalQuantityInputVector
+        !real(REAL_TYPE), intent(out) :: PhysicalQuantityPrecomputed
+        
+        !real(REAL_TYPE), dimension(NPTS,1), intent(in) :: TimeSeriesVector
+        integer(INTEGER_TYPE) :: ii
+        !real(REAL_TYPE) :: PhysicalQuantityPrecomputed
+        !real(REAL_TYPE) :: AccelerationSolidPrecomputed, VelocitySolidPrecomputed, IncrementalDisplacementSolidPrecomputed
+        
+        !real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation
+        
+        
+        CalParams%PrescribedSeismicAction%TransientBoundaryConditionStaringTime = CalParams%OverallRealTime
+                
+                do ii=1,NPTS
+                    !Correcting the starting time of the data read from file (hardcoded to 1D prescribed boundary condition) 
+                    TimeSeriesVector(ii) = &
+                        TimeSeriesVector(ii) + CalParams%PrescribedSeismicAction%TransientBoundaryConditionStaringTime !- CalParams%TimeIncrement
+                end do 
 
+                
+                                                                            
+                                                                            
+                                                                            
+        end subroutine UpdateTransientGroundMotionTime
+                                                                            
+        
+        
+        !!---------------------------------------------------------------------------------
+        !
+        !subroutine GetPrescribedAccelerationVelocityDisplacementForTimeStep(TimeSeriesVector, PhysicalQuantityInputVector, &
+        !                                                                    NPTS, & !DirectionOfShaking, &
+        !                                                                    PhysicalQuantityPrecomputed) ! This is done in effort to generalize the seismic boundary condition
+        !                                                                    !TimeSeriesAcceleration, AccelerationInput, & !Acceleration 
+        !                                                                    !TimeSeriesVelocity, VelocityInput, & !Velocity
+        !                                                                    !TimeSeriesDisplacement, DisplacementInput, & !Displacement 
+        !                                                                    
+        !!This subroutine uses the read PEER data to obtain the physical quantity at a particular timestep 
+        !implicit none 
+        !
+        !integer(INTEGER_TYPE), intent(in) :: NPTS
+        !!integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking
+        !real(REAL_TYPE), dimension(NPTS,1), intent(inout) :: TimeSeriesVector
+        !real(REAL_TYPE), dimension(NPTS,1), intent(in) :: PhysicalQuantityInputVector
+        !real(REAL_TYPE), intent(out) :: PhysicalQuantityPrecomputed
+        !
+        !!real(REAL_TYPE), dimension(NPTS,1), intent(in) :: TimeSeriesVector
+        !integer(INTEGER_TYPE) :: ii
+        !!real(REAL_TYPE) :: PhysicalQuantityPrecomputed
+        !!real(REAL_TYPE) :: AccelerationSolidPrecomputed, VelocitySolidPrecomputed, IncrementalDisplacementSolidPrecomputed
+        !
+        !real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation
+        !
+        ! !!!!!!!! START: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!
+        !
+        !! Prescribed velocity for the particular timestep
+        !
+        !!if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(DirectionOfShaking) == .TRUE.) then  ! &
+        !    !.and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then
+        !
+        !    ! Record the start time of the application of the transient boundary condition
+        !    !if ( .not. allocated(CalParams%PrescribedSeismicAction%TransientBoundaryConditionStaringTime)) then
+        !        !allocate(CalParams%PrescribedSeismicAction%TransientBoundaryConditionStaringTime(1)) ! Allocate the size of the matrix (specifying 2 columns)
+        !        !CalParams%PrescribedSeismicAction%TransientBoundaryConditionStaringTime = CalParams%OverallRealTime
+        !        !
+        !        !do ii=1,NPTS
+        !        !    !Correcting the starting time of the data read from file (hardcoded to 1D prescribed boundary condition) 
+        !        !    TimeSeriesVector(ii,1) = &
+        !        !        TimeSeriesVector(ii,1) + CalParams%PrescribedSeismicAction%TransientBoundaryConditionStaringTime - CalParams%TimeIncrement
+        !        !end do 
+        !        
+        !    !end if
+        !
+        !    ! Looks into the matrix first column (time) and finds the first point higher than the total real time
+        !    do ii=1,NPTS !loop accross the rows from the presctibed velocity file
+        !    
+        !        if (CalParams%OverallRealTime > TimeSeriesVector(NPTS,1)) then
+        !            
+        !            PhysicalQuantityPrecomputed = 0.0 !Stop shaking after end of motion
+        !            
+        !            !CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed = 0 ! Stop prescribed velocity
+        !            !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed = 0 ! Stop prescribed acceleration 
+        !            !CalParams%PrescribedSeismicAction%DisplacementSolidPrecomputed = 0 ! Stop prescribed displacement
+        ! 
+        !            else if (TimeSeriesVector(ii,1)>CalParams%OverallRealTime) then 
+        !                
+        !            !Arrange in physical quantities to be able to interpolate them 
+        !            CoordinatesForInterpolation(1,1) = ( TimeSeriesVector(ii-1,1) ) 
+        !            CoordinatesForInterpolation(1,2) = ( PhysicalQuantityInputVector(ii-1,1) )
+        !            
+        !            !Acceleration(ii-1,1), Velocity(ii-1,1), Displacement(ii-1,1) )
+        !            CoordinatesForInterpolation(2,1) = ( TimeSeriesVector(ii,1) )
+        !            CoordinatesForInterpolation(2,2) = ( PhysicalQuantityInputVector(ii,1) )
+        !            
+        !            !, Acceleration(ii,1), Velocity(ii,1), Displacement(ii,1) )
+        !            
+        !            
+        !            !PrescribedVelocityFileMatrix(ii-1,:) ! Store from file: time (1st column) and velocity multiplier (2nd column) in previous line 
+        !            
+        !            !PrescribedVelocityFileMatrix(ii,:) ! Store from file: time(1st column) and velocity multiplier (2nd column) in current line
+        !         
+        !            ! Linear interpolation of acceleration. 1-->Time; 2-->Acceleration; 
+        !            call GetLinearInterpolationOfPhysicalQuantity(CoordinatesForInterpolation(:,1), CoordinatesForInterpolation(:,2), PhysicalQuantityPrecomputed) ! --> 
+        !            
+        !            !! Linear interpolation of acceleration. 1-->Time; 2-->Acceleration; 
+        !            !call GetLinearInterpolationOfPhysicalQuantity(CoordinatesForInterpolation(:,1), CoordinatesForInterpolation(:,2), AccelerationSolidPrecomputed) ! --> 
+        !            !! Linear interpolation of velocity. 1-->Time; 3-->Velocity
+        !            !call GetLinearInterpolationOfPhysicalQuantity(CoordinatesForInterpolation(:,1), CoordinatesForInterpolation(:,3), VelocitySolidPrecomputed) 
+        !            !! Linear interpolation of displacement. 1-->Time; 4-->Displacement
+        !            !call GetLinearInterpolationOfPhysicalQuantity(CoordinatesForInterpolation(:,1), CoordinatesForInterpolation(:,4), IncrementalDisplacementSolidPrecomputed) 
+        !            !
+        !            !Increment = (((CoordinatesForInterpolation(2,2)-CoordinatesForInterpolation(1,2))&
+        !            !    /(CoordinatesForInterpolation(2,1)-CoordinatesForInterpolation(1,1))) * &
+        !            !    (CalParams%OverallRealTime - CoordinatesForInterpolation(1,1)))
+        !            !
+        !            ! For the first timestep VelocitySolidPrevious does not exist. 
+        !            ! Hence, special consideration is made for the first step by using the reading before the timestep occurs
+        !            
+        !            !if ((CalParams%TimeStep == 1) .and. (CalParams%IStep == 1)) then ! If it is the first timestep in the first load step (i.e. no CalParams%Multipliers%VelocitySolidPrevious)
+        !            !    CalParams%PrescribedSeismicAction%VelocitySolidPrevious = CoordinatesForInterpolation(1,2)
+        !            !else ! If it is after the first step 
+        !            !    CalParams%PrescribedSeismicAction%VelocitySolidPrevious = CalParams%Multipliers%VelocitySolidCurrent
+        !            !end if  
+        !            
+        !            !if (DirectionOfShaking == 1) then 
+        !            !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed(1,1) = AccelerationSolidPrecomputed
+        !            !CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed(1,1) = VelocitySolidPrecomputed
+        !            !CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed(1,1) = IncrementalDisplacementSolidPrecomputed
+        !            !end if 
+        !            !
+        !            !if (DirectionOfShaking == 2) then 
+        !            !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed(2,1) = AccelerationSolidPrecomputed
+        !            !CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed(2,1) = VelocitySolidPrecomputed
+        !            !CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed(2,1) = IncrementalDisplacementSolidPrecomputed
+        !            !end if
+        !            !
+        !            !if (DirectionOfShaking == 3) then 
+        !            !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed(3,1) = AccelerationSolidPrecomputed
+        !            !CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed(3,1) = VelocitySolidPrecomputed
+        !            !CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed(3,1) = IncrementalDisplacementSolidPrecomputed
+        !            !end if
+        !            
+        !            !CoordinatesForInterpolation(1,2) + Increment
+        !            !(CalParams%Multipliers%VelocitySolidCurrent- &
+        !                                                      !CalParams%Multipliers%VelocitySolidPrevious)&
+        !                                                      !/CalParams%TimeIncrement 
+        !            
+        !            exit 
+        !        end if 
+        !    end do
+        !    
+        !
+        !
+        !!else         
+        !    !PhysicalQuantityPrecomputed = 0.0
+        !        !CalParams%PrescribedSeismicAction%VelocitySolidCurrent = 0
+        !        !CalParams%Multipliers%AccelerationSolid = 0
+        !!end if
+        !
+        !                                                            
+        !end subroutine GetPrescribedAccelerationVelocityDisplacementForTimeStep
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+        
+        !-------------------------------------------------------------------------------------------------------------                                                                            
+        subroutine GetPrescribedPhysicalQuantityForTimeStep(TimeSeriesVector, PhysicalQuantityInputVector, &
+                                                            NPTS, &
+                                                            PhysicalQuantityPrecomputed) ! This is done in effort to generalize the seismic boundary condition
+                                                                          
+        !This subroutine uses the read PEER data to obtain the physical quantity at a particular timestep 
+        implicit none 
+        
+        integer(INTEGER_TYPE), intent(in) :: NPTS
+        !integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking
+        real(REAL_TYPE), dimension(NPTS), intent(inout) :: TimeSeriesVector
+        real(REAL_TYPE), dimension(NPTS), intent(in) :: PhysicalQuantityInputVector
+        real(REAL_TYPE), intent(out) :: PhysicalQuantityPrecomputed
+        
+        !real(REAL_TYPE), dimension(NPTS,1), intent(in) :: TimeSeriesVector
+        integer(INTEGER_TYPE) :: ii
+        !real(REAL_TYPE) :: PhysicalQuantityPrecomputed
+        !real(REAL_TYPE) :: AccelerationSolidPrecomputed, VelocitySolidPrecomputed, IncrementalDisplacementSolidPrecomputed
+        
+        real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation
+        
+         !!!!!!!! START: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!
+ 
+        ! Prescribed velocity for the particular timestep
 
+            ! Looks into the matrix first column (time) and finds the first point higher than the total real time
+            do ii=1,NPTS !loop accross the rows from the presctibed velocity file
+            
+                if (CalParams%OverallRealTime > TimeSeriesVector(NPTS)) then
+                    
+                    PhysicalQuantityPrecomputed = 0.0 !Stop shaking after end of motion
+                    
+                    !CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed = 0 ! Stop prescribed velocity
+                    !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed = 0 ! Stop prescribed acceleration 
+                    !CalParams%PrescribedSeismicAction%DisplacementSolidPrecomputed = 0 ! Stop prescribed displacement
+         
+                    else if (TimeSeriesVector(ii)>CalParams%OverallRealTime) then 
+                        
+                    !Arrange in physical quantities to be able to interpolate them 
+                    CoordinatesForInterpolation(1,1) = ( TimeSeriesVector(ii-1) ) 
+                    CoordinatesForInterpolation(1,2) = ( PhysicalQuantityInputVector(ii-1) )
+                    
+                    !Acceleration(ii-1,1), Velocity(ii-1,1), Displacement(ii-1,1) )
+                    CoordinatesForInterpolation(2,1) = ( TimeSeriesVector(ii) )
+                    CoordinatesForInterpolation(2,2) = ( PhysicalQuantityInputVector(ii) )
+                 
+                    ! Linear interpolation of acceleration. 1-->Time; 2-->Acceleration; 
+                    call GetLinearInterpolationOfPhysicalQuantity(CoordinatesForInterpolation(:,1), CoordinatesForInterpolation(:,2), PhysicalQuantityPrecomputed) ! --> 
+                    
+                    exit 
+                end if 
+            end do
+            
+        
+                                                                    
+        end subroutine GetPrescribedPhysicalQuantityForTimeStep
+        
+                                                                            
+                                                                            
+        !-------------------------------------------------------------------------------------------------------------                                                                    
+                                                                            
+                                                                            
+        subroutine GetLinearInterpolationOfPhysicalQuantity(Time, PhysicalQuantity, PhysicalQuantityAtTimeOfInterest)
+        ! This subroutine interpolates your physical quantity to get the value of the physical quantity increment
+        ! and sums it with the previous physical quantity value. 
+        implicit none 
+        
+        !real(REAL_TYPE), dimension(2, 2), intent(in) :: CoordinatesOfTimeAccelerationVelocityDisplacement
+        real(REAL_TYPE), dimension(2, 1), intent(in) :: Time
+        real(REAL_TYPE), dimension(2, 1), intent(in) :: PhysicalQuantity
+        real(REAL_TYPE), intent(out) :: PhysicalQuantityAtTimeOfInterest
+        
+        !real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation 
+        real(REAL_TYPE) :: Increment
+        ! Hardcoded (needs to be generalized for different dimensions e.g. 3D shaking) --> should be general now 
+         
+        
+        
+        !Time_ = CoordinatesOfTimeAccelerationVelocityDisplacement(:,1)
+        !PhysicalQuantity_ = CoordinatesOfTimeAccelerationVelocityDisplacement(:,2)
+        
+        !Imagine time on x-axis and any physical quantity on y-axis, and you want to perform a linear interpolation 
+        Increment = (((PhysicalQuantity(2,1)-PhysicalQuantity(1,1))&
+                        /(Time(2,1)-Time(1,1))) * &
+                        (CalParams%OverallRealTime - Time(1,1))) !This one-dimensional linear interpolation equation has been verified by a handcalculation 
+        
+        
+        PhysicalQuantityAtTimeOfInterest = Increment + PhysicalQuantity(1,1) !We
+        
+        end subroutine GetLinearInterpolationOfPhysicalQuantity
+        
+        
+        
+                                                                            
+                                                                            
+                                                      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine IntegrateToGetDisplacement(PrescribedSeismicAccelerationII_XX, NPTS, DT, PrescribedSeismicVelocityII_XX, PrescribedSeismicDisplacementII_XX, IncrementalPrescribedSeismicDisplacementII_XX, TimeSeries) !, DirectionOfShaking)
+        !(PrescribedSeismicAccelerationII_XX,NPTS(1,1), NPTS(1,1), DT(1,1), PrescribedSeismicVelocityII_XX, PrescribedSeismicDisplacementII_XX, IncrementalPrescribedSeismicDisplacementII_XX)
+        implicit none 
+        
+        integer(INTEGER_TYPE) :: ii, NN, unitno
+        integer(INTEGER_TYPE), intent(in) :: NPTS
+        !integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking
+        real(REAL_TYPE), intent(in) :: DT
+        real(REAL_TYPE), dimension(NPTS), intent(in) :: PrescribedSeismicAccelerationII_XX
+        real(REAL_TYPE), dimension(NPTS), intent(in) :: PrescribedSeismicVelocityII_XX
+        real(REAL_TYPE), dimension(NPTS), intent(in) :: TimeSeries
 
+        real(REAL_TYPE), dimension(:), intent(out), allocatable :: PrescribedSeismicDisplacementII_XX
+        real(REAL_TYPE), dimension(:), intent(out), allocatable :: IncrementalPrescribedSeismicDisplacementII_XX
+        
+        allocate(PrescribedSeismicDisplacementII_XX(NPTS) )
+        allocate(IncrementalPrescribedSeismicDisplacementII_XX(NPTS) )
+        
+        !if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(DirectionOfShaking) == .TRUE.) then 
+        
+        PrescribedSeismicDisplacementII_XX = 0.0
+        IncrementalPrescribedSeismicDisplacementII_XX = 0.0
+        NN = NPTS-1
+        
+        do ii = 1, NN
+            !PrescribedSeismicDisplacementII_XX(ii+1) = PrescribedSeismicDisplacementII_XX(ii) + (DT*PrescribedSeismicVelocityII_XX(ii) ) + ( (real(1)/real(6)) * (DT**2) * ( (2*PrescribedSeismicAccelerationII_XX(ii)) + PrescribedSeismicAccelerationII_XX(ii+1) ) ) 
+            !IncrementalPrescribedSeismicDisplacementII_XX(ii+1) = (DT*PrescribedSeismicVelocityII_XX(ii) ) + ( (real(1)/real(6)) * (DT**2) * ( (2*PrescribedSeismicAccelerationII_XX(ii)) + PrescribedSeismicAccelerationII_XX(ii+1) ) ) 
+        
+            PrescribedSeismicDisplacementII_XX(ii+1) = PrescribedSeismicDisplacementII_XX(ii) + ((TimeSeries(ii+1)-TimeSeries(ii))*PrescribedSeismicVelocityII_XX(ii) ) + ( (real(1)/real(6)) * ((TimeSeries(ii+1)-TimeSeries(ii))**2) * ( (2*PrescribedSeismicAccelerationII_XX(ii)) + PrescribedSeismicAccelerationII_XX(ii+1) ) ) 
+            IncrementalPrescribedSeismicDisplacementII_XX(ii+1) = ((TimeSeries(ii+1)-TimeSeries(ii))*PrescribedSeismicVelocityII_XX(ii) ) + ( (real(1)/real(6)) * ((TimeSeries(ii+1)-TimeSeries(ii))**2) * ( (2*PrescribedSeismicAccelerationII_XX(ii)) + PrescribedSeismicAccelerationII_XX(ii+1) ) ) 
+            
+        end do 
+        
+        
+        
+        ! === Write to file ===
+        unitno = 99
+        open(unit=unitno, file="PrescribedSeismicDisplacementII_XX.txt", status="replace", action="write")
+        do ii=1,NPTS
+            write(unitno,'(ES16.8,ES16.8,ES16.8)') TimeSeries(ii), PrescribedSeismicDisplacementII_XX(ii), IncrementalPrescribedSeismicDisplacementII_XX(ii)
+        end do
+        close(unitno)
+        
+        
+        
+        !else
+        !    RETURN 
+        !end if 
+        
+        end subroutine IntegrateToGetDisplacement
+        
+        
+        !
+        !subroutine IntegrateAccelerationIIToGetVelocityII(PrescribedSeismicAccelerationII_XX,NPTS(1,1), DT(1,1))
+        !implicit none 
+        !
+        !do ii = 1, (NPTS-1)
+        !    PrescribedSeismicVelocityII_XX(ii+1) = PrescribedSeismicVelocityII_XX(ii) +  
+        !
+        !
+        !
+        !
+        !
+        !end subroutine 
+        
+        
+        subroutine SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_XX,PrescribedSeismicAccelerationI_XX, NPTS , d_XX, TimeSeries)!, DirectionOfShaking)
+        !SubractDDTermFromAccelerationI(PrescribedSeismicAccelerationII_XX,PrescribedSeismicAccelerationI_XX, NPTS(1,1) , d_XX)
+        implicit none
+        
+        integer(INTEGER_TYPE) :: ii, unitno
+        integer(INTEGER_TYPE), intent(in) :: NPTS
+        !integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking
+        !real(REAL_TYPE), intent(in) :: DT
+        real(REAL_TYPE), intent(in) :: d_XX
+        real(REAL_TYPE), dimension(NPTS), intent(in) :: PrescribedSeismicAccelerationI_XX
+        real(REAL_TYPE), dimension(NPTS), intent(in) :: TimeSeries
+        real(REAL_TYPE), dimension(:), intent(inout), allocatable :: PrescribedSeismicAccelerationII_XX
+        
+        !if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(DirectionOfShaking) == .TRUE.) then 
+        
+        allocate(PrescribedSeismicAccelerationII_XX(NPTS))
+        
+        PrescribedSeismicAccelerationII_XX = 0.0
+        
+        do ii = 1, NPTS
+            PrescribedSeismicAccelerationII_XX(ii) = PrescribedSeismicAccelerationI_XX(ii) - d_XX
+        end do 
+        
+        
+        ! === Write to file ===
+        unitno = 99
+        open(unit=unitno, file="PrescribedSeismicAccelerationII_XX.txt", status="replace", action="write")
+        do ii=1,NPTS
+            write(unitno,'(ES16.8,ES16.8)') TimeSeries(ii), PrescribedSeismicAccelerationII_XX(ii)
+        end do
+        close(unitno)
+        
+        
+        !else 
+        !    RETURN 
+        !end if
+        
+        
+        end subroutine SubractDDTermFromAccelerationI
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine IntegrateToGetVelocity(Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped,NPTS, DT, PrescribedSeismicVelocityI_XX, TimeSeries)
+        !IntegrateToGetVelocity(PrescribedSeismicAccelerationII_XX,NPTS(1,1), DT(1,1), PrescribedSeismicVelocityII_XX)
+        implicit none 
+        integer(INTEGER_TYPE) :: ii, NN, unitno
+        integer(INTEGER_TYPE), intent(in) :: NPTS
+        !integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking
+        real(REAL_TYPE), intent(in) :: DT
+        real(REAL_TYPE), dimension(NPTS), intent(in) :: Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped
+        real(REAL_TYPE), dimension(:), intent(inout), allocatable :: PrescribedSeismicVelocityI_XX
+        
+        real(REAL_TYPE), dimension(:), intent(in) :: TimeSeries
+        
+        !if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(DirectionOfShaking) == .TRUE.) then 
+        
+        allocate(PrescribedSeismicVelocityI_XX(NPTS))
+        
+        PrescribedSeismicVelocityI_XX = 0.0
+        
+        
+        NN = NPTS-1
+        
+        do ii=1,NN
+            !PrescribedSeismicVelocityI_XX(ii+1) = PrescribedSeismicVelocityI_XX(ii) + 0.5*DT*(Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped(ii) + Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped(ii+1))
+            PrescribedSeismicVelocityI_XX(ii+1) = PrescribedSeismicVelocityI_XX(ii) + 0.5*(TimeSeries(ii+1)-TimeSeries(ii))*(Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped(ii) + Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped(ii+1))
+        end do 
+        
+        
+        
+        
+        ! === Write to file ===
+        unitno = 99
+        open(unit=unitno, file="PrescribedSeismicVelocityI_XX.txt", status="replace", action="write")
+        do ii=1,NPTS
+            write(unitno,'(ES16.8,ES16.8)') TimeSeries(ii), PrescribedSeismicVelocityI_XX(ii)
+        end do
+        close(unitno)
+    
+    
+    
+        
+        !else 
+        !    RETURN 
+        !end if 
+        
+        
+        end subroutine IntegrateToGetVelocity
 
-subroutine ReadPrescribedAccelerationOrVelocityFromFile()
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine BaseLineCorrection(SeismicTimeSeries_, Prescribed_SeismicPhysicalQuantityFileMatrixReshaped, NPTS , aa, bb, PrescribedSeismicAccelerationI_)
+        !BaseLineCorrection(SeismicTimeSeries_XX, Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(1,1) , a_XX, b_XX, PrescribedSeismicAccelerationI_XX)
+        implicit none 
+        integer(INTEGER_TYPE) :: ii
+        integer(INTEGER_TYPE), intent(in) :: NPTS
+        !integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking
+        real(REAL_TYPE), intent(in) :: aa
+        real(REAL_TYPE), intent(in) :: bb
+        real(REAL_TYPE), dimension(NPTS), intent(in) :: SeismicTimeSeries_
+        real(REAL_TYPE), dimension(NPTS), intent(in) :: Prescribed_SeismicPhysicalQuantityFileMatrixReshaped
+        real(REAL_TYPE), dimension(:), intent(out), allocatable :: PrescribedSeismicAccelerationI_
+        
+        
+        allocate(PrescribedSeismicAccelerationI_(NPTS) )
+        PrescribedSeismicAccelerationI_ = 0.0
+        
+        
+        do ii=1,NPTS
+            PrescribedSeismicAccelerationI_(ii) = Prescribed_SeismicPhysicalQuantityFileMatrixReshaped(ii) - ( aa + (bb*SeismicTimeSeries_(ii)) )
+        end do 
+        
+        
+        
+        end subroutine BaseLineCorrection
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine GenerateTimeSeriesForPEERPhysicalQuantity(TimeSeries, DT, NPTS)
+        ! purpose: generate time series for the data read from PEER file. 
+        
+        implicit none 
+        integer(INTEGER_TYPE), intent(in) :: NPTS
+        !integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking
+        real(REAL_TYPE), intent(in) :: DT
+        
+        !real(REAL_TYPE), intent(inout), dimension(:), allocatable :: PrescribedSeismicPhysicalQuantityFileMatrixReshaped !TimeSeries!, dimension(NPTS,1) :: TimeSeries
+        real(REAL_TYPE), dimension(:) :: TimeSeries
+        
+        integer(INTEGER_TYPE) :: ii
+        
+        !if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(DirectionOfShaking) == .TRUE.) then 
+        
+        !allocate(TimeSeries(NPTS+1))
+        TimeSeries = 0.0
+        
+        do ii= 1, NPTS
+            TimeSeries(ii+1) = (ii)*DT 
+        end do 
+        !PrescribedSeismicPhysicalQuantityFileMatrixReshaped(:,1) = TimeSeries
+        !else 
+        !    RETURN
+        !end if
+        
+        
+        end subroutine GenerateTimeSeriesForPEERPhysicalQuantity
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine linear_regression(x, y, npts, a, b) !, DirectionOfShaking)
+        !linear_regression(SeismicTimeSeries_XX,Prescribed_XX_SeismicPhysicalQuantityFileMatrixReshaped, NPTS(1,1) , a_XX, b_XX)
+        implicit none
+        integer(INTEGER_TYPE), intent(in) :: npts
+        !integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking
+        real(REAL_TYPE), dimension(npts,1), intent(in) :: x,y
+
+        integer(INTEGER_TYPE) ::i
+
+        real(REAL_TYPE) :: s1,s2,s3,s4
+        real(REAL_TYPE), intent(inout) :: a, b
+        
+        !if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(1,DirectionOfShaking) == .TRUE.) then 
+        
+        s1 = 0.0
+        s2 = 0.0
+        s3 = 0.0
+        s4 = 0.0
+        
+        
+        !data x /-4.5,-3.2,-1.4,0.8,2.5,4.1/
+        !data y /0.7,2.3,3.8,5.0,5.5,6.6/
+
+        do i=1,npts
+
+            s1 = s1 + x(i,1)
+
+            s2=s2+x(i,1)**2
+
+            s3=s3+y(i,1)
+
+            s4=s4+x(i,1)*y(i,1)
+
+        enddo
+
+        b=((npts*s4)-(s1*s3))/((npts*s2)-(s1**2))
+
+        a=(s3-(s1*b))/npts
+
+        !write(*,6)a,b
+        !6       format(2x,"y=",f9.7," +",f9.7,1x,"x")
+        !else 
+        !    RETURN 
+        !end if 
+        
+
+        end subroutine linear_regression
+        
+        
+        
+        
+        
+        
+        
+        
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+         
+        
+        
+        
+        !---------------------------------------------------------------------------------------------------
+        
+        !subroutine ReadPrescribedAccelerationOrVelocityFromFile()
+        !!**********************************************************************
+        !!
+        !! Function:  Read the time history to provide a matrix of the multipliers. 
+        !!            This function is to be used to read both acceleration and/or velocity time history. 
+        !!            Function currently written for 1D prescribed velocity or acceleration from file.
+        !!            
+        !!
+        !! File extension: PVF for prescribed velocity from file 
+        !!                 PAF for prescribed acceleration from file
+        !!
+        !! File organisation:
+        !!            Column 1 - time (seconds)
+        !!            Column 2 - prescribed velocity or acceleration (dimensionless)
+        !!
+        !!**********************************************************************        
+        !implicit none
+        !
+        !! local variables 
+        !integer(INTEGER_TYPE) :: ios, ii!, PVFunit
+        !character(len=255) :: PVFileName
+        !real(REAL_TYPE), dimension(1,2) :: Temp ! temporary variable for reading number of lines
+        !
+        !!PVFunit = 70
+        !
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
+        !! Open Prescribed Velocity File 
+        !if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
+        !    .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then 
+        !    
+        !    ! Prepare file name for opening
+        !    !PVFileName = trim(CalParams%PrescribedVelo%FileNamePrescribedVelocity)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+        !    PVFileName = trim(CalParams%FileNames%ProjectName)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+        !    
+        !    
+        !
+        !    if ((.not. allocated(PrescribedVelocityFileMatrix))) then
+        !        ! Check if PVF file exists in project folder, otherwise give error and stop execution
+        !        if ( FExist(trim(PVFileName)) ) then
+        !            call GiveMessage('Reading prescribed velocity file: ' // trim(PVFileName) )                     
+        !            call FileOpen(PVFunit,trim(PVFileName))
+        !        else    
+        !            ! Give warning if file is not available
+        !            call GiveError('Prescribed velocity file does not exist!' // NEW_LINE('A') // 'required PVF file: ' // trim(PVFileName) )      
+        !        end if
+        !        
+        !        ! Read Prescribed Velocity File in the matrix line by line
+        !        do
+        !            read(PVFunit,*,iostat=ios) Temp ! Reading each row
+        !            if (ios/=0) then 
+        !                exit ! ios becomes non-zero when end of file was reached
+        !            end if 
+        !            CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines = &
+        !                CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines + 1 ! Counting the number of lines 
+        !        end do
+        !    
+        !        ! Rewind file for reading in allocated matrix 
+        !        rewind(PVFunit) 
+        !    
+        !        ! Allocate and read the matrix of velocity time history 
+        !        allocate (PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,2)) ! Allocate the size of the matrix (specifying 2 columns)
+        !
+        !        do ii = 1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
+        !            read(PVFunit,*,iostat=ios) (PrescribedVelocityFileMatrix(ii,1),PrescribedVelocityFileMatrix(ii,2))
+        !        end do 
+        !        close(PVFunit)
+        !    end if 
+        !end if
+        !
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+        !
+        !
+        !end subroutine ReadPrescribedAccelerationOrVelocityFromFile
+        
+        
+        
+        
+        
+        
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: PEER DATABASE READING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+        subroutine ReadPrescribedSeismicAction_AT2_VT2_PEERFile( &
+            PrescribedSeismicPhysicalQuantityFileMatrixReshaped, &
+            DirectionOfShaking, &
+            DT, &
+            NPTS, &
+            PRESCRIBED_PEER_FILE_EXTENSION)
         !**********************************************************************
         !
         ! Function:  Read the time history to provide a matrix of the multipliers. 
-        !            This function is to be used to read both acceleration and/or velocity time history. 
-        !            Function currently written for 1D prescribed velocity or acceleration from file.
+        !            File extension --> Physical quantity [unit]
+        !            AT2 --> Acceleration [g]
+        !            VT2 --> Velocity [cm/sec]
+        !            DT2 --> Displacement [cm]
+        !            This function is to be used to read acceleration, velocity, or displacement from PEER database. 
+        !            Function currently written for 1D prescribed acceleration, velocity or displacement from file.
         !            
         !
         ! File extension: PVF for prescribed velocity from file 
         !                 PAF for prescribed acceleration from file
         !
         ! File organisation:
-        !            Column 1 - time (seconds)
-        !            Column 2 - prescribed velocity or acceleration (dimensionless)
+        !            Line 1 - "PEER NGA STRONG MOTION DATABASE RECORD" (i.e., generic string title)
+        !            Line 2 - Event + number + date + station + component (i.e., 0, 270, UP)
+        !            Line 3 - Tells you the physical quantity and units 
+        !            Line 4 - "NPTS"= number of points, "DT"= time step in seconds  
+        ! Output:
+        !            1) Time series (be it acceleration, velocity or displacement)
+        !            2) DT = sampling time in seconds
+        !            3) NPTS = number of sampling point in the time series (i.e., length of time series)
         !
         !**********************************************************************        
         implicit none
      
+        ! in variables 
+        integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking ! XX=1, YY=2, ZZ=3
+        character(len=255), intent(in) :: PRESCRIBED_PEER_FILE_EXTENSION
+        
+        ! out variables 
+        integer(INTEGER_TYPE), intent(out) :: NPTS
+        real(REAL_TYPE), intent(out) :: DT
+
+        ! inout variables 
+        real(REAL_TYPE), dimension(:,:), intent(inout), allocatable :: PrescribedSeismicPhysicalQuantityFileMatrixReshaped !Horizontal PEER shaped XX-direction (NoOfRows, 5)
+        
         ! local variables 
-        integer(INTEGER_TYPE) :: ios, ii!, PVFunit
-        character(len=255) :: PVFileName
-        real(REAL_TYPE), dimension(1,2) :: Temp ! temporary variable for reading number of lines
+        integer(INTEGER_TYPE) :: ios, ii, kk, jj, NumberOfColumns, NumberOfRows !, PVFunit
         
-        !External :: FExist
-        
-        !PVFunit = 70
+        character(len=255), dimension(4,4) :: Temp ! temporary variable for reading number of lines --> this might not be necessary as the NPTS are given in the file... How about we use this to read the header...?
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-        ! Open Prescribed Velocity File 
-        if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
-            .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then 
-            
-            ! Prepare file name for opening
-            PVFileName = trim(CalParams%FileNames%ProjectName)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+        real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedSeismicPhysicalQuantityFileMatrix
         
-            
+        
+        character(len=255) :: PEER_FILE_NAME
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: READING PEER FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         
+      
+        ! Prepare file name for opening
+        PEER_FILE_NAME = trim( CalParams%PrescribedSeismicAction%InputFileName(DirectionOfShaking) )//'.'//PRESCRIBED_PEER_FILE_EXTENSION ! Concatenate extention (either .AT2, .VT2, .DT2)
 
-            if ((.not. allocated(PrescribedVelocityFileMatrix))) then
-                ! Check if PVF file exists in project folder, otherwise give error and stop execution
-                if ( FExist(trim(PVFileName)) ) then
-                    call GiveMessage('Reading prescribed velocity file: ' // trim(PVFileName) )                     
-                    call FileOpen(PVFunit,trim(PVFileName))
+        ! We are reading regardless of the quantity as the format of AT2, VT2, DT2 
+            if ((.not. allocated(PrescribedSeismicPhysicalQuantityFileMatrix))) then !Physical quantity means either acceleration, velocity or displacement (i.e., it is a vector)
+                ! Check if PEER file exists in project folder, otherwise give error and stop execution
+                if ( FExist(trim(PEER_FILE_NAME)) ) then
+                    !call GiveMessage('Reading: ' // PRESCRIBED_SEISMIC_ACTION_TYPE )
+                    call GiveMessage('From PEER file: ' // PEER_FILE_NAME)                     
+                    call FileOpen(PEERUnit, PEER_FILE_NAME)
                 else    
                     ! Give warning if file is not available
-                    call GiveError('Prescribed velocity file does not exist!' // NEW_LINE('A') // 'required PVF file: ' // trim(PVFileName) )      
+                    call GiveError('Prescribed PEER file does not exist!' // NEW_LINE('A') // 'required PEER file: ' // PEER_FILE_NAME )      
                 end if
                 
                 ! Read Prescribed Velocity File in the matrix line by line
-                do
-                    read(PVFunit,*,iostat=ios) Temp ! Reading each row
-                    if (ios/=0) then 
-                        exit ! ios becomes non-zero when end of file was reached
-                    end if 
-                    CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines = &
-                        CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines + 1 ! Counting the number of lines 
+                ! No need to read file twice to get the number of lines in the file 
+                do ii= 1,4 ! four corresponds to the first four lines of the PEER file which has information regarding the file to be read
+                    read(PEERUnit,*,iostat=ios) Temp(ii,1:4) ! Reading each of the 4 rows
                 end do
-            
+                
+                call str2int(Temp(4,2),NPTS,ios)
+                call str2real(Temp(4,4),DT,ios)
+                
+                NumberOfColumns = 5
+                NumberOfRows = CEILING( REAL(NPTS) / REAL(NumberOfColumns) ) ! There are 5 columns in the data table of the PEER files 
+                
                 ! Rewind file for reading in allocated matrix 
-                rewind(PVFunit) 
-            
+                !rewind(PEERUnit) 
+                
                 ! Allocate and read the matrix of velocity time history 
-                allocate (PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,2)) ! Allocate the size of the matrix (specifying 2 columns)
-
-                do ii = 1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
-                    read(PVFunit,*,iostat=ios) (PrescribedVelocityFileMatrix(ii,1),PrescribedVelocityFileMatrix(ii,2))
+                ! allocate (PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,2)) ! Allocate the size of the matrix (specifying 2 columns)
+                allocate (PrescribedSeismicPhysicalQuantityFileMatrix(NumberOfRows,NumberOfColumns)) ! Allocate the size of the matrix (specifying 5 columns) because that's how PEER files are structured  
+                allocate (PrescribedSeismicPhysicalQuantityFileMatrixReshaped(NPTS+1,2)) !reshaped vector --> 1 rank is for time, 1 rank is for time
+                
+                PrescribedSeismicPhysicalQuantityFileMatrix = 0
+                PrescribedSeismicPhysicalQuantityFileMatrixReshaped = 0
+                
+                do ii = 1,NumberOfRows! CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
+                   read(PEERUnit,*,iostat=ios) (PrescribedSeismicPhysicalQuantityFileMatrix(ii,1:NumberOfColumns))
                 end do 
-                close(PVFunit)
-            end if 
-        end if
+                
+                close(PEERUnit)
+            
+            end if
+            
+            kk=2 ! initialize kk=2 so that we can keep the first entry to be zero
+            ! Need to restructure this matrix to table format to be able to use the same 
+            do ii = 1, NumberOfRows
+               do jj = 1,NumberOfColumns !5 columns in the matrix --> this is standard for PEER files 
+                   
+                   PrescribedSeismicPhysicalQuantityFileMatrixReshaped(kk,2) = PrescribedSeismicPhysicalQuantityFileMatrix(ii,jj)*CalParams%GravityData%GAccel !Multiply by g=9.81 to get value in m/s^2
+                   kk = kk+1
+                   
+                   if (kk == NPTS+1) then 
+                       exit     
+                   end if 
+                   
+               end do 
+            end do 
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END: READING PEER FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+
+            end subroutine ReadPrescribedSeismicAction_AT2_VT2_PEERFile
         
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+        
+        
+    
+            !-----------------------------------------------------------------------------------
+    
+    subroutine ReadPrescribedSeismicAction_PAF_PVF_TableFile( &
+            PrescribedSeismicPhysicalQuantityFileMatrixReshaped, &
+            DirectionOfShaking, &
+            PRESCRIBED_TABLE_FILE_EXTENSION, &
+            NPTS)
+    
+    
+            !DT, &
+            !NPTS, &
+    !--------------------------------------------------------------
+    !
+    !   Read prescribed seismic action from a table based on input 
+    !   from *.PAF or *.PVF files. 
+    !
+    !--------------------------------------------------------------
+    implicit none
+    
+    ! in
+    integer(INTEGER_TYPE), intent(in) :: DirectionOfShaking ! XX=1, YY=2, ZZ=3 
+    character(len=255), intent(in) :: PRESCRIBED_TABLE_FILE_EXTENSION
+    
+    ! out
+    !integer(INTEGER_TYPE), intent(out) :: NPTS
+    !real(REAL_TYPE), intent(out) :: DT
+    
+    !inout 
+    real(REAL_TYPE), dimension(:,:), intent(inout), allocatable :: PrescribedSeismicPhysicalQuantityFileMatrixReshaped !Horizontal PEER shaped XX-direction (NoOfRows, 5)
+    
+    integer(INTEGER_TYPE) :: ios, ii, kk, jj !, NumberOfColumns, NumberOfRows
+    character(len=255), dimension(1,2) :: Temp ! temporary variable for reading number of lines --> this might not be necessary as the NPTS are given in the file... How about we use this to read the header...?
+                
+    real(REAL_TYPE), dimension(:,:), allocatable :: PrescribedSeismicPhysicalQuantityFileMatrix
+        
+    character(len=255) :: TABLE_FILE_NAME
+        
+    integer(INTEGER_TYPE), intent(out) :: NPTS
+    
+        ! Prepare file name for opening
+        TABLE_FILE_NAME = trim(CalParams%PrescribedSeismicAction%InputFileName(DirectionOfShaking))//'.'//PRESCRIBED_TABLE_FILE_EXTENSION ! Concatenate extention (either .AT2, .VT2, .DT2)
+        
+            if ((.not. allocated(PrescribedSeismicPhysicalQuantityFileMatrix))) then !PrescribedVelocityFileMatrix !PrescribedSeismicPhysicalQuantityFileMatrix
+                
+                    ! Check if PVF file exists in project folder, otherwise give error and stop execution
+                
+                    if ( FExist(trim(TABLE_FILE_NAME)) ) then
+                    
+                        !call GiveMessage('Reading prescribed velocity file: ' // trim(PVFileName) )                                        
+                        !call GiveMessage('Reading: ' // PRESCRIBED_SEISMIC_ACTION_TYPE )
+                        call GiveMessage('From table file: ' // TABLE_FILE_NAME)                     
+                        call FileOpen(TableUnit, TABLE_FILE_NAME)
+                        
+                    else    
+                    
+                        ! Give warning if file is not available
+                        call GiveError('Prescribed seismic exciting table file does not exist!' // NEW_LINE('A') // 'required table file: ' // trim(TABLE_FILE_NAME) )      
+                
+                    end if
+                    
+                    NPTS = 0 ! initialize number of times
+                    ! Read Prescribed Velocity File in the matrix line by line
+                    
+                    do
+                        read(TableUnit,*,iostat=ios) Temp ! Reading each row
+                        if (ios/=0) then 
+                            exit ! ios becomes non-zero when end of file was reached
+                        end if 
+                    
+                        NPTS = NPTS + 1 ! Counting the number of lines 
+                    end do
+            
+                
+                    ! Rewind file for reading in allocated matrix 
+                    rewind(TableUnit) 
+                    
+                    !PrescribedSeismicPhysicalQuantityFileMatrix
+                    !PrescribedVelocityFileMatrix
+                    ! Allocate and read the matrix of velocity time history 
+                    !allocate(PrescribedSeismicPhysicalQuantityFileMatrix(CalParams%PrescribedSeismicAction%InputFileNumberOfLines,2)) ! Allocate the size of the matrix (specifying 2 columns)                
+                    allocate(PrescribedSeismicPhysicalQuantityFileMatrixReshaped(NPTS,2)) ! Allocate the size of the matrix (specifying 2 columns)
+
+                    do ii = 1, NPTS !CalParams%PrescribedSeismicAction%InputFileNumberOfLines!CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
+                        read(TableUnit,*,iostat=ios) (PrescribedSeismicPhysicalQuantityFileMatrixReshaped(ii,1),PrescribedSeismicPhysicalQuantityFileMatrixReshaped(ii,2)) !(PrescribedVelocityFileMatrix(ii,1),PrescribedVelocityFileMatrix(ii,2))
+                    end do 
+                    
+                    close(TableUnit)
+                    
+            end if
+            
+            
+            PrescribedSeismicPhysicalQuantityFileMatrixReshaped(:,2) = PrescribedSeismicPhysicalQuantityFileMatrixReshaped(:,2) * CalParams%GravityData%GAccel
+    
+    !PrescribedSeismicPhysicalQuantityFileMatrix
+            !NPTS = CalParams%PrescribedSeismicAction%InputFileNumberOfLines
+        
+    
+
+    end subroutine ReadPrescribedSeismicAction_PAF_PVF_TableFile
+        
+        
+       !-----------------------------------------------------------------------------------
+
+    
+    
+    
+    
+    
+    
+    
+        subroutine str2int(str,int,stat)
+        implicit none
+        ! Arguments
+        character(len=*),intent(in) :: str
+        integer(INTEGER_TYPE),intent(out)         :: int
+        integer(INTEGER_TYPE),intent(out)         :: stat
+
+        read(str,*,iostat=stat)  int
+        end subroutine str2int
 
 
-        end subroutine ReadPrescribedAccelerationOrVelocityFromFile
+        subroutine str2real(str,real_,stat)
+        implicit none
+        ! Arguments
+        character(len=*),intent(in) :: str
+        real(REAL_TYPE),intent(out)         :: real_
+        integer(INTEGER_TYPE),intent(out)         :: stat
+
+        read(str,*,iostat=stat)  real_
+        end subroutine str2real
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        !----------------------------------------------------------------------------------
+        
+        
+        !subroutine GetPrescribedVelocityOrAccelerationForTimeStep()
+        !!**********************************************************************
+        !!
+        !! Function:  obtains the prescribed veloctiy/acceleration from file for the current time step (at real time)
+        !!            using linear interpolation. 
+        !!
+        !!**********************************************************************     
+        ! 
+        !implicit none 
+        ! 
+        !!local variables 
+        !integer(INTEGER_TYPE) :: ii
+        !real(REAL_TYPE) :: Increment ! 1D which would become a matrix if extended to 2D or 3D file prescribed acceleration or velocity
+        !real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation ! Hardcoded (needs to be generalized for different dimensions e.g. 3D shaking)
+        ! 
+        !
+        !!!!!!!!! START: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!
+        !
+        !! Prescribed velocity for the particular timestep
+        !if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
+        !    .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then
+        !
+        !    ! Record the start time of the application of the transient boundary condition
+        !    if( .not. allocated(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime)) then
+        !        allocate(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1)) ! Allocate the size of the matrix (specifying 2 columns)
+        !        CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime = CalParams%OverallRealTime
+        !        
+        !        do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
+        !            !Correcting the starting time of the data read from file (hardcoded to 1D prescribed boundary condition) 
+        !            PrescribedVelocityFileMatrix(ii,1) = &
+        !                PrescribedVelocityFileMatrix(ii,1) + CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1) - CalParams%TimeIncrement
+        !        end do 
+        !        
+        !    end if
+        !
+        !    ! Looks into the matrix first column (time) and finds the first point higher than the total real time
+        !    do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines !loop accross the rows from the presctibed velocity file
+        !    
+        !        if (CalParams%OverallRealTime > &
+        !            PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,1)) then
+        !            CalParams%Multipliers%VelocitySolidCurrent = 0 ! Stop prescribed velocity
+        !            CalParams%Multipliers%AccelerationSolid = 0
+        ! 
+        !        else if (PrescribedVelocityFileMatrix(ii,1)>CalParams%OverallRealTime) then 
+        !            CoordinatesForInterpolation(1,:) = PrescribedVelocityFileMatrix(ii-1,:) ! Store from file: time (1st column) and velocity multiplier (2nd column) in previous line 
+        !            CoordinatesForInterpolation(2,:) = PrescribedVelocityFileMatrix(ii,:) ! Store from file: time(1st column) and velocity multiplier (2nd column) in current line
+        !         
+        !            ! Linear interpolation 
+        !            Increment = (((CoordinatesForInterpolation(2,2)-CoordinatesForInterpolation(1,2))&
+        !                /(CoordinatesForInterpolation(2,1)-CoordinatesForInterpolation(1,1))) * &
+        !                (CalParams%OverallRealTime - CoordinatesForInterpolation(1,1)))
+        ! 
+        !            ! For the first timestep VelocitySolidPrevious does not exist. 
+        !            ! Hence, special consideration is made for the first step by using the reading before the timestep occurs
+        !            if ((CalParams%TimeStep == 1) .and. (CalParams%IStep == 1)) then ! If it is the first timestep in the first load step (i.e. no CalParams%Multipliers%VelocitySolidPrevious)
+        !                CalParams%Multipliers%VelocitySolidPrevious = CoordinatesForInterpolation(1,2)
+        !            else ! If it is after the first step 
+        !                CalParams%Multipliers%VelocitySolidPrevious = CalParams%Multipliers%VelocitySolidCurrent
+        !            end if     
+        !                                
+        !            CalParams%Multipliers%VelocitySolidCurrent = CoordinatesForInterpolation(1,2) + Increment
+        !            CalParams%Multipliers%AccelerationSolid = (CalParams%Multipliers%VelocitySolidCurrent- &
+        !                                                      CalParams%Multipliers%VelocitySolidPrevious)&
+        !                                                      /CalParams%TimeIncrement 
+        !            
+        !            exit 
+        !        end if 
+        !    end do
+        !    
+        !
+        !
+        !else         
+        !        CalParams%Multipliers%VelocitySolidCurrent = 0
+        !        !CalParams%Multipliers%AccelerationSolid = 0
+        !end if
+        !
+        !!!!!!!!! END: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!    
+        !end subroutine GetPrescribedVelocityOrAccelerationForTimeStep
+        
+        
+        
+
+
+
+!subroutine ReadPrescribedAccelerationOrVelocityFromFile()
+!        !**********************************************************************
+!        !
+!        ! Function:  Read the time history to provide a matrix of the multipliers. 
+!        !            This function is to be used to read both acceleration and/or velocity time history. 
+!        !            Function currently written for 1D prescribed velocity or acceleration from file.
+!        !            
+!        !
+!        ! File extension: PVF for prescribed velocity from file 
+!        !                 PAF for prescribed acceleration from file
+!        !
+!        ! File organisation:
+!        !            Column 1 - time (seconds)
+!        !            Column 2 - prescribed velocity or acceleration (dimensionless)
+!        !
+!        !**********************************************************************        
+!        implicit none
+!     
+!        ! local variables 
+!        integer(INTEGER_TYPE) :: ios, ii!, PVFunit
+!        character(len=255) :: PVFileName
+!        real(REAL_TYPE), dimension(1,2) :: Temp ! temporary variable for reading number of lines
+!        
+!        !External :: FExist
+!        
+!        !PVFunit = 70
+!
+!        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!    
+!        ! Open Prescribed Velocity File 
+!        if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
+!            .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then 
+!            
+!            ! Prepare file name for opening
+!            PVFileName = trim(CalParams%FileNames%ProjectName)//PRESCRIBEDVELOCITY_FILE_EXTENSION ! Concatenate prescribed velocity file extention (.PVF)
+!        
+!            
+!
+!            if ((.not. allocated(PrescribedVelocityFileMatrix))) then
+!                ! Check if PVF file exists in project folder, otherwise give error and stop execution
+!                if ( FExist(trim(PVFileName)) ) then
+!                    call GiveMessage('Reading prescribed velocity file: ' // trim(PVFileName) )                     
+!                    call FileOpen(PVFunit,trim(PVFileName))
+!                else    
+!                    ! Give warning if file is not available
+!                    call GiveError('Prescribed velocity file does not exist!' // NEW_LINE('A') // 'required PVF file: ' // trim(PVFileName) )      
+!                end if
+!                
+!                ! Read Prescribed Velocity File in the matrix line by line
+!                do
+!                    read(PVFunit,*,iostat=ios) Temp ! Reading each row
+!                    if (ios/=0) then 
+!                        exit ! ios becomes non-zero when end of file was reached
+!                    end if 
+!                    CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines = &
+!                        CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines + 1 ! Counting the number of lines 
+!                end do
+!            
+!                ! Rewind file for reading in allocated matrix 
+!                rewind(PVFunit) 
+!            
+!                ! Allocate and read the matrix of velocity time history 
+!                allocate (PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,2)) ! Allocate the size of the matrix (specifying 2 columns)
+!
+!                do ii = 1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
+!                    read(PVFunit,*,iostat=ios) (PrescribedVelocityFileMatrix(ii,1),PrescribedVelocityFileMatrix(ii,2))
+!                end do 
+!                close(PVFunit)
+!            end if 
+!        end if
+!        
+!        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END: READING VELOCITY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+!
+!
+!        end subroutine ReadPrescribedAccelerationOrVelocityFromFile
         
         
         
@@ -3391,84 +5370,84 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
         
         
         
-        subroutine GetPrescribedVelocityOrAccelerationForTimeStep()
-        !**********************************************************************
+        !subroutine GetPrescribedVelocityOrAccelerationForTimeStep()
+        !!**********************************************************************
+        !!
+        !! Function:  obtains the prescribed veloctiy/acceleration from file for the current time step (at real time)
+        !!            using linear interpolation. 
+        !!
+        !!**********************************************************************     
+        ! 
+        !implicit none 
+        ! 
+        !!local variables 
+        !integer(INTEGER_TYPE) :: ii
+        !real(REAL_TYPE) :: Increment ! 1D which would become a matrix if extended to 2D or 3D file prescribed acceleration or velocity
+        !real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation ! Hardcoded (needs to be generalized for different dimensions e.g. 3D shaking)
+        ! 
         !
-        ! Function:  obtains the prescribed veloctiy/acceleration from file for the current time step (at real time)
-        !            using linear interpolation. 
+        !!!!!!!!! START: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!
         !
-        !**********************************************************************     
-         
-        implicit none 
-         
-        !local variables 
-        integer(INTEGER_TYPE) :: ii
-        real(REAL_TYPE) :: Increment ! 1D which would become a matrix if extended to 2D or 3D file prescribed acceleration or velocity
-        real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation ! Hardcoded (needs to be generalized for different dimensions e.g. 3D shaking)
-         
-        
-        !!!!!!!! START: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!
- 
-        ! Prescribed velocity for the particular timestep
-        if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
-            .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then
-        
-            ! Record the start time of the application of the transient boundary condition
-            if( .not. allocated(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime)) then
-                allocate(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1)) ! Allocate the size of the matrix (specifying 2 columns)
-                CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime = CalParams%OverallRealTime
-                
-                do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
-                    !Correcting the starting time of the data read from file (hardcoded to 1D prescribed boundary condition) 
-                    PrescribedVelocityFileMatrix(ii,1) = &
-                        PrescribedVelocityFileMatrix(ii,1) + CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1) - CalParams%TimeIncrement
-                end do 
-                
-            end if
-        
-            ! Looks into the matrix first column (time) and finds the first point higher than the total real time
-            do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines !loop accross the rows from the presctibed velocity file
-            
-                if (CalParams%OverallRealTime > &
-                    PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,1)) then
-                    CalParams%Multipliers%VelocitySolidCurrent = 0 ! Stop prescribed velocity
-                    CalParams%Multipliers%AccelerationSolid = 0
-         
-                else if (PrescribedVelocityFileMatrix(ii,1)>CalParams%OverallRealTime) then 
-                    CoordinatesForInterpolation(1,:) = PrescribedVelocityFileMatrix(ii-1,:) ! Store from file: time (1st column) and velocity multiplier (2nd column) in previous line 
-                    CoordinatesForInterpolation(2,:) = PrescribedVelocityFileMatrix(ii,:) ! Store from file: time(1st column) and velocity multiplier (2nd column) in current line
-                 
-                    ! Linear interpolation 
-                    Increment = (((CoordinatesForInterpolation(2,2)-CoordinatesForInterpolation(1,2))&
-                        /(CoordinatesForInterpolation(2,1)-CoordinatesForInterpolation(1,1))) * &
-                        (CalParams%OverallRealTime - CoordinatesForInterpolation(1,1)))
-         
-                    ! For the first timestep VelocitySolidPrevious does not exist. 
-                    ! Hence, special consideration is made for the first step by using the reading before the timestep occurs
-                    if ((CalParams%TimeStep == 1) .and. (CalParams%IStep == 1)) then ! If it is the first timestep in the first load step (i.e. no CalParams%Multipliers%VelocitySolidPrevious)
-                        CalParams%Multipliers%VelocitySolidPrevious = CoordinatesForInterpolation(1,2)
-                    else ! If it is after the first step 
-                        CalParams%Multipliers%VelocitySolidPrevious = CalParams%Multipliers%VelocitySolidCurrent
-                    end if     
-                                        
-                    CalParams%Multipliers%VelocitySolidCurrent = CoordinatesForInterpolation(1,2) + Increment
-                    CalParams%Multipliers%AccelerationSolid = (CalParams%Multipliers%VelocitySolidCurrent- &
-                                                              CalParams%Multipliers%VelocitySolidPrevious)&
-                                                              /CalParams%TimeIncrement 
-                    
-                    exit 
-                end if 
-            end do
-            
-        
-    
-        else         
-                CalParams%Multipliers%VelocitySolidCurrent = 0
-                !CalParams%Multipliers%AccelerationSolid = 0
-        end if
-
-        !!!!!!!! END: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!    
-        end subroutine GetPrescribedVelocityOrAccelerationForTimeStep
+        !! Prescribed velocity for the particular timestep
+        !if ((CalParams%PrescribedVelo%ApplyPrescribedVelo == .true.) &
+        !    .and. (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE)) then
+        !
+        !    ! Record the start time of the application of the transient boundary condition
+        !    if( .not. allocated(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime)) then
+        !        allocate(CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1)) ! Allocate the size of the matrix (specifying 2 columns)
+        !        CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime = CalParams%OverallRealTime
+        !        
+        !        do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines
+        !            !Correcting the starting time of the data read from file (hardcoded to 1D prescribed boundary condition) 
+        !            PrescribedVelocityFileMatrix(ii,1) = &
+        !                PrescribedVelocityFileMatrix(ii,1) + CalParams%PrescribedVelo%TransientBoundaryConditionStaringTime(1) - CalParams%TimeIncrement
+        !        end do 
+        !        
+        !    end if
+        !
+        !    ! Looks into the matrix first column (time) and finds the first point higher than the total real time
+        !    do ii=1,CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines !loop accross the rows from the presctibed velocity file
+        !    
+        !        if (CalParams%OverallRealTime > &
+        !            PrescribedVelocityFileMatrix(CalParams%PrescribedVelo%PrescribedVelocityFileNumberOfLines,1)) then
+        !            CalParams%Multipliers%VelocitySolidCurrent = 0 ! Stop prescribed velocity
+        !            CalParams%Multipliers%AccelerationSolid = 0
+        ! 
+        !        else if (PrescribedVelocityFileMatrix(ii,1)>CalParams%OverallRealTime) then 
+        !            CoordinatesForInterpolation(1,:) = PrescribedVelocityFileMatrix(ii-1,:) ! Store from file: time (1st column) and velocity multiplier (2nd column) in previous line 
+        !            CoordinatesForInterpolation(2,:) = PrescribedVelocityFileMatrix(ii,:) ! Store from file: time(1st column) and velocity multiplier (2nd column) in current line
+        !         
+        !            ! Linear interpolation 
+        !            Increment = (((CoordinatesForInterpolation(2,2)-CoordinatesForInterpolation(1,2))&
+        !                /(CoordinatesForInterpolation(2,1)-CoordinatesForInterpolation(1,1))) * &
+        !                (CalParams%OverallRealTime - CoordinatesForInterpolation(1,1)))
+        ! 
+        !            ! For the first timestep VelocitySolidPrevious does not exist. 
+        !            ! Hence, special consideration is made for the first step by using the reading before the timestep occurs
+        !            if ((CalParams%TimeStep == 1) .and. (CalParams%IStep == 1)) then ! If it is the first timestep in the first load step (i.e. no CalParams%Multipliers%VelocitySolidPrevious)
+        !                CalParams%Multipliers%VelocitySolidPrevious = CoordinatesForInterpolation(1,2)
+        !            else ! If it is after the first step 
+        !                CalParams%Multipliers%VelocitySolidPrevious = CalParams%Multipliers%VelocitySolidCurrent
+        !            end if     
+        !                                
+        !            CalParams%Multipliers%VelocitySolidCurrent = CoordinatesForInterpolation(1,2) + Increment
+        !            CalParams%Multipliers%AccelerationSolid = (CalParams%Multipliers%VelocitySolidCurrent- &
+        !                                                      CalParams%Multipliers%VelocitySolidPrevious)&
+        !                                                      /CalParams%TimeIncrement 
+        !            
+        !            exit 
+        !        end if 
+        !    end do
+        !    
+        !
+        !
+        !else         
+        !        CalParams%Multipliers%VelocitySolidCurrent = 0
+        !        !CalParams%Multipliers%AccelerationSolid = 0
+        !end if
+        !
+        !!!!!!!!! END: GET PRESCRIBED VELOCITY FROM FILE FOR OVERALL REAL TIME !!!!!!!!    
+        !end subroutine GetPrescribedVelocityOrAccelerationForTimeStep
 
 
         subroutine ReadHydraulicHeadFromFile()
@@ -3976,6 +5955,9 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           
           ! FIXED SOLID SKELETON
           call WriteLogic(FileUnit, '$$FIX_SOLID_SKELETON', [CalParams%ApplyFixedSolidSkeleton], 1, .true.) 
+          
+          ! FIXED SOLID SKELETON
+          call WriteLogic(FileUnit, '$$FIX_LIQUID_PRESSURE', [CalParams%ApplyFixedLiquidPressure], 1, .true.) 
 
           ! RESET PARTICLE DISPLACEMENT
           call WriteLogic(FileUnit, '$$RESET_PARTICLE_DISPLACEMENT', [CalParams%ResetParticleDisplacement], 1, .true.) 

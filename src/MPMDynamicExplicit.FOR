@@ -88,25 +88,29 @@
             
 
             
-            if (CalParams%FBarWaterTimeStep == 40) then 
+            !if (CalParams%FBarWaterTimeStep == 40) then 
             !    
             !    !CalParams%ApplyFBar = .true.
             !    !CalParams%ApplyFBarWater = .true.
-                CalParams%ApplyFBarSmoothWP = .true.
+            !    CalParams%ApplyFBarSmoothStresses = .true.
+            !    CalParams%ApplyFBarSmoothWP = .true.
             !    !CalParams%ApplyFBarSmoothStresses = .true.
             !    !CalParams%ApplyFBarSmoothStresses = .true.
             !    
-                CalParams%FBarWaterTimeStep = 0
+            !    CalParams%FBarWaterTimeStep = 0
             !    
-            else 
+            !else 
             !    
             !    !CalParams%ApplyFBar = .false.
             !    !CalParams%ApplyFBarWater = .false.
-                CalParams%ApplyFBarSmoothWP = .false.
-            !    !CalParams%ApplyFBarSmoothStresses = .false.
-            !    !CalParams%ApplyFBarSmoothStresses = .false.
-            !    
-            end if 
+            !   
+            !    CalParams%ApplyFBarSmoothStresses = .false.
+            !    CalParams%ApplyFBarSmoothWP = .false.
+            !
+            !    !    !CalParams%ApplyFBarSmoothStresses = .false.
+            !!    !CalParams%ApplyFBarSmoothStresses = .false.
+            !!    
+            !end if 
             
             
             !if (CalParams%FBarTimeStep == 100) then 
@@ -141,13 +145,17 @@
             
             
             
-            !call WriteInLogFile('TimeStep: ' // trim(String(CalParams%TimeStep))//' '//trim(String(CalParams%TimeIncrement)) &
-            !                                                                    //' '//trim(String(CalParams%TotalRealTime)))
-            !call WriteInLogFile('  Skipconvection? '//trim(String(MinimumDeterminantRatioReached))//' '// &
-            !                                          trim(String(IsMPMSkipConvection())))
+            call WriteInLogFile('TimeStep: ' // trim(String(CalParams%TimeStep))//' '//trim(String(CalParams%TimeIncrement)) &
+                                                                                //' '//trim(String(CalParams%TotalRealTime)))
+            call WriteInLogFile('  Skipconvection? '//trim(String(MinimumDeterminantRatioReached))//' '// &
+                                                      trim(String(IsMPMSkipConvection())))
 
-            call UpdateMultipliersForTimeDepencency() 
-
+            call UpdateMultipliersForTimeDepencency()
+            
+            !! This subroutine reads ground motion 
+            !call ObtainPrescribedSeismicAction() 
+            
+            
             if ((CalParams%PrescribedHead%HydraulicHead == .true.) .and. (CalParams%Multipliers%HydraulicHeadType == LOAD_TYPE_FILE)) then
                 call ComputeWaterSpecificWeight() ! compute gamma_w = rhow*g(gravity_acc*current multiplier)
             end if

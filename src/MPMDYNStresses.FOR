@@ -714,7 +714,7 @@
          
          ! Cavitation limit 
          !DSigWP = 0.0 ! excess pore pressure is zero
-         !if (DSigWP>0.0) then 
+         !if (DSigWP>0.0) then ! if excess pore water pressure is tensile
          !   DSigWP = 0.0
          !end if
          
@@ -741,6 +741,14 @@
           DsigWP = Particles(IDpt)%WaterPressure - Particles(IDpt)%WaterPressure0
         end if
     
+        
+        ! if fixed liquid pressure 
+        if (CalParams%ApplyFixedLiquidPressure) then 
+            DSigWP = 0.0
+        end if 
+        
+        
+        
         call AssignWatandGasPressureToGlobalArray(IDpt, DSigWP, DSigGP)  !Note that the subroutine checks Cavitation Threshold & Gas Pressure
       
         end subroutine GetFluidPressure

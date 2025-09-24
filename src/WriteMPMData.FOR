@@ -156,7 +156,7 @@
             
           ! patch dependent block
           !do IPatch = 1, Counters%NPatches
-          call WriteBlockDPBVD__R(FileUnit)!,IPatch) 
+          !call WriteBlockDPBVD__R(FileUnit)!,IPatch) 
           !end do
           
           call WriteBlockESMstatev(FileUnit)  ! Write user defined material model state variables
@@ -522,7 +522,7 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NByts, NVals, I, J
 
-          NVals = 50 !-> number of state varibales which need to be changed based on the consitutive model
+          NVals = NSTATEVAR !-> number of state varibales which need to be changed based on the consitutive model
           NByts = Counters%NParticles * NVals * 8
           write(FileUnit) '$$ESMsttvR$$', NByts
 

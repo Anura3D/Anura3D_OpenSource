@@ -59,10 +59,12 @@
       use ModCounters
       use ModReadCalculationData
       use ModMPMData
+      !use ModLagrangianPhase
       use ModMeshAdjacencies
       use ModMeshInfo
       use ModReadMPMData
       use ModGlobalConstants
+      !use ModLagrangianPhase
       
       implicit none
 
@@ -365,10 +367,16 @@
           integer(INTEGER_TYPE), dimension(NVECTOR-1) :: ConsideredDirections
           integer(INTEGER_TYPE) :: I, IError
           
+          !integer :: i, nSteps
+
           ! Multipatch variables 
           !integer(INTEGER_TYPE) :: IPatch_Temporary
           integer(INTEGER_TYPE), intent(in) :: IPatch_MovingMesh ! only one moving mesh
           integer(INTEGER_TYPE), intent(in) :: IPatch_DeformingMesh ! 2 correspond to compressing and extending mesh
+          
+          
+          ! initialize moving mesh vector 
+          DUVector = 0.0
           
         !IPatch_Temporary = 1
         
@@ -388,6 +396,14 @@
              ! we move the entire mesh according to the populated DUVector
              call DetermineDisplacementVector(DUVector, ConsideredDirections, IPatch_MovingMesh) !--> DUVector needs to be for the moving mesh
              
+             ! we need to include displacement increment here so that the mesh can move according to seismic excitation
+   
+             !!if (CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch == .TRUE.) then 
+             !!
+             !!    call DetermineDisplacementVector_SeismicAction(DUVector, IPatch_MovingMesh) !--> DUVector needs to be for the moving mesh
+             !!
+             !!    !DUVector(I) = GetNodalPrescribedSeismicActionI_IncrementalDisplacement(I, 1) !CalParams%Multipliers%VelocitySolidCurrent*CalParams%TimeIncrement     
+             !!end if 
              
              do I = 1, CalParams%MovingMesh%NMovingMeshDirections(IPatch_MovingMesh)
           
@@ -403,30 +419,48 @@
                  end if 
 			
                  ! Move the moving mesh with the ground motion. Current implementation is only for 1D movement 
-                 if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then 
-                     DUVector(I) = CalParams%Multipliers%VelocitySolidCurrent*CalParams%TimeIncrement 
+                 !!if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then 
+                 !!    DUVector(I) = CalParams%Multipliers%VelocitySolidCurrent*CalParams%TimeIncrement 
+                 !!end if 
+                 
+                 !! we need to include displacement increment here so that the mesh can move according to seismic excitation
+                 if (CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch == .TRUE.) then 
+                     DUVector(I) = CalParams%PrescribedSeismicAction%VelocityPrecomputed(I) * CalParams%PrescribedSeismicAction%ScalingFactor(I) * CalParams%TimeIncrement !GetNodalPrescribedSeismicActionI_IncrementalDisplacement(I, 1) !CalParams%Multipliers%VelocitySolidCurrent*CalParams%TimeIncrement  !CalParams%PrescribedSeismicAction%IncrementalDisplacementPrecomputed(I) !
                  end if 
+                 
+                 !open(unit=10, file="DUVector_output.txt", status="replace")
+                 !
+                 !
+                 !!do i = 1, nSteps
+                 !
+                 !    write(10,*) CalParams%OverallRealTime, DUVector(1), DUVector(2)
+                 !
+                 !!end do
+                 !close(10)
+                 
 
             
-                 if (IsModifiedMeshAdjustment(I)) then
-                     
-                     call MoveModifiedMeshAdjustment(DUVector, I, ConsideredDirections(I), IPatch_MovingMesh)
-                     
-                 else
+                 ! 14 August 2025: I commented this for the moving mesh
+                 !if (IsModifiedMeshAdjustment(I)) then
+                 !    
+                 !    call MoveModifiedMeshAdjustment(DUVector, I, ConsideredDirections(I), IPatch_MovingMesh)
+                 !    
+                 !else
                      
                      call MoveFixedMesh(DUVector, I, ConsideredDirections(I), IPatch_MovingMesh)
                      ! --> this is for the moving mesh adjustment
                      
-                 end if
+                 !end if
 
 
-                 if ( IPatch_DeformingMesh .ne. 0) then 
-                 call AdjustParticleStorageAreas(DUVector, I, ConsideredDirections(I), InitialStorageAreaLength, IPatch_DeformingMesh) 
-                 ! --> this is for the deforming mesh adjustment
-     
-                 deallocate(InitialStorageAreaLength, stat = IError)
-                 
-                 end if 
+                 ! 14 August 2025: I commented this for the moving mesh
+                 !if ( IPatch_DeformingMesh .ne. 0) then 
+                 !call AdjustParticleStorageAreas(DUVector, I, ConsideredDirections(I), InitialStorageAreaLength, IPatch_DeformingMesh) 
+                 !! --> this is for the deforming mesh adjustment
+                 !
+                 !deallocate(InitialStorageAreaLength, stat = IError)
+                 !
+                 !end if 
      
              end do
           
@@ -684,6 +718,173 @@ end if ! direct simple shear moving mesh approach
           MeshMovement = DUVector
         
         end subroutine DetermineDisplacementVector
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine DetermineDisplacementVector_SeismicAction(DUVector, IPatch) !ConsideredDirections, 
+        !**********************************************************************
+        !
+        !    Function:  Determines the average incremental displacement of the
+        !               nodes belonging to the structure.
+        !               Two directions with the maximum incremental displacement are considered.
+        !
+        ! O   DUVector : Average incremental displacement of the structure nodes in x-, y- or z-direction
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          real(REAL_TYPE), dimension(NVECTOR), intent(out) :: DUVector
+          !integer(INTEGER_TYPE), dimension(2), intent(out) :: ConsideredDirections
+          ! Local variables
+          real(REAL_TYPE), dimension(NVECTOR) :: SummedStructureDisplacement
+          integer(INTEGER_TYPE) :: INode, I, ShiftDirection, SkipDirection, iEntity, NodeID, IDOF
+          real(REAL_TYPE) :: DisplacementValue
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch_Temporary = 1
+          integer(INTEGER_TYPE), intent(in) :: IPatch ! input
+          integer(INTEGER_TYPE) :: GlobalNodeID
+          !integer(INTEGER_TYPE), dimension(NVECTOR) :: NumberOfNodesInEachDirection
+          
+          ! Determine sum of incremental displacements
+          DUVector = 0.0
+          !do INode = 1, CalParams%MovingMesh%NStructureNodes
+          !  do I = 1, NVECTOR
+          !    SummedStructureDisplacement(I) = SummedStructureDisplacement(I) +  &
+          !      (NodalCoordinatesUpd(CalParams%MovingMesh%StructureNodes(INode), I) -  &
+          !       NodalCoordinates(CalParams%MovingMesh%StructureNodes(INode), I) )
+          !  end do
+          !end do
+          !DUVector = SummedStructureDisplacement / CalParams%MovingMesh%NStructureNodes
+          
+          !do IPatch = 1, Counters%NPatches ! start loop over patches
+          if (.not.CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch) RETURN
+          if (CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction<=0) RETURN !NO prescribed seismic action at the nodes, return
+  
+          !do IEntity=1,Counters%NEntity --> just take the first node
+          do INode = 1, 1!CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction ! loop over all structured nodes in each patch
+              
+              
+              NodeID = CalParams%PrescribedSeismicAction%NodePrescribedSeismicAction(INode)
+              IDof = ReducedDof(NodeID)
+              
+            do I = 1, NVECTOR ! loop over each direction
+                if (CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(I)== 1) then 
+              
+                !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch)
+                
+                
+                
+                ! Fully reflective  prescribed velocity boundary conditions on the nodes    
+                DUVector(I) = GetNodalPrescribedSeismicActionI_IncrementalDisplacement(I, INode)
+      
+                
+              
+                !! this needs to happen to the structure which is carrying the moving mesh structure, but 
+                !! we should not include the compressing mesh nodes 
+                !SummedStructureDisplacement(I) = SummedStructureDisplacement(I) +  &
+                !    (NodalCoordinatesUpd(CalParams%MovingMesh%StructureNodes(INode, IPatch), I, IPatch) -  &
+                !    NodalCoordinates(CalParams%MovingMesh%StructureNodes(INode, IPatch), I, IPatch) )
+              
+                end if
+                
+            end do ! loop over each direction
+          !end do ! loop over all structured nodes
+          
+          end do ! end loop over patches
+          
+          
+          !if (CalParams%MovingMesh%NStructureNodes(IPatch) .le. 0) RETURN 
+
+          !do I = 1, NVECTOR ! loop over each direction
+          !DUVector(I) = DUVector(I) / real(CalParams%PrescribedSeismicAction%NNodePrescribedSeismicAction) !CalParams%MovingMesh%NStructureNodes(IPatch)
+          !end do 
+          
+          !if(CalParams%MovingMesh%MovingMeshDirection(IPatch).gt.0)then !moving mesh direction has been defined
+          !    
+          !  ShiftDirection = CalParams%MovingMesh%MovingMeshDirection(IPatch)
+          !  DisplacementValue = DUVector(ShiftDirection)
+          !  DUVector = 0.0
+          !  DUVector(ShiftDirection) = DisplacementValue
+          !  ConsideredDirections(1) = ShiftDirection
+          !  ConsideredDirections(2) = 0
+          !    
+          !else if (CalParams%MovingMesh%NMovingMeshDirections(IPatch)==1) then
+          !  ! Determine maximum component of AverageStructureDisplacement
+          !
+          !  if (abs(SummedStructureDisplacement(1) )>abs(SummedStructureDisplacement(2) ) ) then
+          !    ShiftDirection = 1
+          !  else
+          !    ShiftDirection = 2
+          !  end if
+          !  
+          !  if ((NDIM == 3).and.&
+          !     (abs(SummedStructureDisplacement(3) )>abs(SummedStructureDisplacement(ShiftDirection) ) )) then
+          !    ShiftDirection = 3
+          !     end if
+          !     
+          !  DisplacementValue = DUVector(ShiftDirection)
+          !  DUVector = 0.0
+          !  DUVector(ShiftDirection) = DisplacementValue
+          !  ConsideredDirections(1) = ShiftDirection
+          !  ConsideredDirections(2) = 0
+          !else if (NDIM == 3) then! Movement in two directions
+          !  ! Determine minimum component of AverageStructureDisplacement
+          !  if (abs(SummedStructureDisplacement(1) )<abs(SummedStructureDisplacement(2) ) ) then
+          !    SkipDirection = 1
+          !  else
+          !    SkipDirection = 2
+          !  end if
+          !  if (abs(SummedStructureDisplacement(3) )<abs(SummedStructureDisplacement(SkipDirection) ) ) then
+          !    SkipDirection = 3
+          !  end if
+          !  DUVector(SkipDirection) = 0.0
+          !  if (SkipDirection==1) then
+          !    ConsideredDirections(1) = 2
+          !    ConsideredDirections(2) = 3
+          !  else if (SkipDirection==2) then
+          !    ConsideredDirections(1) = 1
+          !    ConsideredDirections(2) = 3
+          !  else if (SkipDirection==3) then
+          !    ConsideredDirections(1) = 1
+          !    ConsideredDirections(2) = 2
+          !  end if
+          !else
+          !   call GiveError('Moving mesh in more than 1 direction is not implemented for NDIM= '//trim(String(NDIM))) 
+          !end if
+          !          
+          !MeshMovement = DUVector
+        
+        end subroutine DetermineDisplacementVector_SeismicAction
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         subroutine MoveModifiedMeshAdjustment(DUVector, IMovingMesh, Direction, IPatch)
         !**********************************************************************
@@ -1386,6 +1587,55 @@ end if ! direct simple shear moving mesh approach
           end select
         
         end function GetAreaID
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        real(REAL_TYPE) function GetNodalPrescribedSeismicActionI_IncrementalDisplacement(IDim, INode)
+        
+        !This function gives the value of prescribed velocity along coordinate IDim of node INode
+        
+        implicit none
+
+          integer(INTEGER_TYPE), intent(in) :: IDim, INode
+          !character, intent(in) :: PhysicalQuantity
+          
+          !AccelerationSolidPrecomputed
+          !  real(REAL_TYPE), dimension(3,1) :: VelocitySolidPrecomputed
+          !  real(REAL_TYPE), dimension(3,1) :: IncrementalDisplacementSolidPrecomputed
+          
+          
+          !CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed = AccelerationPrecomputed
+          !      CalParams%PrescribedSeismicAction%VelocitySolidPrecomputed = VelocityPrecomputed
+          !      CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed = IncrementalDisplacementPrecomputed
+          
+          !if (PhysicalQuantity == 'Acceleration') then 
+          !GetNodalPrescribedSeismicActionI = &
+          !    CalParams%PrescribedSeismicAction%AccelerationSolidPrecomputed(IDim)!* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)
+          !else if (PhysicalQuantity == 'Velocity') then 
+          GetNodalPrescribedSeismicActionI_IncrementalDisplacement = &
+              CalParams%PrescribedSeismicAction%IncrementalDisplacementPrecomputed(IDim) * CalParams%PrescribedSeismicAction%ScalingFactor(IDim) * &
+              CalParams%PrescribedSeismicAction%PrescribedSeismicActionDirection(INode, IDim) !* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)
+          !else if (PhysicalQuantity == 'Displacement') then 
+          !GetNodalPrescribedSeismicActionI = &
+          !    CalParams%PrescribedSeismicAction%IncrementalDisplacementSolidPrecomputed(IDim)!* CalParams%Multipliers%PrescribedSeismicActionSolidCurrent(1,IDim)    
+          !end if
+          
+          
+        end function GetNodalPrescribedSeismicActionI_IncrementalDisplacement
+        
+        
+        
+        
+        
 
 
       end module ModMPMMeshAdjustment
