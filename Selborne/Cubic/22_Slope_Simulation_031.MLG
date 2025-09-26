@@ -1,0 +1,13 @@
+ MaxWaveSpeed :    0.9052E+003
+ MinTimeStep  :    0.4139E-003
+ TimeIncrement:    0.3725E-003
+Current directory is: C:\Users\367759\Documents\Selborne\Cubic
+Capacity, available  Byte: 1013310287872   14985424896
+Capacity, available KByte:   0.9896E+009   0.1463E+008
+Capacity, available GByte:   0.9437E+003   0.1396E+002
+  Item  Name of subroutine/function/procedure        Times Time per call Total time (se Percentage
+     1| Main                                    |        1|   0.0000E+000|   0.0000E+000
+     2| Initialisation                          |        1|   0.0000E+000|   0.0000E+000
+     3| LoadStep                                |       20|   0.7348E+004|   0.1470E+006
+     4| WriteResults                            |       20|   0.1406E+003|   0.2811E+004
+Calculation finished.
