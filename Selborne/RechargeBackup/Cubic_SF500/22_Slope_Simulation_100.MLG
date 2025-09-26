@@ -1,0 +1,13 @@
+ MaxWaveSpeed :    0.9050E+003
+ MinTimeStep  :    0.4139E-003
+ TimeIncrement:    0.3725E-003
+Current directory is: C:\Users\367759\Documents\Selborne\RechargeBackup\Cubic_SF500
+Capacity, available  Byte: 1013310287872    9101762560
+Capacity, available KByte:   0.9896E+009   0.8888E+007
+Capacity, available GByte:   0.9437E+003   0.8477E+001
+  Item  Name of subroutine/function/procedure        Times Time per call Total time (se Percentage
+     1| Main                                    |        1|   0.3760E+005|   0.3760E+005|100.00%
+     2| Initialisation                          |        1|   0.0000E+000|   0.0000E+000|  0.00%
+     3| LoadStep                                |       69|   0.6573E+004|   0.4535E+006|******%
+     4| WriteResults                            |       69|   0.1262E+003|   0.8705E+004| 23.15%
+Calculation finished.

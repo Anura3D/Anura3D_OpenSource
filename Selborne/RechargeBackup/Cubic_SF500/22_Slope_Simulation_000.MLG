@@ -1,0 +1,141 @@
+
+Anura3D: Numerical modelling and simulation of large deformationsand soil–water–structure interaction using the material point method (MPM)
+Kernel name       : Anura3D_2024.exe
+Kernel version    : 2024.1.0.10179
+Last update date  : 2024-06-26 15:36:42 +0200 (Wed, 26 Jun 2024)
+Last compiled date: 2024-06-27 16:03:50.850
+
+Project name: 22_Slope_Simulation
+Reading CPS file: 22_Slope_Simulation.CPS_032
+Reading... ### Anura3D_2021 ###
+Reading flag from CPS file: $$NUMBER_OF_LOADSTEPS
+Reading flag from CPS file: $$TIME_PER_LOADSTEP
+Reading flag from CPS file: $$TOTAL_TIME
+Reading flag from CPS file: $$COURANT_NUMBER
+Reading flag from CPS file: $$STRUCTURED_MESH
+Reading flag from CPS file: $$GP_SMOOTHING_FLUID
+Reading flag from CPS file: $$COMPUTATION_METHOD
+Reading flag from CPS file: $$MP_INITIALIZATION
+Reading flag from CPS file: $$F_BAR_VOLLOCK_SMOOTHING
+Reading flag from CPS file: $$F_BAR_VOLLOCK_SMOOTHING_WATER
+Reading flag from CPS file: $$F_BAR_LOWER_ORDER_VOLLOCK_SMOOTHING
+Reading flag from CPS file: $$F_BAR_SMOOTH_STRAINS
+Reading flag from CPS file: $$F_BAR_SMOOTH_STRESSES
+Reading flag from CPS file: $$F_BAR_SMOOTH_LIQUID_PRESSURE
+Reading flag from CPS file: $$F_BAR_SMOOTH_LIQUID_PRESSURE_INCREMENT
+Reading flag from CPS file: $$GRAVITY_ACCELERATION
+Reading flag from CPS file: $$GRAVITY_VECTOR
+Reading flag from CPS file: $$GRAVITY_LOAD
+Reading flag from CPS file: $$SOLID_TRACTION
+Reading flag from CPS file: $$SOLID_TRACTION_B
+Reading flag from CPS file: $$LIQUID_PRESSURE
+Reading flag from CPS file: $$LIQUID_PRESSURE_B
+Reading flag from CPS file: $$HYDRAULIC_HEAD
+Reading flag from CPS file: $$APPLY_SEEPAGE_FACE
+Reading flag from CPS file: $$APPLY_INFILTRATION
+Reading flag from CPS file: $$PRESCRIBED_VELOCITY
+Reading flag from CPS file: $$GENERALIZED_ALPHA_TIME_SCHEME
+Reading flag from CPS file: $$MOVING_MESH
+Reading flag from CPS file: $$QUASISTATIC_CONVERGENCE
+Reading flag from CPS file: $$TOLERATED_ERROR_SOLID
+Reading flag from CPS file: $$TOLERATED_ERROR_LIQUID
+Reading flag from CPS file: $$MAXIMUM_TIME_STEPS
+[WARNING] : (time step:      1) CPS file: $$MAXIMUM_TIME_STEPS is larger than 100 000.
+Reading flag from CPS file: $$APPLY_IMPLICIT_QUASISTATIC
+Reading flag from CPS file: $$QS_MIN_ITER
+Reading flag from CPS file: $$QS_MAX_ITER
+Reading flag from CPS file: $$QS_UPSCALE_FACTOR
+Reading flag from CPS file: $$QS_DOWNSCALE_FACTOR
+Reading flag from CPS file: $$QS_MAX_ITERATIONS
+Reading flag from CPS file: $$APPLY_ZLS
+Reading flag from CPS file: $$APPLY_ARC_LENGTH_CONTROL
+Reading flag from CPS file: $$APPLY_ENHANCED_STIFFNESS
+Reading flag from CPS file: $$QS_STIFFNESS_INCREASE_FACTOR
+Reading flag from CPS file: $$QS_DANGLING_ELEMENT_FACTOR
+Reading flag from CPS file: $$APPLY_STEP_EXTRAPOLATION
+Reading flag from CPS file: $$APPLY_JACOBIAN_CHECK
+Reading flag from CPS file: $$LIMIT_JACOBIAN_CHANGE
+Reading flag from CPS file: $$APPLY_AUTOMATIC_LOADSTEPPING
+Reading flag from CPS file: $$INCR_MULTIPLIER_SOILA
+Reading flag from CPS file: $$INCR_MULTIPLIER_GRAVITY
+Reading flag from CPS file: $$INCR_MULTIPLIER_WATERA
+Reading flag from CPS file: $$INCR_MULTIPLIER_GASA
+Reading flag from CPS file: $$MASS_SCALING
+Reading flag from CPS file: $$HOMOGENEOUS_LOCAL_DAMPING
+Reading flag from CPS file: $$BULK_VISCOSITY_DAMPING
+Reading flag from CPS file: $$APPLY_DIVERGENCE_CHECK
+Reading flag from CPS file: $$MINIMUM_DETERMINANT_RATIO
+Reading flag from CPS file: $$NUMBER_OF_THREADS
+Reading flag from CPS file: $$APPLY_NODE_DATA_AB
+Reading flag from CPS file: $$CONTACT_FORMULATION
+Reading flag from CPS file: $$APPLY_CONTACT_MESH_BOUNDARY
+Reading flag from CPS file: $$APPLY_TRACTION_CONTACT
+Reading flag from CPS file: $$MONOPILE_SLICE_CONTACT
+Reading flag from CPS file: $$APPLY_CONTACT_VELOCITY_SCALING
+Reading flag from CPS file: $$VELOCITY_SCALING_FACTOR
+Reading flag from CPS file: $$APPLY_CONTACT_NORMAL_CORRECTION
+Reading flag from CPS file: $$NUMBER_OF_CORRECTED_NORMALS
+Reading flag from CPS file: $$EXCAVATION
+Reading flag from CPS file: $$CONSTRUCTION
+Reading flag from CPS file: $$FILL_EMPTY_ELEMENTS
+Reading flag from CPS file: $$FIX_SOLID_SKELETON
+Reading flag from CPS file: $$RESET_PARTICLE_DISPLACEMENT
+Reading flag from CPS file: $$STRAIN_SMOOTHING
+Reading flag from CPS file: $$APPLY_STRAIN_SMOOTHING_LIQUID_TWOLAYERFORM
+Reading flag from CPS file: $$LIQUID_CAVITATION
+Reading flag from CPS file: $$UPDATE_PERMEABILITY_DARCY_ERGUN
+[WARNING] : (time step:      1) Unknown flag in CPS file: $$UPDATE_PERMEABILITY_DARCY_ERGUN
+Reading flag from CPS file:  0 0
+Reading flag from CPS file: $$GRAIN_SIZE_DIAMETER
+Reading flag from CPS file: $$ERGUN_CONSTANTS
+Reading flag from CPS file: $$NO_TENSILE_STRESS_LIQUID_MP_WITH_LIQUID_STATUS
+Reading flag from CPS file: $$MAXIMUM_POROSITY
+Reading flag from CPS file: $$DETECT_FREE_SURFACE
+Reading flag from CPS file: $$RESET_DISPLACEMENTS
+Reading flag from CPS file: $$REMOVE_FIXITIES
+Reading flag from CPS file: $$MP_STRESS_INITIALIZATION_FROMFILE
+Reading flag from CPS file: $$K0_PROCEDURE
+Reading flag from CPS file: $$K0_MAX_SUCTION
+Reading flag from CPS file: $$SURFACE_ELEVATION
+Reading flag from CPS file: $$NUMBER_SOIL_LAYERS
+Reading flag from CPS file: $$THICKNESS_SOIL_LAYERS
+Reading flag from CPS file: $$LIQUID_SURFACE
+Reading flag from CPS file: $$CONSIDERED_LOAD_K0
+Reading flag from CPS file: $$INITIAL_WATER_PRESSURE
+Reading flag from CPS file: $$APPLY_MATERIAL_UPDATE
+Reading flag from CPS file: $$APPLY_POROSITY_UPDATE
+Reading flag from CPS file: $$APPLY_DARCY_PERMEABILITY_UPDATE
+Reading flag from CPS file: $$SUBMERGED_CALCULATION
+Reading flag from CPS file: $$INITIAL_VELOCITY
+Reading flag from CPS file: $$APPLY_OBJECTIVE_STRESS
+Reading flag from CPS file: $$DEGREE_OF_FILLING
+Reading flag from CPS file: $$NUMBER_OF_ACTIVE_ELEMENTS
+Reading flag from CPS file: $$APPLY_EMPTY_ELEMENTS
+Reading flag from CPS file: $$MASS_FACTOR_VIRTUAL_PARTICLES
+Reading flag from CPS file: $$GROUP_THRESHOLD
+Reading flag from CPS file: $$VISUALIZATION_OPTION
+Reading flag from CPS file: $$OUTPUT_NUMBER_OF_MATERIAL_POINTS
+Reading flag from CPS file: $$OUTPUT_MATERIAL_POINTS
+Reading flag from CPS file: $$OUTPUT_BASIC_DATA
+Reading flag from CPS file: $$OUTPUT_CURVES_INTERVAL
+Reading flag from CPS file: $$OUTPUT_NUMBER_OF_NODES
+Reading flag from CPS file: $$OUTPUT_NODES
+Reading flag from CPS file: $$OUTPUT_DEBUG_DATA
+Reading flag from CPS file: $$OUTPUT_EACH_LOAD_STEP
+Reading flag from CPS file: $$QUICK_CHECK_OUTPUT
+Reading flag from CPS file: $$FILE_COUNTER
+Reading flag from CPS file: $$PARTICLE_FILE_COUNTER
+Reading flag from CPS file: $$FEEDBACK_LEVEL
+Reading flag from CPS file: $$APPLY_SMOOTHENING_LIQUID_PRESSURE_INCREMENT
+Reading flag from CPS file: $$END
+Reading MAT_INFO file (Materials): 22_Slope_Simulation.MAT_INFO
+Reading... ### Anura3D_2022 ###
+[WARNING] : (time step:      1) GOM file: Non-default value for $$BULK_MODULUS_LIQUID (MATERIAL: ESM_MCSS).
+Darcy permeability is    0.1000E-002 (MATERIAL: ESM_MCSS).
+Loading constitutive model... external_soil_model
+[WARNING] : (time step:      1) GOM file: Non-default value for $$BULK_MODULUS_LIQUID (MATERIAL: ESM_MCSS).
+Darcy permeability is    0.1000E-002 (MATERIAL: ESM_MCSS).
+Loading constitutive model... external_soil_model
+Reading GOM file (Geometry): 22_Slope_Simulation.GOM
+Reading... ### Anura3D_2024 ###
+Calculation of load step     32
