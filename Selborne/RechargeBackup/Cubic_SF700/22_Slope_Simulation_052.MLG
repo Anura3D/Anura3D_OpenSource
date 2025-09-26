@@ -1,0 +1,10 @@
+ MaxWaveSpeed :    0.9038E+003
+ MinTimeStep  :    0.4139E-003
+ TimeIncrement:    0.3725E-003
+  Particle  18247 moved from element  2728 in patch      1 to   2617 in patch      1 at local pos: -0.999119281569176       0.999575625101088        19.9999999322486TimeStep    275
+  Particle  13300 moved from element  2060 in patch      1 to   1949 in patch      1 at local pos: -0.999246246030119       0.999798687408428        21.9998903074351TimeStep    580
+Current directory is: C:\Users\367759\Documents\Selborne\RechargeBackup\Cubic_SF700
+Capacity, available  Byte: 1013310287872   14782738432
+Capacity, available KByte:   0.9896E+009   0.1444E+008
+Capacity, available GByte:   0.9437E+003   0.1377E+002
+Calculation of load step     53
