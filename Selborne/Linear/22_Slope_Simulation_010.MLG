@@ -1,0 +1,10 @@
+Current directory is: C:\Users\367759\Documents\Selborne\Linear
+Capacity, available  Byte: 1013310287872  118800838656
+Capacity, available KByte:   0.9896E+009   0.1160E+009
+Capacity, available GByte:   0.9437E+003   0.1106E+003
+  Item  Name of subroutine/function/procedure        Times Time per call Total time (se Percentage
+     1| Main                                    |        1|   0.7501E+005|   0.7501E+005|100.00%
+     2| Initialisation                          |        1|   0.0000E+000|   0.0000E+000|  0.00%
+     3| LoadStep                                |       10|   0.7374E+004|   0.7374E+005| 98.30%
+     4| WriteResults                            |       10|   0.1441E+003|   0.1441E+004|  1.92%
+Calculation finished.
