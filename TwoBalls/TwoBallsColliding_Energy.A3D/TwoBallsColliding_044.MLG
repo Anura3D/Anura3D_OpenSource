@@ -1,0 +1,111 @@
+TimeStep:      1    0.2093E-002    0.2093E-002
+  Skipconvection?    0.1000E+001  F
+TimeStep:      2    0.2093E-002    0.4186E-002
+  Skipconvection?    0.1000E+001  F
+  Particle   4489 moved from element  1183 in patch      1 to   1234 in patch      1 at local pos: -0.996944765811172      -0.999857895208608        31.6766814360790TimeStep      2
+TimeStep:      3    0.2093E-002    0.6280E-002
+  Skipconvection?    0.1000E+001  F
+TimeStep:      4    0.2093E-002    0.8373E-002
+  Skipconvection?    0.1000E+001  F
+TimeStep:      5    0.2093E-002    0.1047E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:      6    0.2093E-002    0.1256E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:      7    0.2093E-002    0.1465E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:      8    0.2093E-002    0.1675E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:      9    0.2093E-002    0.1884E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     10    0.2093E-002    0.2093E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     11    0.2093E-002    0.2303E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     12    0.2093E-002    0.2512E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     13    0.2093E-002    0.2721E-001
+  Skipconvection?    0.1000E+001  F
+  Particle   1067 moved from element   463 in patch      1 to    412 in patch      1 at local pos:  0.991563243915863       0.997209514585941        11.5224553284962TimeStep     13
+  Particle   1706 moved from element   561 in patch      1 to    510 in patch      1 at local pos:  0.994185041881482       0.995260496852193        9.60263385980565TimeStep     13
+TimeStep:     14    0.2093E-002    0.2931E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     15    0.2093E-002    0.3140E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     16    0.2093E-002    0.3349E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     17    0.2093E-002    0.3558E-001
+  Skipconvection?    0.1000E+001  F
+  Particle   1830 moved from element   569 in patch      1 to    518 in patch      1 at local pos:  0.990546851167905       0.997858787841918        17.2828030420171TimeStep     17
+  Particle   2344 moved from element   660 in patch      1 to    609 in patch      1 at local pos:  0.996137984560803       0.998179118738954        8.64162803920853TimeStep     17
+TimeStep:     18    0.2093E-002    0.3768E-001
+  Skipconvection?    0.1000E+001  F
+  Particle   2439 moved from element   665 in patch      1 to    614 in patch      1 at local pos:  0.990979048474245       0.999854336697684        13.4403704656218TimeStep     18
+  Particle   7601 moved from element  1642 in patch      1 to   1693 in patch      1 at local pos: -0.989414779629667      -0.992245718939432        40.3193601196843TimeStep     18
+TimeStep:     19    0.2093E-002    0.3977E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     20    0.2093E-002    0.4186E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     21    0.2093E-002    0.4396E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     22    0.2093E-002    0.4605E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     23    0.2093E-002    0.4814E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     24    0.2093E-002    0.5024E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     25    0.2093E-002    0.5233E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     26    0.2093E-002    0.5442E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     27    0.2093E-002    0.5652E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     28    0.2093E-002    0.5861E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     29    0.2093E-002    0.6070E-001
+  Skipconvection?    0.1000E+001  F
+  Particle   6942 moved from element  1540 in patch      1 to   1591 in patch      1 at local pos: -0.988776396272794      -0.993690111386665        38.3986280401317TimeStep     29
+TimeStep:     30    0.2093E-002    0.6280E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     31    0.2093E-002    0.6489E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     32    0.2093E-002    0.6698E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     33    0.2093E-002    0.6908E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     34    0.2093E-002    0.7117E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     35    0.2093E-002    0.7326E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     36    0.2093E-002    0.7536E-001
+  Skipconvection?    0.1000E+001  F
+  Particle   5217 moved from element  1289 in patch      1 to   1340 in patch      1 at local pos: -0.997078635961234      -0.992805070134239        37.4397016798962TimeStep     36
+TimeStep:     37    0.2093E-002    0.7745E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     38    0.2093E-002    0.7954E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     39    0.2093E-002    0.8164E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     40    0.2093E-002    0.8373E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     41    0.2093E-002    0.8582E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     42    0.2093E-002    0.8792E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     43    0.2093E-002    0.9001E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     44    0.2093E-002    0.9210E-001
+  Skipconvection?    0.1000E+001  F
+  Particle   6985 moved from element  1543 in patch      1 to   1594 in patch      1 at local pos: -0.998077320816803      -0.991378187859890        41.2758901199017TimeStep     44
+TimeStep:     45    0.2093E-002    0.9419E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     46    0.2093E-002    0.9629E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     47    0.2093E-002    0.9838E-001
+  Skipconvection?    0.1000E+001  F
+TimeStep:     48    0.1619E-002    0.1000E+000
+  Skipconvection?    0.1000E+001  F
+Current directory is: C:\Users\367759\Documents\TwoBalls\TwoBallsColliding_Energy.A3D
+Capacity, available  Byte: 1013310287872  176518053888
+Capacity, available KByte:   0.9896E+009   0.1724E+009
+Capacity, available GByte:   0.9437E+003   0.1644E+003
+Calculation of load step     45

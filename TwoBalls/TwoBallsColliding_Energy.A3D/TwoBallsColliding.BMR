@@ -1,0 +1,191 @@
+ ---general project data--------------------------------------------------------
+Number of load steps                              60                                      
+Number of elements                              2500                                      
+Number of nodes                                 2809                                      
+Number of degrees of freedom                    5618                                      
+Number of entities                                 1                                      
+Number of material points                       8102                                      
+Number of solid material points                 8102                                      
+Number of liquid material points                   0                                      
+Number of phases                                   1                                      
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+    1        73         1     11.65000000         2.650000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+    2        65         1     12.05000000         3.050000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+    3        48         1     12.45000000         3.450000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+    4        48         1     12.85000000         3.850000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+    5        48         1     13.25000000         4.250000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+    6        48         1     13.65000000         4.650000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+    7        48         1     14.05000000         5.050000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+    8        48         1     14.45000000         5.450000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+    9        48         1     14.85000000         5.850000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   10        48         1     15.25000000         6.250000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   11        48         1     15.65000000         6.650000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   12        48         1     16.05000000         7.050000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   13        48         1     16.45000000         7.450000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   14        48         1     16.85000000         7.850000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   15        48         1     17.25000000         8.250000000    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   16        48         1     17.64999996         8.649999915    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   17        48         1     18.04999731         9.049994538    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   18        48         1     18.44992827         9.449850202    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   19        48         1     18.84892029         9.847725904    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   20        48         1     19.24027370         10.22939930    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   21        48         1     19.59613873         10.53637510    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   22        48         1     19.85792455         10.65782655    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   23        48         1     19.97668821         10.56381604    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   24        48         1     19.96183946         10.39289471    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   25        48         1     19.85506953         10.24175195    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   26        48         1     19.68623683         10.06814255    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   27        48         1     19.42820270         9.889622172    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   28        48         1     19.00365187         9.740758927    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   29        48         1     18.43735815         9.594036458    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   30        48         1     17.85220963         9.404388573    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   31        48         1     17.34511129         9.055225300    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   32        48         1     16.97991971         8.576016512    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   33        48         1     16.75618723         8.131232988    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   34        48         1     16.58212683         7.735339076    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   35        48         1     16.35081579         7.392436056    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   36        48         1     16.06171614         7.149162147    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   37        48         1     15.78560290         6.953696829    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   38        48         1     15.57551601         6.762491398    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   39        48         1     15.39840395         6.529719794    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   40        48         1     15.08543177         6.213196505    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   41        48         1     14.67261361         5.831027908    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   42        48         1     14.25861300         5.446091377    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   43        48         1     13.78610957         5.137275064    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   44        48         1     13.29483543         4.905635779    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   45        48         1     12.92315787         4.739424843    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   46        48         1     12.71168021         4.588131888    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   47        48         1     12.56700087         4.252622830    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   48        48         1     12.47271121         3.786138208    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   49        48         1     12.38385923         3.444745929    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   50        48         1     12.20015913         3.301204554    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   51        48         1     11.89072616         3.255718457    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   52        48         1     11.60795648         3.119056205    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   53        61         1     11.27220410         2.823429649    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   54        72         1     10.80646853         2.450302261    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   55        72         1     10.44130311         2.096762880    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   56        72         1     10.24830545         1.833833076    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   57       125         1     10.09112539         1.643114050    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   58       144         1     9.893726626         1.468533029    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   59       144         1     9.683469741         1.257775041    
+ ---material point data---------------------------------------------------------
+ LoadStep,TimeStep,MP_ID,X,Y,Z
+   60       144         1     9.381755674         1.079116299    
+ ---end-of-file-----------------------------------------------------------------

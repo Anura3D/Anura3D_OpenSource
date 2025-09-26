@@ -1,0 +1,10 @@
+ MaxWaveSpeed :    0.9052E+003
+ MinTimeStep  :    0.4139E-003
+ TimeIncrement:    0.3725E-003
+  Particle  20129 moved from element  3051 in patch      1 to   2940 in patch      1 at local pos: -0.999650176446002       0.999919156497219        13.4999127916790TimeStep    470
+  Particle  18864 moved from element  2944 in patch      1 to   2833 in patch      1 at local pos: -0.999333794803506       0.999966427752661        15.9999806389926TimeStep    720
+Current directory is: C:\Users\367759\Documents\Selborne\Cubic
+Capacity, available  Byte: 1013310287872   21843841024
+Capacity, available KByte:   0.9896E+009   0.2133E+008
+Capacity, available GByte:   0.9437E+003   0.2034E+002
+Calculation of load step     67

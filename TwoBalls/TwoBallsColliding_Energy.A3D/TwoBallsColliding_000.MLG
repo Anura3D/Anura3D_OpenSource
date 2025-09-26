@@ -1,0 +1,80 @@
+
+Anura3D: Numerical modelling and simulation of large deformationsand soil–water–structure interaction using the material point method (MPM)
+Kernel name       : Anura3D_2022.exe
+Kernel version    : 2022.1.0.9751
+Last update date  : 2022-04-21 18:59:58 +0200 (do, 21 apr 2022)
+Last compiled date: 2022-04-21 19:00:50.613
+
+Project name: TwoBallsColliding
+Reading CPS file: TwoBallsColliding.CPS_001
+Reading... ### Anura3D_2022 ###
+Reading flag from CPS file: $$NUMBER_OF_LOADSTEPS
+Reading flag from CPS file: $$TIME_PER_LOADSTEP
+Reading flag from CPS file: $$TOTAL_TIME
+Reading flag from CPS file: $$COURANT_NUMBER
+Reading flag from CPS file: $$COMPUTATION_METHOD
+Reading flag from CPS file: $$MP_INITIALIZATION
+Reading flag from CPS file: $$B_BAR_VOLLOCK_SMOOTHING
+Reading flag from CPS file: $$F_BAR_VOLLOCK_SMOOTHING
+Reading flag from CPS file: $$GRAVITY_ACCELERATION
+[WARNING] : (time step:      1) CPS file: Default value of $$GRAVITY_ACCELERATION changed.
+Reading flag from CPS file: $$GRAVITY_VECTOR
+Reading flag from CPS file: $$GRAVITY_LOAD
+Reading flag from CPS file: $$SOLID_TRACTION
+Reading flag from CPS file: $$SOLID_TRACTION_B
+Reading flag from CPS file: $$LIQUID_PRESSURE
+Reading flag from CPS file: $$LIQUID_PRESSURE_B
+Reading flag from CPS file: $$PRESCRIBED_VELOCITY
+Reading flag from CPS file: $$HYDRAULIC_HEAD
+Reading flag from CPS file: $$APPLY_SEEPAGE_FACE
+Reading flag from CPS file: $$APPLY_INFILTRATION
+Reading flag from CPS file: $$QUASISTATIC_CONVERGENCE
+Reading flag from CPS file: $$TOLERATED_ERROR_SOLID
+Reading flag from CPS file: $$TOLERATED_ERROR_LIQUID
+Reading flag from CPS file: $$MAXIMUM_TIME_STEPS
+Reading flag from CPS file: $$MASS_SCALING
+Reading flag from CPS file: $$HOMOGENEOUS_LOCAL_DAMPING
+Reading flag from CPS file: $$BULK_VISCOSITY_DAMPING
+Reading flag from CPS file: $$FIX_SOLID_SKELETON
+Reading flag from CPS file: $$STRAIN_SMOOTHING
+Reading flag from CPS file: $$APPLY_SMOOTHENING_LIQUID_PRESSURE_INCREMENT
+Reading flag from CPS file: $$CONTACT_FORMULATION
+Reading flag from CPS file: $$INITIAL_WATER_PRESSURE
+Reading flag from CPS file: $$APPLY_POROSITY_UPDATE
+Reading flag from CPS file: $$INITIAL_VELOCITY
+Reading flag from CPS file: $$RESET_DISPLACEMENTS
+Reading flag from CPS file: $$REMOVE_FIXITIES
+Reading flag from CPS file: $$EXCAVATION
+Reading flag from CPS file: $$SUBMERGED_CALCULATION
+Reading flag from CPS file: $$APPLY_OBJECTIVE_STRESS
+Reading flag from CPS file: $$DEGREE_OF_FILLING
+Reading flag from CPS file: $$NUMBER_OF_ACTIVE_ELEMENTS
+Reading flag from CPS file: $$VISUALIZATION_OPTION
+Reading flag from CPS file: $$OUTPUT_NUMBER_OF_MATERIAL_POINTS
+Reading flag from CPS file: $$OUTPUT_MATERIAL_POINTS
+Reading flag from CPS file: 5
+Reading flag from CPS file: 10
+Reading flag from CPS file: 15
+Reading flag from CPS file: 20
+Reading flag from CPS file: 25
+Reading flag from CPS file: 30
+Reading flag from CPS file: 35
+Reading flag from CPS file: 40
+Reading flag from CPS file: 45
+Reading flag from CPS file: 50
+Reading flag from CPS file: 55
+Reading flag from CPS file: 60
+Reading flag from CPS file: 65
+Reading flag from CPS file: 70
+Reading flag from CPS file: 75
+Reading flag from CPS file: 80
+Reading flag from CPS file: 100
+Reading flag from CPS file: 120
+Reading flag from CPS file: $$END
+Reading MAT_INFO file (Materials): TwoBallsColliding.MAT_INFO
+Reading... ### Anura3D_2022 ###
+Loading constitutive model... linear_elasticity
+Reading GOM file (Geometry): TwoBallsColliding.GOM
+Reading... ### Anura3D_2022 ###
+Reading material point initialization file: TwoBallsColliding.MP_INIT
+Calculation of load step      1

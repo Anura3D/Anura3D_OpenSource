@@ -1,0 +1,86 @@
+
+Anura3D: Numerical modelling and simulation of large deformationsand soil–water–structure interaction using the material point method (MPM)
+Kernel name       : Anura3D_2022.exe
+Kernel version    : 2022.1.0.9751
+Last update date  : 2022-04-21 18:59:58 +0200 (do, 21 apr 2022)
+Last compiled date: 2022-04-21 19:00:50.613
+
+Project name: TwoBallsColliding
+Reading CPS file: TwoBallsColliding.CPS_001
+Reading... ### Anura3D_2022 ###
+[WARNING] : (time step:      1) CPS file: Default value of $$GRAVITY_ACCELERATION changed.
+Reading MAT_INFO file (Materials): TwoBallsColliding.MAT_INFO
+Reading... ### Anura3D_2022 ###
+Loading constitutive model... linear_elasticity
+Reading GOM file (Geometry): TwoBallsColliding.GOM
+Reading... ### Anura3D_2022 ###
+Reading material point initialization file: TwoBallsColliding.MP_INIT
+Calculation of load step      1
+ MaxWaveSpeed :    0.3669E+002
+ MinTimeStep  :    0.1744E-001
+ TimeIncrement:    0.1395E-002
+Calculation of load step      2
+Calculation of load step      3
+Calculation of load step      4
+Calculation of load step      5
+Calculation of load step      6
+Calculation of load step      7
+Calculation of load step      8
+Calculation of load step      9
+Calculation of load step     10
+Calculation of load step     11
+Calculation of load step     12
+Calculation of load step     13
+Calculation of load step     14
+Calculation of load step     15
+Calculation of load step     16
+Calculation of load step     17
+Calculation of load step     18
+Calculation of load step     19
+Calculation of load step     20
+Calculation of load step     21
+Calculation of load step     22
+Calculation of load step     23
+Calculation of load step     24
+Calculation of load step     25
+Calculation of load step     26
+Calculation of load step     27
+Calculation of load step     28
+Calculation of load step     29
+Calculation of load step     30
+Calculation of load step     31
+Calculation of load step     32
+Calculation of load step     33
+Calculation of load step     34
+Calculation of load step     35
+Calculation of load step     36
+Calculation of load step     37
+Calculation of load step     38
+Calculation of load step     39
+Calculation of load step     40
+Calculation of load step     41
+Calculation of load step     42
+Calculation of load step     43
+Calculation of load step     44
+Calculation of load step     45
+Calculation of load step     46
+Calculation of load step     47
+Calculation of load step     48
+Calculation of load step     49
+Calculation of load step     50
+Calculation of load step     51
+Calculation of load step     52
+Calculation of load step     53
+Calculation of load step     54
+Calculation of load step     55
+Calculation of load step     56
+Calculation of load step     57
+Calculation of load step     58
+Calculation of load step     59
+Calculation of load step     60
+  Item  Name of subroutine/function/procedure        Times Time per call Total time (se Percentage
+     1| Main                                    |        1|   0.7187E+004|   0.7187E+004|100.00%
+     2| Initialisation                          |        1|   0.0000E+000|   0.0000E+000|  0.00%
+     3| LoadStep                                |       60|   0.1167E+003|   0.7000E+004| 97.41%
+     4| WriteResults                            |       60|   0.3337E+002|   0.2002E+004| 27.86%
+Calculation finished.
