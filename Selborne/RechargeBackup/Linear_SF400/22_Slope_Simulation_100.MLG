@@ -1,0 +1,13 @@
+ MaxWaveSpeed :    0.9069E+003
+ MinTimeStep  :    0.5292E-003
+ TimeIncrement:    0.4762E-003
+Current directory is: C:\Users\367759\Documents\Selborne\RechargeBackup\Linear_SF400
+Capacity, available  Byte: 1013310287872   15254654976
+Capacity, available KByte:   0.9896E+009   0.1490E+008
+Capacity, available GByte:   0.9437E+003   0.1421E+002
+  Item  Name of subroutine/function/procedure        Times Time per call Total time (se Percentage
+     1| Main                                    |        1|   0.0000E+000|   0.0000E+000
+     2| Initialisation                          |        1|   0.0000E+000|   0.0000E+000
+     3| LoadStep                                |       69|   0.4871E+004|   0.3361E+006
+     4| WriteResults                            |       69|   0.1631E+003|   0.1125E+005
+Calculation finished.

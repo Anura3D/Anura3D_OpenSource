@@ -1,0 +1,11 @@
+ MaxWaveSpeed :    0.9053E+003
+ MinTimeStep  :    0.5462E-003
+ TimeIncrement:    0.4916E-003
+  Particle  15872 moved from element  2391 in patch      1 to   2280 in patch      1 at local pos: -0.999187443194400       0.999610702125973        19.4997798870072TimeStep    131
+  Particle  17606 moved from element  2624 in patch      1 to   2513 in patch      1 at local pos: -0.999803767296103       0.999887920224670        23.9995557537362TimeStep    914
+  Particle  11542 moved from element  1959 in patch      1 to   1848 in patch      1 at local pos: -0.997940754522217       0.999956262666202        27.4999333429937TimeStep    980
+Current directory is: C:\Users\367759\Documents\Selborne\RechargeBackup\Linear_SF400
+Capacity, available  Byte: 1013310287872   17541083136
+Capacity, available KByte:   0.9896E+009   0.1713E+008
+Capacity, available GByte:   0.9437E+003   0.1634E+002
+Calculation of load step     84
