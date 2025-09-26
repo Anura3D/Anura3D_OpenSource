@@ -1,0 +1,13 @@
+ MaxWaveSpeed :    0.9052E+003
+ MinTimeStep  :    0.4823E-003
+ TimeIncrement:    0.4341E-003
+Current directory is: C:\Users\367759\Documents\Selborne\Quadratic_NoSmoothing
+Capacity, available  Byte: 1013310287872   95009050624
+Capacity, available KByte:   0.9896E+009   0.9278E+008
+Capacity, available GByte:   0.9437E+003   0.8848E+002
+  Item  Name of subroutine/function/procedure        Times Time per call Total time (se Percentage
+     1| Main                                    |        1|   0.0000E+000|   0.0000E+000
+     2| Initialisation                          |        1|   0.0000E+000|   0.0000E+000
+     3| LoadStep                                |       13|   0.4573E+004|   0.5945E+005
+     4| WriteResults                            |       13|   0.1264E+003|   0.1643E+004
+Calculation finished.
