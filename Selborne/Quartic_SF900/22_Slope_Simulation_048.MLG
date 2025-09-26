@@ -1,0 +1,9 @@
+ MaxWaveSpeed :    0.9051E+003
+ MinTimeStep  :    0.3575E-003
+ TimeIncrement:    0.3218E-003
+  Particle  17573 moved from element  2731 in patch      1 to   2620 in patch      1 at local pos: -0.999658508949253       0.999899580790537        21.4999640924021TimeStep   1030
+Current directory is: C:\Users\367759\Documents\Selborne\Quartic_SF900
+Capacity, available  Byte: 1013310287872   26159087616
+Capacity, available KByte:   0.9896E+009   0.2555E+008
+Capacity, available GByte:   0.9437E+003   0.2436E+002
+Calculation of load step     49
