@@ -1,0 +1,9 @@
+ MaxWaveSpeed :    0.9050E+003
+ MinTimeStep  :    0.4823E-003
+ TimeIncrement:    0.4340E-003
+  Particle  10599 moved from element  1856 in patch      1 to   1745 in patch      1 at local pos: -0.999218231183907       0.999924713898847        32.0000046827824TimeStep    430
+Current directory is: C:\Users\367759\Documents\Selborne\RechargeBackup\Quadratic_SF800
+Capacity, available  Byte: 1013310287872   37947523072
+Capacity, available KByte:   0.9896E+009   0.3706E+008
+Capacity, available GByte:   0.9437E+003   0.3534E+002
+Calculation of load step     60
