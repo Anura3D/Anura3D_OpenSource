@@ -1,9 +1,0 @@
- MaxWaveSpeed :    0.9062E+003
- MinTimeStep  :    0.5435E-003
- TimeIncrement:    0.4891E-003
-  Particle  11552 moved from element  1961 in patch      1 to   1850 in patch      1 at local pos: -0.999567014741370       0.999933409935094        28.4996649616787TimeStep     64
-Current directory is: C:\Users\367759\Documents\Selborne\RechargeBackup\Linear_SF700
-Capacity, available  Byte: 1013310287872   22832644096
-Capacity, available KByte:   0.9896E+009   0.2230E+008
-Capacity, available GByte:   0.9437E+003   0.2126E+002
-Calculation of load step     60
