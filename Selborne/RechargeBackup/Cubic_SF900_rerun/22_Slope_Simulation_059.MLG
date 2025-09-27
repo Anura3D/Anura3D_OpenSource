@@ -1,9 +1,0 @@
- MaxWaveSpeed :    0.9039E+003
- MinTimeStep  :    0.4139E-003
- TimeIncrement:    0.3725E-003
-  Particle  15938 moved from element  2285 in patch      1 to   2174 in patch      1 at local pos: -0.999073883064598       0.999837605767149        22.4999170002534TimeStep    259
-Current directory is: C:\Users\367759\Documents\Selborne\RechargeBackup\Cubic_SF900_rerun
-Capacity, available  Byte: 1013310287872   29897666560
-Capacity, available KByte:   0.9896E+009   0.2920E+008
-Capacity, available GByte:   0.9437E+003   0.2784E+002
-Calculation of load step     60
