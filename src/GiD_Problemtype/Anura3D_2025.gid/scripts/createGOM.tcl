@@ -124,6 +124,27 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
             set mcoor [lindex $ElementList  $i 9]
             set ncoor [lindex $ElementList  $i 10]
             GiD_WriteCalculationFile puts [= "%s %s %s %s %s %s %s %s %s %s" $xcoor $ycoor $zcoor $wcoor $jcoor $qcoor $kcoor $lcoor $mcoor $ncoor]}}
+         # THIN RIGID ELEMENT CONNECTIVITIES
+		GiD_WriteCalculationFile puts {$$THIN_RIGID_BODY_CONNECTIVITIES}
+	  if {$dim_type == "2D:plane-strain"} {
+		set NumRigidElements [GiD_Info Mesh NumElements Line]
+		set ElementList [GiD_Info Mesh Elements Line -sublist]
+		GiD_WriteCalculationFile puts [= "%s" $NumRigidElements]
+	  for {set i 0} {$i < $NumRigidElements } {incr i} {
+	    set xcoor [lindex $ElementList  $i 1]
+	    set ycoor [lindex $ElementList  $i 2]
+	    #set zcoor [lindex $ElementList  $i 3]
+	    GiD_WriteCalculationFile puts [= "%s %s" $xcoor $ycoor]}
+	  } elseif {$dim_type == "2D:Axissymmetric"} {
+		set NumRigidElements [GiD_Info Mesh NumElements Line]
+		set ElementList [GiD_Info Mesh Elements Line -sublist]
+		GiD_WriteCalculationFile puts [= "%s" $NumRigidElements]
+	  for {set i 0} {$i < $NumRigidElements } {incr i} {
+	    set xcoor [lindex $ElementList  $i 1]
+	    set ycoor [lindex $ElementList  $i 2]
+	    #set zcoor [lindex $ElementList  $i 3]
+	    GiD_WriteCalculationFile puts [= "%s %s" $xcoor $ycoor]}
+	  } 
     
     # FIXITIES
     # Surface conditions
@@ -575,6 +596,29 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
         GiD_WriteCalculationFile puts $num
         GiD_WriteCalculationFile elements $formats 
     }
+
+    # THIN RIGID ELEMENTS 2D
+    if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+	    set ov_type "line"
+	}
+    	set xp [format_xpath {condition[@n="Thin_rigid_elements"]/group[@ov=%s]} $ov_type]
+	set formats ""  
+    foreach gNode [$stageNode selectNodes $xp] {       
+        set v1 [$gNode selectNodes {string(value[@n="Number_of_materials"]/@v)}]
+        set v2 [$gNode selectNodes {string(value[@n="Contact_stiffness_1"]/@v)}]
+        set v3 [$gNode selectNodes {string(value[@n="Friction_angle_1"]/@v)}]
+        set v4 [$gNode selectNodes {string(value[@n="Contact_stiffness_2"]/@v)}]
+        set v5 [$gNode selectNodes {string(value[@n="Friction_angle_2"]/@v)}]
+        set v6 [$gNode selectNodes {string(value[@n="Contact_stiffness_3"]/@v)}]
+        set v7 [$gNode selectNodes {string(value[@n="Friction_angle_3"]/@v)}]
+        set v8 [$gNode selectNodes {string(value[@n="Contact_stiffness_4"]/@v)}]
+        set v9 [$gNode selectNodes {string(value[@n="Friction_angle_4"]/@v)}]
+        set v10 [$gNode selectNodes {string(value[@n="Name"]/@v)}]
+        set v11 [$gNode selectNodes {string(value[@n="Thickness"]/@v)}]
+        set v12 [$gNode selectNodes {string(value[@n="Rigid_weigth"]/@v)}]
+        dict set formats [$gNode @n] "%d \"$v10\" $v11 $v12 $v1 $v2 $v3 $v4 $v5 $v6 $v7 $v8 $v9\n"
+
+    }
     
     # EXCAVATION
     set excavation 0
@@ -800,6 +844,54 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
     GiD_WriteCalculationFile puts $num
     GiD_WriteCalculationFile elements -print_faces_conecs $formats
     
+
+
+
+# Boundary Thin Rigid Elements
+	### Velocity
+	set ov_type "line"
+	set xp [format_xpath {container[@n="BC"]/container[@n="Boundary_thin_elements"]/condition[@n="prescribed_velocity"]/group[@ov=%s]} $ov_type]
+	set formats ""
+	foreach gNode [$root selectNodes $xp] {
+	if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+	    set v1 [$gNode selectNodes {string(value[@n="X_trb_velocity_node"]/@v)}]
+	    set v2 [$gNode selectNodes {string(value[@n="X_trb_velocity_[m/s]"]/@v)}]
+		set v3 [$gNode selectNodes {string(value[@n="Y_trb_velocity_node"]/@v)}]
+		set v4 [$gNode selectNodes {string(value[@n="Y_trb_velocity_[m/s]"]/@v)}]
+		#set v5 [$gNode selectNodes {string(value[@n="Y_alpha"]/@v)}]
+	    #set v6 [$gNode selectNodes {string(value[@n="Y_delta"]/@v)}]
+	   dict set formats [$gNode @n] "%d $v2 $v4\n"}
+	 }
+	
+	set num2 [GiD_WriteCalculationFile elements -count $formats]
+	if {$num2 != 0} {
+	GiD_WriteCalculationFile puts {$$THIN_RIGID_ELEMENTS_PRESCRIBED_VELOCITY}    
+	GiD_WriteCalculationFile puts $num2
+	GiD_WriteCalculationFile elements $formats
+	}
+
+	### Rotation
+	set ov_type "line"
+	set xp [format_xpath {container[@n="BC"]/container[@n="Boundary_thin_elements"]/condition[@n="prescribed_rotation"]/group[@ov=%s]} $ov_type]
+	set formats ""
+	foreach gNode [$stageNode selectNodes $xp] {
+	if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+	    set v1 [$gNode selectNodes {string(value[@n="X_coord_[m]"]/@v)}]
+	    set v2 [$gNode selectNodes {string(value[@n="Y_coord_[m]"]/@v)}]
+		set v3 [$gNode selectNodes {string(value[@n="ROT_[Hz]"]/@v)}]
+		set v4 [$gNode selectNodes {string(value[@n="Center_CG"]/@v)}]
+		#set v4 [$gNode selectNodes {string(value[@n="Y_trb_velocity_[m/s]"]/@v)}]
+		#set v5 [$gNode selectNodes {string(value[@n="Y_alpha"]/@v)}]
+	    #set v6 [$gNode selectNodes {string(value[@n="Y_delta"]/@v)}]Center_CG
+	   dict set formats [$gNode @n] "%d $v4 $v3 $v1 $v2\n"}
+	 }
+	
+	set num2 [GiD_WriteCalculationFile elements -count $formats]
+	if {$num2 != 0} {
+	GiD_WriteCalculationFile puts {$$THIN_RIGID_ELEMENTS_PRESCRIBED_ROTATION}    
+	GiD_WriteCalculationFile puts $num2
+	GiD_WriteCalculationFile elements $formats
+	}
     
     # ABSORBING BOUNDARIES 2D/3D
     # Surface conditions

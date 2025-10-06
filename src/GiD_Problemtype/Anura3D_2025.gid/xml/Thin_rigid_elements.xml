@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<condition n="Thin_rigid_elements" pn="Thin rigid elements" icon="icon_contact" ov="line" ovm="element" help= "Use this condition to assign contact properties">
+  <value n="Name" pn="Name" att1="state" v1="normal" value=""/>
+  <value n="Thickness" pn="Thickness [m]" att1="state" v1="normal" value="1"/>
+  <value n="Rigid_weigth" pn="Density [kN/m^3]" att1="state" v1="normal" value="1"/>
+  <value n="Number_of_materials" pn="Number of materials" v="1" values="1,2,3,4" actualize_tree="1">
+    <dependencies node="../value[@n='Contact_stiffness_1']" att1="state" v1="normal" value="1"/>
+    <dependencies node="../value[@n='Contact_stiffness_1']" att1="state" v1="normal" value="2"/>
+    <dependencies node="../value[@n='Contact_stiffness_1']" att1="state" v1="normal" value="3"/>
+    <dependencies node="../value[@n='Contact_stiffness_1']" att1="state" v1="normal" value="4"/>
+    <dependencies node="../value[@n='Friction_angle_1']" att1="state" v1="normal" value="1"/>
+    <dependencies node="../value[@n='Friction_angle_1']" att1="state" v1="normal" value="2"/>
+    <dependencies node="../value[@n='Friction_angle_1']" att1="state" v1="normal" value="3"/>
+    <dependencies node="../value[@n='Friction_angle_1']" att1="state" v1="normal" value="4"/>
+
+    <dependencies node="../value[@n='Contact_stiffness_2']" att1="state" v1="hidden" value="1"/>
+    <dependencies node="../value[@n='Contact_stiffness_2']" att1="state" v1="normal" value="2"/>
+    <dependencies node="../value[@n='Contact_stiffness_2']" att1="state" v1="normal" value="3"/>
+    <dependencies node="../value[@n='Contact_stiffness_2']" att1="state" v1="normal" value="4"/>
+    <dependencies node="../value[@n='Friction_angle_2']" att1="state" v1="hidden" value="1"/>
+    <dependencies node="../value[@n='Friction_angle_2']" att1="state" v1="normal" value="2"/>
+    <dependencies node="../value[@n='Friction_angle_2']" att1="state" v1="normal" value="3"/>
+    <dependencies node="../value[@n='Friction_angle_2']" att1="state" v1="normal" value="4"/>
+
+    <dependencies node="../value[@n='Contact_stiffness_3']" att1="state" v1="hidden" value="1"/>
+    <dependencies node="../value[@n='Contact_stiffness_3']" att1="state" v1="hidden" value="2"/>
+    <dependencies node="../value[@n='Contact_stiffness_3']" att1="state" v1="normal" value="3"/>
+    <dependencies node="../value[@n='Contact_stiffness_3']" att1="state" v1="normal" value="4"/>
+    <dependencies node="../value[@n='Friction_angle_3']" att1="state" v1="hidden" value="1"/>
+    <dependencies node="../value[@n='Friction_angle_3']" att1="state" v1="hidden" value="2"/>
+    <dependencies node="../value[@n='Friction_angle_3']" att1="state" v1="normal" value="3"/>
+    <dependencies node="../value[@n='Friction_angle_3']" att1="state" v1="normal" value="4"/>
+
+    <dependencies node="../value[@n='Contact_stiffness_4']" att1="state" v1="hidden" value="1"/>
+    <dependencies node="../value[@n='Contact_stiffness_4']" att1="state" v1="hidden" value="2"/>
+    <dependencies node="../value[@n='Contact_stiffness_4']" att1="state" v1="hidden" value="3"/>
+    <dependencies node="../value[@n='Contact_stiffness_4']" att1="state" v1="normal" value="4"/>
+    <dependencies node="../value[@n='Friction_angle_4']" att1="state" v1="hidden" value="1"/>
+    <dependencies node="../value[@n='Friction_angle_4']" att1="state" v1="hidden" value="2"/>
+    <dependencies node="../value[@n='Friction_angle_4']" att1="state" v1="hidden" value="3"/>
+    <dependencies node="../value[@n='Friction_angle_4']" att1="state" v1="normal" value="4"/>
+  </value>
+
+  <value n="Contact_stiffness_1" pn="Contact stiffness 1 [kN/m]" v="0.0" state="hidden"/>
+  <value n="Contact_stiffness_2" pn="Contact stiffness 2 [kN/m]" v="0.0" state="hidden"/>
+  <value n="Contact_stiffness_3" pn="Contact stiffness 3 [kN/m]" v="0.0" state="hidden"/>
+  <value n="Contact_stiffness_4" pn="Contact stiffness 4 [kN/m]" v="0.0" state="hidden"/>
+
+  <value n="Friction_angle_1" pn="Friction coefficient [-]" v="0.0" state="hidden"/>
+  <value n="Friction_angle_2" pn="Friction coefficient [-]" v="0.0" state="hidden"/>
+  <value n="Friction_angle_3" pn="Friction coefficient [-]" v="0.0" state="hidden"/>
+  <value n="Friction_angle_4" pn="Friction coefficient [-]" v="0.0" state="hidden"/>
+</condition>

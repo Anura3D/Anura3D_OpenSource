@@ -5,6 +5,7 @@
     <value n="update_materials" pn="Update Materials" icon="icon_material" values="do not apply,apply" v="do not apply" state="[activate_not_initial_stage %W]"/>
 	<include path="xml/Materials.xml"></include>
     <include path="xml/MPspecification.xml"></include>
+    <include path="xml/Thin_rigid_elements.xml"/>
     <include path="xml/InitialConditions.xml"></include>
     <include path="xml/BoundaryConditions.xml"></include>
     <include path="xml/ContactProperties.xml"></include>
