@@ -617,7 +617,15 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
         set v11 [$gNode selectNodes {string(value[@n="Thickness"]/@v)}]
         set v12 [$gNode selectNodes {string(value[@n="Rigid_weigth"]/@v)}]
         dict set formats [$gNode @n] "%d \"$v10\" $v11 $v12 $v1 $v2 $v3 $v4 $v5 $v6 $v7 $v8 $v9\n"
+    }
 
+        if { [dict size $formats] } {
+        set num [GiD_WriteCalculationFile elements -count $formats]
+        if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+            GiD_WriteCalculationFile puts {$$START_THIN_ELM_PROPERTIES}
+        }  
+        GiD_WriteCalculationFile puts $num
+        GiD_WriteCalculationFile elements $formats 
     }
     
     # EXCAVATION
@@ -852,7 +860,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
 	set ov_type "line"
 	set xp [format_xpath {container[@n="BC"]/container[@n="Boundary_thin_elements"]/condition[@n="prescribed_velocity"]/group[@ov=%s]} $ov_type]
 	set formats ""
-	foreach gNode [$root selectNodes $xp] {
+	foreach gNode [$stageNode selectNodes $xp] {
 	if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
 	    set v1 [$gNode selectNodes {string(value[@n="X_trb_velocity_node"]/@v)}]
 	    set v2 [$gNode selectNodes {string(value[@n="X_trb_velocity_[m/s]"]/@v)}]
@@ -889,6 +897,53 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
 	set num2 [GiD_WriteCalculationFile elements -count $formats]
 	if {$num2 != 0} {
 	GiD_WriteCalculationFile puts {$$THIN_RIGID_ELEMENTS_PRESCRIBED_ROTATION}    
+	GiD_WriteCalculationFile puts $num2
+	GiD_WriteCalculationFile elements $formats
+	}
+
+
+    # Initial conditions for Thin Rigid Elements
+	### Velocity
+	set ov_type "line"
+	set xp [format_xpath {container[@n="Initial_cond"]/container[@n="Initial_thin_elements"]/condition[@n="thin_rb_initial_velocity"]/group[@ov=%s]} $ov_type]
+	set formats ""
+	foreach gNode [$stageNode selectNodes $xp] {
+	if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+	    set v1 [$gNode selectNodes {string(value[@n="X_irb_velocity_node"]/@v)}]
+	    set v2 [$gNode selectNodes {string(value[@n="X_irb_velocity_[m/s]"]/@v)}]
+		set v3 [$gNode selectNodes {string(value[@n="Y_irb_velocity_node"]/@v)}]
+		set v4 [$gNode selectNodes {string(value[@n="Y_irb_velocity_[m/s]"]/@v)}]
+		#set v5 [$gNode selectNodes {string(value[@n="Y_alpha"]/@v)}]
+	    #set v6 [$gNode selectNodes {string(value[@n="Y_delta"]/@v)}]
+	   dict set formats [$gNode @n] "%d $v2 $v4\n"}
+	 }
+	
+	set num2 [GiD_WriteCalculationFile elements -count $formats]
+	if {$num2 != 0} {
+	GiD_WriteCalculationFile puts {$$THIN_RIGID_ELEMENTS_INITIAL_VELOCITY}    
+	GiD_WriteCalculationFile puts $num2
+	GiD_WriteCalculationFile elements $formats
+	}
+
+	### Rotation
+	set ov_type "line"
+	set xp [format_xpath {container[@n="Initial_cond"]/container[@n="Initial_thin_elements"]/condition[@n="thin_rb_initial_rotation"]/group[@ov=%s]} $ov_type]
+	set formats ""
+	foreach gNode [$stageNode selectNodes $xp] {
+	if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+	    set v1 [$gNode selectNodes {string(value[@n="iX_coord_[m]"]/@v)}]
+	    set v2 [$gNode selectNodes {string(value[@n="iY_coord_[m]"]/@v)}]
+		set v3 [$gNode selectNodes {string(value[@n="iROT_[Hz]"]/@v)}]
+		set v4 [$gNode selectNodes {string(value[@n="iCenter_CG"]/@v)}]
+		#set v4 [$gNode selectNodes {string(value[@n="Y_trb_velocity_[m/s]"]/@v)}]
+		#set v5 [$gNode selectNodes {string(value[@n="Y_alpha"]/@v)}]
+	    #set v6 [$gNode selectNodes {string(value[@n="Y_delta"]/@v)}]Center_CG
+	   dict set formats [$gNode @n] "%d $v4 $v3 $v1 $v2\n"}
+	 }
+	
+	set num2 [GiD_WriteCalculationFile elements -count $formats]
+	if {$num2 != 0} {
+	GiD_WriteCalculationFile puts {$$THIN_RIGID_ELEMENTS_INITIAL_ROTATION}    
 	GiD_WriteCalculationFile puts $num2
 	GiD_WriteCalculationFile elements $formats
 	}

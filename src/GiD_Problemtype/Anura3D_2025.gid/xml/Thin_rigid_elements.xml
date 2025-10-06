@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
 
-<condition n="Thin_rigid_elements" pn="Thin rigid elements" icon="icon_contact" ov="line" ovm="element" help= "Use this condition to assign contact properties">
+<condition n="Thin_rigid_elements" pn="Thin rigid elements" icon="thin_elements" ov="line" ovm="element" help= "Use this condition to assign contact properties">
   <value n="Name" pn="Name" att1="state" v1="normal" value=""/>
   <value n="Thickness" pn="Thickness [m]" att1="state" v1="normal" value="1"/>
   <value n="Rigid_weigth" pn="Density [kN/m^3]" att1="state" v1="normal" value="1"/>

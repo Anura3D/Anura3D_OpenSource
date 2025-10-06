@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
+
+<container n="Initial_thin_elements" pn="Thin rig. elem. initial conditions" icon="thin_elements" actualize_tree="1">
+
+  <!-- DISPLACEMENTS -->
+ <condition n="thin_rb_initial_velocity" pn="Initial velocity" icon="thin_elements_vel" help= "Use this condition to apply a initial velocity on lines" ov="line" ovm="element">
+  		<value n="X_irb_velocity_node" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = prescribed velocity direction" actualize_tree="1">
+        <dependencies node="../value[@n='X_irb_velocity_[m/s]']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='X_irb_velocity_[m/s]']" att1="state" v1="hidden" value="0"/>
+      </value>
+      <value n="X_irb_velocity_[m/s]" pn="Velocity-x [m/s]" v="0.0" state="hidden"/>
+  		<value n="Y_irb_velocity_node" pn="y direction" v="0" values="1,0" help="OFF = free direction, ON = prescribed velocity direction" actualize_tree="1">
+        <dependencies node="../value[@n='Y_irb_velocity_[m/s]']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='Y_irb_velocity_[m/s]']" att1="state" v1="hidden" value="0"/>
+      </value>
+      <value n="Y_irb_velocity_[m/s]" pn="Velocity-y [m/s]" v="0.0" state="hidden"/>    	
+  </condition>
+
+  <!-- ROTATION -->
+  <condition n="thin_rb_initial_rotation" pn="Initial rotation" icon="thin_elements_rot" help= "Use this condition to apply an initial rotation on lines" ov="line" ovm="element">
+  		 <value n="iROT_[Hz]" pn="Initial rotation rate [Hz]" v="0.0" state="normal"/>
+      <value n="iCenter_CG" pn="Use center of gravity as rotation axis" v="1" values="1,0" help="OFF = applied rotation in center of gravity, ON = applied rotation in given point" actualize_tree="1">
+        <dependencies node="../value[@n='iX_coord_[m]']" att1="state" v1="normal" value="0"/>
+        <dependencies node="../value[@n='iX_coord_[m]']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='iY_coord_[m]']" att1="state" v1="normal" value="0"/>
+        <dependencies node="../value[@n='iY_coord_[m]']" att1="state" v1="hidden" value="1"/>
+        <dependencies node="../value[@n='iROT_[Hz]']" att1="state" v1="normal" value="1"/>
+        <dependencies node="../value[@n='iROT_[Hz]']" att1="state" v1="normal" value="0"/>
+      </value>
+      <value n="iX_coord_[m]" pn="Define axis' x-coord [m]" v="0.0" state="hidden"/>
+      <value n="iY_coord_[m]" pn="Define axis' y-coord [m]" v="0.0" state="hidden"/>         
+     
+  </condition>
+
+  
+
+</container>

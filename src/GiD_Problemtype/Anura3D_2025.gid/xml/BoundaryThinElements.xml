@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?><!-- -*- coding: utf-8; mode: SGML -*- -->
 
-<container n="Boundary_thin_elements" pn="Thin rig. elem. boundary conditions" icon="icon_velocity" actualize_tree="1">
+<container n="Boundary_thin_elements" pn="Thin rig. elem. boundary conditions" icon="thin_elements" actualize_tree="1">
 
   <!-- DISPLACEMENTS -->
- <condition n="prescribed_velocity" pn="Prescribed velocity" icon="icon_absorbing" help= "Use this condition to apply a prescribed velocity on lines" ov="line" ovm="element">
+ <condition n="prescribed_velocity" pn="Prescribed velocity" icon="thin_elements_vel" help= "Use this condition to apply a prescribed velocity on lines" ov="line" ovm="element">
   		<value n="X_trb_velocity_node" pn="x direction" v="0" values="1,0" help="OFF = free direction, ON = prescribed velocity direction" actualize_tree="1">
         <dependencies node="../value[@n='X_trb_velocity_[m/s]']" att1="state" v1="normal" value="1"/>
         <dependencies node="../value[@n='X_trb_velocity_[m/s]']" att1="state" v1="hidden" value="0"/>
@@ -17,7 +17,7 @@
   </condition>
 
   <!-- ROTATION -->
-  <condition n="prescribed_rotation" pn="Prescribed rotation" icon="icon_absorbing" help= "Use this condition to apply a prescribed rotation on lines" ov="line" ovm="element">
+  <condition n="prescribed_rotation" pn="Prescribed rotation" icon="thin_elements_rot" help= "Use this condition to apply a prescribed rotation on lines" ov="line" ovm="element">
   		 <value n="ROT_[Hz]" pn="Prescribed rotation [Hz]" v="0.0" state="normal"/>
       <value n="Center_CG" pn="Use center of gravity as rotation axis" v="1" values="1,0" help="OFF = applied rotation in center of gravity, ON = applied rotation in given point" actualize_tree="1">
         <dependencies node="../value[@n='X_coord_[m]']" att1="state" v1="normal" value="0"/>
@@ -28,9 +28,7 @@
         <dependencies node="../value[@n='ROT_[Hz]']" att1="state" v1="normal" value="0"/>
       </value>
       <value n="X_coord_[m]" pn="Define axis' x-coord [m]" v="0.0" state="hidden"/>
-      <value n="Y_coord_[m]" pn="Define axis' y-coord [m]" v="0.0" state="hidden"/>
-      
-      
+      <value n="Y_coord_[m]" pn="Define axis' y-coord [m]" v="0.0" state="hidden"/>         
      
   </condition>
 

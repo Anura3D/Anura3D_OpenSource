@@ -3,4 +3,5 @@
 help="Specify initial conditions for the problem." state="[activate_initial_stage %W %dict %BC]">
   <include path="xml/InitialVelocity.xml"/>
   <include path="xml/StressInitialization.xml"/> 
+  <include path="xml/InitialThinElements.xml"/>
 </container>
