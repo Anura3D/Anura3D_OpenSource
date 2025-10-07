@@ -149,6 +149,28 @@
         real(REAL_TYPE), dimension(:), allocatable :: ActiveNodeElementVolume 
         logical, dimension(:), allocatable :: ActiveNode
         logical, dimension(:), allocatable :: HydraulicHeadLoadedElemID
+        ! Variables about Rigid Elements
+        ! Nodal coordinates, and normals of non-conforming surfaces
+        real(REAL_TYPE), dimension(:, :),  &
+        allocatable :: ThinRigidElmNormals, ThinRigidCoordinates
+        logical :: IsThereRigidBody = .false.
+        
+        ! Element connectivities
+        integer(INTEGER_TYPE), dimension(:, :),  &
+        allocatable :: ThinRigidElmConnectivities
+        
+        ! Counters
+        integer(INTEGER_TYPE):: NThinELements, NthinBodies, NNodesThinElem, &
+            NThinElmProp, NThinElmPresVel, NThinElmPresRot, NThinElmPresFor, NThinElmPresTor,&
+            NThinElmInitVel, NThinElmInitRot, NThinElmInitFor, NThinElmInitTor
+        ! Lists
+       ! character(len=100), dimension(:), &
+        !allocatable :: ThinRigidElmPresVel, ThinRigidElmPresRot 
+        
+        character(len=100), dimension(:, :), &
+        allocatable :: ThinRigidElmProp, ThinRigidElmPresVel, ThinRigidElmPresRot, ThinRigidElmPresFor, &
+            ThinRigidElmPresTor, ThinRigidElmInitVel, ThinRigidElmInitRot, ThinRigidElmInitFor, &
+        ThinRigidElmInitTor
         
         ! Variables which are updated within calculation process
         real(REAL_TYPE), dimension(:, :), allocatable :: ExtLoad ! Nodal load array of external load
@@ -405,6 +427,15 @@
                   read (GOMunit,*) (ElementConnectivities(IDConnectivity, IDElement), IDConnectivity = 1, ELEMENTNODES)
                 end do ! loop over elements 
               end if  
+              
+            else if (trim(BName) == '$$THIN_RIGID_BODY_CONNECTIVITIES') then !related to thin rigid element connectivities
+              read(GOMunit, *) NThinELements
+               IsThereRigidBody = .true.
+              allocate (ThinRigidElmConnectivities(NThinELements, 2), stat = IError)
+             do J = 1, NThinELements ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmConnectivities(J, IDConnectivity), IDConnectivity = 1, 2)
+            end do ! loop over elements 
+
 
             elseif (trim(BName) == '$$START_FIXITY_SURFACE_SOLID') then
               read(GOMunit,*) NFixNod		
@@ -621,6 +652,80 @@
                   end do  
                 end if
               end do ! loop over removed fixed nodes
+              
+
+              else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_INITIAL_VELOCITY') then !related to thin rigid element properties
+              read(GOMunit,*) NThinElmInitVel
+              !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
+              allocate(character(len=100) :: ThinRigidElmInitVel(NThinElmInitVel, 5), stat = IError)
+             do J = 1, NThinElmInitVel ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmInitVel(J, IDConnectivity), IDConnectivity = 1, 5)
+             end do ! loop over elements 
+             
+              else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_INITIAL_FORCE') then !related to thin rigid element properties
+              read(GOMunit,*) NThinElmInitFor
+              !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
+              allocate(character(len=100) :: ThinRigidElmInitFor(NThinElmInitFor, 5), stat = IError)
+             do J = 1, NThinElmInitFor ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmInitFor(J, IDConnectivity), IDConnectivity = 1, 5)
+             end do ! loop over elements 
+             
+             else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_INITIAL_ROTATION') then !related to thin rigid element properties
+              read(GOMunit,*) NThinElmInitRot
+              !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
+              allocate(character(len=100) :: ThinRigidElmInitRot(NThinElmInitRot, 5), stat = IError)
+             do J = 1, NThinElmInitRot ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmInitRot(J, IDConnectivity), IDConnectivity = 1, 5)
+             end do ! loop over elements 
+             
+             else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_INITIAL_TORQUE') then !related to thin rigid element properties
+              read(GOMunit,*) NThinElmInitTor
+              !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
+              allocate(character(len=100) :: ThinRigidElmInitTor(NThinElmInitTor, 2), stat = IError)
+             do J = 1, NThinElmInitTor ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmInitTor(J, IDConnectivity), IDConnectivity = 1, 2)
+             end do ! loop over elements  
+              
+             
+             else if (trim(BName) == '$$START_THIN_RIGID_ELM_PROPERTIES') then !related to thin rigid element properties
+              read(GOMunit,*) NThinElmProp
+              !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
+              allocate(character(len=100) :: ThinRigidElmProp(NThinElmProp, 13), stat = IError)
+             do J = 1, NThinElmProp ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmProp(J, IDConnectivity), IDConnectivity = 1, 13)
+             end do ! loop over elements 
+             
+             else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_PRESCRIBED_VELOCITY') then !related to thin rigid element properties
+              read(GOMunit,*) NThinElmPresVel
+              !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
+              allocate(character(len=100) :: ThinRigidElmPresVel(NThinElmPresVel, 5), stat = IError)
+             do J = 1, NThinElmPresVel ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmPresVel(J, IDConnectivity), IDConnectivity = 1, 5)
+             end do ! loop over elements 
+             
+              else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_PRESCRIBED_FORCE') then !related to thin rigid element properties
+              read(GOMunit,*) NThinElmPresFor
+              !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
+              allocate(character(len=100) :: ThinRigidElmPresFor(NThinElmPresFor, 8), stat = IError)
+             do J = 1, NThinElmPresFor ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmPresFor(J, IDConnectivity), IDConnectivity = 1, 8)
+             end do ! loop over elements 
+             
+             else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_PRESCRIBED_ROTATION') then !related to thin rigid element properties
+              read(GOMunit,*) NThinElmPresRot
+              !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
+              allocate(character(len=100) :: ThinRigidElmPresRot(NThinElmPresRot, 5), stat = IError)
+             do J = 1, NThinElmPresRot ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmPresRot(J, IDConnectivity), IDConnectivity = 1, 5)
+             end do ! loop over elements 
+             
+             else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_PRESCRIBED_TORQUE') then !related to thin rigid element properties
+              read(GOMunit,*) NThinElmPresTor
+              !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
+              allocate(character(len=100) :: ThinRigidElmPresTor(NThinElmPresTor, 2), stat = IError)
+             do J = 1, NThinElmPresTor ! loop over thin body elements
+                read (GOMunit,*) (ThinRigidElmPresTor(J, IDConnectivity), IDConnectivity = 1, 2)
+             end do ! loop over elements 
 
             else if (trim(BName)=='$$START_LOAD_ON_NODES_SOLID') then
               read(GOMunit,*) NLoadedElementSidesSolidNodes ! Loaded faces

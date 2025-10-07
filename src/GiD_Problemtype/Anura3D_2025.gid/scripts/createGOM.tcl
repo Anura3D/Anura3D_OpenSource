@@ -50,7 +50,11 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
     
     # COUNTERS
     set num_nodes [GiD_Info Mesh NumNodes]
+    if {$elem_type == "Triangle"} {
+    set num_elements [GiD_Info Mesh NumElements Triangle]
+    } else {
     set num_elements [GiD_Info Mesh NumElements]
+    }
     GiD_WriteCalculationFile puts {$$STARTCOUNTERS}
     GiD_WriteCalculationFile puts [= "%s %s" $num_elements $num_nodes]
 
@@ -622,7 +626,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
         if { [dict size $formats] } {
         set num [GiD_WriteCalculationFile elements -count $formats]
         if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
-            GiD_WriteCalculationFile puts {$$START_THIN_ELM_PROPERTIES}
+            GiD_WriteCalculationFile puts {$$START_THIN_RIGID_ELM_PROPERTIES}
         }  
         GiD_WriteCalculationFile puts $num
         GiD_WriteCalculationFile elements $formats 
@@ -868,7 +872,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
 		set v4 [$gNode selectNodes {string(value[@n="Y_trb_velocity_[m/s]"]/@v)}]
 		#set v5 [$gNode selectNodes {string(value[@n="Y_alpha"]/@v)}]
 	    #set v6 [$gNode selectNodes {string(value[@n="Y_delta"]/@v)}]
-	   dict set formats [$gNode @n] "%d $v2 $v4\n"}
+	   dict set formats [$gNode @n] "%d $v1 $v2 $v3 $v4\n"}
 	 }
 	
 	set num2 [GiD_WriteCalculationFile elements -count $formats]
@@ -915,7 +919,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
 		set v4 [$gNode selectNodes {string(value[@n="Y_irb_velocity_[m/s]"]/@v)}]
 		#set v5 [$gNode selectNodes {string(value[@n="Y_alpha"]/@v)}]
 	    #set v6 [$gNode selectNodes {string(value[@n="Y_delta"]/@v)}]
-	   dict set formats [$gNode @n] "%d $v2 $v4\n"}
+	   dict set formats [$gNode @n] "%d $v1 $v2 $v3 $v4\n"}
 	 }
 	
 	set num2 [GiD_WriteCalculationFile elements -count $formats]

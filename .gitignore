@@ -2,7 +2,9 @@
 src/ReadMaterialData.FOR.bak
 /src/VS/.vs
 /src/VS/Release
+/src/VS/Debug
 *.bak
+*.user
 src/VS/Anura3D.u2d
 src/VS/Debug/A3DBingham.obj
 src/VS/Debug/A3DLinearElasticity.obj
