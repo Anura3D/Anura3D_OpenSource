@@ -156,8 +156,8 @@
       call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP
 	  call InitialiseVelocityonMP() ! only if ApplyInitialVelocityonMP
       call InitialiseRigidBody() ! only if IsRigidBody
-      call InitialiseStructuralElements()
-	  call InitialiseThinElemOutput()
+      call InitialiseStructuralElements() !only for thin rigid elements
+	  call InitialiseThinElemOutput() !only for thin rigid elements
       call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
       call InitialiseSurfaceReactionOutputFiles() ! create RSurf_XXX files for output of reaction surfaces
       

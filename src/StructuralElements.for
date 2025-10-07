@@ -55,12 +55,12 @@
         !allocatable :: ThinRigidElmConnectivities
         
         ! Counters
-        integer(INTEGER_TYPE):: NRigidBodies !store how many bodies are
+        integer(INTEGER_TYPE):: NRigidBodies !store how many bodies there are
        ! integer(INTEGER_TYPE):: dimension(:), &
        ! allocatable :: QtyRigidBodies  !store how many elements are for each body
-        integer(INTEGER_TYPE), dimension(:), allocatable ::  QtyRigidBodies !store how many elements are for each body
+        integer(INTEGER_TYPE), dimension(:), allocatable ::  QtyRigidBodies !store how many 1D elements are in each body
        ! character(len=100):: UniqueBodiesName(NThinELements)
-        character(len=100), dimension(:), allocatable ::  UniqueBodiesNameF
+        character(len=100), dimension(:), allocatable ::  UniqueBodiesNameF !Store the names of each rigid body
         ! Lists
        ! character(len=100), dimension(:), &
         !allocatable :: ThinRigidElmProp, ThinRigidElmPresVel, ThinRigidElmPresRot 
@@ -179,7 +179,7 @@
                 read(ThinRigidElmInitRot(N,1), *) K
                 if (M ==K-SIZE(ElementConnectivities,2)) then
                     read(ThinRigidElmInitRot(N,2), *) L
-                    if (L==1) then !If L ==0 then the center of rotation is diferent, we need to decide
+                    if (L==1) then !If L ==0 then the center of rotation is different, we need to decide
                         read(ThinRigidElmInitRot(N,3), *) DataStructureRigidBody(J)%AngularVelocity
                     end if
                     exit
@@ -206,17 +206,18 @@
             DataStructureRigidBody(J)%Name = ThinRigidElmProp(M,2)                  !Name or identifier of rigid body			
             read(ThinRigidElmProp(M,3), *) DataStructureRigidBody(J)%Thickness      !Thickness associated to R.B.
             read(ThinRigidElmProp(M,4), *) DataStructureRigidBody(J)%Density        !RB material density
-            read(ThinRigidElmProp(M,5), *) DataStructureRigidBody(J)%NumMaterials   !Number of possible materials in contact (#of soils in contact)
+            read(ThinRigidElmProp(M,5), *) DataStructureRigidBody(J)%NumMaterials   !Number of possible materials in contact (#of soils in contact up to 4 in current version)
             allocate(DataStructureRigidBody(J)%Materials(DataStructureRigidBody(J)%NumMaterials))
-            do I = 1, DataStructureRigidBody(J)%NumMaterials
+            do I = 1, DataStructureRigidBody(J)%NumMaterials !HERE I CAN CALCULATE STIFFNESS DIRECTLY FOR STABILITY
                 read(ThinRigidElmProp(M,5 + 2* I -1), *) DataStructureRigidBody(J)%Materials(I)%ContactStiffness !Stiffness with respect to material I
                 read(ThinRigidElmProp(M,5 + 2* I), *) DataStructureRigidBody(J)%Materials(I)%FrictionCoef		 !Friction coefficient with respect to mat I
+				!HERE WE COULD ADD ADDITIONAL USER DEFINED PROPERTIES
             end do
             
             allocate(integer(INTEGER_TYPE) :: DataStructureRigidBody(J)%Ids(QtyRigidBodies(J)))
             allocate(real(REAL_TYPE) :: DataStructureRigidBody(J)%MechProp(QtyRigidBodies(J),5))
             
-            !assign IDS of each rigid body
+            !assign IDS of each rigid body (MOVING DOWN THIS CODE IS A MESS::NEEDS TO BE IMPROVED)
             C=1
             do N = 1, SIZE(ThinRigidElmProp,1)
                 if (UniqueBodiesNameF(J)==ThinRigidElmProp(N,2)) then
@@ -366,7 +367,7 @@
             end do
         end do 
         
-        do C = 1, SIZE(NormalsRigidBody,1)
+        do C = 1, SIZE(NormalsRigidBody,1) !This seems unnecesary
             do J = 1, NRigidBodies
                 do I = 1, SIZE(DataStructureRigidBody(J)%Ids)
                         if (C == DataStructureRigidBody(J)%Ids(I)) then
@@ -678,9 +679,9 @@
 		
         call CreateCoordinatesRenameConnectivitiesIDs() !creates connectivities and coords list
         call NumberOfRigidBodies() !identifies the number of rigid bodies and ind. elements
-        call CreateDataStructureRigidBody()
-        call CreateDataStructureRigidBodyConditions()
-        call DistanceToRigidBody()
+        call CreateDataStructureRigidBody() !Creates a structure containing info about the rigid bodies and their properties
+        call CreateDataStructureRigidBodyConditions() !Creates a structure containing info about the conditions applied to the rigid bodies
+        call DistanceToRigidBody() !Calculates distance to rigid bodies
 
           end subroutine InitialiseStructuralElements
           
