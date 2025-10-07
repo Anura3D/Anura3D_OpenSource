@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -84,6 +84,7 @@
           real(REAL_TYPE) :: DiffusionVapourInGas = 0.0 ! Diffusion of the vapour in the gas
           real(REAL_TYPE) :: WaterAdvectiveFlux = 0.0 ! Water Advective flux
           real(REAL_TYPE) :: AirAdvectiveFlux = 0.0 ! Air Advective flux
+		  real(REAL_TYPE) :: ParticleRadius= 0.0 !Particle radius of influence
           !> Local 'volume' occupied by the particle (changes during simulation due to extension/compression of material)
           real(REAL_TYPE) :: IntegrationWeight = -1 ! Particle volume
           real(REAL_TYPE) :: ShearModulus = 0.0 ! Shear modulus of the particle
