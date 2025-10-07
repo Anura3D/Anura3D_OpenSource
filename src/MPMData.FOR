@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -92,11 +92,18 @@
         
         type(ParticleType(:, :, :)), dimension(:), allocatable :: Particles ! List of particle objects
         
+        !> Distance field for Rigid Body
+        real(REAL_TYPE), allocatable :: DistanceField(:)
+		
+        
         !> The following arrays correspond to the stripped members of the Particle datatype to improve efficency (spatial locality)  
         integer(INTEGER_TYPE), allocatable          :: IDArray(:)                   !> Unique ID of a particle. This variable should only be set once through the routine InitParticle.
         integer(INTEGER_TYPE), allocatable          :: ElementIDArray(:)            !> Unique ID of the element to whom the particle belongs. A value of -1 indicates no assignment.
         integer(INTEGER_TYPE), allocatable          :: EntityIDArray(:)             !> Unique ID indicating to which entity the particle belongs
         integer(INTEGER_TYPE), allocatable          :: MaterialIDArray(:)           !> Material ID of the particle referring to the material data read from input files
+        real(INTEGER_TYPE), allocatable             :: AffinityArray(:, :)             !> Keep track of affinity of MPs with rigid surfaces
+        real(INTEGER_TYPE), allocatable             :: TangentForceTrack(:, :)             !> Keep track of tangent friction force
+        real(INTEGER_TYPE), allocatable             :: TangentDisplacementTrack(:, :)             !> Keep track of tangent displacement
         
         integer(INTEGER_TYPE), allocatable          :: MaterialPointTypeArray(:)    !> Material properties (properties related to the matter represented by particles)
         real(REAL_TYPE), allocatable :: MassArray(:)                 !> Particle mass [kg] (corresponds to the dry density of soil) (fixed during simulation - ensures conservation of mass)
@@ -114,6 +121,9 @@
         real(REAL_TYPE), allocatable :: VelocityWaterArray(:,:)      ! Velocity of the particle (water)
         real(REAL_TYPE), allocatable :: VelocityGasArray(:,:)        ! Velocity of the particle (gas)
         
+		!if using thin rigid bodies
+        real(REAL_TYPE), allocatable :: ContactForceArray(:,:) 
+		
         ! Stresses
         real(REAL_TYPE), allocatable :: SigmaEffArray(:,:)           !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
         real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:)          !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step
@@ -651,7 +661,12 @@
           allocate(ShapeValuesArray(Counters%NParticles,ELEMENTNODES), stat = IError)
           allocate(UPhaseArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(DistanceField(Counters%NParticles), stat = IError)
+		  allocate(AffinityArray(Counters%NParticles,3), stat = IError)
+          allocate(TangentForceTrack(Counters%NParticles,2), stat = IError) 
+          allocate(TangentDisplacementTrack(Counters%NParticles,2), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
+		  allocate(ContactForceArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
@@ -665,6 +680,9 @@
           allocate(IsParticleIntegration(Counters%NEl), stat = IError)
           
           ! Initialize
+		  AffinityArray= 0.0
+          TangentForceTrack= 0.0 
+          TangentDisplacementTrack= 0.0
           ElementIDArray = -1
           IDArray = - 1
           EntityIDArray = -1
@@ -676,6 +694,7 @@
           UPhaseArray = 0.0
           GlobPosArray =  0.0
           VelocityArray = 0.0
+		  ContactForceArray= 0.0 !Update conditions for thin rigid bodies later
           SigmaEffArray = 0.0
           SigmaEff0Array = 0.0
           DShapeValuesArray = 0.0

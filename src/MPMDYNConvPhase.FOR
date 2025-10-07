@@ -64,6 +64,7 @@
       use ModRigidBody
       use ModLiquid
       use ModReadGeometryData
+	  use ModStructuralElements
       
       implicit none
 
@@ -356,6 +357,9 @@
             call TwoLayerData%DetermineTwoLayerStatus() 
          end if
 
+		 
+		!correct displacement of particles if using thin elements
+        !call LevelSetContact()
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !The balance equations are solved--> Incremental Water Pressure, Gas Pressure and Temperature are calculated, 
 !and the new stresses are obtained applying the proper Constitutive equation
@@ -423,9 +427,15 @@
          ! Update particle global positions, particle-element assignment, particle local positions and shape function values
          ! NOTE: EleParticles and Particle%ElementID get already updated while
          ! the remaining house-keeping data is updated in the succeeding routine!!
+		 
+		 !Calculate rigid body impulses
+		 !call UpdateThinElementImpulse
+		 !call LevelSetContact()
          if (IsMPMComputation()) then ! MPM
            call UpdateParticlePos()
          end if
+		 
+		 !call DisplacementCorrection
 
          if ( CalParams%ApplyMeshSmoothing .and. ISAXISYMMETRIC ) then
             ! updating global position of GPs is only needed in case of moving mesh

@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -51,6 +51,7 @@
       use ModMPMDYN3PhaseSP
       use ModDynViscousBoudary
       use ModMPMDynContact
+	  use ModStructuralElements
 
       implicit none
 
@@ -212,6 +213,55 @@
           end if
 
         end subroutine InitialiseMaterialPointOutputFiles
+
+      subroutine InitialiseThinElemOutput()
+      !**********************************************************************
+      !
+      !  Function : Initialise text files for output of thin rigid elements
+      !
+      !**********************************************************************
+      implicit none
+        ! Local variables
+        character(len = 8) :: XXX
+        integer(INTEGER_TYPE) :: ISurface, MaterialIndex
+        logical :: IsUndrEffectiveStress
+        character(len = 255) :: CompleteFileName
+        
+        if(.not.Isthererigidbody) RETURN
+
+        
+          do MaterialIndex=1, NRigidBodies
+
+
+          
+              call GetStepExt(MaterialIndex, XXX)
+              CompleteFileName = trim(CalParams%FileNames%ProjectName)// '.TREL_' // XXX 
+              if ( (FExist(trim(CompleteFileName))).and.(CalParams%IStep>1) ) then
+                call FileOpenAppend(THINunit + MaterialIndex, CompleteFileName) ! adapt existing file
+              else
+              call FileOpen(THINunit + MaterialIndex, CompleteFileName) ! create new file
+              write(THINunit + MaterialIndex, '(2A)') 'Surface name:', DataStructureRigidBody(MaterialIndex)%Name
+              if (NDIM == 3) then ! 3D case 
+              write(THINunit + MaterialIndex, '(18A21)') 'Step ', 'TimeStep ','TotalTime ',  &
+                          'CentroidX', 'CentroidY', 'CentroidZ', &
+                          'VelocityX', 'VelocityY', 'VelocityZ', &					
+                'RotVelX ', 'RotVelY ', 'RotVelZ ', &
+                'TorqueX ', 'TorqueY ', 'TorqueZ ', &
+                          'SumReactionSolidX ', 'SumReactionSolidY ', 'SumReactionSolidZ '
+                          
+              elseif (NDIM == 2) then
+              write(THINunit + MaterialIndex, '(13A21)') 'Step ', 'TimeStep ','TotalTime ',  &
+                          'CentroidX', 'CentroidY', &
+                'AccelerationX', 'AccelerationY', &	
+                          'VelocityX', 'VelocityY', &					
+                  'RotVelZ ', &
+                'TorqueZ ', &
+                          'SumReactionSolidX ', 'SumReactionSolidY '			  
+      endif
+      endif              
+      end do           
+      end subroutine InitialiseThinElemOutput
+
         
         subroutine InitialiseSurfaceReactionOutputFiles()
         !**********************************************************************
@@ -993,6 +1043,33 @@
 
             
     end subroutine WriteReactionsOnFile
+	
+    subroutine WriteThinRigidElementData()
+          !**********************************************************************
+          !
+          !  Function : Output of thin rigid objects for each time step to a text file project.TREL_XXX
+          !
+          !**********************************************************************	
+    implicit none
+    integer(INTEGER_TYPE)::MaterialIndex
+    
+    
+    do MaterialIndex=1, NRigidBodies !loop rigid elements
+      if (NDIM == 2) then
+        write(THINunit + MaterialIndex, '(I21, I21, 200G21.4)') CalParams%IStep, CalParams%TimeStep, &
+                CalParams%OverallRealTime,  &
+          DataStructureRigidBody(MaterialIndex)%Centroid(1), DataStructureRigidBody(MaterialIndex)%Centroid(2),&
+            DataStructureRigidBody(MaterialIndex)%Acceleration(1), DataStructureRigidBody(MaterialIndex)%Acceleration(2),&
+          DataStructureRigidBody(MaterialIndex)%Velocity(1), DataStructureRigidBody(MaterialIndex)%Velocity(2),&
+          DataStructureRigidBody(MaterialIndex)%AngularVelocity,&
+          DataStructureRigidBody(MaterialIndex)%Tsum,&
+          DataStructureRigidBody(MaterialIndex)%Fsum(1), DataStructureRigidBody(MaterialIndex)%Fsum(2)
+          
+      
+      endif
+    enddo
+    
+    end subroutine WriteThinRigidElementData
     
 
 
@@ -1322,6 +1399,10 @@
           end if
           do I = 1, Counters%NReactionSurfaceOutput
             call CloseFile(SURFReacUnit + I)
+		  end do
+		  
+          do I = 1, NRigidBodies
+            call CloseFile(THINunit +  I)
           end do
 
           call CloseFile(RXunit)

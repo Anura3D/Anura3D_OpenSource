@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -77,7 +77,7 @@
       use ModDynamicExplicit
       use ModString
       use ModTiming
-      
+      use ModStructuralElements
 
       implicit none
 
@@ -156,6 +156,8 @@
       call TwoLayerData%DetermineTwoLayerStatus() ! assign a Liquid or Solid status to the MP
 	  call InitialiseVelocityonMP() ! only if ApplyInitialVelocityonMP
       call InitialiseRigidBody() ! only if IsRigidBody
+      call InitialiseStructuralElements()
+	  call InitialiseThinElemOutput()
       call InitialiseSurfaceReaction() !read GOM file and determine surface reactions
       call InitialiseSurfaceReactionOutputFiles() ! create RSurf_XXX files for output of reaction surfaces
       

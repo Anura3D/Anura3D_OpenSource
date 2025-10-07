@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -56,6 +56,7 @@
       use ModRigidBody
       use ModMPMInit
       use ModMPMDynContact
+	  use ModStructuralElements
       
       
       implicit none
@@ -80,7 +81,7 @@
         integer(INTEGER_TYPE) :: iDof, J, ILoadSystem
         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity) :: &
             Momentum, MomentumW, RateofMomentumW, WaterInertia, &
-            MomentumG, RateofMomentumG, GasInertia
+            MomentumG, RateofMomentumG, GasInertia, FContact
 
         real(REAL_TYPE), dimension(Counters%NodTot,NVECTOR) :: PrescribedVelocityNodes
 
@@ -479,7 +480,9 @@
           if (CalParams%ApplyFixedSolidSkeleton) then ! Solid is fixed, compresibility of solid skeleton is neglected.
                RateofMomentum = 0.0
             else !solids are free to move, update the momentum equations 
-           RateofMomentum = (ExtLoad + GravityLoad - IntLoad)/CalParams%ScalingMassFactor
+			  !get reaction forces to nodes only for thin rigid body
+		call GetNodalContactForce(Fcontact)
+           RateofMomentum = (ExtLoad + GravityLoad - IntLoad + Fcontact)/CalParams%ScalingMassFactor !Need to add forces here
  
            if (CalParams%ApplyCPSDamping) then ! use the damping from the CPS file (used for complete domain)
              if (CalParams%DampingFactor>0.0) then 
@@ -784,13 +787,13 @@
             
                 N = Particles(IntGlo)%Porosity              !Porosity of the particle
                 Pg = Particles(IntGlo)%GasPressure          !Gas Pressure (MPa)
-                T = Particles(IntGlo)%Temperature           !Temperature (ºC)
+                T = Particles(IntGlo)%Temperature           !Temperature (ï¿½C)
                 WD = Particles(IntGlo)%WaterWeight/g        !Water density of the particle
                 GD = Particles(IntGlo)%GasWeight/g          !Gas density of the particle
                 Sr = Particles(IntGlo)%DegreeSaturation     !Degree of Saturation (liquid) of the particle
                 Sg = 1.0d0 - Sr                             !Degree of Satutation (gas) of the particle
                     
-                T = T+273.15d0  !Temperature (ºK)
+                T = T+273.15d0  !Temperature (ï¿½K)
                 R = 0.008314d0  !Default=8.3144621, Gas constant value (J/mol*K)
                 D1 = 0.00011d0  !Default=0.00011, Coefficient (m2/s)
                 Q = 24.53d0     !Default=24530, Coefficient (J/mol)
@@ -1300,6 +1303,10 @@
                       ! nodal momentum in directions from 1 to NDIM
                       do I=1,NVECTOR
                           Mom(I, :, iEntity) = Mom(I, :, iEntity) + ParticleMass * PartShape(:) * ParticleVelocity(I)
+						  !if (IsthereRigidBody) then !update nodal momentum
+							 ! Mom(I, :, iEntity)=Mom(I, :, iEntity) + CalParams%TimeIncrement * ContactForceArray(ParticleIndex,I)* PartShape(:)
+						  !endif
+						  
                       end do
 
                   end if ! Only if NumberOfLayers = 1 or SOLID Material Point

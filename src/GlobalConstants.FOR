@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -292,6 +292,7 @@
         integer(INTEGER_TYPE), parameter :: ELEMUnit= 800 ! first unit for element output (max until 899)
         integer(INTEGER_TYPE), parameter :: PARUnit = 900 ! first unit for particle output (max until 999)
         integer(INTEGER_TYPE), parameter :: SURFReacUnit = 1000
+		integer(INTEGER_TYPE), parameter :: THINunit=1100
         
         ! Prescribed velocity from file 
         integer(INTEGER_TYPE), parameter :: PVFunit = 70

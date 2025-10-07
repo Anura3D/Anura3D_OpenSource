@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -60,6 +60,7 @@
       use ModTwoLayerFormulation
       use ModGlobalConstants
       use ModReadOutputParameters
+      use ModStructuralElements
       
       implicit none
       
@@ -98,11 +99,16 @@
             end if
             
             ! Lagrangian phase
+			call RigidBodyLagrangianPhase() !only if IsThereRigidBody
+			call LevelSetContact()
             call LagrangianPhase()
             call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
 
             ! Convective phase
             call DYNConvectivePhase()
+			!call LevelSetContact()
+            !call UpdateThinElementImpulse()
+            !call WriteRigidBodyData()
 
             ! Optional writing of time step results
             ! write intermediate time step results and if ApplyQuickCheckOutput
@@ -131,7 +137,9 @@
           if (CalParams%OverallRealTime>NextTime) then  ! write data in .PAR file if time increment specified in .OPD file is reached
             NextTime=CalParams%OverallRealTime+OutParams%MP%TimeBetweenMPOutput
             call MaterialPointOutput() ! only if OutputNumberParticles>0
-          end if         
+		end if
+			
+			      call WriteThinRigidElementData() !For thin rigid elements
             
             !compute and write on file the sum of nodal reactions on selected surfaces
             call SurfaceReactionOutput() 
@@ -144,6 +152,7 @@
             end if
 
             call CalculateCriticalTimeStep()
+			      call Get_Contact_Stiffness() !Calculate max stiffness for penalty force
             call WriteFEMNodeData() ! only if .not.IsMPMComputation
 
           end do ! ----- end TIME STEP LOOP -----

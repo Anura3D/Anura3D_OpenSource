@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -51,6 +51,7 @@ module ModWriteVTKOutput
     use ModWriteVTKASCII
     use ModWriteVTKBinary
     use ModFileIO
+    use ModStructuralElements
 
     implicit none
 
@@ -238,6 +239,65 @@ module ModWriteVTKOutput
     close(VTKUnit) ! close the VTK file
 
     end subroutine WriteVTKMeshData
+    
+    
+    subroutine WriteVTKThinElmMeshData(DataSetName,DataSetScalar)
+    !**********************************************************************
+    !
+    ! Function:  Write Material Point Data in VTK format
+    !
+    !**********************************************************************
+
+    implicit none
+
+    character(len=*), dimension(:), intent(in) :: DataSetName ! dimension(DataSetSize)
+    real(REAL_TYPE), dimension(:,:), intent(in) :: DataSetScalar ! dimension(NumberElements,DataSetSize)
+
+    ! local variables
+    integer(INTEGER_TYPE) :: I, ElementID, NodeID, DataSetID, NumberElements, NumberNodes, DataSetSize
+    real(REAL_TYPE), dimension(3) :: NoCo = 0.0 ! dimension 3 as ParaView requires 3D data structure
+    character(len=MAX_FILENAME_LENGTH) :: VTKFileName
+
+    NumberNodes = SIZE(ThinRigidCoordinates,1) ! total number of nodes
+    NumberElements = NThinELements ! total number of elements
+    DataSetSize = size(DataSetScalar,2) ! total number of datasets
+
+    ! open the VTK file for mesh data
+    if (.not.CalParams%ApplyImplicitQuasiStatic) then
+        VTKFileName = trim(CalParams%FileNames%ProjectName)//'_ThinMeshData'//'_'// & !Delete later
+            trim(CalParams%FileNames%LoadStepExt)//trim(CalParams%FileNames%TimeStepExt)//'.vtk'
+    else
+        VTKFileName = trim(CalParams%FileNames%ProjectName)//'_ThinMeshData'//'_'// &
+            trim(CalParams%FileNames%TimeStepExt) &
+            //'.vtk'
+    end if
+
+    call FileOpen(VTKUnit, VTKFileName)
+
+   
+    write(VTKUnit,'(A)') trim(VTK_VERSION) ! writing file version and identifier
+    write(VTKUnit,'(A)') trim(CalParams%FileNames%ProjectName) ! writing header
+    write(VTKUnit,'(A)') trim(ASCII_FORMAT) ! writing file format
+
+    ! writing dataset structure (defines geometry and topology of dataset)
+    write(VTKUnit,'(A)')'DATASET POLYDATA'
+
+    write(VTKUnit,'(A,I8,A)')'POINTS ',NumberNodes,' float'
+    do NodeID = 1, NumberNodes ! loop over number of nodes
+        NoCo(1) = ThinRigidCoordinates(NodeID, 1)
+        NoCo(2) = ThinRigidCoordinates(NodeID, 2)
+        write(VTKUnit,*) NoCo
+    end do
+
+    write(VTKUnit,'(A,2I8)')'LINES ',NumberElements,(3)*NumberElements
+    do ElementID = 1, NumberElements ! loop over elements
+        write(VTKUnit,*) 2,  (ThinRigidElmConnectivities(ElementID,1) - 1), (ThinRigidElmConnectivities(ElementID,2) - 1)! write element connectivities (note that the index has to be decreased by 1)
+    end do
+
+
+    close(VTKUnit) ! close the VTK file
+
+    end subroutine WriteVTKThinElmMeshData
 
     subroutine CollectAndWriteDataSetScalar()
     !**********************************************************************
@@ -294,6 +354,20 @@ module ModWriteVTKOutput
          DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%HydraulicHead
     end do
     end if
+    
+   
+    if (IsThereRigidBody == .true.) then
+         do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+             DataSetScalar(MaterialPointID) = DistanceField(MaterialPointID)
+		 end do
+		 call WriteVTKScalarDataPointer('distance_field',DataSetScalar)
+		 do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+             DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%ParticleRadius
+		 end do
+		 call WriteVTKScalarDataPointer('radius_of_influence',DataSetScalar)
+    end if
+    
+    
     
     call WriteVTKScalarDataPointer('hydraulic_head',DataSetScalar)
     
@@ -972,6 +1046,22 @@ module ModWriteVTKOutput
     end do
      
     !********** END: writing scalar mesh data ****************************************
+
+    deallocate(DataSetName,DataSetScalar)
+
+    
+     !********** START: writing scalar  thin elm mesh data ****************************************
+    if (.not. IsThereRigidBody) RETURN
+    
+    NumberElements = NThinELements ! total number of elements
+    DataSetSize = 1 ! total number of datasets for elements to be written
+    allocate(DataSetName(DataSetSize))
+    allocate(DataSetScalar(NumberElements,DataSetSize))
+    
+    DataSetName(1) = 'Test'
+    DataSetScalar = 0.0
+    
+    call WriteVTKThinElmMeshData(DataSetName, DataSetScalar)
 
     deallocate(DataSetName,DataSetScalar)
 
