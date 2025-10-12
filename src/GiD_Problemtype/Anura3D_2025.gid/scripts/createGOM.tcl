@@ -2655,7 +2655,18 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
                 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="eff_tensile_strength_"]}]]
                 set type [$node getAttribute "v"]
                 GiD_WriteCalculationFile puts {$$TENSILE_STRENGTH} 
-                GiD_WriteCalculationFile puts $type        
+                GiD_WriteCalculationFile puts $type
+            } elseif {$typemodel == "Modified Camclay"} {
+                GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_NAME} 
+                GiD_WriteCalculationFile puts {Modified Camclay}
+                GiD_WriteCalculationFile puts {$$UMAT_DIMENSION} 
+                GiD_WriteCalculationFile puts {3D}
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="critical_stress_ratio_"]}]]
+                set type [$node getAttribute "v"]
+                GiD_WriteCalculationFile puts {$$COHESION} 
+                GiD_WriteCalculationFile puts $type
+                
+                 
             } elseif {$typemodel == "External Material Model"} {
                 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_model_dll_"]}]]
                 set type [$node getAttribute "v"]

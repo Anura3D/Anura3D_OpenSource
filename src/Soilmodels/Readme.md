@@ -32,3 +32,42 @@
     use ModNameOfYourModel !<-- This is your model
     ```
 6. Compile, debug, and verify
+
+# How to create a custom GUI for your constitutive model
+
+1. Locate the file ```Materials.xml``` inside the ```xml``` folder of the Problemtype.
+
+2. Locate the ```Solid Material Model``` nodule and add the name of your model as shown:
+    ```xml
+    <value n="_material_model_solid_" pn="Solid material model" values="Rigid body,Linear Elasticity,Mohr-Coulomb,YourModelName,External Material Model" v="Rigid body" state="[hide_show_const_model_mat_type_n Liquid %W]" actualize_tree="1"/>
+    ```
+
+3. Add a nodule for each material property needed in the same order used to define the variable ```PROPS()``` in the ```UMAT```. Example:
+    ```xml
+    <value n="mat_property_1" pn="My property 1 label" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+
+    <value n="mat_property_2" pn="My property 2 label" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+    ```
+
+4. Locate the file ```createGOM.tcl``` inside the folder ```scripts``` of the ProblemType.
+
+5. Search for ```"Mohr-Coulomb"``` in the code and find a place to put the new lines of code that will write the input for Anura as illustrated below:
+
+    ```tcl
+    GiD_WriteCalculationFile puts $type
+    } elseif {$typemodel == "YourModelName"} {
+        GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_NAME} 
+        GiD_WriteCalculationFile puts {YourModelName}
+        GiD_WriteCalculationFile puts {$$UMAT_DIMENSION} 
+        GiD_WriteCalculationFile puts {3D} 
+        #for 3D or
+        # GiD_WriteCalculationFile puts {2D_plane_strain} 
+
+        # The rest of your code will follow here
+
+        
+    } elseif {$typemodel == "External Material Model"} 
+    ```
+
+6. Add each of your properties or state variables as shown below:
+

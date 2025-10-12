@@ -2,6 +2,15 @@
 
 <container n="materials" pn="Materials" icon="icon_material">
   <blockdata n="material" name="Material 1" sequence='1' editable_name='unique' morebutton="0" icon="icon_material">
+
+  <!-- /*───────────────────────────────────────────────────────────────
+ |                                                               |
+ |               🪨  BASIC PROPERTIES OF MATERIAL  🪨           |
+ |                                                               |
+ |      Density | Porosity | Unit Weight | Water Content         |
+ |                                                               |
+ └───────────────────────────────────────────────────────────────*/ -->
+
     <container n="_basic" pn="BASIC PROPERTIES">
       <value n="material_type_" pn="Material type" v="Dry material" values="Dry material,Saturated material-drained,Saturated material-undrained effective stress,Saturated material-undrained total stress,Saturated material-fully coupled,Unsaturated material-2-phase with suction effect,Unsaturated material-3-phase fully coupled,Liquid" actualize_tree="1"/>
       <value n="initial_porosity_" pn="initial porosity" v="0.0" state="[hide_show_y_n_liq_n %W]"/>
@@ -20,20 +29,68 @@
       <value n="dinamic_viscosity_gas_" pn="gas dinamic viscosity" v="0.0" state="[hide_show_y_n_un_3 %W]"/>
       <value n="elastic_swelling_index_" pn="elastic swelling index" v="0.0" state="[hide_show_y_n_un_3 %W]"/>
     </container>
+
+
+    <!-- /*───────────────────────────────────────────────────────────────
+ |                                                               |
+ |             🪨  MATERIAL  CONSTITUTIVE MODEL 🪨              |
+ |                                                               |
+ |      Density | Porosity | Unit Weight | Water Content         |
+ |                                                               |
+ └───────────────────────────────────────────────────────────────*/ -->
     <container n="_material_constitutive_model" pn="MATERIAL CONSTITUTIVE MODEL" state="[hide_show_const_model_mat_type_n Liquid %W]">
-      <value n="_material_model_solid_" pn="Solid material model" values="Rigid body,Linear Elasticity,Mohr-Coulomb,External Material Model" v="Rigid body" state="[hide_show_const_model_mat_type_n Liquid %W]" actualize_tree="1"/>
+
+      <value n="_material_model_solid_" pn="Solid material model" values="Rigid body,Linear Elasticity,Mohr-Coulomb,Modified Camclay,External Material Model" v="Rigid body" state="[hide_show_const_model_mat_type_n Liquid %W]" actualize_tree="1"/>
+
       <value n="material_model_dll_" pn="Name of the external material model" v="" state="[hide_show_const_model {External Material Model} %W]"/>
+
       <value n="material_model_dll_dim_" pn="Size of stress tensor" values="2D,3D" v="3D" state="[hide_show_const_model {External Material Model} %W]"/>
+
+<!-- ________________________________________________________________________________
+Rigid body constraints
+________________________________________________________________________________ -->
       <value n="x-constr" pn="Constraint x-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model {Rigid body} %W]"/>
       <value n="y-constr" pn="Constraint y-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model {Rigid body} %W]"/>
       <value n="z-constr" pn="Constraint z-displacement" values="No,Yes" v="No" help="Must be used with contact algorithm" state="[hide_show_const_model_z {Rigid body} %W]"/>
+
+<!-- ________________________________________________________________________________
+Elasticity and Mohr-Coulomb
+________________________________________________________________________________  -->
+
       <value n="eff_poisson_ratio_" pn="Effective Poisson ratio" v="0.0" state="[hide_show_const_model_multi {Linear Elasticity} {Mohr-Coulomb} %W]"/>
+
       <value n="undr_poisson_ratio_" pn="Undrained Poisson ratio" v="0.0" state="[hide_show_const_model_multi_undr {Linear Elasticity} {Mohr-Coulomb} %W]"/>
-	  <value n="eff_Young_modulus_" pn="Effective Young modulus" v="0.0" state="[hide_show_const_model_multi {Linear Elasticity} {Mohr-Coulomb} %W]"/>
+
+      <value n="eff_Young_modulus_" pn="Effective Young modulus" v="0.0" state="[hide_show_const_model_multi {Linear Elasticity} {Mohr-Coulomb} %W]"/>
+
       <value n="eff_cohesion_" pn="Effective Cohesion" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
+
       <value n="eff_friction_angle_" pn="Effective Friction Angle" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
+
       <value n="eff_dilatancy_angle_" pn="Effective Dilatancy Angle" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
+
       <value n="eff_tensile_strength_" pn="Effective Tensile Strength" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/> 
+
+<!-- ________________________________________________________________________________
+Modified Camclay
+________________________________________________________________________________-->
+    <value n="critical_stress_ratio_" pn="Critical stress ratio" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+
+    <value n="effective_poisson_ratio_" pn="Effective Poisson ratio" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+
+    <value n="swelling_index_" pn="Swelling index [kappa]" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+
+    <value n="compression_index_" pn="Compression index [lambda]" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+
+    <value n="initial_void_ratio_" pn="Initial void ratio" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+
+    <value n="OCR" pn="OCR" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+
+
+<!-- ________________________________________________________________________________
+External Material Model
+________________________________________________________________________________  -->
+
       <container n="mat_params" pn="Define material parameters and state variables" state="[hide_show_const_model {External Material Model} %W]" help="Define material parameters and state variables">
         <value n="number_mat_params" pn="Number of material parameters" string_is="integer" v="50" help="Enter the number of material parameters"/>            
         <value n="number_state_var" pn="Number of state variables" string_is="integer" v="50" help="Enter the number of state variables"/>
