@@ -48,6 +48,7 @@ use kernel32
 use ModMeshInfo
 use ModLinearElasticity
 use ModMohrCoulomb
+use ModCamClay
 use ModBingham
 
 contains
