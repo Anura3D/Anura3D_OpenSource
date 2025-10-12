@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -179,6 +179,7 @@
         integer(INTEGER_TYPE), parameter :: MODIFIED_CAM_CLAY = 106
         integer(INTEGER_TYPE), parameter :: SANISAND = 108
         integer(INTEGER_TYPE), parameter :: MOHR_COULOMB_TEUNISSEN = 109
+        integer(INTEGER_TYPE), parameter :: STRENGTH_RATIO = 110
         integer(INTEGER_TYPE), parameter :: External = 149 ! 149 is the maximum allowable number 
 
         ! Soil model names
@@ -186,6 +187,7 @@
         character(len=64), parameter :: ESM_MOHR_COULOMB_STANDARD = 'mohr_coulomb'
         character(len=64), parameter :: ESM_MOHR_COULOMB_TEUNISSEN = 'mohr_coulomb_teunissen'
         character(len=64), parameter :: ESM_MOHR_COULOMB_STRAIN_SOFTENING = 'strain_softening_mohr_coulomb'
+        character(len=64), parameter :: ESM_STRENGTH_RATIO = 'strength_ratio'
         character(len=64), parameter :: ESM_HYPOPLASTICITY_SAND = 'hypoplasticity'
         character(len=64), parameter :: ESM_MODIFIED_CAM_CLAY = 'modified_cam_clay'
         character(len=64), parameter :: ESM_SANISAND = 'sani_sand'
@@ -214,6 +216,8 @@
         character(len=64), parameter :: UMAT_MODIFIED_CAM_CLAY = 'A3DModifiedCamClay.dll'
         character(len=64), parameter :: UMAT_SANISAND = 'A3DSaniSand.dll'
         character(len=64), parameter :: UMAT_BINGHAM = 'A3DBingham.dll'
+        character(len=64), parameter :: UMAT_STRENGTH_RATIO = 'A3DStrengthRatio.dll'
+        real(REAL_TYPE), parameter :: STRENGTH_RATIO_MIN_EFFECTIVE_PRESSURE = 1.0d0
 
         ! Hypoplastic model state variables
         integer(INTEGER_TYPE), parameter :: HP_STVAR_MOB_FRICTION = 1
@@ -591,155 +595,4 @@
         !                     tetrahedral_old (TETRAOLD)
         !
         ! I  ReadElementType
-        ! 
-        !**********************************************************************
-        
-        implicit none
-        
-        character(len=*), intent(in) :: ReadElementType
-                
-        select case (ReadElementType)
-            
-          case(TRI3) ! 'triangular_3-noded'
-            ELEMENTNODES = 3
-            ELEMENTVERTICES = 3
-            ELEMENTGAUSSPOINTS = 1
-            ELEMENTBOUNDARYNODES = 2
-            ELEMENTBOUNDARYGAUSSPOINTS = 1
-            ELEMENTSIDES = 3
-            VTK_CELL = 5 ! VTK_TRIANGLE(=5)
-            ELEMENTTYPE = TRI3
-            
-          case(TETRAOLD) ! 'tetrahedral_old' 
-            ELEMENTNODES = 4 
-            ELEMENTVERTICES = 4
-            ELEMENTGAUSSPOINTS = 1
-            ELEMENTBOUNDARYNODES = 3
-            ELEMENTBOUNDARYGAUSSPOINTS = 1
-            ELEMENTSIDES = 4
-            VTK_CELL = 10 ! VTK_TETRA(=10)
-            ELEMENTTYPE = TETRAOLD
-            
-          !**************************NOT AVAILABLE***************************
-          !case(TRI6) ! 'triangular_6-noded'
-          !  ELEMENTNODES = 6
-          !  ELEMENTVERTICES = 3
-          !  ELEMENTGAUSSPOINTS = 3
-          !  ELEMENTBOUNDARYNODES = 3
-          !  ELEMENTBOUNDARYGAUSSPOINTS = 2
-          !  ELEMENTSIDES = 3
-          !  VTK_CELL = 22 ! VTK_QUADRATIC_TRIANGLE(=22)
-          !  ELEMENTTYPE = TRI6
-          !    
-          !case(QUAD4) ! 'quadrilateral_4-noded'
-          !  ELEMENTNODES = 4
-          !  ELEMENTVERTICES = 4
-          !  ELEMENTGAUSSPOINTS = 1
-          !  ELEMENTBOUNDARYNODES = 2
-          !  ELEMENTBOUNDARYGAUSSPOINTS = 1
-          !  ELEMENTSIDES = 4
-          !  VTK_CELL = 9 ! VTK_QUAD(=9)
-          !  ELEMENTTYPE = QUAD4
-          !    
-          !case(QUAD8) ! 'quadrilateral_8-noded'
-          !  ELEMENTNODES = 8
-          !  ELEMENTVERTICES = 4
-          !  ELEMENTGAUSSPOINTS = 4
-          !  ELEMENTBOUNDARYNODES = 3
-          !  ELEMENTBOUNDARYGAUSSPOINTS = 2
-          !  ELEMENTSIDES = 4
-          !  VTK_CELL = 23 ! VTK_QUADRATIC_QUAD(=23)
-          !  ELEMENTTYPE = QUAD8
-          !    
-          !case(TETRA4) ! 'tetrahedral_4-noded'
-          !  ELEMENTNODES = 4 
-          !  ELEMENTVERTICES = 4
-          !  ELEMENTGAUSSPOINTS = 1
-          !  ELEMENTBOUNDARYNODES = 3
-          !  ELEMENTBOUNDARYGAUSSPOINTS = 1
-          !  ELEMENTSIDES = 4
-          !  VTK_CELL = 10 ! VTK_TETRA(=10)
-          !  ELEMENTTYPE = TETRA4 
-          !    
-          !case(TETRA10) ! 'tetrahedral_10-noded'
-          !  ELEMENTNODES = 10
-          !  ELEMENTVERTICES = 4
-          !  ELEMENTGAUSSPOINTS = 4
-          !  ELEMENTBOUNDARYNODES = 6 
-          !  ELEMENTBOUNDARYGAUSSPOINTS = 3
-          !  ELEMENTSIDES = 4
-          !  VTK_CELL = 24 ! VTK_QUADRATIC_TETRA(=24)
-          !  ELEMENTTYPE = TETRA10
-          !    
-          !case(HEXA8) ! 'hexahedral_8-noded'
-          !  ELEMENTNODES = 8
-          !  ELEMENTVERTICES = 8
-          !  ELEMENTGAUSSPOINTS = 1
-          !  ELEMENTBOUNDARYNODES = 4
-          !  ELEMENTBOUNDARYGAUSSPOINTS = 1
-          !  ELEMENTSIDES = 6
-          !  VTK_CELL = 12 ! VTK_HEXAHEDRON(=12)
-          !  ELEMENTTYPE = HEXA8
-          !    
-          !case(HEXA20) ! 'hexahedral_20-noded'
-          !  ELEMENTNODES = 20
-          !  ELEMENTVERTICES = 8
-          !  ELEMENTGAUSSPOINTS = 4
-          !  ELEMENTBOUNDARYNODES = 8
-          !  ELEMENTBOUNDARYGAUSSPOINTS = 4
-          !  ELEMENTSIDES = 6
-          !  VTK_CELL = 25 ! VTK_QUADRATIC_HEXAHEDRON(=25)
-          !  ELEMENTTYPE = HEXA20
-          !******************************************************************
-          
-          case default  ! not defined
-            call GiveError('Element type not defined. [subroutine SetElementType()].')
-            
-        end select
- 
-        end subroutine SetElementType
-
-       
-      end module ModGlobalConstants
-
-      !--------------------------------------------------------------------------------------------
-      module ModGlobalData
-      use ModGlobalConstants
-      implicit none
-      private
-      logical :: IsAnError = .False.
-      integer(INTEGER_TYPE), parameter :: MessageSize = 4096
-      character(len = MessageSize) :: ErrorMessage = ''
-      character(len = 5), parameter :: UninitializedMessage = '     '
-
-      public ::  HasAnErrorHappend, SetAnErrorHappend, MessageSize
-
-      contains
-
-      logical function HasAnErrorHappend()
-      !**********************************************************************
-      !
-      ! Function:  check if an error has just happened
-      !
-      !**********************************************************************
-      implicit none
-
-      HasAnErrorHappend = IsAnError
-
-      end function HasAnErrorHappend
-
-      subroutine SetAnErrorHappend(HasErrorHappend)
-      implicit none
-      logical, intent(in):: HasErrorHappend
-
-      IsAnError = HasErrorHappend
-
-      end subroutine SetAnErrorHappend
-
-      end module ModGlobalData
-
-
-
-
-
-
+  

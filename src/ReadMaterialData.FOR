@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -87,6 +87,7 @@
                  Cohesion = 0.0, & ! Mohr-Coulomb: cohesion, c
                  DilatancyAngle = 0.0, & ! Mohr-Coulomb: dilatancy angle, psi
                  TensileStrength = 0.0, & ! Mohr-Coulomb: tensile strenght for tension cut-off
+                 StrengthRatio = 0.0, & ! Strength-ratio model: Su/p multiplier
                  PeakCohesion = 0.0, & ! Mohr-Coulomb Strain-Softening: peak cohesion, c_p
                  ResidualCohesion = 0.0, & ! Mohr-Coulomb Strain-Softening: residual cohesion, c_res
                  PeakFrictionAngle = 0.0, & ! Mohr-Coulomb Strain-Softening: peak friction angle, phi_p
@@ -756,12 +757,12 @@ end select
                   call ReadReal(FileUnit, BName, DumR) ! Young Modulus, E, $$YOUNG_MODULUS
                   MatParams(I)%YoungModulus = DumR
                   MatParams(I)%ESM_Solid(1) = DumR 
-                  call ReadReal(FileUnit, BName, DumR) ! Poisson ratio, nu, $$POISSON_RATIO
+                  call ReadReal(FileUnit, BName, DumR) ! Poisson ratio, nu, $$$POISSON_RATIO
                   MatParams(I)%PoissonRatio = DumR
                   MatParams(I)%ESM_Solid(2) = DumR
                   
                   if (trim(MatParams(I)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE) then
-                    call ReadReal(FileUnit, BName, DumR) ! Poisson ratio undrained, nu_undr, $$POISSON_RATIO_UNDRAINED
+                    call ReadReal(FileUnit, BName, DumR) ! Poisson ratio undrained, nu_undr, $$$POISSON_RATIO_UNDRAINED
                     MatParams(I)%UndrainedPoissonRatio = DumR
                     n = MatParams(I)%InitialPorosity
                     nu_u = MatParams(I)%UndrainedPoissonRatio
@@ -783,11 +784,11 @@ end select
                   call ReadReal(FileUnit, BName, DumR) ! Young Modulus, E, $$YOUNG_MODULUS
                   MatParams(I)%YoungModulus = DumR
                     
-                  call ReadReal(FileUnit, BName, DumR) ! Poisson ratio, nu, $$POISSON_RATIO
+                  call ReadReal(FileUnit, BName, DumR) ! Poisson ratio, nu, $$$POISSON_RATIO
                   MatParams(I)%PoissonRatio = DumR
                     
                   if (trim(MatParams(I)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE) then
-                    call ReadReal(FileUnit, BName, DumR) ! Poisson ratio undrained, nu_undr, $$POISSON_RATIO_UNDRAINED
+                    call ReadReal(FileUnit, BName, DumR) ! Poisson ratio undrained, nu_undr, $$$POISSON_RATIO_UNDRAINED
                     MatParams(I)%UndrainedPoissonRatio = DumR
                     n = MatParams(I)%InitialPorosity
                     nu_u = MatParams(I)%UndrainedPoissonRatio
@@ -808,8 +809,45 @@ end select
                   call ReadReal(FileUnit, BName, DumR) ! dilatancy angle, psi, $$DILATANCY_ANGLE
                   MatParams(I)%DilatancyAngle = DumR
                     
-                  call ReadReal(FileUnit, BName, DumR) ! tensile strength, T, $$TENSILE_STRENGTH
+                  call ReadReal(FileUnit, BName, DumR) ! tensile strength, T, $$$TENSILE_STRENGTH
                   MatParams(I)%TensileStrength = DumR
+
+                  MatParams(I)%ESM_POINTER => ESM_MC              
+                  
+                  if ( NDIM == 2 ) then
+                      MatParams(I)%UMATDimension = 4
+                  end if 
+                  
+                case (ESM_STRENGTH_RATIO)
+                    
+                  call ReadReal(FileUnit, BName, DumR) ! Young Modulus, E, $$YOUNG_MODULUS
+                  MatParams(I)%YoungModulus = DumR
+                    
+                  call ReadReal(FileUnit, BName, DumR) ! Poisson ratio, nu, $$POISSON_RATIO
+                  MatParams(I)%PoissonRatio = DumR
+                    
+                  if (trim(MatParams(I)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE) then
+                    call ReadReal(FileUnit, BName, DumR) ! Poisson ratio undrained, nu_undr, $$POISSON_RATIO_UNDRAINED
+                    MatParams(I)%UndrainedPoissonRatio = DumR
+                    n = MatParams(I)%InitialPorosity
+                    nu_u = MatParams(I)%UndrainedPoissonRatio
+                    nu_eff = MatParams(I)%PoissonRatio
+                    E = MatParams(I)%YoungModulus
+                    MatParams(I)%BulkModulusLiquid = n*(nu_u-nu_eff)*E/   &
+                        ((1-2.*nu_u)*(1+nu_eff)*(1-2.*nu_eff))
+                  else 
+                    MatParams(I)%UndrainedPoissonRatio = 0.495 
+                  end if                      
+
+                  call ReadReal(FileUnit, BName, DumR) ! strength ratio Su/p', $$STRENGTH_RATIO
+                  MatParams(I)%StrengthRatio = DumR
+
+                  call ReadReal(FileUnit, BName, DumR) ! tensile strength, $$TENSILE_STRENGTH
+                  MatParams(I)%TensileStrength = DumR
+
+                  MatParams(I)%FrictionAngle = 0.0
+                  MatParams(I)%DilatancyAngle = 0.0
+                  MatParams(I)%Cohesion = 0.0
 
                   MatParams(I)%ESM_POINTER => ESM_MC              
                   
@@ -822,11 +860,11 @@ end select
                   call ReadReal(FileUnit, BName, DumR) ! Young Modulus, E, $$YOUNG_MODULUS
                   MatParams(I)%YoungModulus = DumR
                   MatParams(I)%ESM_Solid(1) = DumR  
-                  call ReadReal(FileUnit, BName, DumR) ! Poisson ratio, nu, $$POISSON_RATIO
+                  call ReadReal(FileUnit, BName, DumR) ! Poisson ratio, nu, $$$POISSON_RATIO
                   MatParams(I)%PoissonRatio = DumR
                   MatParams(I)%ESM_Solid(2) = DumR 
                   if (trim(MatParams(I)%MaterialType)==SATURATED_SOIL_UNDRAINED_EFFECTIVE) then
-                    call ReadReal(FileUnit, BName, DumR) ! Poisson ratio undrained, nu_undr, $$POISSON_RATIO_UNDRAINED
+                    call ReadReal(FileUnit, BName, DumR) ! Poisson ratio undrained, nu_undr, $$$POISSON_RATIO_UNDRAINED
                     MatParams(I)%UndrainedPoissonRatio = DumR
                     n = MatParams(I)%InitialPorosity
                     nu_u = MatParams(I)%UndrainedPoissonRatio

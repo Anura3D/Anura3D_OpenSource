@@ -79,6 +79,7 @@ implicit none
     real(REAL_TYPE), dimension(NTENSOR) :: Sig0, StressIncr, StressPrinc, TempStrainIncr, TempStrainIncrPrevious
     real(REAL_TYPE), dimension(NSTATEVAR) :: StateVar ! state parameters in integration/material
     real(REAL_TYPE) :: Eunloading, PlasticMultiplier
+    real(REAL_TYPE) :: MeanStress, pEff, Su
     character(len=64) :: NameModel ! name of the constitutive model
     logical :: IsUndrEffectiveStress
     real(REAL_TYPE) :: DSigWP ! Change of water pressure at integration point 
@@ -172,6 +173,28 @@ implicit none
     if (trim(NameModel)//char(0) == trim('linear_elasticity')//char(0)) then
     props(1) = Particles(IDpt)%ShearModulus ! shear modulus, G
     cmname = UMAT_LINEAR_ELASTICITY
+    elseif (trim(NameModel)//char(0) == trim(ESM_STRENGTH_RATIO)//char(0)) then
+    props(1) = Particles(IDpt)%ShearModulus ! shear modulus, G
+    props(2) = MatParams(IDSet)%PoissonRatio
+    props(3) = 0.0d0
+    props(5) = 0.0d0
+    MeanStress = 0.0d0
+    do I = 1, 3
+      MeanStress = MeanStress + Stress(I)
+    end do
+    MeanStress = MeanStress / 3.0d0
+    pEff = -MeanStress
+    if (pEff < STRENGTH_RATIO_MIN_EFFECTIVE_PRESSURE) pEff = STRENGTH_RATIO_MIN_EFFECTIVE_PRESSURE
+    Su = MatParams(IDSet)%StrengthRatio * pEff
+    if (Su < 0.0d0) Su = 0.0d0
+    props(4) = Su
+    if (MatParams(IDSet)%TensileStrength > 0.0d0) then
+      props(6) = min(Su, MatParams(IDSet)%TensileStrength)
+    else
+      props(6) = Su
+    end if
+    Particles(IDpt)%CohesionCosPhi = Su
+    cmname = UMAT_MOHR_COULOMB_STANDARD
     elseif (trim(NameModel)//char(0) == trim(ESM_MOHR_COULOMB_STANDARD)//char(0)) then
     props(1) = Particles(IDpt)%ShearModulus ! shear modulus, G
     props(2) = MatParams(IDSet)%PoissonRatio 

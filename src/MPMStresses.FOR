@@ -1087,7 +1087,7 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
                                            Tens
                                 
           ! Local variables
-          real(REAL_TYPE) :: VNu_Un
+          real(REAL_TYPE) :: VNu_Un, MeanStress, pEff, Su
           character(len=64) :: SoilModel ! name of the constitutive model
 
             ISet = MaterialIDArray(IntGlo) ! is the material number stored in $$MATERIAL_INDEX in the GOM-file
@@ -1105,11 +1105,25 @@ subroutine MapNodeVariableExtFileToMP(ParticleID,LengthSm, ExtFileMatrix, IdVari
             SPsi = SIN(MatParams(ISet)%DilatancyAngle*(Pi/180.0))
             SPhi = SIN(MatParams(ISet)%FrictionAngle*(Pi/180.0))
             GG = Particles(IntGlo)%ShearModulus
-            Cohec = Particles(IntGlo)%CohesionCosPhi
-
-            Tens = MatParams(ISet)%TensileStrength
-            if (Tens>Particles(IntGlo)%SFail) then
-              Tens = Particles(IntGlo)%SFail
+            if (SoilModel == ESM_STRENGTH_RATIO) then
+              MeanStress = (SigmaEffArray(IntGlo,1) + SigmaEffArray(IntGlo,2) + SigmaEffArray(IntGlo,3)) / 3.0d0
+              pEff = -MeanStress
+              if (pEff < STRENGTH_RATIO_MIN_EFFECTIVE_PRESSURE) pEff = STRENGTH_RATIO_MIN_EFFECTIVE_PRESSURE
+              Su = MatParams(ISet)%StrengthRatio * pEff
+              if (Su < 0.0d0) Su = 0.0d0
+              Cohec = Su
+              Particles(IntGlo)%CohesionCosPhi = Su
+              if (MatParams(ISet)%TensileStrength > 0.0d0) then
+                Tens = min(Su, MatParams(ISet)%TensileStrength)
+              else
+                Tens = Su
+              end if
+            else
+              Cohec = Particles(IntGlo)%CohesionCosPhi
+              Tens = MatParams(ISet)%TensileStrength
+              if (Tens>Particles(IntGlo)%SFail) then
+                Tens = Particles(IntGlo)%SFail
+              end if
             end if
             
  

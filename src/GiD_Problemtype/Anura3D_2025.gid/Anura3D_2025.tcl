@@ -1087,6 +1087,7 @@ proc hide_show_const_model_multi_undr {flag1 flag2 domNode} {
     if {$mat_type == "Liquid"} {return hidden}
     if {$problem_type == $flag1 && $mat_type == "Saturated material-undrained effective stress"} {return normal}
     if {$problem_type == $flag2 && $mat_type == "Saturated material-undrained effective stress"} {return normal}
+    if {$problem_type == "Strength Ratio (Su/p)" && $mat_type == "Saturated material-undrained effective stress"} {return normal}
 	return hidden
 }
 
@@ -1098,6 +1099,7 @@ proc hide_show_const_model_multi {flag1 flag2 domNode} {
     if {$mat_type == "Liquid"} {return hidden}
     if {$problem_type == $flag1} {return normal}
     if {$problem_type == $flag2} {return normal}
+    if {$problem_type == "Strength Ratio (Su/p)"} {return normal}
     return hidden
 }
 proc hide_show_const_model_multi_liq {flag1 flag2 domNode} {
@@ -1108,6 +1110,7 @@ proc hide_show_const_model_multi_liq {flag1 flag2 domNode} {
     if {$mat_type != "Liquid"} {return hidden}
     if {$problem_type == $flag1} {return normal}
     if {$problem_type == $flag2} {return normal}
+    if {$problem_type == "Strength Ratio (Su/p)"} {return normal}
     return hidden
 }
 
@@ -1401,5 +1404,7 @@ proc post_visualization_software { $post_view_softwareNode } {
         }                 
     }
 }
+
+
 
 
