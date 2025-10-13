@@ -2658,15 +2658,60 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
                 GiD_WriteCalculationFile puts $type
             } elseif {$typemodel == "Modified Camclay"} {
                 GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_NAME} 
-                GiD_WriteCalculationFile puts {Modified Camclay}
+                GiD_WriteCalculationFile puts {Modified_Camclay}
                 GiD_WriteCalculationFile puts {$$UMAT_DIMENSION} 
                 GiD_WriteCalculationFile puts {3D}
+                # Material parameters: 
                 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="critical_stress_ratio_"]}]]
                 set type [$node getAttribute "v"]
-                GiD_WriteCalculationFile puts {$$COHESION} 
+                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_01} 
                 GiD_WriteCalculationFile puts $type
-                
-                 
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="effective_poisson_ratio_"]}]]
+                set type [$node getAttribute "v"]
+                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_02} 
+                GiD_WriteCalculationFile puts $type
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="swelling_index_"]}]]
+                set type [$node getAttribute "v"]
+                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_03} 
+                GiD_WriteCalculationFile puts $type
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="compression_index_"]}]]
+                set type [$node getAttribute "v"]
+                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_04} 
+                GiD_WriteCalculationFile puts $type
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="initial_void_ratio_"]}]]
+                set type [$node getAttribute "v"]
+                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_05}
+                GiD_WriteCalculationFile puts $type
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="OCR"]}]]
+                set type [$node getAttribute "v"]
+                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_06}
+                GiD_WriteCalculationFile puts $type
+            #complete the additional 50 parameters with 0.0
+                set var "$$MATERIAL_PARAMETER_SOLID"  
+                for { set j 7 } { $j <= 50 } { incr j } {
+                    if { $j<= 9 } {
+                        set jj "0$j" 
+                    } else {
+                        set jj "$j"
+                    }  
+                    set nn ${var}_${jj}
+                    set vv 0.0
+                    GiD_WriteCalculationFile puts $nn
+                    GiD_WriteCalculationFile puts $vv                        
+                }
+            # Complete the 50 state variables with 0.0
+                set var "$$INITIAL_STATE_VARIABLE_SOLID"
+                for { set j 1 } { $j <= 50 } { incr j } {
+                    if { $j<= 9 } {
+                        set jj "0$j" 
+                    } else {
+                        set jj "$j"
+                    }  
+                    set nn ${var}_${jj}
+                    set vv 0.0
+                    GiD_WriteCalculationFile puts $nn
+                    GiD_WriteCalculationFile puts $vv                        
+                }                                
             } elseif {$typemodel == "External Material Model"} {
                 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_model_dll_"]}]]
                 set type [$node getAttribute "v"]

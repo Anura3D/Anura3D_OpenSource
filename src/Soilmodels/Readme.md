@@ -44,9 +44,9 @@
 
 3. Add a nodule for each material property needed in the same order used to define the variable ```PROPS()``` in the ```UMAT```. Example:
     ```xml
-    <value n="mat_property_1" pn="My property 1 label" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+    <value n="mat_property_1" pn="My property 1 label" v="0.0" state="[hide_show_const_model_multi {YourModelName} %W]"/>
 
-    <value n="mat_property_2" pn="My property 2 label" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+    <value n="mat_property_2" pn="My property 2 label" v="0.0" state="[hide_show_const_model_multi {YourModelName} %W]"/>
     ```
 
 4. Locate the file ```createGOM.tcl``` inside the folder ```scripts``` of the ProblemType.
@@ -57,7 +57,7 @@
     GiD_WriteCalculationFile puts $type
     } elseif {$typemodel == "YourModelName"} {
         GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_NAME} 
-        GiD_WriteCalculationFile puts {YourModelName}
+        GiD_WriteCalculationFile puts {YourModelName_as_in_Anura3D}
         GiD_WriteCalculationFile puts {$$UMAT_DIMENSION} 
         GiD_WriteCalculationFile puts {3D} 
         #for 3D or
@@ -69,5 +69,52 @@
     } elseif {$typemodel == "External Material Model"} 
     ```
 
-6. Add each of your properties or state variables as shown below:
+6. Add each of your properties or state variables as shown below (i.e., the rest of your code):
+    ```tcl
+    # Material parameters: 
+    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="mat_property_1"]}]]
+    set type [$node getAttribute "v"]
+    GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_01} 
+    GiD_WriteCalculationFile puts $type
+    set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="mat_property_2"]}]]
+    set type [$node getAttribute "v"]
+    GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_02} 
+    GiD_WriteCalculationFile puts $type
+    ```
+
+7. Complete up to 50 mat properties with zero value adding the following lines below:
+    ```tcl
+    #complete the additional 50 parameters with 0.0
+    set var "$$MATERIAL_PARAMETER_SOLID"  
+    for { set j nvar+1 } { $j <= 50 } { incr j } {
+        if { $j<= 9 } {
+            set jj "0$j" 
+        } else {
+            set jj "$j"
+        }  
+        set nn ${var}_${jj}
+        set vv 0.0
+        GiD_WriteCalculationFile puts $nn
+        GiD_WriteCalculationFile puts $vv                        
+    }
+    ```
+    Replace ```nvar+1``` with the total number of variables you have plus one.
+
+8. Add the following block of code for the state variables. A total of 50 state variables is required.
+    ```tcl
+    # Complete the 50 state variables with 0.0
+    set var "$$INITIAL_STATE_VARIABLE_SOLID"
+    for { set j 1 } { $j <= 50 } { incr j } {
+        if { $j<= 9 } {
+            set jj "0$j" 
+        } else {
+            set jj "$j"
+        }  
+        set nn ${var}_${jj}
+        set vv 0.0
+        GiD_WriteCalculationFile puts $nn
+        GiD_WriteCalculationFile puts $vv                        
+    }
+    ```
+9. Replace the ProblemType back into your GID ProblemType folder. Test and debug as needed.
 

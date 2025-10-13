@@ -868,7 +868,7 @@ end select
                   call ReadString(FileUnit, BName, DumS)
                   if ((CalParams%CPSversion==Anura3D_v2024).or.(CalParams%CPSversion==Anura3D_v2025)) then
                   MatParams(I)%SoilModelName = DumS
-                  if (MatParams(I)%SoilModelName=="Modified Camclay")  MatParams(I)%ESM_POINTER => ESM_CamClay  !Example of the pointer definition
+                  if (MatParams(I)%SoilModelName=="Modified_Camclay")  MatParams(I)%ESM_POINTER => ESM_CamClay  !Example of the pointer definition
                   !if (MatParams(I)%SoilModelName=="MyModel2")  MatParams(I)%ESM_POINTER => ESM_Mymodel2  !Example of the pointer definition
                   else  
                   MatParams(I)%SoilModelDLL = DumS

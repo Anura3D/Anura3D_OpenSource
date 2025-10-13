@@ -110,7 +110,7 @@
       	real(8) :: F1,F2
       	real(8) :: dSig(6), Sig0(6), Sig(6), D(6,6)
       	
-      	real(8) :: yield
+      	!real(8) :: yield
       	
       	real(8) :: nu_u
       	
@@ -501,7 +501,7 @@
       real(8), intent(in) :: xK,xG
       
       real(8) :: dfdp,dfdq,xA
-      real(8) :: dlambda
+      !real(8) :: dlambda
       
       real(8) :: d_xlambda,dp,dq,dpstar,dqstar
       real(8) :: dptemp,dqtemp
