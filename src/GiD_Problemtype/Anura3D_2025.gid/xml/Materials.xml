@@ -3,9 +3,9 @@
 <container n="materials" pn="Materials" icon="icon_material">
   <blockdata n="material" name="Material 1" sequence='1' editable_name='unique' morebutton="0" icon="icon_material">
 
-  <!-- /*───────────────────────────────────────────────────────────────
+<!-- /*───────────────────────────────────────────────────────────────
  |                                                               |
- |               🪨  BASIC PROPERTIES OF MATERIAL  🪨           |
+ |                  BASIC PROPERTIES OF MATERIAL                 |
  |                                                               |
  |      Density | Porosity | Unit Weight | Water Content         |
  |                                                               |
@@ -31,9 +31,9 @@
     </container>
 
 
-    <!-- /*───────────────────────────────────────────────────────────────
+<!-- /*───────────────────────────────────────────────────────────────
  |                                                               |
- |             🪨  MATERIAL  CONSTITUTIVE MODEL 🪨              |
+ |                  MATERIAL  CONSTITUTIVE MODEL                 |
  |                                                               |
  |      Density | Porosity | Unit Weight | Water Content         |
  |                                                               |
@@ -74,18 +74,17 @@ ________________________________________________________________________________
 <!-- ________________________________________________________________________________
 Modified Camclay
 ________________________________________________________________________________-->
-    <value n="critical_stress_ratio_" pn="Critical stress ratio" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+    <value n="critical_stress_ratio_" pn="Critical stress ratio" v="0.0" state="[hide_show_const_model {Modified Camclay} %W]"/>
 
-    <value n="effective_poisson_ratio_" pn="Effective Poisson ratio" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+    <value n="effective_poisson_ratio_" pn="Effective Poisson ratio" v="0.0" state="[hide_show_const_model {Modified Camclay} %W]"/>
 
-    <value n="swelling_index_" pn="Swelling index [kappa]" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+    <value n="swelling_index_" pn="Swelling index [kappa]" v="0.0" state="[hide_show_const_model {Modified Camclay} %W]"/>
 
-    <value n="compression_index_" pn="Compression index [lambda]" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
+    <value n="compression_index_" pn="Compression index [lambda]" v="0.0" state="[hide_show_const_model {Modified Camclay} %W]"/>
+    
+    <value n="initial_void_ratio_" pn="Initial void ratio" v="0.0" state="[hide_show_const_model {Modified Camclay} %W]"/>
 
-    <value n="initial_void_ratio_" pn="Initial void ratio" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
-
-    <value n="OCR" pn="OCR" v="0.0" state="[hide_show_const_model_multi {Modified Camclay} %W]"/>
-
+    <value n="OCR" pn="OCR" v="0.0" state="[hide_show_const_model {Modified Camclay} %W]"/>
 
 <!-- ________________________________________________________________________________
 External Material Model

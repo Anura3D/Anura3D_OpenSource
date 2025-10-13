@@ -44,13 +44,21 @@
 
 3. Add a nodule for each material property needed in the same order used to define the variable ```PROPS()``` in the ```UMAT```. Example:
     ```xml
-    <value n="mat_property_1" pn="My property 1 label" v="0.0" state="[hide_show_const_model_multi {YourModelName} %W]"/>
+    <value n="mat_property_1" pn="My property 1 label" v="0.0" state="[hide_show_const_model {YourModelName} %W]"/>
 
-    <value n="mat_property_2" pn="My property 2 label" v="0.0" state="[hide_show_const_model_multi {YourModelName} %W]"/>
+    <value n="mat_property_2" pn="My property 2 label" v="0.0" state="[hide_show_const_model {YourModelName} %W]"/>
     ```
 
 4. Locate the file ```createGOM.tcl``` inside the folder ```scripts``` of the ProblemType.
 
+5. Add the following condition to the type of materials so that selecting your model also writes ```external_soil_model```:     
+    ```tcl
+        } elseif {$typemodel == "External Material Model"} {
+            set model "external_soil_model"
+        } else {                            #<-- New line
+            set model "external_soil_model" #<-- New line
+        }
+    ```
 5. Search for ```"Mohr-Coulomb"``` in the code and find a place to put the new lines of code that will write the input for Anura as illustrated below:
 
     ```tcl
@@ -85,7 +93,7 @@
 7. Complete up to 50 mat properties with zero value adding the following lines below:
     ```tcl
     #complete the additional 50 parameters with 0.0
-    set var "$$MATERIAL_PARAMETER_SOLID"  
+    set var "\$\$MATERIAL_PARAMETER_SOLID"  
     for { set j nvar+1 } { $j <= 50 } { incr j } {
         if { $j<= 9 } {
             set jj "0$j" 
@@ -103,7 +111,7 @@
 8. Add the following block of code for the state variables. A total of 50 state variables is required.
     ```tcl
     # Complete the 50 state variables with 0.0
-    set var "$$INITIAL_STATE_VARIABLE_SOLID"
+    set var "\$\$INITIAL_STATE_VARIABLE_SOLID"
     for { set j 1 } { $j <= 50 } { incr j } {
         if { $j<= 9 } {
             set jj "0$j" 

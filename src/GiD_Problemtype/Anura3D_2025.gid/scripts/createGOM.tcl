@@ -129,6 +129,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
             set ncoor [lindex $ElementList  $i 10]
             GiD_WriteCalculationFile puts [= "%s %s %s %s %s %s %s %s %s %s" $xcoor $ycoor $zcoor $wcoor $jcoor $qcoor $kcoor $lcoor $mcoor $ncoor]}}
          # THIN RIGID ELEMENT CONNECTIVITIES
+     if { [GiD_Info Mesh NumElements Line] > 0 } {
 		GiD_WriteCalculationFile puts {$$THIN_RIGID_BODY_CONNECTIVITIES}
 	  if {$dim_type == "2D:plane-strain"} {
 		set NumRigidElements [GiD_Info Mesh NumElements Line]
@@ -148,7 +149,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
 	    set ycoor [lindex $ElementList  $i 2]
 	    #set zcoor [lindex $ElementList  $i 3]
 	    GiD_WriteCalculationFile puts [= "%s %s" $xcoor $ycoor]}
-	  } 
+	  } }
     
     # FIXITIES
     # Surface conditions
@@ -2577,7 +2578,10 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
             } elseif {$typemodel == "Mohr-Coulomb"} {
                 set model "mohr_coulomb"
             } elseif {$typemodel == "External Material Model"} {
-                set model "external_soil_model"}
+                set model "external_soil_model"
+            } else {
+                set model "external_soil_model"
+            }
             GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_SOLID}    
             GiD_WriteCalculationFile puts $model
             if {$typemodel == "Rigid body"} {
@@ -2687,7 +2691,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
                 GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_06}
                 GiD_WriteCalculationFile puts $type
             #complete the additional 50 parameters with 0.0
-                set var "$$MATERIAL_PARAMETER_SOLID"  
+                set var "\$\$MATERIAL_PARAMETER_SOLID"  
                 for { set j 7 } { $j <= 50 } { incr j } {
                     if { $j<= 9 } {
                         set jj "0$j" 
@@ -2700,7 +2704,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
                     GiD_WriteCalculationFile puts $vv                        
                 }
             # Complete the 50 state variables with 0.0
-                set var "$$INITIAL_STATE_VARIABLE_SOLID"
+            set var "\$\$INITIAL_STATE_VARIABLE_SOLID"
                 for { set j 1 } { $j <= 50 } { incr j } {
                     if { $j<= 9 } {
                         set jj "0$j" 
@@ -2776,7 +2780,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
                         GiD_WriteCalculationFile puts $vv                        
                     }                                                                         
                 } else {                        
-                    set var "MATERIAL_PARAMETER_SOLID"
+                    set var "\$\$MATERIAL_PARAMETER_SOLID"
                     for { set j 1 } { $j <= 50 } { incr j } {
                         if { $j<= 9 } {
                             set jj "0$j" 
@@ -2788,7 +2792,7 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
                         GiD_WriteCalculationFile puts $nn
                         GiD_WriteCalculationFile puts $vv                        
                     }
-                    set var "INITIAL_STATE_VARIABLE_SOLID"
+                    set var "\$\$INITIAL_STATE_VARIABLE_SOLID"
                     for { set j 1 } { $j <= 50 } { incr j } {
                         if { $j<= 9 } {
                             set jj "0$j" 

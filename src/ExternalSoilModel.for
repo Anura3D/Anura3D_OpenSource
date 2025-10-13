@@ -135,11 +135,11 @@ implicit none
     enddo 
           
     ! initialise state variables (only for very first time and load step)
-    !if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
-    !StateVar = MatParams(IDset)%ESM_Statvar_in
-    !else 
-    StateVar = ESMstatevArray(IDpt,:)
-    !end if 
+    if ((CalParams%IStep == 1).and.(CalParams%TimeStep == 1)) then
+        StateVar = MatParams(IDset)%ESM_Statvar_in
+    else 
+        StateVar = ESMstatevArray(IDpt,:)
+    end if 
           
     
     

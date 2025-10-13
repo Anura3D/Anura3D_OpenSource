@@ -102,7 +102,7 @@
       	real(8) :: xM, xNu, xkappa, xlambda, xe0, zeta
       	real(8) :: pp0,p0,q0,pp,p,q, p_trial, q_trial, f,p1,q1
       	real(8) :: dEpsV, dEpsD, xJ2, dEps(6)
-      	real(8) :: xK, xG, r
+      	real(8) :: xK, xG, r, xOCR
       	real(8) :: df_dp,df_dq,xA,d_xlambda,ddlambda
       	real(8) :: T, dT, dT_new,dsubepsp,dsubepsq
         real(8) :: dp, dq, d5p,d5q
@@ -130,6 +130,7 @@
       xkappa = Props( 3)
       xlambda = Props( 4)
       xe0 = Props( 5)
+	  xOCR= Props( 6)
 
       zeta = (xe0 + 1) / (xlambda - xkappa) !helping parameter
 
@@ -164,8 +165,13 @@
     ! Endrer fortegn på p og dEpsV
       p0 = max(-p0, 1.)
       dEpsV = -dEpsV
-
-      pp = STATEV(1)
+	  
+	  if (STATEV(1)==0.0) then
+	    pp=xOCR*p0
+      else
+        pp = STATEV(1) !Needs a condition to initialize this parameter
+	  endif
+	  
     ! calculate elastic moduli
       call stiffnessMCC(P0, xe0, xkappa, xNu, XG, xK)
 
