@@ -468,10 +468,14 @@
 	    sub = 1 !the increment will be rejected
       else
 	    sub = 0 !the increment is accurate enough and will be accepted
-      end if  
+	  end if  
         
         !compute new size of substep
-        beta = 0.8 * sqrt(SSTOL / R)
+	  if (R==0.0) then
+		  beta=0.8
+	  else
+		beta = 0.8 * sqrt(SSTOL / R)
+	endif
 	  if (beta  <  0.1) beta = 0.1
 	  if (beta  >  2.) beta = 2.
 
