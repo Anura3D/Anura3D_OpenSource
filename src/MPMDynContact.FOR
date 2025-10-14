@@ -61,6 +61,7 @@
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: NodeElement ! Node-element relation - for each node a list of the elements containing this global node
         integer(INTEGER_TYPE), dimension(:, :), allocatable :: ContactSurfaceElmNodes
         integer(INTEGER_TYPE):: NContactElm, PileEntityMaterial ! entity of the contact volume
+        integer(INTEGER_TYPE), dimension (:), allocatable :: AdjacentElementIDsForContact ! Stores the ids of elements next to the contact body
         real(REAL_TYPE), dimension(:,:), allocatable :: InterfaceNodesAdhesion ! Adhesion for multiple materials 
         logical, dimension(:), allocatable :: ContactSurfaceSoilElements
         logical :: GlobContElement (:)  ! global copy of element(:)

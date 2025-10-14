@@ -170,13 +170,13 @@ proc Anura3D::WriteCalculationFile_CPS { filename stageNode icount_stage total_t
       set PrescribedVelocity_type "step"}
     GiD_WriteCalculationFile puts [= "%s %s %s" $PrescribedVelocity_type $PrescribedVelocity_init $PrescribedVelocity_fin]
     
-    # HYDRAULIC HEAD 
-    GiD_WriteCalculationFile puts {$$HYDRAULIC_HEAD}
-    set xp_hydraulic_head {container[@n="Calculation_Data"]/value[@n="HYDRAULIC_HEAD"]}
-    set vNode [$stageNode selectNodes $xp_hydraulic_head]
-    set v [get_domnode_attribute $vNode v]
-    if { $v } {
-        set HydraulicHead_type "file"
+    # HYDRAULIC HEAD #THIS HAS BUGS THAT NEED TO BE RESOLVED
+    GiD_WriteCalculationFile puts {$$HYDRAULIC_HEAD}    
+    set xp_hydraulic_head {container[@n="Initial_cond"]/container[@n="Hydraulic_Conditions"]/value[@n="Hydraulic_Head"]/@v}
+    set v [$stageNode selectNodes $xp_hydraulic_head]
+    #set v [get_domnode_attribute $vNode v]
+    if { $v != "" } {
+      set HydraulicHead_type "file"
     } else {
         set HydraulicHead_type "off"
     }
@@ -185,17 +185,23 @@ proc Anura3D::WriteCalculationFile_CPS { filename stageNode icount_stage total_t
 
     # APPLY SEEPAGE FACE
     GiD_WriteCalculationFile puts {$$APPLY_SEEPAGE_FACE}
-    set xp_seepage_face {container[@n="Calculation_Data"]/value[@n="SEEPAGE_FACE"]}
-    set vNode [$stageNode selectNodes $xp_seepage_face]
-    set v [get_domnode_attribute $vNode v]
+    set xp_seepage_face {container[@n="Initial_cond"]/container[@n="Hydraulic_Conditions"]/value[@n="Seepage_face"]/@v}
+    set v [$stageNode selectNodes $xp_seepage_face]
+    if { $v == "" } {
+        set v "0"
+    }
+    #set v [get_domnode_attribute $vNode v]
     set SeepageFace_ID $v
     GiD_WriteCalculationFile puts $SeepageFace_ID
     
     # APPLY INFILTRATION
     GiD_WriteCalculationFile puts {$$APPLY_INFILTRATION}
-    set xp_infiltration {container[@n="Calculation_Data"]/value[@n="INFILTRATION"]}
-    set vNode [$stageNode selectNodes $xp_infiltration]
-    set v [get_domnode_attribute $vNode v]
+    set xp_infiltration {container[@n="Initial_cond"]/container[@n="Hydraulic_Conditions"]/value[@n="Infiltration"]/@v}
+    set v [$stageNode selectNodes $xp_infiltration]
+    #set v [get_domnode_attribute $vNode v]
+    if { $v == "" } {
+        set v "0"
+    }
     set Infiltration_ID $v
     GiD_WriteCalculationFile puts $Infiltration_ID   
 
@@ -389,14 +395,15 @@ proc Anura3D::WriteCalculationFile_CPS { filename stageNode icount_stage total_t
     set InitialVelocity_ID [get_domnode_attribute $InitialVelocity_IDNode v]                
     GiD_WriteCalculationFile puts $InitialVelocity_ID
     
-    # RESET DISPLACEMENTS
+    # RESET DISPLACEMENTS #BUG DETECTED
     GiD_WriteCalculationFile puts {$$RESET_DISPLACEMENTS}
     set ResetDispl_path {string(container[@n="Calculation_Data"]/value[@n="RESET_DISPLACEMENTS"]/@v)}
     set ResetDispl [$stageNode selectNodes $ResetDispl_path]
     if {$ResetDispl == "do not reset displacements"} {
       set ResetDispl_ID "0"
     } elseif {$ResetDispl == "reset displacements"} {
-      set ResetDispl_ID "1"}
+      set ResetDispl_ID "1"
+    } else {set ResetDispl_ID "0"}
     GiD_WriteCalculationFile puts $ResetDispl_ID
     
     # K0 PROCEDURE

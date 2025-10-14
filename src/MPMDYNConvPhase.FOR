@@ -221,11 +221,13 @@
                 call RotVec(IRotation, NRotNodes, IRotMat, ReducedDof, TotalVelocityGas(:, IEntity), TotalVelocityGas(:, IEntity))
               end do
             end if
-          end if ! Unsat calculation 
+		  end if ! Unsat calculation 
           
+		  call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm 
           ! Overwrite nodal velocity and particle velocity if prescribed
            call ApplyMPPrescribedVelocity(TotalVelocitySys)
            call ApplyNodalPrescribedVelocity(DummyRotationVector1)    
+		   
         
            if (CalParams%BoundaryConditions%ApplyInfiltrationRate.or.CalParams%BoundaryConditions%ApplySeepageFace) then  
               call ApplyNodalInfiltrationRate(TotalVelocityWater,TotalVelocitySoil,LumpedNodalPorosityDegSat,NodalUnitMassGradient)
@@ -954,14 +956,15 @@
         
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum       !CC added nEntity
           ! Local variables
-          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn, iSide, NID1, NID2
           integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleIncrementalVelocity
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
-          real(REAL_TYPE) :: Time, PartilceMass
+          real(REAL_TYPE) :: Time, PartilceMass, element_char_length, Aux
+		  logical:: IsInContactBoundary=.false.
           
           !!CC - changed to function call - needs to be set to zero here
           Momentum = 0.0 
@@ -970,6 +973,28 @@
 
           do IAEl = 1, Counters%NAEl   ! Loop over all elements
             IEl = ActiveElement(IAEl)
+			IsInContactBoundary=.false.
+			!Find if element is in contact boundary
+			if (CalParams%ApplyContactVelocityScaling) then
+				do I = 1, size(AdjacentElementIDsForContact)
+					if (IEL==AdjacentElementIDsForContact(I)) then
+						IsInContactBoundary=.true.
+                        !loop element edges   
+                        element_char_length=100000000000000
+                        do INode= 1, 2
+                            NID1=ElementConnectivities(INode, IAEl)
+                            do iSide= 3, INode+1, -1
+                               NID2= ElementConnectivities(iSide, IAEl)
+                               !get the distance of the side
+                               Aux=sqrt(DotProduct(NodalCoordinates(NID1,:)-NodalCoordinates(NID2,:),&
+                                   NodalCoordinates(NID1,:)-NodalCoordinates(NID2,:), NVECTOR))
+                               if (Aux<element_char_length) element_char_length=Aux
+                            enddo                            
+                        enddo                        
+						EXIT
+					endif
+				enddo
+			endif
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
@@ -999,7 +1024,15 @@
                   end do    
                 end do !Loop over nodes
                
-                ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity
+                ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity !updated particle velocity
+				
+				! Corrects unrealistic velocities of MPs if they are exploding
+				if ((IsInContactBoundary).and.(iEntity==1)) then
+					Aux=sqrt(DotProduct(ParticleVelocity, ParticleVelocity, NVECTOR))
+                    if (Aux>(CalParams%ContactScalingFactor*element_char_length/Time)) then
+                        ParticleVelocity=(CalParams%ContactScalingFactor*element_char_length/Time)*ParticleVelocity/Aux
+                    endif
+				endif
 
                 do I = 1, NVECTOR ! nodal i-momentum
                   Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + PartilceMass * ParticleShape * ParticleVelocity(I)
