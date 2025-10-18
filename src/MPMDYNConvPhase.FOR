@@ -975,7 +975,7 @@
             IEl = ActiveElement(IAEl)
 			IsInContactBoundary=.false.
 			!Find if element is in contact boundary
-			if (CalParams%ApplyContactVelocityScaling) then
+			if (CalParams%ApplyContactAlgorithm) then
 				do I = 1, size(AdjacentElementIDsForContact)
 					if (IEL==AdjacentElementIDsForContact(I)) then
 						IsInContactBoundary=.true.
@@ -1029,8 +1029,8 @@
 				! Corrects unrealistic velocities of MPs if they are exploding
 				if ((IsInContactBoundary).and.(iEntity==1)) then
 					Aux=sqrt(DotProduct(ParticleVelocity, ParticleVelocity, NVECTOR))
-                    if (Aux>(CalParams%ContactScalingFactor*element_char_length/Time)) then
-                        ParticleVelocity=(CalParams%ContactScalingFactor*element_char_length/Time)*ParticleVelocity/Aux
+                    if (Aux>(0.8*element_char_length/Time)) then
+                        ParticleVelocity=(0.8*element_char_length/Time)*ParticleVelocity/Aux
                     endif
 				endif
 
