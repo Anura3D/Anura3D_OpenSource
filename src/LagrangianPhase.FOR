@@ -1464,9 +1464,9 @@
 
           do IDOF = 1, Counters%N ! loop over all degrees of freedom
             do J = 1, Counters%nEntity ! loop over all entities
-          
+                
                 if(LumpedMassDry(IDOF,J)/=0) then
-                  AccelerationSoil(IDOF,J)=( RateofMomentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
+                  AccelerationSoil(IDOF,J)=  ( RateofMomentum(IDOF,J) / LumpedMassDry(IDOF,J) ) * PBoundary(IDOF)
                 else
                   AccelerationSoil(IDOF,J) = 0.0
                 end if
