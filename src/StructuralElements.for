@@ -1000,9 +1000,9 @@
 				    RadiusVec(1) = Xp - DataStructureRigidBody(J)%Centroid(1)
 				    RadiusVec(2) = Yp - DataStructureRigidBody(J)%Centroid(2)
 				    RigidBodyVelAtPoint(1) = DataStructureRigidBody(J)%Velocity(1) + &
-				                             DataStructureRigidBody(J)%AngularVelocity * (-RadiusVec(2))
+				                             DataStructureRigidBody(J)%AngularVelocity * (RadiusVec(2))
 				    RigidBodyVelAtPoint(2) = DataStructureRigidBody(J)%Velocity(2) + &
-				                             DataStructureRigidBody(J)%AngularVelocity * RadiusVec(1)
+				                             DataStructureRigidBody(J)%AngularVelocity * (- RadiusVec(1))
 				else
 				    ! For axisymmetric, only translational velocity (no rotation in this plane)
 				    RigidBodyVelAtPoint = DataStructureRigidBody(J)%Velocity
