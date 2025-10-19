@@ -117,9 +117,12 @@
         real(REAL_TYPE), allocatable :: ShapeValuesArray(:,:)        !> Shape function values for the particle, these values are updated when new local coordinates are calculated.
         real(REAL_TYPE), allocatable :: GlobPosArray(:,:)            !> Global particle position x = GlobPos(1), y = GlobPos(2), z = GlobPos(3)
         
-        real(REAL_TYPE), allocatable :: VelocityArray(:,:)           ! Velocity of the particle (soil)
+        real(REAL_TYPE), allocatable :: VelocityArray(:,:)           ! Velocity of the particle (solid)
         real(REAL_TYPE), allocatable :: VelocityWaterArray(:,:)      ! Velocity of the particle (water)
         real(REAL_TYPE), allocatable :: VelocityGasArray(:,:)        ! Velocity of the particle (gas)
+        
+        ! APIC: Affine velocity gradient matrix Bp (NVECTOR x NVECTOR per particle)
+        real(REAL_TYPE), allocatable :: BpArray(:,:,:)               ! Affine velocity matrix for APIC method (Particle, row, col)
         
 		!if using thin rigid bodies
         real(REAL_TYPE), allocatable :: ContactForceArray(:,:) 
@@ -667,6 +670,7 @@
           allocate(TangentDisplacementTrack(Counters%NParticles,2), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
 		  allocate(ContactForceArray(Counters%NParticles,NVECTOR), stat = IError)
+          allocate(BpArray(Counters%NParticles,NVECTOR,NVECTOR), stat = IError)  ! APIC affine velocity matrix
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES,NVECTOR), stat = IError)
@@ -695,6 +699,7 @@
           GlobPosArray =  0.0
           VelocityArray = 0.0
 		  ContactForceArray= 0.0 !Update conditions for thin rigid bodies later
+          BpArray = 0.0  ! Initialize APIC affine velocity matrix to zero
           SigmaEffArray = 0.0
           SigmaEff0Array = 0.0
           DShapeValuesArray = 0.0
@@ -788,6 +793,10 @@
          
          if (allocated(VelocityArray) ) then
             deallocate(VelocityArray, stat = IError)
+         end if
+         
+         if (allocated(BpArray) ) then
+            deallocate(BpArray, stat = IError)
          end if
          
          if (allocated(SigmaEffArray) ) then

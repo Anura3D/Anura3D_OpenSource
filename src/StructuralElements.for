@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2020  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -916,7 +916,8 @@
               Xn, Yn, X0, Y0, Nx1, Ny1, Nx2, Ny2, NormalUpID(2,2), NormalDownID(2,2), TempCos, &
               CS, SN, Xf, Yf, Gx, Gy, NormalForce(2), TangentForce(2), Tangent(2), DistanceForce, Force(2),&
               Xg, Yg, L(2), Lu(2), Arm(2), Sign, Torque, TimeIncrementNew, kappa_crit, k_of_d, r_t_d(2), tangent_stiffness, m_3, k_stiff, &
-          PI = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067, CritTimeSpring = 0.0, DampingRatio = 0.75
+          PI = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067, CritTimeSpring = 0.0, DampingRatio = 0.75, &
+              RigidBodyVelAtPoint(2), RelativeVel(2), RadiusVec(2)
           logical :: IsDistanceToNode, IsElemConnToNode, IsThereUp, IsThereDown
           
           if (.not. IsThereRigidBody) RETURN
@@ -991,8 +992,24 @@
 				
 			  			  
 				J = ElementsRigidBody(AffinityArray(I,2))%RigidBody !obtain rigid body ID
+				
+				! Calculate rigid body velocity at contact point including rotation
+				! v_point = v_translation + omega x r
+				! In 2D: v_point = v_translation + omega * (-ry, rx)
+				if (.not. ISAXISYMMETRIC) then
+				    RadiusVec(1) = Xp - DataStructureRigidBody(J)%Centroid(1)
+				    RadiusVec(2) = Yp - DataStructureRigidBody(J)%Centroid(2)
+				    RigidBodyVelAtPoint(1) = DataStructureRigidBody(J)%Velocity(1) + &
+				                             DataStructureRigidBody(J)%AngularVelocity * (-RadiusVec(2))
+				    RigidBodyVelAtPoint(2) = DataStructureRigidBody(J)%Velocity(2) + &
+				                             DataStructureRigidBody(J)%AngularVelocity * RadiusVec(1)
+				else
+				    ! For axisymmetric, only translational velocity (no rotation in this plane)
+				    RigidBodyVelAtPoint = DataStructureRigidBody(J)%Velocity
+				end if
+				
 				!Check future crossing for automatic time-stepping control
-				  Xcross=GlobPosArray(I,:)+(VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity)*CalParams%TimeIncrement !anticipated position of MP
+				  Xcross=GlobPosArray(I,:)+(VelocityArray(I,:)-RigidBodyVelAtPoint)*CalParams%TimeIncrement !anticipated position of MP
                   Xpp(1)=Xp
                   Xpp(2)=Yp
 				  ProjdX_n=DotProduct(Xpp-ThinRigidCoordinates(AffinityArray(I,3),:), NormalsRigidBody(AffinityArray(I,2), :), 2)&
@@ -1002,7 +1019,7 @@
 				  dot1=DotProduct(ProjdX_n, Proj1, 2)
 				  if (dot1<0.0) then !critical time must be reduced
 					  TimeIncrementNew=CalParams%courantNumber*Kfactor * (Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY))**(0.5)/&
-						  Length(VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity,2)
+						  Length(VelocityArray(I,:)-RigidBodyVelAtPoint,2)
 					  if (CalParams%TimeIncrement > TimeIncrementNew) CalParams%TimeIncrement = TimeIncrementNew 
                   endif
                   
@@ -1067,9 +1084,10 @@
 				
                 
                    if (.not. ISAXISYMMETRIC) then
-				   !calculate tangent vector
-				   ProjdX_n=DotProduct(VelocityArray(I,:), Sign*Normal, 2)*Sign*Normal !projection of v onto n
-				   Tangent=VelocityArray(I,:)-ProjdX_n
+				   !calculate tangent vector using relative velocity
+				   RelativeVel = VelocityArray(I,:) - RigidBodyVelAtPoint
+				   ProjdX_n=DotProduct(RelativeVel, Sign*Normal, 2)*Sign*Normal !projection of v_rel onto n
+				   Tangent=RelativeVel-ProjdX_n
 				   Tangent=Sign*VectorNorm(Tangent, 2) !normal tangent vector
 				   
 				   !Calculate normal force
@@ -1103,7 +1121,7 @@
 					   (Particles(I)%ParticleRadius/(Distancefield(I)+Particles(I)%ParticleRadius))+1.0) !stiffness as function of distance field
                    
                    NormalForce=-((DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)*k_of_d*(-1 * Distancefield(I)) - DampingRatio * &
-                       2.0*(Particles(I)%MASSMIXED*DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)**0.5*(DotProduct(VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity, Sign*Normal, 2)))*Sign*Normal
+                       2.0*(Particles(I)%MASSMIXED*DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)**0.5*(DotProduct(RelativeVel, Sign*Normal, 2)))*Sign*Normal
 				   
                    !if (DotProduct(VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity, Sign*Normal, 2) > 0.0) then
                    !    NormalForce = 0.0
@@ -1114,7 +1132,7 @@
                        
                        !Option 1
                        
-                       if (DotProduct(VelocityArray(I,:), Sign*Normal, 2)<0) then
+                       if (DotProduct(RelativeVel, Sign*Normal, 2)<0) then
                            TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*Tangent 
                        else
                            TangentForce=0.0
@@ -1123,14 +1141,14 @@
                        !TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*Tangent 
                        
                        !!Option 2
-                        !r_t_d = (VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity)*CalParams%TimeIncrement - &
-                        !DotProduct(VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity, Sign*Normal, 2)*Sign*normal*CalParams%TimeIncrement
+                        !r_t_d = RelativeVel*CalParams%TimeIncrement - &
+                        !DotProduct(RelativeVel, Sign*Normal, 2)*Sign*normal*CalParams%TimeIncrement
                         !tangent_stiffness = 50000
                         !TangentForce=MIN(Length(TangentForceTrack(I,:)+tangent_stiffness*r_t_d,2),Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef)*Tangent
                         !TangentForceTrack(I,:)=TangentForce
                       
                        !Option 3
-           !            TangentDisplacementTrack(I,1)=TangentDisplacementTrack(I,1)+ DotProduct(VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity, Tangent, 2)*CalParams%TimeIncrement
+           !            TangentDisplacementTrack(I,1)=TangentDisplacementTrack(I,1)+ DotProduct(RelativeVel, Tangent, 2)*CalParams%TimeIncrement
 				       !if (abs(TangentDisplacementTrack(I,1)) < 2* Particles(I)%ParticleRadius) then
            !                m_3 = -(TangentDisplacementTrack(I,1))**2/(2* Particles(I)%ParticleRadius)**2+(2*abs(TangentDisplacementTrack(I,1)))/(2* Particles(I)%ParticleRadius)
            !            else
@@ -1164,9 +1182,10 @@
                    end if
                    
                    if (ISAXISYMMETRIC) then
-                       !calculate tangent vector
-				   ProjdX_n=DotProduct(VelocityArray(I,:), Sign*Normal, 2)*Sign*Normal !projection of v onto n
-				   Tangent=VelocityArray(I,:)-ProjdX_n
+                       !calculate tangent vector using relative velocity
+				   RelativeVel = VelocityArray(I,:) - RigidBodyVelAtPoint
+				   ProjdX_n=DotProduct(RelativeVel, Sign*Normal, 2)*Sign*Normal !projection of v_rel onto n
+				   Tangent=RelativeVel-ProjdX_n
 				   Tangent=VectorNorm(Tangent, 2) !normal tangent vector
 				   
 				   !Calculate normal force
@@ -1182,7 +1201,7 @@
 					   (Particles(I)%ParticleRadius/(Distancefield(I)+Particles(I)%ParticleRadius))+1.0) !stiffness as function of distance field
                    
                    NormalForce=-((DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)*k_of_d *abs(Distancefield(I)) - DampingRatio *  &
-                       2.0*(Particles(I)%MASSMIXED*DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)**0.5*(DotProduct(VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity, Sign*Normal, 2)))*Sign*Normal*Xp 
+                       2.0*(Particles(I)%MASSMIXED*DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)**0.5*(DotProduct(RelativeVel, Sign*Normal, 2)))*Sign*Normal*Xp 
 				   
 				   
 				   

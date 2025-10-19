@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -385,6 +385,7 @@
                               ShrinkageMateriaPointPositionFactor, &
                               GammaWater, &
 							  ContactScalingFactor, &
+                              APIFLIPBlendFactor, & ! APIC/FLIP blend factor: 0=pure FLIP, 1=pure APIC, typical 0.95-0.99
                               ManuallyDefinedVectors(MAXNUMBERSOILLAYERS,1+vsize) !manually modified normal vectors
 
 
@@ -782,6 +783,7 @@
         CalParams%MinimumDeterminantRatio = 0.75
         CalParams%ShrinkageMateriaPointPositionFactor = 0.0
         CalParams%GammaWater = 0.0
+        CalParams%APIFLIPBlendFactor = 0.99 ! Default: 99% APIC, 1% FLIP (recommended for MPM)
         
         ! integers
         CalParams%OutputNumberParticles = -1

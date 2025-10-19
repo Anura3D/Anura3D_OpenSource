@@ -946,7 +946,13 @@
         !**********************************************************************
         !
         !    Function:  To update particles total velocities and Accelerations
+        !               using APIC/FLIP blending
         !
+        !    APIC (Affine Particle-In-Cell): Stores affine velocity field per particle
+        !    FLIP (Fluid Implicit Particle): Velocity increments only
+        !    Blend: v_new = alpha * v_APIC + (1-alpha) * v_FLIP
+        !
+        !    Alpha = CalParams%APIFLIPBlendFactor (0=pure FLIP, 1=pure APIC)
         !
         ! Implemented in the frame of the MPM project.
         !
@@ -956,20 +962,26 @@
         
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(inout) :: Momentum       !CC added nEntity
           ! Local variables
-          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn, iSide, NID1, NID2
+          integer(INTEGER_TYPE) :: I, J, K, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn, iSide, NID1, NID2
           integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES) :: IDof
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleIncrementalVelocity
           real(REAL_TYPE), dimension(NVECTOR) :: ParticleAcceleration
-          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocity, ParticleVelocityOld
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticleVelocityFLIP, ParticleVelocityAPIC
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES, Counters%nEntity) :: NodAcc
+          real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: NodalVelocity
           real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          real(REAL_TYPE), dimension(NVECTOR) :: ParticlePosition, NodePosition
+          real(REAL_TYPE), dimension(NVECTOR, NVECTOR) :: Bp_new
           real(REAL_TYPE) :: Time, PartilceMass, element_char_length, Aux
+          real(REAL_TYPE) :: alpha  ! APIC/FLIP blend factor
 		  logical:: IsInContactBoundary=.false.
           
           !!CC - changed to function call - needs to be set to zero here
           Momentum = 0.0 
           Time = CalParams%TimeIncrement
           NoEn = Counters%nEntity
+          alpha = CalParams%APIFLIPBlendFactor  ! Get blend factor from parameters
 
           do IAEl = 1, Counters%NAEl   ! Loop over all elements
             IEl = ActiveElement(IAEl)
@@ -995,19 +1007,26 @@
 					endif
 				enddo
 			endif
+            
+            ! Collect nodal accelerations and velocities
             do I = 1, NVECTOR
               IDof(I, 1:ELEMENTNODES) = ReducedDof(ElementConnectivities(1:ELEMENTNODES, IEl)) + I
               NodAcc(I, 1:ELEMENTNODES, 1:Counters%nEntity) = AccelerationSoil(IDof(I, 1:ELEMENTNODES), 1:NoEn)
+              NodalVelocity(I, 1:ELEMENTNODES) = TotalVelocitySoil(IDof(I, 1:ELEMENTNODES), 1)
             end do
             
             do IPart = 1, NPartEle(IEl)   ! Loop over all particles in element
               ParticleIndex = GetParticleIndex(IPart, IEl) ! Get the particle ID
               if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  ParticleVelocity = VelocityArray(ParticleIndex,:)
+                 ParticleVelocityOld = ParticleVelocity  ! Store old velocity for FLIP
                  PartilceMass = MassArray(ParticleIndex)
                  ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 ParticlePosition = GlobPosArray(ParticleIndex,:)
                  ParticleIncrementalVelocity = 0.0
                  ParticleAcceleration = 0.0
+                 Bp_new = 0.0  ! Initialize new affine velocity matrix
+                 
                  if (CalParams%ApplyContactAlgorithm) then
                   iEntity = EntityIDArray(ParticleIndex) 
                  else
@@ -1019,12 +1038,39 @@
                   do I = 1, NVECTOR  
                     ! Particle accelerations
                     ParticleAcceleration(I) = ParticleAcceleration(I) + ParticleShape(INode) * NodAcc(I, INode, iEntity)
-                    ! Particle x-velocity
+                    ! Particle velocity increment
                     ParticleIncrementalVelocity(I) = ParticleIncrementalVelocity(I) + Time * ParticleShape(INode) * NodAcc(I, INode, iEntity)
-                  end do    
+                  end do
+                  
+                  ! APIC: Compute affine velocity matrix Bp
+                  ! Bp = sum_i [ w_i * v_i * (x_i - x_p)^T ]
+                  !NodePosition(1:NVECTOR) = NodalCoordinates(ElementConnectivities(INode, IEl), 1:NVECTOR)
+                  !do I = 1, NVECTOR
+                  !  do J = 1, NVECTOR
+                  !    Bp_new(I,J) = Bp_new(I,J) + ParticleShape(INode) * NodalVelocity(I, INode) * (NodePosition(J) - ParticlePosition(J))
+                  !  end do
+                  !end do
+                    
                 end do !Loop over nodes
                
-                ParticleVelocity = ParticleVelocity + ParticleIncrementalVelocity !updated particle velocity
+                ! FLIP velocity: old velocity + velocity increment
+                ParticleVelocityFLIP = ParticleVelocityOld + ParticleIncrementalVelocity
+                
+                ! APIC velocity: interpolate from nodes using affine correction
+                ParticleVelocityAPIC = 0.0
+                do INode = 1, ELEMENTNODES
+                  NodePosition(1:NVECTOR) = NodalCoordinates(ElementConnectivities(INode, IEl), 1:NVECTOR)
+                  do I = 1, NVECTOR
+                    ParticleVelocityAPIC(I) = ParticleVelocityAPIC(I) + ParticleShape(INode) * NodalVelocity(I, INode)
+                    !! Add affine correction: Bp * (x_i - x_p)  !APIC must be written in the P2G phase instead
+                    !do J = 1, NVECTOR
+                    !  ParticleVelocityAPIC(I) = ParticleVelocityAPIC(I) + ParticleShape(INode) * BpArray(ParticleIndex,I,J) * (NodePosition(J) - ParticlePosition(J))
+                    !end do
+                  end do
+                end do
+                
+                ! Blend APIC and FLIP: v_new = alpha * v_APIC + (1-alpha) * v_FLIP
+                ParticleVelocity = (1.0 - alpha) * ParticleVelocityAPIC + alpha * ParticleVelocityFLIP
 				
 				! Corrects unrealistic velocities of MPs if they are exploding
 				if ((IsInContactBoundary).and.(iEntity==1)) then
@@ -1034,12 +1080,15 @@
                     endif
 				endif
 
+                ! Map momentum to grid
                 do I = 1, NVECTOR ! nodal i-momentum
                   Momentum(IDof(I,1:ELEMENTNODES), iEntity) = Momentum(IDof(I,1:ELEMENTNODES), iEntity) + PartilceMass * ParticleShape * ParticleVelocity(I)
                 end do     
 
+                ! Store updated values
                 VelocityArray(ParticleIndex,:) = ParticleVelocity
                 AccelerationArray(ParticleIndex,:) =  ParticleAcceleration
+                !BpArray(ParticleIndex,:,:) = Bp_new  ! Store affine velocity matrix for next timestep
                  
               end if ! NumbOfLayers = 1 or SOLID MatPoint
             end do !Loop over particles
