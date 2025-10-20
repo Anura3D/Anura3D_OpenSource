@@ -630,6 +630,12 @@ proc Anura3D::WriteCalculationFile_CPS { filename stageNode icount_stage total_t
     set DegreeOfFilling [$stageNode selectNodes $DegreeOfFilling_path]
     GiD_WriteCalculationFile puts $DegreeOfFilling  
     
+    # APIC/FLIP BLEND FACTOR
+    GiD_WriteCalculationFile puts {$$APIC_FLIP_BLEND_FACTOR}
+    set APIFLIPBlend_path {string(container[@n="Calculation_Data"]/value[@n="APIC_FLIP_blend_factor"]/@v)}
+    set APIFLIPBlend [$stageNode selectNodes $APIFLIPBlend_path]
+    GiD_WriteCalculationFile puts $APIFLIPBlend
+    
     # NUMBER OF ACTIVE ELEMENTS           
     GiD_WriteCalculationFile puts {$$NUMBER_OF_ACTIVE_ELEMENTS}
     GiD_WriteCalculationFile puts $number_of_active_elements

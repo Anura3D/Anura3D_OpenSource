@@ -119,6 +119,7 @@
   <value n="number_of_initialisation_steps" pn="number of initialisation steps [-]" v="1" state="hidden"></value>
   <value n="OBJECTIVE_STRESS" pn="OBJECTIVE STRESS" icon="calculate.png" values="do not apply objective stress,apply objective stress" v="do not apply objective stress"></value>
   <value n="degree_of_filling" pn="degree of filling [-]" icon="calculate.png" v="0.9"></value>
+  <value n="APIC_FLIP_blend_factor" pn="PIC/FLIP blend factor [-]" icon="calculate.png" v="0.99" help="Blend factor for PIC/FLIP velocity transfer: 1.0=pure FLIP (minimal dissipation), 0.0=pure APIC (more stable). Recommended: 0.95-0.99"></value>
   <value n="DOUBLE-POINT_FORMULATION" pn="DOUBLE-POINT FORMULATION" icon="calculate.png" values="do not define additional parameters,define additional parameters" v="do not define additional parameters" state="[check_points Double_point %W]" actualize_tree="1">
     <dependencies node="../value[@n='maximum_porosity']" att1="state" v1="normal" value="define additional parameters"></dependencies>
     <dependencies node="../value[@n='maximum_porosity']" att1="state" v1="hidden" value="do not define additional parameters"></dependencies>

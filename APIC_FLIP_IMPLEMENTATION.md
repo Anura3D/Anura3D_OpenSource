@@ -77,18 +77,24 @@ The implementation follows these steps per particle:
 
 ### Setting the Blend Factor
 
-The blend factor can be controlled via the `APIFLIPBlendFactor` parameter in the calculation parameters. Currently, this is set to a default value of 0.99 in the code.
+The blend factor can be controlled via the `APIFLIPBlendFactor` parameter in the calculation parameters. The default value is 0.99 (99% APIC, 1% FLIP).
 
 **To change the blend factor**, you have two options:
 
-#### Option 1: Modify the Default (Recommended for Testing)
+#### Option 1: Add to CPS File (Recommended)
+Add the following line to your `.CPS` file in the MPM-specific data section (after `$$DEGREE_OF_FILLING`):
+```
+$$APIC_FLIP_BLEND_FACTOR
+0.95
+```
+where the value is a real number between 0.0 and 1.0.
+
+#### Option 2: Modify the Default (Code-Level Change)
 Edit `src/ReadCalculationData.FOR`, line ~786:
 ```fortran
 CalParams%APIFLIPBlendFactor = 0.99  ! Change this value
 ```
-
-#### Option 2: Add CPS File Reader (Future Enhancement)
-Add a reader for `$$APIC_FLIP_BLEND_FACTOR` in the CPS file parser (see implementation notes below).
+This sets the default value when `$$APIC_FLIP_BLEND_FACTOR` is not specified in the CPS file.
 
 ### Recommended Values
 
@@ -126,20 +132,17 @@ Add a reader for `$$APIC_FLIP_BLEND_FACTOR` in the CPS file parser (see implemen
 
 ## Future Enhancements
 
-### Add CPS File Input
-To allow users to set the blend factor from the input file, add to the CPS reader in `ReadCalculationData.FOR`:
+### ✅ Add CPS File Input (IMPLEMENTED)
+Users can now set the blend factor from the CPS input file using the `$$APIC_FLIP_BLEND_FACTOR` keyword. The implementation is located in `ReadCalculationData.FOR` in the CPS reader around line 1826.
 
-```fortran
-! Around line 1500, after other calculation parameters
-case ('$$APIC_FLIP_BLEND_FACTOR')
-  read(FileUnit, *, iostat=ios) DumR(1)
-  call Assert( ios == 0, messageIOS//trim(BName) )
-  call Assert( DumR(1) >= 0.0 .and. DumR(1) <= 1.0, &
-    'APIC_FLIP_BLEND_FACTOR must be between 0.0 and 1.0' )
-  CalParams%APIFLIPBlendFactor = DumR(1)
+Example CPS entry:
+```
+$$APIC_FLIP_BLEND_FACTOR
+0.95
 ```
 
-And in the GiD problem type `createCPS.tcl`:
+### Add GiD Problem Type Interface
+To make this accessible in the GiD preprocessor interface, add to `createCPS.tcl`:
 ```tcl
 # Add to calculation data container
 GiD_WriteCalculationFile puts {$$APIC_FLIP_BLEND_FACTOR}

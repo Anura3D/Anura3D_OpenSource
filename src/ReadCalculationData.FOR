@@ -1823,6 +1823,13 @@
               call Assert( DumR(1) <= 1.0, 'CPS file: ' //trim(BName)// ' must be less than or equal to 1.0.')
               CalParams%RequiredDegreeOfFilling = DumR(1)
               
+            else if (trim(BName)=='$$APIC_FLIP_BLEND_FACTOR') then ! R [ 0.0 <= R <= 1.0 ]
+              read(FileUnit, *, iostat=ios) DumR(1)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumR(1) >= 0.0, 'CPS file: ' //trim(BName)// ' must be greater than or equal to 0.0.')
+              call Assert( DumR(1) <= 1.0, 'CPS file: ' //trim(BName)// ' must be less than or equal to 1.0.')
+              CalParams%APIFLIPBlendFactor = DumR(1)
+              
             else if (trim(BName)=='$$NUMBER_OF_ACTIVE_ELEMENTS') then ! I [ 0 <= I ] ! ---RELEASE-----> this should be stored elsewhere
               read(FileUnit, *, iostat=ios) DumI(1)
               call Assert( ios == 0, messageIOS//trim(BName) )

@@ -1,0 +1,93 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                   APIC/FLIP BLEND FACTOR - QUICK REFERENCE                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─ CPS FILE SYNTAX ──────────────────────────────────────────────────────────┐
+│                                                                             │
+│  $$APIC_FLIP_BLEND_FACTOR                                                  │
+│  0.99                                                                       │
+│                                                                             │
+│  Place in: MPM SPECIFIC DATA section (after $$DEGREE_OF_FILLING)          │
+│  Range: 0.0 ≤ α ≤ 1.0                                                      │
+│  Default: 0.99 (if not specified)                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ WHAT DOES IT DO? ─────────────────────────────────────────────────────────┐
+│                                                                             │
+│  Controls the blend between two velocity transfer methods:                 │
+│                                                                             │
+│    v_new = α × v_APIC + (1-α) × v_FLIP                                     │
+│                                                                             │
+│  • α = 1.0 → Pure APIC (stable, slightly dissipative)                      │
+│  • α = 0.0 → Pure FLIP (minimal dissipation, can be noisy)                 │
+│  • α = 0.99 → Recommended (best balance for most cases)                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ RECOMMENDED VALUES BY PROBLEM TYPE ───────────────────────────────────────┐
+│                                                                             │
+│  Problem Type              │  α Value  │  Notes                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  Geotechnical / Slopes     │   0.99    │  Maximum stability (default)       │
+│  Granular flows            │   0.95    │  Balanced dissipation/accuracy     │
+│  Impact / Penetration      │   0.90    │  Reduced dissipation               │
+│  Fluid-like behavior       │   0.50    │  Minimal dissipation (advanced)    │
+│  Debug / Compare to old    │   1.00    │  Pure APIC (original PIC)          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ EXAMPLE CPS SNIPPET ──────────────────────────────────────────────────────┐
+│                                                                             │
+│  ! ... previous entries ...                                                │
+│                                                                             │
+│  ! MPM SPECIFIC DATA                                                       │
+│  $$APPLY_OBJECTIVE_STRESS                                                  │
+│  1                                                                          │
+│  $$DEGREE_OF_FILLING                                                       │
+│  0.9                                                                        │
+│  $$APIC_FLIP_BLEND_FACTOR                                                  │
+│  0.99                                                                       │
+│  $$NUMBER_OF_ACTIVE_ELEMENTS                                               │
+│  0                                                                          │
+│                                                                             │
+│  ! ... rest of CPS file ...                                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ EFFECTS ON SIMULATION ────────────────────────────────────────────────────┐
+│                                                                             │
+│  ✓ Better energy conservation (compared to pure PIC)                       │
+│  ✓ Reduced artificial damping in rotational modes                          │
+│  ✓ Improved angular momentum conservation                                  │
+│  ⚠ Slightly increased computation time (~10-15%)                           │
+│  ⚠ Additional memory per particle (~72 bytes for Bp matrix)                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ TROUBLESHOOTING ──────────────────────────────────────────────────────────┐
+│                                                                             │
+│  Problem: Simulation becomes unstable                                      │
+│  → Solution: Increase α (try 0.99 or 1.0)                                  │
+│                                                                             │
+│  Problem: Too much dissipation / damping                                   │
+│  → Solution: Decrease α (try 0.90 or 0.95)                                 │
+│                                                                             │
+│  Problem: Error message about invalid value                                │
+│  → Solution: Ensure 0.0 ≤ α ≤ 1.0                                          │
+│                                                                             │
+│  Problem: Parameter seems ignored                                          │
+│  → Check: CPS syntax correct? Rebuild project? Check console output?       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ MORE INFORMATION ─────────────────────────────────────────────────────────┐
+│                                                                             │
+│  📄 APIC_FLIP_IMPLEMENTATION.md    → Full technical documentation          │
+│  📄 QUICK_START_APIC_FLIP.md       → Quick start guide                     │
+│  📄 APIC_FLIP_CPS_EXAMPLE.txt      → Detailed CPS examples                 │
+│  📄 IMPLEMENTATION_SUMMARY_*.md    → Implementation details                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Implementation: January 2025 | Anura3D v2025 | Branch: LZC_ThinRigidBodies

@@ -20,15 +20,20 @@ The default α=0.99 is already active. Just compile and run your simulation:
 
 ### Adjust the Blend Factor
 
-**Temporary (for testing):**
+**Method 1: Via CPS Input File (Recommended):**
+Add to your `.CPS` file (in the MPM-specific data section):
+```
+$$APIC_FLIP_BLEND_FACTOR
+0.95
+```
+Value must be between 0.0 and 1.0.
+
+**Method 2: Modify Default (Code-Level):**
 Edit `src/ReadCalculationData.FOR`, line ~786:
 ```fortran
 CalParams%APIFLIPBlendFactor = 0.95  ! Change from 0.99
 ```
-Then rebuild.
-
-**Permanent (via input file) - TODO:**
-This requires adding CPS file reading (see APIC_FLIP_IMPLEMENTATION.md).
+Then rebuild. This sets the default when not specified in CPS.
 
 ### Recommended α Values by Problem Type
 
@@ -81,9 +86,10 @@ Run these checks:
 
 1. ✅ Test with your existing simulations
 2. ⬜ Validate with benchmark cases
-3. ⬜ Add CPS file input for α
+3. ✅ **CPS file input for α (IMPLEMENTED)**
 4. ⬜ Extend to water/gas phases
 5. ⬜ Add per-material blend factors
+6. ⬜ Add GiD problem type interface
 
 ## See Also
 
