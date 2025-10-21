@@ -2715,6 +2715,49 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
                     set vv 0.0
                     GiD_WriteCalculationFile puts $nn
                     GiD_WriteCalculationFile puts $vv                        
+                }
+             } elseif {$typemodel == "Hyperbolic Elasticity"} {
+                GiD_WriteCalculationFile puts {$$MATERIAL_MODEL_NAME}
+                GiD_WriteCalculationFile puts {hyperbolic_elasticity}
+                GiD_WriteCalculationFile puts {$$UMAT_DIMENSION}
+                GiD_WriteCalculationFile puts {3D}
+                # Read GUI fields for hyperbolic parameters
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="hyperbolic_Go"]}]]
+                set type [$node getAttribute "v"]
+                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_01} 
+                GiD_WriteCalculationFile puts $type
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="hyperbolic_xq_ult"]}]]
+                set type [$node getAttribute "v"]
+                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_02} 
+                GiD_WriteCalculationFile puts $type
+                set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="hyperbolic_enu"]}]]
+                set type [$node getAttribute "v"]
+                GiD_WriteCalculationFile puts {$$MATERIAL_PARAMETER_SOLID_03} 
+                GiD_WriteCalculationFile puts $type
+                # Fill remaining material parameters/state variables with zeros
+                set var "\$\$MATERIAL_PARAMETER_SOLID"
+                for { set j 4 } { $j <= 50 } { incr j } {
+                    if { $j<= 9 } {
+                        set jj "0$j" 
+                    } else {
+                        set jj "$j"
+                    }  
+                    set nn ${var}_${jj}
+                    set vv 0.0
+                    GiD_WriteCalculationFile puts $nn
+                    GiD_WriteCalculationFile puts $vv                        
+                }
+                set var "\$\$INITIAL_STATE_VARIABLE_SOLID"
+                for { set j 1 } { $j <= 50 } { incr j } {
+                    if { $j<= 9 } {
+                        set jj "0$j" 
+                    } else {
+                        set jj "$j"
+                    }  
+                    set nn ${var}_${jj}
+                    set vv 0.0
+                    GiD_WriteCalculationFile puts $nn
+                    GiD_WriteCalculationFile puts $vv                        
                 }                                
             } elseif {$typemodel == "External Material Model"} {
                 set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="material_model_dll_"]}]]
@@ -2805,8 +2848,8 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
                         GiD_WriteCalculationFile puts $vv                        
                     }
                 }
-            }   
-        }                
+            }
+        }               
         if {$typename == "Liquid"} {
             set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="_material_model_liquid_"]}]]
             set typemodel [$node getAttribute "v"]
@@ -2843,6 +2886,8 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
                 GiD_WriteCalculationFile puts $type
             }                                                                  
         }
+        
+
         
         if {$typename == "Unsaturated material-2-phase with suction effect" || $typename == "Unsaturated material-3-phase fully coupled"} {
             set node [$gNode selectNodes [format_xpath {container[@n="_material_constitutive_model"]/value[@n="_unsat_retention_curve_"]}]]

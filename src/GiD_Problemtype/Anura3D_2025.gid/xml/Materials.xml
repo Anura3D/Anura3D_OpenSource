@@ -40,7 +40,7 @@
  └───────────────────────────────────────────────────────────────*/ -->
     <container n="_material_constitutive_model" pn="MATERIAL CONSTITUTIVE MODEL" state="[hide_show_const_model_mat_type_n Liquid %W]">
 
-      <value n="_material_model_solid_" pn="Solid material model" values="Rigid body,Linear Elasticity,Mohr-Coulomb,Modified Camclay,External Material Model" v="Rigid body" state="[hide_show_const_model_mat_type_n Liquid %W]" actualize_tree="1"/>
+  <value n="_material_model_solid_" pn="Solid material model" values="Rigid body,Linear Elasticity,Mohr-Coulomb,Modified Camclay,Hyperbolic Elasticity,External Material Model" v="Rigid body" state="[hide_show_const_model_mat_type_n Liquid %W]" actualize_tree="1"/>
 
       <value n="material_model_dll_" pn="Name of the external material model" v="" state="[hide_show_const_model {External Material Model} %W]"/>
 
@@ -70,6 +70,14 @@ ________________________________________________________________________________
       <value n="eff_dilatancy_angle_" pn="Effective Dilatancy Angle" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/>
 
       <value n="eff_tensile_strength_" pn="Effective Tensile Strength" v="0.0" state="[hide_show_const_model {Mohr-Coulomb} %W]"/> 
+<!-- ________________________________________________________________________________
+Hyperbolic Elasticity
+________________________________________________________________________________-->
+    <value n="hyperbolic_Go" pn="Initial shear modulus Go" v="0.0" state="[hide_show_const_model {Hyperbolic Elasticity} %W]"/>
+
+    <value n="hyperbolic_xq_ult" pn="Ultimate deviatoric stress q_ult" v="0.0" state="[hide_show_const_model {Hyperbolic Elasticity} %W]"/>
+
+    <value n="hyperbolic_enu" pn="Poisson ratio" v="0.0" state="[hide_show_const_model {Hyperbolic Elasticity} %W]"/>
 
 <!-- ________________________________________________________________________________
 Modified Camclay
@@ -94,7 +102,8 @@ ________________________________________________________________________________
         <value n="number_mat_params" pn="Number of material parameters" string_is="integer" v="50" help="Enter the number of material parameters"/>            
         <value n="number_state_var" pn="Number of state variables" string_is="integer" v="50" help="Enter the number of state variables"/>
         <edit_command n="edit_number_mat_params" pn="Material parameters and state variables" proc="MaterialParameters::mat_params_window %W" edit_type="exclusive"></edit_command>          
-      </container>     
+      </container>   
+
       <value n="_material_model_liquid_" pn="Liquid material model" v="" values="Newtonian,Bingham Fluid,Frictional Fluid" help="No= no free surface detection, Yes= free surface detection" actualize_tree="1" state="[hide_show_const_model_mat_type_y Liquid %W]"/>
       <value n="elastic_young_modulus_l_" pn="Elastic Young modulus" v="0.0" state="[hide_show_const_model_multi_liq {Bingham Fluid} {Frictional Fluid} %W]"/>
       <value n="elastic_poisson_ratio_l_" pn="Elastic Poisson ratio" v="0.0" state="[hide_show_const_model_multi_liq {Bingham Fluid} {Frictional Fluid} %W]"/>

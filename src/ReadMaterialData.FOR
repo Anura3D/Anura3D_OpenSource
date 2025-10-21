@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -49,6 +49,7 @@
       use ModMohrCoulomb
       use ModBingham
 	  use ModCamClay
+	  use ModHyperbolicElasticity
       implicit none
 
 
@@ -869,6 +870,7 @@ end select
                   if ((CalParams%CPSversion==Anura3D_v2024).or.(CalParams%CPSversion==Anura3D_v2025)) then
                   MatParams(I)%SoilModelName = DumS
                   if (MatParams(I)%SoilModelName=="Modified_Camclay")  MatParams(I)%ESM_POINTER => ESM_CamClay  !Example of the pointer definition
+                  if (MatParams(I)%SoilModelName=="hyperbolic_elasticity")  MatParams(I)%ESM_POINTER => ESM_LINEAR_HYP !Example of the pointer definition
                   !if (MatParams(I)%SoilModelName=="MyModel2")  MatParams(I)%ESM_POINTER => ESM_Mymodel2  !Example of the pointer definition
                   else  
                   MatParams(I)%SoilModelDLL = DumS

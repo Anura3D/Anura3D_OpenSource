@@ -184,6 +184,7 @@
         ! Soil model names
         character(len=64), parameter :: ESM_LINEAR_ELASTICITY = 'linear_elasticity'
         character(len=64), parameter :: ESM_MOHR_COULOMB_STANDARD = 'mohr_coulomb'
+   character(len=64), parameter :: ESM_HYPERBOLIC_ELASTICITY = 'hyperbolic_elasticity'
         character(len=64), parameter :: ESM_MOHR_COULOMB_TEUNISSEN = 'mohr_coulomb_teunissen'
         character(len=64), parameter :: ESM_MOHR_COULOMB_STRAIN_SOFTENING = 'strain_softening_mohr_coulomb'
         character(len=64), parameter :: ESM_HYPOPLASTICITY_SAND = 'hypoplasticity'

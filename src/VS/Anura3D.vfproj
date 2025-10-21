@@ -51,6 +51,7 @@
 		<File RelativePath="..\Soilmodels\A3DLinearElasticity.f"/>
 		<File RelativePath="..\Soilmodels\A3DMohrCoulombStandard.f"/>
 		<File RelativePath="..\ExternalSoilModel.for"/>
+		<File RelativePath="..\Soilmodels\Hyperbolic_elasticity.f"/>
 		<File RelativePath="..\Liquid.FOR"/>
 		<File RelativePath="..\Soilmodels\UMAT_ModifiedCamClay.FOR"/></Filter>
 		<Filter Name="MPMModules">

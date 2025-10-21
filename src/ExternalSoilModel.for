@@ -50,6 +50,7 @@ use ModLinearElasticity
 use ModMohrCoulomb
 use ModCamClay
 use ModBingham
+use ModHyperbolicElasticity
 
 contains
 
