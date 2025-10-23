@@ -618,15 +618,21 @@
 
           ! Local variables
           integer(INTEGER_TYPE) :: I, J, M
-          real(REAL_TYPE) :: Xp, Yp, X1, Y1, X2, Y2, D1, D2, K, V
+          real(REAL_TYPE) :: Xp, Yp, X1, Y1, X2, Y2, D1, D2, K, V, L_cord, Normal(2), Xpv(2), &
+							X1v(2), X2v(2), Sign
 
           do I = 1, Counters%NParticles ! Loop over particles ThinRigidElmConnectivities
+			  Xpv= GlobPosArray(I,:)
               Xp = GlobPosArray(I,1)
               Yp = GlobPosArray(I,2)
               X1 = ThinRigidCoordinates(1,1)
               Y1 = ThinRigidCoordinates(1,2)
               
               DistanceField(I) = SQRT((Xp-X1)**2+(Yp-Y1)**2) 
+			  AffinityArray(I,1) = 1
+              AffinityArray(I,2) = 1
+			  AffinityArray(I,3) = ThinRigidElmConnectivities(1,1)
+			  
               do J = 1, SIZE(ThinRigidElmConnectivities,1) !loop over rigid elements
                   X1 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),1)
                   Y1 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),2)
@@ -638,6 +644,9 @@
                           !V = DistanceField(I)
                           DistanceField(I) = ABS((-(XP-X1)*(Y2-Y1)+(Yp-Y1)*(X2-X1))/(SQRT((Y2-Y1)**2+(X2-X1)**2)))
                          ! DistanceField(I) = DistanceField(I,1)/V
+						  AffinityArray(I,1) = 0
+						  AffinityArray(I,2) = J
+						  AffinityArray(I,3) = ThinRigidElmConnectivities(J,1) !for completeness
                        end if
                   else
                       D1 = SQRT((Xp-X1)**2+(Yp-Y1)**2)
@@ -646,16 +655,61 @@
                          ! V = DistanceField(I,1)
                          DistanceField(I) = D1
                          !DistanceField(I) = DistanceField(I,1)/V
+						 AffinityArray(I,1) = 1
+						 AffinityArray(I,2) = J
+						 AffinityArray(I,3) = ThinRigidElmConnectivities(J,1)
                       end if
                       if (D2 < DistanceField(I)) then
                          ! V = DistanceField(I,1)
                          DistanceField(I) = D2
                         ! DistanceField(I,2) = DistanceField(I,1)/V
+						 AffinityArray(I,1) = 1
+						 AffinityArray(I,2) = J
+						 AffinityArray(I,3) = ThinRigidElmConnectivities(J,2)
                       end if   
                   end if
 			  end do
 			  Particles(I)%ParticleRadius=Kfactor *SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY))
               DistanceField(I) = DistanceField(I) - Particles(I)%ParticleRadius
+			  
+			  !Now we need to correct particle radius and position in case of undesired initial interpenetration
+			  if (DistanceField(I) < 0.0) then
+				  
+				  !calculate cord length				  
+				  L_cord= 2* sqrt(DistanceField(I)**2  - (DistanceField(I)*Particles(I)%ParticleRadius)	)
+				  
+				  if (L_cord > 0.05 * Particles(I)%ParticleRadius) then !This means it is severely crossing the body
+					  ! Move the particle along the normal
+					  Normal=AffinityArray(I,1)*(VectorNorm(Xpv-ThinRigidCoordinates(AffinityArray(I,3),:), 2))+&
+					  (1-AffinityArray(I,1))*NormalsRigidBody(AffinityArray(I,2), :) !choses correct normal
+					  
+					  Sign=1
+                    if  (AffinityArray(I,1)==0) then 
+				
+                        !Update Velocity, position and accumulate displacement on MP
+                        X1v = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),1),:)
+                        !Y1 = ThinRigidCoordinates(ThinRigidElmConnectivities(ElementID,1),2)
+                        X2v = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),2),:)
+                        !Y2 = ThinRigidCoordinates(ThinRigidElmConnectivities(ElementID,2),2)
+				  
+                        if ((((X1v(1)-X2v(1))*Normal(2)-(X1v(2)-X2v(2))*Normal(1)))*&
+					        ((X1v(1)-X2v(1))*(Xpv(2)-X1v(2))-(X1v(2)-X2v(2))*(Xpv(1)-X1v(1)))<0) then !flip normal
+                            Sign = -1
+                        else
+                            Sign = 1
+				        end if
+				    endif			   
+				   
+				    !Kinematic correction				
+				    !update position
+                    GlobPosArray(I,:) = GlobPosArray(I,:) + Sign * (abs(DistanceField(I))) * Normal!  
+					DistanceField(I)=0.0  
+				  else !Not so bad, change particle radius
+					Particles(I)%ParticleRadius= Particles(I)%ParticleRadius + DistanceField(I)
+					DistanceField(I)=0.0
+				  endif				  
+				  
+			  end if
 
           end do
 
@@ -985,8 +1039,7 @@
                       end if   
                   end if
               end do
-              DistanceField(I) = DistanceField(I) - &
-                  Kfactor * SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY)) !account for radius of influence
+              DistanceField(I) = DistanceField(I) - Particles(I)%ParticleRadius !account for radius of influence
 			  
               if (DistanceField(I)<0.0) then !contact exist between particle and rigid body
 				
@@ -1169,7 +1222,7 @@
 				   
 				   !update torque
 				   L=Xpp-DataStructureRigidBody(J)%Centroid
-				   Arm=Length(L, 2)-Kfactor * (Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY))**(0.5)
+				   Arm=Length(L, 2)-Particles(I)%ParticleRadius
 				   L=Arm*VectorNorm(L, 2) 
 				   Torque=(L(1)*Force(2))-(Force(1)*L(2))
 				   DataStructureRigidBody(J)%Tsum = DataStructureRigidBody(J)%Tsum+Torque
@@ -1383,7 +1436,7 @@
 			  AffinityArray(I,3) = ThinRigidElmConnectivities(1,1)
 
               do J = 1, SIZE(ThinRigidElmConnectivities,1) !loop over rigid elements
-				  X1=ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),:) !local node 2 of rigid element
+				  X1=ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),:) !local node 1 of rigid element
 				  X2=ThinRigidCoordinates(ThinRigidElmConnectivities(J,2),:) !local node 2 of rigid element
 				  dot1=DotProduct(X2-X1, Xp-X1, 2)
 				  dot2=DotProduct(X1-X2, Xp-X2, 2)
@@ -1435,63 +1488,18 @@
                   !Y2 = ThinRigidCoordinates(ThinRigidElmConnectivities(ElementID,2),2)
 				  
                    if ((((X1(1)-X2(1))*Normal(2)-(X1(2)-X2(2))*Normal(1)))*&
-					   ((X1(1)-X2(1))*(Xp(2)-X1(2))-(X1(2)-X2(2))*(Xp(1)-X1(1)))<0) then !flop normal
+					   ((X1(1)-X2(1))*(Xp(2)-X1(2))-(X1(2)-X2(2))*(Xp(1)-X1(1)))<0) then !flip normal
                        Sign = -1
                    else
                        Sign = 1
 				   end if
-				endif
-				   
+				endif			   
 				   
 				   !Kinematic correction
 				
 				   !update position
-                   GlobPosArray(I,:) = GlobPosArray(I,:) + Sign * (abs(DistanceField(I))) * Normal!                   
+                   GlobPosArray(I,:) = GlobPosArray(I,:) + Sign * (abs(DistanceField(I))) * Normal!          
 				   
-				   !update velocity array
-                    !VelocityArray(I,:) =  VelocityArray(I,:) + Sign * (abs((DistanceField(I)))/(CalParams%TimeIncrement)) * Normal!                   
-				   
-				   !Update commutative displacement array
-                   UArray(I,:) = UArray(I,:) + Sign * (abs(DistanceField(I))) * Normal!      
-				   
-				   !Update incremental displacement array
-				   !UStepArray(I, :)= UStepArray(I, :)+ Sign * (abs(DistanceField(I))) * Normal!  
-				   
-				   !Kinetic correction
-				   
-				   !!!Calculate Force
-       !            Force(1) = ((SigmaEffArray(I,1)+Particles(I)%WaterPressure)*Sign*Normal(1)+SigmaEffArray(I,4)*Sign*Normal(2))*2*Kfactor * SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY)) !Important to update for water pressure
-       !            Force(2) = (SigmaEffArray(I,4)*Sign*Normal(1) + (SigmaEffArray(I,2)+Particles(I)%WaterPressure)*Sign*Normal(2))*2*Kfactor * SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY))
-				   !!calculate tangent vector
-				   !ProjdX_n=DotProduct(VelocityArray(I,:), Sign*Normal, 2)*Sign*Normal !projection of v onto n
-				   !Tangent=VelocityArray(I,:)-ProjdX_n
-				   !Tangent=VectorNorm(Tangent, 2) !normal tangent vector
-				   !
-				   !!Calculate normal force
-				   !NormalForce=DotProduct(Force, Sign*Normal, 2)*Sign*Normal !projection of F onto n
-				   !
-				   !!calculate tangential force
-				   !J = ElementsRigidBody(AffinityArray(I,2))%RigidBody
-				   !if (AffinityArray(I,1)==0) then !use friction on wall
-				   !
-       !            MaterialID = MaterialIDArray(I)
-				   !TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*Tangent
-				   !Force=NormalForce+TangentForce  
-				   !
-				   !endif
-				   !DataStructureRigidBody(J)%Fsum = DataStructureRigidBody(J)%Fsum + Force!update force
-				   !
-				   !
-				   !!update torque
-				   !L=Xp-DataStructureRigidBody(J)%Centroid
-				   !Arm=Length(L, 2)-Kfactor * SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY))
-				   !L=Arm*VectorNorm(L, 2) 
-				   !Torque=(L(1)*Force(2))-(Force(1)*L(2))
-				   !DataStructureRigidBody(J)%Tsum = DataStructureRigidBody(J)%Tsum+Torque
-				   !
-				   !
-				   !!Add for to material point
-				   !ContactForceArray(I, :)=-Force
 
              end if
           end do
