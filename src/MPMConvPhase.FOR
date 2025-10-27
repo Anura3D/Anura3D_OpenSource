@@ -907,13 +907,13 @@
         integer(INTEGER_TYPE) :: IParticle
           
           
-          if (CalParams%ApplyFBarLowerOrder .AND. CalParams%ApplyFBarSmoothWPIncrement) then 
+          if (CalParams%ApplyFBarLowerOrder .AND. CalParams%ApplyFBarSmoothWP) then 
               ! lower order grid
               allocate( WeightedUpdatedDeformationGradientJacobian(Counters%N_VolLockSmooth, Counters%nEntity) )   
                 WeightedUpdatedDeformationGradientJacobian = 0.0
               allocate( UpdatedDeformationGradientJacobian(Counters%N_VolLockSmooth, Counters%nEntity) )
                 UpdatedDeformationGradientJacobian = 0.0
-          elseif (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothWPIncrement) then 
+          elseif (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothWP) then 
               ! same higher order grid
               allocate( WeightedUpdatedDeformationGradientJacobian(Counters%N, Counters%nEntity) )  
               WeightedUpdatedDeformationGradientJacobian = 0.0
@@ -925,7 +925,7 @@
           
         
          ! Apply F-bar  
-          if (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothWPIncrement) then ! FBar and FBarSmoothStrains
+          if (CalParams%ApplyFBar .AND. CalParams%ApplyFBarSmoothWP) then ! FBar and FBarSmoothStrains
               
               ! calculate volumetric stresses
               !call CalculateOriginalVolumetricStresses()
@@ -958,40 +958,40 @@
           
               do IParticle = 1, Counters%NParticles
                   
-                  if (MaterialPointTypeArray(IParticle)==MaterialPointTypeLiquid) then 
-                  
-                  SigmaEffArray(IParticle, :) = 0.0
-                  
-                  SigmaEffArray(IParticle, 1) = Particles(IParticle)%WaterPressure
-                  SigmaEffArray(IParticle, 2) = Particles(IParticle)%WaterPressure
-                  SigmaEffArray(IParticle, 3) = Particles(IParticle)%WaterPressure
-                  
-
-                  else 
-                      
-                  
-                  Particles(IParticle)%WaterPressure = 0.0
-                  
-                  end if 
-                  
-                  
+                  !if (MaterialPointTypeArray(IParticle)==MaterialPointTypeLiquid) then 
+                  !
+                  !SigmaEffArray(IParticle, :) = 0.0
+                  !
+                  !SigmaEffArray(IParticle, 1) = Particles(IParticle)%WaterPressure
+                  !SigmaEffArray(IParticle, 2) = Particles(IParticle)%WaterPressure
+                  !SigmaEffArray(IParticle, 3) = Particles(IParticle)%WaterPressure
+                  !
+                  !
+                  !else 
+                  !    
+                  !
+                  !Particles(IParticle)%WaterPressure = 0.0
+                  !
+                  !end if 
                   
                   
-              !    ! Update deformation gradients
-              !    !call UpdateRelativeDeformationGradient(Particles(IParticle), IParticle)
-              !    !call UpdateDeformationGradientPrevious(Particles(IParticle)) 
-              !    !
-              !    !! Update strains 
-              !    !call CalculateTensorialInfinitesimalStrain(Particles(IParticle), TensorialStrainIncrement)
-              !    !call CalculateEpsVoigt(Particles(IParticle), TensorialStrainIncrement, Eps)
-              !    !call SetEpsStep(Particles(IParticle), Eps)
-              !  
-              !    
-              !    call UpdateWaterStressSmoothed(Particles(IParticle)) !UpdateEpsSmoothed !, SigmaEffArray(IParticle, :)
-              !    
-              !    !if (.not.CalParams%ApplyFBarSmoothStrains) then 
-              !    !call IncreaseEps(Particles(IParticle), Particles(IParticle)%EpsStep)
-              !    !end if 
+                  
+                  
+                  ! Update deformation gradients
+                  !call UpdateRelativeDeformationGradient(Particles(IParticle), IParticle)
+                  !call UpdateDeformationGradientPrevious(Particles(IParticle)) 
+                  !
+                  !! Update strains 
+                  !call CalculateTensorialInfinitesimalStrain(Particles(IParticle), TensorialStrainIncrement)
+                  !call CalculateEpsVoigt(Particles(IParticle), TensorialStrainIncrement, Eps)
+                  !call SetEpsStep(Particles(IParticle), Eps)
+                
+                  
+                  call UpdateWaterStressSmoothed(Particles(IParticle)) !UpdateEpsSmoothed !, SigmaEffArray(IParticle, :)
+                  
+                  !if (.not.CalParams%ApplyFBarSmoothStrains) then 
+                  !call IncreaseEps(Particles(IParticle), Particles(IParticle)%EpsStep)
+                  !end if 
               end do 
         
         
@@ -1373,7 +1373,7 @@
               
                     ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                    !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
                         Particles(ParticleIndex)%VolStrainSmoothed = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
@@ -1403,7 +1403,7 @@
                         
                         end do !Loop over nodes
                       
-                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                    !end if ! NumbOfLayers = 1 or SOLID MatPoint
                   
                     
                     !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
@@ -1495,8 +1495,10 @@
               
                     ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
+                    if (MaterialIDArray(ParticleIndex)==2) then 
+                    
                     !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
-                 if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then 
+                 !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then 
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
                         Particles(ParticleIndex)%WaterVolumetricStrain = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
                         ParticleShape = ShapeValuesArray(ParticleIndex,:)
@@ -1618,7 +1620,7 @@
                     ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
                     !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
-                 if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeMixture) ) then 
+                 !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeMixture) ) then 
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
                         Particles(ParticleIndex)%VolStressSmoothed = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
                         ParticleShape = ShapeValuesArray(ParticleIndex,:)
@@ -1647,7 +1649,7 @@
                         
                         end do !Loop over nodes
                       
-                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                    !end if ! NumbOfLayers = 1 or SOLID MatPoint
                   
                     
                     !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
@@ -1753,11 +1755,13 @@
               
                     ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
              
-                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then  
+                    
+                    if (MaterialIDArray(ParticleIndex)==2) then 
+                    !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then  
                     !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
-                        Particles(ParticleIndex)%WaterPressure = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
+                        Particles(ParticleIndex)%WaterPressureIncrementSmoothed = 0.0 !DeformationGradientJacobian = 0.0 !--> we are recaluclating this from the nodal field
                         ParticleShape = ShapeValuesArray(ParticleIndex,:)
                  
                         if (CalParams%ApplyContactAlgorithm) then
@@ -1777,7 +1781,7 @@
                             !Particles(ParticleIndex)%DeformationGradientJacobian = Particles(ParticleIndex)%DeformationGradientJacobian + &
                             !    ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(INode, iEntity) )
                             
-                            Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressure + &
+                            Particles(ParticleIndex)%WaterPressureIncrementSmoothed = Particles(ParticleIndex)%WaterPressureIncrementSmoothed + &
                                 ( ParticleShape(INode) * NodUpdatedDefGradientJacobian(1, INode, iEntity) )
                             
                             !end do    
@@ -2673,7 +2677,7 @@
               
                       ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                      !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
        
                           !PartilceMass = MassArray(ParticleIndex) ! particle mass
                           PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
@@ -2705,7 +2709,7 @@
                                   !Particles(ParticleIndex)%DeformationGradientPreviousJacobian )
                           !end do     
        
-                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+                      !end if ! NumbOfLayers = 1 or SOLID MatPoint
             
                   end do !Loop over particles
               
@@ -2825,7 +2829,9 @@
               
                       !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
        
-                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
+                      if (MaterialIDArray(ParticleIndex)==2) then 
+                          
+                      !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
                           !PartilceMass = MassArray(ParticleIndex) ! particle mass
                           PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
                  
@@ -2987,7 +2993,7 @@
               
                       !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
        
-                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeMixture) ) then 
+                      !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeMixture) ) then 
                           !PartilceMass = MassArray(ParticleIndex) ! particle mass
                           PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
                  
@@ -3018,7 +3024,7 @@
                                   !Particles(ParticleIndex)%DeformationGradientPreviousJacobian )
                           !end do     
        
-                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+                      !end if ! NumbOfLayers = 1 or SOLID MatPoint
             
                   end do !Loop over particles
               
@@ -3129,12 +3135,13 @@
               
                       ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) ) then ! NumbOfLayers = 1 or SOLID MatPoint .or. (NFORMULATION==1)
+                      !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid) ) then ! NumbOfLayers = 1 or SOLID MatPoint .or. (NFORMULATION==1)
        
+                      if (MaterialIDArray(ParticleIndex)==2) then 
                           !PartilceMass = MassArray(ParticleIndex) ! particle mass
                           PartShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
                  
-                          ParticleVolume = Particles(ParticleIndex)%WaterPressure*Particles(ParticleIndex)%IntegrationWeight
+                          ParticleVolume = Particles(ParticleIndex)%WaterPressureIncrement*Particles(ParticleIndex)%IntegrationWeight
                           
                           ! reset volumetric strain 
                           !Particles(ParticleIndex)%VolumetricStrain = 0.0 
@@ -4003,7 +4010,7 @@
                 !GlobalNodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch)
                 !do ITens = 1, NTENSOR
                 
-                    if (LumpedVolume(IDOF,J)/=0) then
+                    if (LumpedVolume_Water(IDOF,J)/=0) then
                         UpdatedDeformationGradientJacobian(IDOF,J) = ( WeightedUpdatedDeformationGradientJacobian(IDOF,J) &
                                                                             / LumpedVolume_Water(IDOF,J) )
                     else

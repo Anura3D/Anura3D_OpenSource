@@ -753,7 +753,8 @@
                      ApplyFBarSmoothStresses= .false., &   
                      ApplyFBarSmoothWP= .false., &
                      ApplyFBarSmoothWPIncrement= .false., &
-                     ApplyGPSmoothFluidPressure= .false. 
+                     ApplyGPSmoothFluidPressure= .false., &
+                     RecordInitialVerticalEffStressForRu= .false.
           
           
                         !ApplyBBar= .false.,&
@@ -1738,6 +1739,32 @@
                 call Assert( ios == 0, messageIOS//trim(BName) )
                 call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
                 if ( DumI(1) == 1 ) CalParams%ApplyFBarSmoothWPIncrement = .true.
+                
+                
+                
+                
+             
+            !-----------------------------------------------------------------------------------------------------------   
+                
+          
+                
+                
+                
+          
+                ! record the vertical effective stress for calculating r_u (excess pore pressure ratio) 
+            else if (trim(BName)=='$$RECORD_INITIAL_VERTICAL_EFF_STRESS_FOR_RU') then ! S [on, off]
+                ! if on, we record the initial vertical effective stress for each material point
+                ! if off, we keep the previously saved vertical effective stress variable 
+                ! (which is assigned as 1 if not previously stored)
+                read(FileUnit, *, iostat=ios) DumI(1)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+                call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' must be 0 or 1.' )
+                if ( DumI(1) == 1 ) CalParams%RecordInitialVerticalEffStressForRu = .true.
+                
+                
+                
+                
+                
                 
                 
               
@@ -5851,6 +5878,8 @@
             call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_LIQUID_PRESSURE', [CalParams%ApplyFBarSmoothWP], 1, .true.)
             call WriteLogic(FileUnit, '$$F_BAR_SMOOTH_LIQUID_PRESSURE_INCREMENT', [CalParams%ApplyFBarSmoothWPIncrement], 1, .true.)
 
+            call WriteLogic(FileUnit, '$$RECORD_INITIAL_VERTICAL_EFF_STRESS_FOR_RU', [CalParams%RecordInitialVerticalEffStressForRu], 1, .true.)
+            
           ! GRAVITY DATA
           call WriteReal(FileUnit, '$$GRAVITY_ACCELERATION', [CalParams%GravityData%GAccel], 1, .true.)
           call WriteReal(FileUnit, '$$GRAVITY_VECTOR', [CalParams%GravityData%GravityVector(1:NDIM)], NDIM, .true.)

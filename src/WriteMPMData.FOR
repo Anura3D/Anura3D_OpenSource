@@ -246,7 +246,8 @@
           ! Local variables
           integer(INTEGER_TYPE) :: NByts, NVals
         
-          NVals = 8
+          !NVals = 8
+          NVals = 9
           NByts = NVals * 4
           write(FileUnit) '$$KERNELFI$$', NByts
           
@@ -288,6 +289,9 @@
 
           write(FileUnit) CalParams%CalculationType
 
+          
+          write(FileUnit) CalParams%RecordInitialVerticalEffStressForRu
+          
         end subroutine WriteBlockKERNELFI
 
 
@@ -371,7 +375,9 @@
           real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: FExt
           integer(INTEGER_TYPE) :: NByts, NVals, I, J,K
 
-          NVals = 7 + ( 3 * NVECTOR )+ NVECTOR * MAX_LOAD_SYSTEMS
+          !NVals = 7 + ( 3 * NVECTOR )+ NVECTOR * MAX_LOAD_SYSTEMS
+          NVals = 8 + ( 3 * NVECTOR )+ NVECTOR * MAX_LOAD_SYSTEMS
+          
           NByts = Counters%NParticles * NVals * 8
           write(FileUnit) '$$PADAT__R$$', NByts
 
@@ -391,6 +397,8 @@
             write(FileUnit) Particles(I)%ShearModulus
             write(FileUnit) Particles(I)%CohesionCosPhi
             write(FileUnit) Particles(I)%SFail
+            write(FileUnit) Particles(I)%InitialVerticalEffStressRU
+            
           end do
           
         end subroutine WriteBlockPADAT__R

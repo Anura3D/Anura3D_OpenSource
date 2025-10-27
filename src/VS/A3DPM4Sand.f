@@ -1215,15 +1215,15 @@
         end if 
     
         if (emax < 0) then
-            emax = 0.8!0.7389!0.8
+            emax = 0.739 !0.8!0.7389!0.8
         end if 
     
         if (emin < 0) then
-            emin = 0.5!0.4915!0.5
+            emin = 0.492!0.511 !0.4915!0.5
         end if
     
         if (nb < 0) then
-            nb = 0.5!0.7!0.5
+            nb = 0.7!0.5!0.7!0.5!0.7!0.5
         end if
     
         if (nd < 0) then
@@ -1231,7 +1231,7 @@
         end if 
 
         if (cz < 0) then
-            cz = 250!200!250!200!250
+            cz = 200!250!200!250!200!250!200!250
         end if 
     
         ! initialize parameter 8
@@ -1250,7 +1250,7 @@
     
         ! initialize parameter 9        
         if (phi_cv < 0) then
-            phi_cv = 33.0!36!33.0!35.6!33.0
+            phi_cv = 35.0!33.0!36!33.0!36!33.0!35.6!33.0
         end if 
         
         if (Mc < 0) then 
@@ -1290,12 +1290,12 @@
         
         ! initialize parameter 13
         if (QQ_Bolton < 0) then
-            QQ_Bolton = 10.0
+            QQ_Bolton = 10.0 !9.5!10.0            !9.5!10.0
         end if 
         
         ! initialize parameter 14
         if (RR_Bolton < 0) then
-            RR_Bolton = 1.5
+            RR_Bolton = 1.5!0.7!1.5!0.7!1.5
         end if 
     
         ! initialize parameter 15
@@ -4971,6 +4971,7 @@
       temp_min = MIN(1.0,((Mcur/Mb)**msr))  
       Csr = 1 - ( Csr0 *  temp_min) !((Mcur/Mb)**msr) ) 
 
+      !if (Csr>1) Csr=1
       
     
        temp = zcum / z_max
@@ -5618,7 +5619,7 @@
             !call Macauley(Mb - Md, Macauley_result)
             ! equation 3.61 in Long Chen's PhD thesis
             DD = min(DD, -3.5 * Ado * Macauley(Mb - Md) * & !-3.5
-       ((2*Pmin) - pp)/ Pmin) ! Equation 78 ! Equation 3.61
+       ((2.0*Pmin) - pp)/ Pmin) ! Equation 78 ! Equation 3.61
         end if
         
         

@@ -418,6 +418,10 @@
          
                  end if 
 			
+                 
+                 
+                 
+                 
                  ! Move the moving mesh with the ground motion. Current implementation is only for 1D movement 
                  !!if (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) then 
                  !!    DUVector(I) = CalParams%Multipliers%VelocitySolidCurrent*CalParams%TimeIncrement 
@@ -680,10 +684,15 @@ end if ! direct simple shear moving mesh approach
               ShiftDirection = 2
             end if
             
-            if ((NDIM == 3).and.&
-               (abs(SummedStructureDisplacement(3) )>abs(SummedStructureDisplacement(ShiftDirection) ) )) then
-              ShiftDirection = 3
-               end if
+            if (NDIM == 3) then 
+            
+                if (abs(SummedStructureDisplacement(3) )>abs(SummedStructureDisplacement(ShiftDirection) ) ) then
+                    ShiftDirection = 3
+              end if 
+               
+            
+            end if 
+            
                
             DisplacementValue = DUVector(ShiftDirection)
             DUVector = 0.0

@@ -2559,8 +2559,12 @@
               do IPart = 1, NPartEle(IEl,IPatch) ! loop over all material points in element
                   ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
 
-                  if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
+                  !if((NFORMULATION==1).or.(MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid)) then ! Only if NumberOfLayers = 1 or SOLID Material Point
 
+                  
+                  ! hardcoded for Material 1
+                  if (MaterialIDArray(ParticleIndex)==2) then 
+                  
                   !if((MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeLiquid)) then
                       !ParticleVelocity = VelocityArray(ParticleIndex,:) !get particle velocity vector
                       ParticleVolume = Particles(ParticleIndex)%IntegrationWeight !MassArray(ParticleIndex) !get particle's mass

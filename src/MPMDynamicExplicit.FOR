@@ -92,7 +92,7 @@
             !    
             !    !CalParams%ApplyFBar = .true.
             !    !CalParams%ApplyFBarWater = .true.
-            !    CalParams%ApplyFBarSmoothStresses = .true.
+            !    !CalParams%ApplyFBarSmoothStresses = .true.
             !    CalParams%ApplyFBarSmoothWP = .true.
             !    !CalParams%ApplyFBarSmoothStresses = .true.
             !    !CalParams%ApplyFBarSmoothStresses = .true.
@@ -104,7 +104,7 @@
             !    !CalParams%ApplyFBar = .false.
             !    !CalParams%ApplyFBarWater = .false.
             !   
-            !    CalParams%ApplyFBarSmoothStresses = .false.
+            !    !CalParams%ApplyFBarSmoothStresses = .false.
             !    CalParams%ApplyFBarSmoothWP = .false.
             !
             !    !    !CalParams%ApplyFBarSmoothStresses = .false.

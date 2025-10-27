@@ -899,8 +899,8 @@
           real(REAL_TYPE), dimension(NVECTOR, MAX_LOAD_SYSTEMS) :: FExt
           integer(INTEGER_TYPE) :: I, J, NVals, K
 
-          NVals = 7 + ( 3 * NVECTOR ) + MAX_LOAD_SYSTEMS * NVECTOR
-
+          !NVals = 7 + ( 3 * NVECTOR ) + MAX_LOAD_SYSTEMS * NVECTOR
+          NVals = 8 + ( 3 * NVECTOR ) + MAX_LOAD_SYSTEMS * NVECTOR  
           if ( (NBytes / NVals / 8)==Counters%NParticles) then
 
             do I = 1, Counters%NParticles
@@ -918,6 +918,8 @@
               read(FileUnit) Particles(I)%ShearModulus
               read(FileUnit) Particles(I)%CohesionCosPhi
               read(FileUnit) Particles(I)%SFail
+              read(FileUnit) Particles(I)%InitialVerticalEffStressRU ! -> I added this here
+              
             end do
  
             BlockCheck = BlockCheck + 1

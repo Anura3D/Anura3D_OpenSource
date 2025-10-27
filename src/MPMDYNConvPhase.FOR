@@ -1203,39 +1203,53 @@
         
         
         !!!! SMOOTH STRESSES 
-                    if (CalParams%ApplyFBarSmoothStresses) then ! --> this does not work
-                
-                        
-                        call SmoothVolumetricStresses() 
-                        
-                        !call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
-                        !call GetNodalStressIncrement_VolLockSmooth()
-                        !call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
-                        !
-                        
-                        
-                        !CalParams%ApplyFBarSmoothStresses = .false.
-                
-                    end if 
+                    !if (CalParams%ApplyFBarSmoothStresses) then ! --> this does not work
+                    !
+                    !    
+                    !    call SmoothVolumetricStresses() 
+                    !    
+                        call MapStressIncrementTensor_VolLockSmooth(WeightedStressIncrementTensor_Numerator)
+                        call GetNodalStressIncrement_VolLockSmooth()
+                        call MapNodalStressIncrementToMPs_VolLockSmooth(NodalStressIncrement_VolLockSmooth)
+                    !    
+                    !    
+                    !    
+                    !    CalParams%ApplyFBarSmoothStresses = .false.
+                    !
+                    !end if 
                 !
                     
                     
                     
 
                     !!!! SMOOTH PORE WATER PRESSURE
-                    if ( CalParams%ApplyFBarSmoothWP) then !(CalParams%NumberOfPhases==2) .and.
+                    !if ( CalParams%ApplyFBarSmoothWP) then !(CalParams%NumberOfPhases==2) .and.
                     
                         
-                        call SmoothWaterVolumetricStresses() 
+                    !    call SmoothWaterVolumetricStresses() 
                         
                         !call MapWPIncrement_VolLockSmooth(WeightedWP_Numerator)
                         !call GetNodalWP_VolLockSmooth()
                         !call MapNodalWPIncrementToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
                         
-                        CalParams%ApplyFBarSmoothWP = .false.
+                        !CalParams%ApplyFBarSmoothWP = .false.
+                    
+                    !end if
+                    
+                    
+                    if ( CalParams%ApplyFBarSmoothWPIncrement) then !(CalParams%NumberOfPhases==2) .and.
+                    
+                        
+                        !call SmoothWaterVolumetricStresses() 
+                    
+                        ! Smooth WP for visualization 
+                        call MapWPIncrement_VolLockSmooth(WeightedWP_Numerator)
+                        call GetNodalWP_VolLockSmooth()
+                        call MapNodalWPIncrementToMPs_VolLockSmooth(NodalWP_VolLockSmooth)
+                        
+                        !CalParams%ApplyFBarSmoothWP = .false.
                     
                     end if
-                    
                     
                     !if ( (CalParams%NumberOfPhases==2) .and. CalParams%ApplyFBarSmoothWP) then 
                     !
@@ -2863,7 +2877,7 @@
               
                       ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                      if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                      !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
        
                           PartilceMass = Particles(ParticleIndex)%IntegrationWeight !MassArray(ParticleIndex) ! particle mass
                           ParticleShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
@@ -2885,7 +2899,7 @@
                                   + ( PartilceMass * ParticleShape * SigmaEffArray(ParticleIndex,I) )
                           end do     
        
-                      end if ! NumbOfLayers = 1 or SOLID MatPoint
+                      !end if ! NumbOfLayers = 1 or SOLID MatPoint
             
                   end do !Loop over particles
               
@@ -4095,6 +4109,13 @@
        
         !!CC - changed to function call - needs to be set to zero here
         NoEn = Counters%nEntity
+        
+        if (.NOT. allocated(SigmaEffArrayViz) ) then 
+        
+            allocate(SigmaEffArrayViz(Counters%NParticles, NTENSOR) )
+            
+        end if 
+        
        
           
         do IPatch = 1, Counters%NPatches ! Loop over patches
@@ -4123,11 +4144,11 @@
               
                     ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
               
-                    if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                    !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
                  
                         !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
                         !Particles(ParticleIndex)%EpsStep = 0.0
-                        SigmaEffArray(ParticleIndex,:) = 0.0
+                        SigmaEffArrayViz(ParticleIndex,:) = 0.0
                         ParticleShape = ShapeValuesArray(ParticleIndex,:)
                  
                         if (CalParams%ApplyContactAlgorithm) then
@@ -4143,12 +4164,12 @@
                                 ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
                                 ! Particle strain 
                                 !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
-                                SigmaEffArray(ParticleIndex,I) = SigmaEffArray(ParticleIndex,I) + ( ParticleShape(INode) * NodStress(I, INode, iEntity) )
+                                SigmaEffArrayViz(ParticleIndex,I) = SigmaEffArrayViz(ParticleIndex,I) + ( ParticleShape(INode) * NodStress(I, INode, iEntity) )
                             end do    
                         
                         end do !Loop over nodes
                       
-                    end if ! NumbOfLayers = 1 or SOLID MatPoint
+                    !end if ! NumbOfLayers = 1 or SOLID MatPoint
                   
                     
                     !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
@@ -4559,8 +4580,15 @@
                       
                     end if ! NumbOfLayers = 1 or SOLID MatPoint
                   
+                    if (MaterialIDArray(ParticleIndex) == 2.0) then
                     Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressureIncrement + & 
                                                                         Particles(ParticleIndex)%WaterPressure0
+                    
+                    Particles(ParticleIndex)%ExcessWaterPressure = Particles(ParticleIndex)%ExcessWaterPressure + &
+                                                                    Particles(ParticleIndex)%WaterPressureIncrement
+                    
+                    
+                    end if 
                     
                     !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
                     !if (Particles(ParticleIndex)%WaterPressure>0.0) then ! hardcoded 
@@ -8076,7 +8104,7 @@
                 
                 do ITens = 1, NTENSOR
                 
-                    if(LumpedMassDry(IDOF,J)/=0) then
+                    if(LumpedVolume(IDOF,J)/=0) then
                 
                     NodalStressIncrement_VolLockSmooth(ITens,INode,J) = ( WeightedStressIncrementTensor_Numerator(ITens,INode,J) &
                                                                            / LumpedVolume(IDOF,J) ) !  / LumpedMassDry(IDOF,J) ) !*  &
@@ -8497,6 +8525,9 @@
               
             ParticleDisplacement = 0.0
                     
+            
+            !if (MaterialIDArray(IParticle) .eq. 2) then ! --> hardcoded
+            
             do IDof = 1, NVECTOR ! Loop over all degrees of freedom (x, y, z)
               do INode = 1, ELEMENTNODES  ! Loop over all nodes in element               
                 NodeID = Multipatch_Connecting_Local_To_Global_ControlPoints(iabs(ElementConnectivities(INode, ElementID, PatchID)), PatchID) 
@@ -8504,6 +8535,8 @@
                 ParticleDisplacement(IDof) = ParticleDisplacement(IDof) + ShapeValuesArray(IParticle,INode) * DUTot(DofID,iEntity)                             
               end do                                             
             end do 
+            
+            !end if ! --> hardcoded
                           
             ! Total particle displacement
             Particles(IParticle)%UW = Particles(IParticle)%UW + ParticleDisplacement
@@ -9018,7 +9051,60 @@
           WaveSpeed_c2 = 0.0
         end if
          
-      end subroutine GetWaveSpeed2LayerForm
+                                        end subroutine GetWaveSpeed2LayerForm
 
+                                        
+                                        
+        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+        !------------------------------------------------------ 
+        subroutine RecordVerticalEffStressForRU()
+        ! record initial vertical effective stress so that we can find the 
+        ! excess pore water pressure Ru ratio
+        implicit none 
+        
+        integer(INTEGER_TYPE) :: IParticle
+        
+        if (.NOT. CalParams%RecordInitialVerticalEffStressForRu) return 
+        
+        
+        ! loop over particles
+        do IParticle = 1, Counters%NParticles
+        
+        
+            Particles(IParticle)%InitialVerticalEffStressRU = SigmaEffArray(IParticle, 2)
+        
+        
+        end do ! loop over particles 
+        
+        
+        
+        ! turn off the record initial vertical stress for Ru
+        ! we need to store the inital value even after more than one shake
+        CalParams%RecordInitialVerticalEffStressForRu = .FALSE.
+        
+        
+        
+        
+        end subroutine RecordVerticalEffStressForRU
+                                        
+                                        
+                                        
+                                        
+                 
+        !------------------------------------------------------ 
+                               
+                                        
+                                        
         
       end module ModDYNConvectivePhase

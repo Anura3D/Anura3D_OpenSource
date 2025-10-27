@@ -458,6 +458,33 @@ module ModWriteVTKOutput
     
     
     
+    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+    !    if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+    !        ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+    !    DataSetScalar(MaterialPointID) = (SigmaEffArray(MaterialPointID,1) + & ! assign output data to material points
+    !        SigmaEffArray(MaterialPointID,2) + &
+    !        SigmaEffArray(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
+    !    else
+    !        DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%WaterPressureViz
+    !    end if
+    !end do
+    !
+    !call WriteVTKScalarDataPointer('pressure_liquid_viz',DataSetScalar)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
@@ -467,10 +494,13 @@ module ModWriteVTKOutput
             SigmaEffArray(MaterialPointID,2) + &
             SigmaEffArray(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
         else
-            DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%WaterPressureIncrement
+            DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%ExcessWaterPressure
         end if
     end do
 
+    
+    
+    
     call WriteVTKScalarDataPointer('excess_pressure_liquid',DataSetScalar)
     
     
@@ -479,6 +509,21 @@ module ModWriteVTKOutput
     
     
     
+    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+        DataSetScalar(MaterialPointID) = ( (SigmaEffArray(MaterialPointID,1) + & ! assign output data to material points
+            SigmaEffArray(MaterialPointID,2) + &
+            SigmaEffArray(MaterialPointID,3) ) / 3.0 ) / Particles(MaterialPointID)%InitialVerticalEffStressRU ! valid for 2D and 3D
+        else
+            DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%ExcessWaterPressure / Particles(MaterialPointID)%InitialVerticalEffStressRU
+        end if
+    end do
+
+    
+    
+    
+    call WriteVTKScalarDataPointer('excess_pressure_liquid_ratio_ru',DataSetScalar)
     
     
     
@@ -1159,6 +1204,15 @@ module ModWriteVTKOutput
     end do
     call WriteVTKTensorDataPointer('strain',DataSetTensor)
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
     DataSetTensor = 0.0
     do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
         if ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid).or. &
@@ -1187,6 +1241,59 @@ module ModWriteVTKOutput
         end if
     end do
     call WriteVTKTensorDataPointer('eff_stress_solid',DataSetTensor)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    DataSetTensor = 0.0
+    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+        if ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeSolid).or. &
+            (MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeMixture)) then
+            if (NDIM == 3) then ! 3D case
+                DataSetTensor(MaterialPointID,1,1) = SigmaEffArrayViz(MaterialPointID,1)
+                DataSetTensor(MaterialPointID,1,2) = SigmaEffArrayViz(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,1,3) = SigmaEffArrayViz(MaterialPointID,6)
+                DataSetTensor(MaterialPointID,2,1) = SigmaEffArrayViz(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,2) = SigmaEffArrayViz(MaterialPointID,2)
+                DataSetTensor(MaterialPointID,2,3) = SigmaEffArrayViz(MaterialPointID,5)
+                DataSetTensor(MaterialPointID,3,1) = SigmaEffArrayViz(MaterialPointID,6)
+                DataSetTensor(MaterialPointID,3,2) = SigmaEffArrayViz(MaterialPointID,5)
+                DataSetTensor(MaterialPointID,3,3) = SigmaEffArrayViz(MaterialPointID,3)
+            elseif (NDIM == 2) then ! 2D case
+                DataSetTensor(MaterialPointID,1,1) = SigmaEffArrayViz(MaterialPointID,1)
+                DataSetTensor(MaterialPointID,1,2) = SigmaEffArrayViz(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,1) = SigmaEffArrayViz(MaterialPointID,4)
+                DataSetTensor(MaterialPointID,2,2) = SigmaEffArrayViz(MaterialPointID,2)
+                DataSetTensor(MaterialPointID,3,3) = SigmaEffArrayViz(MaterialPointID,3)
+            end if
+        end if
+        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            ((MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+            DataSetTensor(MaterialPointID,:,:) = 0.0
+        end if
+    end do
+    call WriteVTKTensorDataPointer('eff_stress_solid_viz',DataSetTensor)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     DataSetTensor = 0.0
     Wp=0

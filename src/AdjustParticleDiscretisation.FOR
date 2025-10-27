@@ -351,6 +351,7 @@
           deallocate(GlobPosArray_Arranged, stat = IError)
           deallocate(VelocityArray, stat = IError)
           deallocate(SigmaEffArray, stat = IError)
+          deallocate(SigmaEffArrayViz, stat = IError)
           deallocate(SigmaEff0Array, stat = IError)
           deallocate(DShapeValuesArray, stat = IError)
           deallocate(VelocityWaterArray, stat = IError)
@@ -418,6 +419,8 @@
           allocate(GlobPosArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
+          allocate(SigmaEffArrayViz(Counters%NParticles,NTENSOR), stat = IError)
+
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
           allocate(DShapeValuesArray(Counters%NParticles,ELEMENTNODES, NVECTOR), stat = IError)
           allocate(VelocityWaterArray(Counters%NParticles,NVECTOR), stat = IError)

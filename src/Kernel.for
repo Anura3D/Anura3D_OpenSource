@@ -236,6 +236,7 @@
         end if
 
         call ApplyExcavation()
+        call RecordVerticalEffStressForRU()
 		!call ApplyConstruction()
 
         !********** 4b - TIME STEP / ITERATION LOOP ******************************

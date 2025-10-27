@@ -161,6 +161,7 @@
         
         ! Stresses
         real(REAL_TYPE), allocatable :: SigmaEffArray(:,:)           !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
+        real(REAL_TYPE), allocatable :: SigmaEffArrayViz(:,:)           !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
         real(REAL_TYPE), allocatable :: SigmaEff0Array(:,:)          !> Initial Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle from the last load step
         
         real(REAL_TYPE), allocatable :: SigmaEffArrayGaussPointsWaterPressure(:,:) !> Gauss point integration using quadrilateral elements --> water pressure --> Rank 2 because scalar
