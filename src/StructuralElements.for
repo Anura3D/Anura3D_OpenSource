@@ -1140,7 +1140,7 @@
                        !Option 1
                        
                        if (DotProduct(RelativeVel, Sign*Normal, 2)<0) then
-						   !Need to check kinematic condition being one of friction
+						   !Need to check kinematic condition being one of friction (URGENT AND TO BE DONE)
 						   TangentForce=0.0
                            !TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*Tangent 
                        else
