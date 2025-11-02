@@ -324,7 +324,7 @@
         NormalsRigidBody = 0.0
         ! Map element ownership and store corresponding outward normals
         do J = 1, NRigidBodies
-            do I = 1, SIZE(DataStructureRigidBody(J)%Ids)
+            do I = 1, size(DataStructureRigidBody(J)%Ids)
                 ElementsRigidBody(DataStructureRigidBody(J)%Ids(I))%RigidBody = J 
                 NormalsRigidBody(DataStructureRigidBody(J)%Ids(I),:) = DataStructureRigidBody(J)%Normals(I,:) !duplicated information
             end do
@@ -531,119 +531,113 @@
         
         
         
-         subroutine DistanceToRigidBody
-        !**********************************************************************
-        !
-        !    Function:  Determines the euclidean distance of each material point
-        !               to the Rigids Bodies
-        !    
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
+    subroutine DistanceToRigidBody
+    !**********************************************************************
+    !
+    !    Function:  Determines the euclidean distance of each material point
+    !               to the Rigids Bodies
+    !    
+    !
+    ! Implemented in the frame of the MPM project.
+    !
+    !********************************************************************** 
 
-     !   use ModCounters
+    implicit none 
 
-        implicit none 
+    ! Local variables
+    integer(INTEGER_TYPE) :: I, J, M
+    real(REAL_TYPE) :: Xp(2), X1(2), X2(2), D1, D2, K, V, L_cord, Normal(2), Xpv(2), Aling_element(2), Dot1, Dot2, &
+                    X1v(2), Sign
 
-          ! Local variables
-          integer(INTEGER_TYPE) :: I, J, M
-          real(REAL_TYPE) :: Xp, Yp, X1, Y1, X2, Y2, D1, D2, K, V, L_cord, Normal(2), Xpv(2), &
-							X1v(2), X2v(2), Sign
+    do I = 1, Counters%NParticles ! Loop over particles ThinRigidElmConnectivities
+        Xp = GlobPosArray(I,:) !Coordinate of MP
+        X1 = ThinRigidCoordinates(1,:) !Coordinate of node 1 of node 1 (temporary)
 
-          do I = 1, Counters%NParticles ! Loop over particles ThinRigidElmConnectivities
-			  Xpv= GlobPosArray(I,:)
-              Xp = GlobPosArray(I,1)
-              Yp = GlobPosArray(I,2)
-              X1 = ThinRigidCoordinates(1,1)
-              Y1 = ThinRigidCoordinates(1,2)
-              
-              DistanceField(I) = SQRT((Xp-X1)**2+(Yp-Y1)**2) 
-			  AffinityArray(I,1) = 1
-              AffinityArray(I,2) = 1
-			  AffinityArray(I,3) = ThinRigidElmConnectivities(1,1)
-			  
-              do J = 1, SIZE(ThinRigidElmConnectivities,1) !loop over rigid elements
-                  X1 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),1)
-                  Y1 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),2)
-                  X2 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,2),1)
-                  Y2 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,2),2)
-                  if ((X2-X1)*(Xp-X1)+(Y2-Y1)*(Yp-Y1)>0 .and. (X1-X2)*(Xp-X2)+(Y1-Y2)*(Yp-Y2)>0) then 
-                      if (ABS((-(XP-X1)*(Y2-Y1)+(Yp-Y1)*(X2-X1))/(SQRT((Y2-Y1)**2+(X2-X1)**2))) < &
-                            DistanceField(I)) then
-                          !V = DistanceField(I)
-                          DistanceField(I) = ABS((-(XP-X1)*(Y2-Y1)+(Yp-Y1)*(X2-X1))/(SQRT((Y2-Y1)**2+(X2-X1)**2)))
-                         ! DistanceField(I) = DistanceField(I,1)/V
-						  AffinityArray(I,1) = 0
-						  AffinityArray(I,2) = J
-						  AffinityArray(I,3) = ThinRigidElmConnectivities(J,1) !for completeness
-                       end if
-                  else
-                      D1 = SQRT((Xp-X1)**2+(Yp-Y1)**2)
-                      D2 = SQRT((Xp-X2)**2+(Yp-Y2)**2)
-                      if (D1 < DistanceField(I)) then
-                         ! V = DistanceField(I,1)
-                         DistanceField(I) = D1
-                         !DistanceField(I) = DistanceField(I,1)/V
-						 AffinityArray(I,1) = 1
-						 AffinityArray(I,2) = J
-						 AffinityArray(I,3) = ThinRigidElmConnectivities(J,1)
-                      end if
-                      if (D2 < DistanceField(I)) then
-                         ! V = DistanceField(I,1)
-                         DistanceField(I) = D2
-                        ! DistanceField(I,2) = DistanceField(I,1)/V
-						 AffinityArray(I,1) = 1
-						 AffinityArray(I,2) = J
-						 AffinityArray(I,3) = ThinRigidElmConnectivities(J,2)
-                      end if   
-                  end if
-			  end do
-			  Particles(I)%ParticleRadius=Kfactor *SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY))
-              DistanceField(I) = DistanceField(I) - Particles(I)%ParticleRadius
-			  
-			  !Now we need to correct particle radius and position in case of undesired initial interpenetration
-			  if (DistanceField(I) < 0.0) then
-				  
-				  !calculate cord length				  
-				  L_cord= 2* sqrt(DistanceField(I)**2  - (DistanceField(I)*Particles(I)%ParticleRadius)	)
-				  
-				  if (L_cord > 0.05 * Particles(I)%ParticleRadius) then !This means it is severely crossing the body
-					  ! Move the particle along the normal
-					  Normal=AffinityArray(I,1)*(VectorNorm(Xpv-ThinRigidCoordinates(AffinityArray(I,3),:), 2))+&
-					  (1-AffinityArray(I,1))*NormalsRigidBody(AffinityArray(I,2), :) !choses correct normal
-					  
-					  Sign=1
-                    if  (AffinityArray(I,1)==0) then 
-				
-                        !Update Velocity, position and accumulate displacement on MP
-                        X1v = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),1),:)
-                        !Y1 = ThinRigidCoordinates(ThinRigidElmConnectivities(ElementID,1),2)
-                        X2v = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),2),:)
-                        !Y2 = ThinRigidCoordinates(ThinRigidElmConnectivities(ElementID,2),2)
-				  
-                        if ((((X1v(1)-X2v(1))*Normal(2)-(X1v(2)-X2v(2))*Normal(1)))*&
-					        ((X1v(1)-X2v(1))*(Xpv(2)-X1v(2))-(X1v(2)-X2v(2))*(Xpv(1)-X1v(1)))<0) then !flip normal
-                            Sign = -1
-                        else
-                            Sign = 1
-				        end if
-				    endif			   
-				   
-				    !Kinematic correction				
-				    !update position
-                    GlobPosArray(I,:) = GlobPosArray(I,:) + Sign * (abs(DistanceField(I))) * Normal!  
-					DistanceField(I)=0.0  
-				  else !Not so bad, change particle radius
-					Particles(I)%ParticleRadius= Particles(I)%ParticleRadius + DistanceField(I)
-					DistanceField(I)=0.0
-				  endif				  
-				  
-			  end if
+        DistanceField(I) = Length(Xp - X1, 2)    !Distance from point to node 1 of element 1 (temporary)
+        AffinityArray(I,1) = 1 !1 means node, 0 means element
+        AffinityArray(I,2) = 1 !Element ID
+        AffinityArray(I,3) = ThinRigidElmConnectivities(1,1) !Node ID
 
-          end do
+        do J = 1, NThinELements !loop over rigid elements
+            X1 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),:) !Coordinate of node 1 of element J
+            X2 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,2),:) !Coordinate of node 2 of element J
 
-         end subroutine DistanceToRigidBody
+            Aling_element= VectorNorm(X2 - X1, 2) !Vector aligned with the element
+
+            Dot1 = DotProduct(Xp - X1, Aling_element, 2)
+            Dot2 = DotProduct(Xp - X2, Aling_element, 2)
+
+            if ((Dot1*Dot2) < 0) then !Perpendicular projection falls inside element
+                !Calculate distance to line (norm of (Xp -X1) . normal)
+                Normal= NormalsRigidBody(J,:)
+                D1= Length(DotProduct(Xp - X1, Normal, 2), 2) !Distance to line
+
+                if (D1 < DistanceField(I)) then !Current minimum distance
+                    DistanceField(I) = D1
+                    AffinityArray(I,1) = 0
+                    AffinityArray(I,2) = J
+                    AffinityArray(I,3) = ThinRigidElmConnectivities(J,1) !for completeness
+                end if
+            else !Perpendicular projection falls outside element
+                D1 = Length(Xp - X1, 2) !Distance to node 1
+                D2 = Length(Xp - X2, 2) !Distance to node 2
+                if (D1 < DistanceField(I)) then !Distance to node 1 is minimum
+                    DistanceField(I) = D1
+                    AffinityArray(I,1) = 1
+                    AffinityArray(I,2) = J
+                    AffinityArray(I,3) = ThinRigidElmConnectivities(J,1)
+                end if
+                if (D2 < DistanceField(I)) then !Distance to node 2 is minimum
+                    DistanceField(I) = D2
+                    AffinityArray(I,1) = 1
+                    AffinityArray(I,2) = J
+                    AffinityArray(I,3) = ThinRigidElmConnectivities(J,2)
+                end if   
+            end if
+        end do
+        Particles(I)%ParticleRadius= Kfactor *SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY)) !Calculates particle radius
+        DistanceField(I) = DistanceField(I) - Particles(I)%ParticleRadius !Calculate proper distance field
+        
+        !Now we need to correct particle radius and position in case of undesired initial inter-penetration
+        if (DistanceField(I) < 0.0) then !Particle is initially penetrating the rigid body
+            !calculate cord length
+            L_cord= 2* sqrt(DistanceField(I)**2  - (DistanceField(I)*Particles(I)%ParticleRadius)	) !cord length
+            
+            if (L_cord > 0.05 * Particles(I)%ParticleRadius) then !This means it is severely crossing the body
+                ! Move the particle along the normal
+                Normal=AffinityArray(I,1)*(VectorNorm(Xp-ThinRigidCoordinates(AffinityArray(I,3),:), 2))+&
+                (1-AffinityArray(I,1))*NormalsRigidBody(AffinityArray(I,2), :) !choses correct normal
+                
+                Sign=1
+            if  (AffinityArray(I,1)==0) then !distance to element, need to check normal direction
+        
+                !Update Velocity, position and accumulate displacement on MP
+                X1v = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),1),:) !node 1
+
+                !Dot product to check normal direction
+                Dot1= DotProduct(Xp - X1v, Normal, 2)
+
+                if (Dot1 < 0) then !flip normal
+                    Sign = -1
+                else
+                    Sign = 1
+                end if
+            endif			   
+            
+            !Kinematic correction				
+            !update position
+            GlobPosArray(I,:) = GlobPosArray(I,:) + Sign * (abs(DistanceField(I))) * Normal!  
+            DistanceField(I)=0.0  
+            else !Not so bad, change particle radius
+            Particles(I)%ParticleRadius= Particles(I)%ParticleRadius + DistanceField(I)
+            DistanceField(I)=0.0
+            endif				  
+            
+        end if
+
+        end do
+
+        end subroutine DistanceToRigidBody
          
         subroutine InitialiseStructuralElements()
         !**********************************************************************
