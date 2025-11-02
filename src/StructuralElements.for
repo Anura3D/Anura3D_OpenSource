@@ -45,25 +45,13 @@
       use ModMatrixMath
 	  use ModGeometryMath
       
-      implicit none       
-        ! Nodal coordinates, and normals of non-conforming surfaces
-        !real(REAL_TYPE), dimension(:, :),  &
-        !allocatable :: ThinRigidElmNormals, ThinRigidCoordinates
-        
-        ! Element connectivities
-        !integer(INTEGER_TYPE), dimension(:, :),  &
-        !allocatable :: ThinRigidElmConnectivities
-        
+      implicit none           
         ! Counters
         integer(INTEGER_TYPE):: NRigidBodies !store how many bodies there are
-       ! integer(INTEGER_TYPE):: dimension(:), &
-       ! allocatable :: QtyRigidBodies  !store how many elements are for each body
         integer(INTEGER_TYPE), dimension(:), allocatable ::  QtyRigidBodies !store how many 1D elements are in each body
-       ! character(len=100):: UniqueBodiesName(NThinELements)
         character(len=100), dimension(:), allocatable ::  UniqueBodiesNameF !Store the names of each rigid body
         ! Lists
-       ! character(len=100), dimension(:), &
-        !allocatable :: ThinRigidElmProp, ThinRigidElmPresVel, ThinRigidElmPresRot 
+
         real(REAL_TYPE), dimension(:,:), allocatable :: NormalsRigidBody
 		real(REAL_TYPE):: Kfactor= sqrt(PI*2/9), kappa=0.0
 		logical::Stiffness_assigned=.false.
@@ -93,10 +81,18 @@
          
         type RBConditions
             logical :: ApplyPrescribedVelocity = .false., ApplyPrescribedRotation = .false., &
-                ApplyPrescribedForce = .false., ApplyPrescribedTorque = .false., IsThereLinearForce = .false.
+            ApplyPrescribedForce = .false., &
+            ApplyPrescribedTorque = .false., &
+            IsThereLinearForce = .false.
             integer(INTEGER_TYPE) :: ApplyCenterRotation = 0
-            real(REAL_TYPE) :: PrescribedVelocity(2), PrescribedRotation, CenterRotation(2), &
-                PrescribedForce(2)=0.0, PrescribedTorque=0.0, LinearInitial, LinearFinal
+            real(REAL_TYPE) :: PrescribedVelocity(2), &
+                               VelConstraints(2)=0.0, &
+                               PrescribedRotation, &
+                               CenterRotation(2), &
+                               PrescribedForce(2)=0.0, &
+                               ForceConstraints(2)=0.0, &
+                               PrescribedTorque=0.0, &
+                               LinearInitial, LinearFinal
         end type RBConditions
         
          type(RBConditions), dimension(:), allocatable :: RigidBodyConditions
@@ -333,8 +329,9 @@
                 NormalsRigidBody(DataStructureRigidBody(J)%Ids(I),:) = DataStructureRigidBody(J)%Normals(I,:) !duplicated information
             end do
         end do 
-         
         end subroutine  CreateDataStructureRigidBody
+
+
 
         subroutine CreateDataStructureRigidBodyConditions()
         !**********************************************************************
@@ -347,43 +344,52 @@
         !**********************************************************************
         implicit none 
         !Variables
-        integer(INTEGER_TYPE):: J, I, N, M, K, L
-        !real(REAL_TYPE):: S
-        !logical:: alreadyExists
+        integer(INTEGER_TYPE):: J, I, GlobElmID, M, K, L
         allocate(RigidBodyConditions(NRigidBodies))
         
         do J = 1, NRigidBodies
-            
-            if (.not. ISAXISYMMETRIC) then
-                do I = 1, SIZE(ThinRigidElmPresVel, 1)
-               read(ThinRigidElmPresVel(I,1), *) N
-               N = N - SIZE(ElementConnectivities,2)
-               if (N == DataStructureRigidBody(J)%Ids(1)) then
+
+            !Prescribed velocities and forces are common for all types of analysis
+
+            !Prescribed Velocities (NEEDS TO DECOMPOSED INDIVIDUAL VEL ASSIGNMENTS)
+            do I = 1, NThinElmPresVel !loop prescribed vel elements
+               read(ThinRigidElmPresVel(I,1), *) GlobElmID !element ID
+               GlobElmID = GlobElmID - Counters%NEl !offset for FE elements
+               if (GlobElmID == DataStructureRigidBody(J)%Ids(1)) then
                    RigidBodyConditions(J)%ApplyPrescribedVelocity = .true.
+                   read(ThinRigidElmPresVel(I,2), *) RigidBodyConditions(J)%VelConstraints(1)
                    read(ThinRigidElmPresVel(I,3), *) RigidBodyConditions(J)%PrescribedVelocity(1)
+                   read(ThinRigidElmPresVel(I,4), *) RigidBodyConditions(J)%VelConstraints(2)
                    read(ThinRigidElmPresVel(I,5), *) RigidBodyConditions(J)%PrescribedVelocity(2)
                 end if
-            end do  
-            do I = 1, SIZE(ThinRigidElmPresFor, 1)
-               read(ThinRigidElmPresFor(I,1), *) N
-               read(ThinRigidElmPresFor(I,6), *) L
-               N = N - SIZE(ElementConnectivities,2)
-               if (N == DataStructureRigidBody(J)%Ids(1)) then
-                   RigidBodyConditions(J)%ApplyPrescribedForce = .true.
-                   read(ThinRigidElmPresFor(I,3), *) RigidBodyConditions(J)%PrescribedForce(1)
-                   read(ThinRigidElmPresFor(I,5), *) RigidBodyConditions(J)%PrescribedForce(2)
-               end if
-               if (L == 1) then
-                   RigidBodyConditions(J)%IsThereLinearForce = .true.
-                   read(ThinRigidElmPresFor(I,7), *) RigidBodyConditions(J)%LinearInitial
-                   read(ThinRigidElmPresFor(I,8), *) RigidBodyConditions(J)%LinearFinal
-               end if
-               
             end do 
+
+            !Prescribed Forces (NEEDS TO DECOMPOSED INDIVIDUAL FORCE ASSIGNMENTS)
+            do I = 1, NThinElmPresFor !loop prescribed force elements
+                read(ThinRigidElmPresFor(I,1), *) GlobElmID !element ID
+                GlobElmID = GlobElmID - Counters%NEl !offset for FE elements
+                read(ThinRigidElmPresFor(I,6), *) L
+                if (GlobElmID == DataStructureRigidBody(J)%Ids(1)) then
+                     RigidBodyConditions(J)%ApplyPrescribedForce = .true.
+                     read(ThinRigidElmPresFor(I,2), *) RigidBodyConditions(J)%ForceConstraints(1)
+                     read(ThinRigidElmPresFor(I,3), *) RigidBodyConditions(J)%PrescribedForce(1)
+                     read(ThinRigidElmPresFor(I,4), *) RigidBodyConditions(J)%ForceConstraints(2)
+                     read(ThinRigidElmPresFor(I,5), *) RigidBodyConditions(J)%PrescribedForce(2)
+                     if (L == 1) then
+                          RigidBodyConditions(J)%IsThereLinearForce = .true.
+                          read(ThinRigidElmPresFor(I,7), *) RigidBodyConditions(J)%LinearInitial
+                          read(ThinRigidElmPresFor(I,8), *) RigidBodyConditions(J)%LinearFinal
+                     end if
+                end if
+            end do
+
+            if (.not. ISAXISYMMETRIC) then !plane strain 
+
+            !Prescribed Rotations  
             do I = 1, SIZE(ThinRigidElmPresRot, 1)
-               read(ThinRigidElmPresRot(I,1), *) N
-               N = N - SIZE(ElementConnectivities,2)
-               if (N == DataStructureRigidBody(J)%Ids(1)) then
+               read(ThinRigidElmPresRot(I,1), *) GlobElmID !element ID
+               GlobElmID = GlobElmID - SIZE(ElementConnectivities,2)
+               if (GlobElmID == DataStructureRigidBody(J)%Ids(1)) then
                    RigidBodyConditions(J)%ApplyPrescribedRotation = .true.
                    read(ThinRigidElmPresRot(I,3), *) RigidBodyConditions(J)%PrescribedRotation
                    read(ThinRigidElmPresRot(I,2), *) K
@@ -394,48 +400,18 @@
                    end if
                 end if
             end do 
+
+            !Prescribed Torques
             do I = 1, SIZE(ThinRigidElmPresTor, 1)
-               read(ThinRigidElmPresTor(I,1), *) N
-               N = N - SIZE(ElementConnectivities,2)
-               if (N == DataStructureRigidBody(J)%Ids(1)) then
+               read(ThinRigidElmPresTor(I,1), *) GlobElmID !element ID
+               GlobElmID = GlobElmID - SIZE(ElementConnectivities,2)
+               if (GlobElmID == DataStructureRigidBody(J)%Ids(1)) then
                    RigidBodyConditions(J)%ApplyPrescribedTorque = .true.
                    read(ThinRigidElmPresTor(I,2), *) RigidBodyConditions(J)%PrescribedTorque
                 end if
             end do 
-            end if
-            
-            
-            if (ISAXISYMMETRIC) then
-                do I = 1, SIZE(ThinRigidElmPresVel, 1)
-               read(ThinRigidElmPresVel(I,1), *) N
-               N = N - SIZE(ElementConnectivities,2)
-               if (N == DataStructureRigidBody(J)%Ids(1)) then
-                   RigidBodyConditions(J)%ApplyPrescribedVelocity = .true.
-                   !read(ThinRigidElmPresVel(I,3), *) RigidBodyConditions(J)%PrescribedVelocity(1)
-                   read(ThinRigidElmPresVel(I,5), *) RigidBodyConditions(J)%PrescribedVelocity(2)
-                end if
-            end do  
-            do I = 1, SIZE(ThinRigidElmPresFor, 1)
-               read(ThinRigidElmPresFor(I,1), *) N
-               read(ThinRigidElmPresFor(I,6), *) L
-               N = N - SIZE(ElementConnectivities,2)
-               if (N == DataStructureRigidBody(J)%Ids(1)) then
-                   RigidBodyConditions(J)%ApplyPrescribedForce = .true.
-                   read(ThinRigidElmPresFor(I,3), *) RigidBodyConditions(J)%PrescribedForce(1)
-                   read(ThinRigidElmPresFor(I,5), *) RigidBodyConditions(J)%PrescribedForce(2)
-               end if
-               if (L == 1) then
-                   RigidBodyConditions(J)%IsThereLinearForce = .true.
-                   read(ThinRigidElmPresFor(I,7), *) RigidBodyConditions(J)%LinearInitial
-                   read(ThinRigidElmPresFor(I,8), *) RigidBodyConditions(J)%LinearFinal
-               end if
-               
-            end do 
-            end if
-            
-        end do
-        
-        
+            end if            
+        end do    
         
         end subroutine CreateDataStructureRigidBodyConditions
     
@@ -678,9 +654,7 @@
         !
         ! Implemented in the frame of the MPM project.
         !
-        !**********************************************************************
-
-        !   use ModCounters
+		!**********************************************************************
 
         implicit none 
 		if (.not. IsThereRigidBody) RETURN
@@ -689,7 +663,7 @@
         call NumberOfRigidBodies() !identifies the number of rigid bodies and ind. elements
         call CreateDataStructureRigidBody() !Creates a structure containing info about the rigid bodies and their properties
         call CreateDataStructureRigidBodyConditions() !Creates a structure containing info about the conditions applied to the rigid bodies
-        call DistanceToRigidBody() !Calculates distance to rigid bodies
+        call DistanceToRigidBody() !Calculates distance to rigid bodies and fixes initial interpenetrations if needed
 
         end subroutine InitialiseStructuralElements
           
