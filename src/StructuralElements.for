@@ -115,36 +115,44 @@
         !**********************************************************************
         implicit none 
         !Variables
-        integer(INTEGER_TYPE):: C, D, E, J, I, N, M, K, L, ND(SIZE(ThinRigidCoordinates,1))
-		double precision:: PI=3.141592653589793238462643383279502884197169
-        !integer(INTEGER_TYPE), allocatable :: ND(:)
-        !real(REAL_TYPE):: S
-        logical:: alreadyExists 
+        integer(INTEGER_TYPE) :: C, D, E, J, I, N, K, L
+        integer(INTEGER_TYPE) :: ND(SIZE(ThinRigidCoordinates,1))
+        integer(INTEGER_TYPE) :: ElemOffset, PropId, PropIndex, NodeCount
+        logical :: alreadyExists 
         allocate(DataStructureRigidBody(NRigidBodies))
-        !character(len=100):: P
-    
+        ElemOffset = SIZE(ElementConnectivities,2)
+
+        ! Build per-body material, kinematic and geometric data from GiD input
         do J = 1, NRigidBodies
-            !Modify if user defined
-            do N = 1, SIZE(ThinRigidElmProp,1)
+            ! Locate property row for current body and convert GiD id to local index
+            PropId = -1
+            PropIndex = 0
+            do N = 1, NThinElmProp
                 if (UniqueBodiesNameF(J)==ThinRigidElmProp(N,2)) then
-                    read(ThinRigidElmProp(N,1), *) M
-                    M = M - SIZE(ElementConnectivities,2) !PROBLEM: It assumes M gives index of property
+                    PropIndex = N
+                    read(ThinRigidElmProp(N,1), *) PropId
+                    PropId = PropId - ElemOffset !Assumes GiD ids are offset by FE mesh count
                     exit
                 end if
             end do
+            if (PropIndex == 0) cycle
+            if (PropId < 1 .or. PropId > NThinElmProp) then
+                PropId = PropIndex
+            end if
             
+            !Initialize variables:: Note: You might want to change this depending on your needs
             DataStructureRigidBody(J)%Velocity=0.0	
-            !DataStructureRigidBody(J)%Velocity(2)=0.0
             DataStructureRigidBody(J)%Acceleration=0.0
             DataStructureRigidBody(J)%Fsum=0.0
             DataStructureRigidBody(J)%Tsum=0.0
             DataStructureRigidBody(J)%AngularVelocity=0.0
+            DataStructureRigidBody(J)%AngularAcceleration=0.0
 			
 			
             !This assigns initial imposed velocity
             do N=1, SIZE(ThinRigidElmInitVel,1)
                 read(ThinRigidElmInitVel(N,1), *) K
-                if (M ==K-SIZE(ElementConnectivities,2)) then
+                if (PropId == K - ElemOffset) then
                     read(ThinRigidElmInitVel(N,2), *) L
                     if (L==1) then
                         read(ThinRigidElmInitVel(N,3), *) DataStructureRigidBody(J)%Velocity(1)
@@ -160,7 +168,7 @@
 			!This assigns initial force acting on elements
             do N=1, SIZE(ThinRigidElmInitFor,1)
                 read(ThinRigidElmInitFor(N,1), *) K
-                if (M ==K-SIZE(ElementConnectivities,2)) then
+                if (PropId == K - ElemOffset) then
                     read(ThinRigidElmInitFor(N,2), *) L
                     if (L==1) then
                         read(ThinRigidElmInitFor(N,3), *) DataStructureRigidBody(J)%Fsum(1)
@@ -177,7 +185,7 @@
 				!This assigns initial rotation
                 do N=1, SIZE(ThinRigidElmInitRot,1)
                 read(ThinRigidElmInitRot(N,1), *) K
-                if (M ==K-SIZE(ElementConnectivities,2)) then
+                if (PropId == K - ElemOffset) then
                     read(ThinRigidElmInitRot(N,2), *) L
                     if (L==1) then !If L ==0 then the center of rotation is different, we need to decide
                         read(ThinRigidElmInitRot(N,3), *) DataStructureRigidBody(J)%AngularVelocity
@@ -189,7 +197,7 @@
 			!This assigns initial torque
             do N=1, SIZE(ThinRigidElmInitTor,1)
                 read(ThinRigidElmInitTor(N,1), *) K
-                if (M ==K-SIZE(ElementConnectivities,2)) then
+                if (PropId == K - ElemOffset) then
 
                     read(ThinRigidElmInitTor(N,2), *) DataStructureRigidBody(J)%Tsum
 
@@ -198,19 +206,18 @@
             end do
                
             
-			end if
-        
+			end if        
             
 			!This part fills the thin rigid element data structures
             
-            DataStructureRigidBody(J)%Name = ThinRigidElmProp(M,2)                  !Name or identifier of rigid body			
-            read(ThinRigidElmProp(M,3), *) DataStructureRigidBody(J)%Thickness      !Thickness associated to R.B.
-            read(ThinRigidElmProp(M,4), *) DataStructureRigidBody(J)%Density        !RB material density
-            read(ThinRigidElmProp(M,5), *) DataStructureRigidBody(J)%NumMaterials   !Number of possible materials in contact (#of soils in contact up to 4 in current version)
+            DataStructureRigidBody(J)%Name = ThinRigidElmProp(PropId,2)                  !Name or identifier of rigid body		
+            read(ThinRigidElmProp(PropId,3), *) DataStructureRigidBody(J)%Thickness      !Thickness associated to R.B.
+            read(ThinRigidElmProp(PropId,4), *) DataStructureRigidBody(J)%Density        !RB material density
+            read(ThinRigidElmProp(PropId,5), *) DataStructureRigidBody(J)%NumMaterials   !Number of possible materials in contact (#of soils in contact up to 4 in current version)
             allocate(DataStructureRigidBody(J)%Materials(DataStructureRigidBody(J)%NumMaterials))
             do I = 1, DataStructureRigidBody(J)%NumMaterials !HERE I CAN CALCULATE STIFFNESS DIRECTLY FOR STABILITY
-                read(ThinRigidElmProp(M,5 + 2* I -1), *) DataStructureRigidBody(J)%Materials(I)%ContactStiffness !Stiffness with respect to material I
-                read(ThinRigidElmProp(M,5 + 2* I), *) DataStructureRigidBody(J)%Materials(I)%FrictionCoef		 !Friction coefficient with respect to mat I
+                read(ThinRigidElmProp(PropId,5 + 2* I -1), *) DataStructureRigidBody(J)%Materials(I)%ContactStiffness !Stiffness with respect to material I
+                read(ThinRigidElmProp(PropId,5 + 2* I), *) DataStructureRigidBody(J)%Materials(I)%FrictionCoef		 !Friction coefficient with respect to mat I
 				!HERE WE COULD ADD ADDITIONAL USER DEFINED PROPERTIES
             end do
             
@@ -219,49 +226,45 @@
             
             !assign IDS of each rigid body (MOVING DOWN THIS CODE IS A MESS::NEEDS TO BE IMPROVED)
             C=1
-            do N = 1, SIZE(ThinRigidElmProp,1)
+            do N = 1, SIZE(ThinRigidElmProp,1) !These IDs should match ThinElement connectivity index
                 if (UniqueBodiesNameF(J)==ThinRigidElmProp(N,2)) then
                     read(ThinRigidElmProp(N,1), *) L
-                    L = L - SIZE(ElementConnectivities,2)
+                    L = L - ElemOffset
                     DataStructureRigidBody(J)%Ids(C)= L !PROBLEM: Assumes something about the ordering of EL numbers given by GID
                     C= C+1
                 end if
-                !read(ThinRigidElmProp(K + I,1), *) DataStructureRigidBody(J)%Ids(I) 
-                !DataStructureRigidBody(J)%Ids(I) = DataStructureRigidBody(J)%Ids(I) - SIZE(ElementConnectivities,2)
             end do
             
             !assign NODES belongs to rigid body
+            ND = 0
             ND(1) = ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(1),1)
             ND(2) = ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(1),2)
-            L = 2
-            !alreadyExists = .false.
-            do I = 2, SIZE(DataStructureRigidBody(J)%Ids)
-                 do E = 1, 2
+            NodeCount = 2
+            do I = 2, QtyRigidBodies(J) !loops elements in rigid body (this could be quantityRigidBodies)
+                 do E = 1, 2 !loops nodes in element
                      alreadyExists = .false.
-                     do D = 1, L
-                         if (ND(D) == ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),E)) then
+                     do D = 1, NodeCount
+                         if (ND(D) == ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),E)) then !node already listed
                              alreadyExists = .true.
                              exit
                          end if
                      end do
-                     if (.not. alreadyExists) then
-                         L = L +1
-                         ND(L) = ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),E)
+                     if (.not. alreadyExists) then !node not listed so add it
+                         NodeCount = NodeCount + 1
+                         ND(NodeCount) = ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),E)
                      end if
                  end do
             end do
-            allocate(integer(INTEGER_TYPE) :: DataStructureRigidBody(J)%Nodes(L))
-            do I = 1, L
-                DataStructureRigidBody(J)%Nodes(I) = ND(I)
-            end do
+            allocate(integer(INTEGER_TYPE) :: DataStructureRigidBody(J)%Nodes(NodeCount))
+			!transcribe node IDs to structure
+            DataStructureRigidBody(J)%Nodes = ND           
             
-            if (.not. ISAXISYMMETRIC) then !For axisymmetric calcs. the centroid is not so important
-                !Calculate Centroid
 				
-			 DataStructureRigidBody(J)%Area = 0
+             DataStructureRigidBody(J)%Area = 0.0
              DataStructureRigidBody(J)%Centroid = 0.0	
 			 
              do I = 1, QtyRigidBodies(J) !Loop bar elements in RB
+				 !stores area in MechProp 1 for that 1D bar element
                  DataStructureRigidBody(J)%MechProp(I,1)=& 
                      SQRT((ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),1)- &
                      ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),1))**2+ &
@@ -273,6 +276,7 @@
 				 DataStructureRigidBody(J)%Area = DataStructureRigidBody(J)%Area + &
                      DataStructureRigidBody(J)%MechProp(I,1)!Total area of body
 				 
+				if (.not. ISAXISYMMETRIC) then !For axisymmetric calcs. the centroid is not important
                  DataStructureRigidBody(J)%MechProp(I,2)=&
                      (ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),1) + &
                      ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),1))/2 !x centroid in element
@@ -281,33 +285,31 @@
                       ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),2)   )/2 !y centroid in element
 			
 			 !Accumulate area moments
-				DataStructureRigidBody(J)%Centroid(1) = DataStructureRigidBody(J)%Centroid(1) + &
-                     DataStructureRigidBody(J)%MechProp(I,2)*   DataStructureRigidBody(J)%MechProp(I,1)
-                DataStructureRigidBody(J)%Centroid(2) = DataStructureRigidBody(J)%Centroid(2) + &
-                     DataStructureRigidBody(J)%MechProp(I,3)*   DataStructureRigidBody(J)%MechProp(I,1)
-			 end do             
-
-             DataStructureRigidBody(J)%Centroid(1) =  DataStructureRigidBody(J)%Centroid(1) / &
-                                                        DataStructureRigidBody(J)%Area
-             DataStructureRigidBody(J)%Centroid(2) =  DataStructureRigidBody(J)%Centroid(2) / &
-                                                        DataStructureRigidBody(J)%Area
+				DataStructureRigidBody(J)%Centroid = DataStructureRigidBody(J)%Centroid + &
+                     DataStructureRigidBody(J)%MechProp(I,2:3)*   DataStructureRigidBody(J)%MechProp(I,1)
+			  end if
+			 end do 
 			 
+
+			 !Calculates centroid
+             DataStructureRigidBody(J)%Centroid =  DataStructureRigidBody(J)%Centroid / DataStructureRigidBody(J)%Area
              !Calculate  Normals and Inertia
              allocate(real(REAL_TYPE) :: DataStructureRigidBody(J)%Normals(QtyRigidBodies(J),2))
              DataStructureRigidBody(J)%Inertia = 0.0
              do I =1,  QtyRigidBodies(J)
-                DataStructureRigidBody(J)%MechProp(I,4) = & !Inertia of each element
-                    ( (1/12)* DataStructureRigidBody(J)%MechProp(I,1) * DataStructureRigidBody(J)%Density * &
-                    ((DataStructureRigidBody(J)%MechProp(I,1)/DataStructureRigidBody(J)%Thickness)**2 + &
-                    (DataStructureRigidBody(J)%Thickness)**2) )
-                DataStructureRigidBody(J)%MechProp(I,5) = &!Square of distance between local centroid and global centroid
-                    (DataStructureRigidBody(J)%Centroid(1)-DataStructureRigidBody(J)%MechProp(I,2))**2 + & 
-                    (DataStructureRigidBody(J)%Centroid(2)-DataStructureRigidBody(J)%MechProp(I,3))**2
-                DataStructureRigidBody(J)%Inertia = DataStructureRigidBody(J)%Inertia + &
-                     DataStructureRigidBody(J)%MechProp(I,4) + &
-                         DataStructureRigidBody(J)%MechProp(I,1)*DataStructureRigidBody(J)%MechProp(I,5)* &
-                         DataStructureRigidBody(J)%Density !accumulating and applying arm rule  
-				
+			    if (.not. ISAXISYMMETRIC) then !For axisymmetric calcs. the centroid is not important
+                    DataStructureRigidBody(J)%MechProp(I,4) = & !Inertia of each element
+                        ( (1/12)* DataStructureRigidBody(J)%MechProp(I,1) * DataStructureRigidBody(J)%Density * &
+                        ((DataStructureRigidBody(J)%MechProp(I,1)/DataStructureRigidBody(J)%Thickness)**2 + &
+                        (DataStructureRigidBody(J)%Thickness)**2) )
+                    DataStructureRigidBody(J)%MechProp(I,5) = &!Square of distance between local centroid and global centroid
+                        (DataStructureRigidBody(J)%Centroid(1)-DataStructureRigidBody(J)%MechProp(I,2))**2 + & 
+                        (DataStructureRigidBody(J)%Centroid(2)-DataStructureRigidBody(J)%MechProp(I,3))**2
+                    DataStructureRigidBody(J)%Inertia = DataStructureRigidBody(J)%Inertia + &
+                         DataStructureRigidBody(J)%MechProp(I,4) + &
+                             DataStructureRigidBody(J)%MechProp(I,1)*DataStructureRigidBody(J)%MechProp(I,5)* &
+                             DataStructureRigidBody(J)%Density !accumulating and applying arm rule  
+			    end if
 				
                 DataStructureRigidBody(J)%Normals(I,1) = DataStructureRigidBody(J)%Thickness * &
                     (ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),2)-&
@@ -317,72 +319,24 @@
                     (ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),1)-&
                     ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),1))/ &
                     DataStructureRigidBody(J)%MechProp(I,1) !normal in y direction
-             end do
-            end if
-            
-            !Calculate area when is Axisymmetric
-            
-            if (ISAXISYMMETRIC) then
-                allocate(real(REAL_TYPE) :: DataStructureRigidBody(J)%Normals(QtyRigidBodies(J),2))
-				DataStructureRigidBody(J)%Area = 0
-                do I = 1, QtyRigidBodies(J)
-                 DataStructureRigidBody(J)%MechProp(I,1)=& 
-                     SQRT((ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),1)- &
-                     ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),1))**2+ &
-                     (ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),2)- &
-                     ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),2))**2)* &
-                     DataStructureRigidBody(J)%Thickness !Area of element
-                 DataStructureRigidBody(J)%MechProp(I,2)=  DataStructureRigidBody(J)%MechProp(I,1) *0.5 *&
-                     (ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),1)+&
-                     ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),1))&
-					 /DataStructureRigidBody(J)%Thickness !Lateral area in one radian
-				 
-				!Total area of body
-				DataStructureRigidBody(J)%Area = DataStructureRigidBody(J)%Area + &
-                     DataStructureRigidBody(J)%MechProp(I,2)!Total area of body
-                 
-				!Normal of elements
-                 DataStructureRigidBody(J)%Normals(I,1) = DataStructureRigidBody(J)%Thickness * &
-                    (ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),2)-&
-                    ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),2))/ &
-                    DataStructureRigidBody(J)%MechProp(I,1)
-                DataStructureRigidBody(J)%Normals(I,2) = DataStructureRigidBody(J)%Thickness * &
-                    (ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),1)-&
-                    ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),1))/ &
-                    DataStructureRigidBody(J)%MechProp(I,1)
-                end do          
-
-            end if
-            
+             end do           
             
             
         end do
-        allocate(ElementsRigidBody(SIZE(ThinRigidElmConnectivities,1)))
-        allocate(NormalsRigidBody(SIZE(ThinRigidElmConnectivities,1),2))
+        allocate(ElementsRigidBody(NThinElements))
+        allocate(NormalsRigidBody(NThinElements,2))
+        NormalsRigidBody = 0.0
+        ! Map element ownership and store corresponding outward normals
         do J = 1, NRigidBodies
             do I = 1, SIZE(DataStructureRigidBody(J)%Ids)
                 ElementsRigidBody(DataStructureRigidBody(J)%Ids(I))%RigidBody = J 
-                !NormalsRigidBody(I,1) = DataStructureRigidBody(J)%Normals(I,1)
-			    !NormalsRigidBody(I,2) = DataStructureRigidBody(J)%Normals(I,2)
+                NormalsRigidBody(DataStructureRigidBody(J)%Ids(I),:) = DataStructureRigidBody(J)%Normals(I,:) !duplicated information
             end do
         end do 
-        
-        do C = 1, SIZE(NormalsRigidBody,1) !This seems unnecesary
-            do J = 1, NRigidBodies
-                do I = 1, SIZE(DataStructureRigidBody(J)%Ids)
-                        if (C == DataStructureRigidBody(J)%Ids(I)) then
-                            NormalsRigidBody(C,1) = DataStructureRigidBody(J)%Normals(I,1)
-			                NormalsRigidBody(C,2) = DataStructureRigidBody(J)%Normals(I,2)
-                            exit
-                        end if
-                end do
-            end do 
-        end do
          
-         end subroutine  CreateDataStructureRigidBody
-         
-         
-          subroutine CreateDataStructureRigidBodyConditions()
+        end subroutine  CreateDataStructureRigidBody
+
+        subroutine CreateDataStructureRigidBodyConditions()
         !**********************************************************************
         !
         !    Function:  Create the Data Structure of the Rigid Body Conditions
@@ -498,42 +452,42 @@
         !**********************************************************************
         implicit none 
         !Variables
-        integer(INTEGER_TYPE)::Iel, J, I,M, N, P, Q, C, Ncoord=2, UniqueValues(2*NThinELements)
+        integer(INTEGER_TYPE)::Iel, J, I,M, N, P, Q, C, Ncoord=2, UniqueCoordinates(2*NThinELements)
         logical:: alreadyExists
-        !Initializing unique values with the first element	
-		
-        UniqueValues(1) = ThinRigidElmConnectivities(1,1)
-        UniqueValues(2) = ThinRigidElmConnectivities(1,2)
+        !Initializing unique values with the first element
+
+        UniqueCoordinates(1) = ThinRigidElmConnectivities(1,1)
+        UniqueCoordinates(2) = ThinRigidElmConnectivities(1,2)
 
         
         do Iel = 2,  NThinELements !looping all rigid elements
             do J = 1, 2
                 do I = 1, Ncoord
                     alreadyExists = .false.
-                    if (ThinRigidElmConnectivities(Iel,j) == UniqueValues(I)) then !this means the element is repeated
+                    if (ThinRigidElmConnectivities(Iel,j) == UniqueCoordinates(I)) then !this means the element is repeated
                         alreadyExists = .true.
                         exit
                     end if
                 end do
                 ! If the element doesn't exist, increment the counter and store it
-                    if (.not. alreadyExists) then
-                      Ncoord = Ncoord + 1
-                      UniqueValues(Ncoord) = ThinRigidElmConnectivities(Iel,j)
-                    endif
+                if (.not. alreadyExists) then
+                    Ncoord = Ncoord + 1
+                    UniqueCoordinates(Ncoord) = ThinRigidElmConnectivities(Iel,j)
+                endif
             end do
         end do
         
         !Create ThinRigidCoordinates
         allocate(real(REAL_TYPE) :: ThinRigidCoordinates(Ncoord, 2))
         do J = 1, Ncoord
-            ThinRigidCoordinates(J, :) = NodalCoordinates(UniqueValues(J), :)               
+            ThinRigidCoordinates(J, :) = NodalCoordinates(UniqueCoordinates(J), :)               
         end do
         
         !Update ThinRigidElemConnectivities
         do Iel = 1, NThinELements
             do J = 1, 2
                 do I = 1, Ncoord
-                    if (ThinRigidElmConnectivities(Iel, J) == UniqueValues(I) ) ThinRigidElmConnectivities(Iel, J) = I                    
+                    if (ThinRigidElmConnectivities(Iel, J) == UniqueCoordinates(I) ) ThinRigidElmConnectivities(Iel, J) = I                    
                 end do
             end do
         end do    
@@ -715,7 +669,7 @@
 
          end subroutine DistanceToRigidBody
          
-          subroutine InitialiseStructuralElements()
+        subroutine InitialiseStructuralElements()
         !**********************************************************************
         !
         !    Function:  Determines the euclidean distance of each material point
@@ -726,7 +680,7 @@
         !
         !**********************************************************************
 
-     !   use ModCounters
+        !   use ModCounters
 
         implicit none 
 		if (.not. IsThereRigidBody) RETURN
@@ -737,10 +691,10 @@
         call CreateDataStructureRigidBodyConditions() !Creates a structure containing info about the conditions applied to the rigid bodies
         call DistanceToRigidBody() !Calculates distance to rigid bodies
 
-          end subroutine InitialiseStructuralElements
+        end subroutine InitialiseStructuralElements
           
           
-          subroutine RigidBodyLagrangianPhase()
+		subroutine RigidBodyLagrangianPhase()
         !**********************************************************************
         !
         !    Function: Calculate the new traslation and rotation for each rigid body 
@@ -751,7 +705,7 @@
         !
         !**********************************************************************
 
-     !   use ModCounters
+        !   use ModCounters
 
         implicit none 
        integer(INTEGER_TYPE) :: J, I, K, PrescribedForce(2), FLOOR
@@ -767,7 +721,7 @@
        if (.not. ISAXISYMMETRIC) then
            do J = 1, NRigidBodies !loop bodies individually
            !Translation Update 
-           Weight =  DataStructureRigidBody(J)%Density * DataStructureRigidBody(J)%Area * GravityAcceleration
+           Weight =  DataStructureRigidBody(J)%Density * DataStructureRigidBody(J)%Area * GravityAcceleration / 1000 !in KN <== problem if generalized for other units
            if (RigidBodyConditions(J)%IsThereLinearForce) then
                PrescribedForce =  RigidBodyConditions(J)%PrescribedForce * (CalParams%TimeStep * CalParams%TimeIncrement)/(CalParams%TotalTime*CalParams%NLOADSTEPS)
            else 
@@ -1186,7 +1140,9 @@
                        !Option 1
                        
                        if (DotProduct(RelativeVel, Sign*Normal, 2)<0) then
-                           TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*Tangent 
+						   !Need to check kinematic condition being one of friction
+						   TangentForce=0.0
+                           !TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*Tangent 
                        else
                            TangentForce=0.0
                        end if
