@@ -494,18 +494,18 @@
        
         !Counts how many different bodies there are
         do J = 2, NThinElmProp
-                do I = 1, Nu
-                    alreadyExists = .false.
-                    if (ThinRigidElmProp(J,2) == UniqueBodiesName(I)) then !this means the element is repeated
-                        alreadyExists = .true.
-                        exit
-                    end if
-                end do
-                ! If the element doesn't exist, increment the counter and store it
-                    if (.not. alreadyExists) then
-                      Nu = Nu + 1
-                      UniqueBodiesName(Nu) = ThinRigidElmProp(J,2)
-                    endif
+            do I = 1, Nu
+                alreadyExists = .false.
+                if (ThinRigidElmProp(J,2) == UniqueBodiesName(I)) then !this means the element is repeated
+                    alreadyExists = .true.
+                    exit
+                end if
+            end do
+            ! If the element doesn't exist, increment the counter and store it
+            if (.not. alreadyExists) then
+                Nu = Nu + 1
+                UniqueBodiesName(Nu) = ThinRigidElmProp(J,2)
+            endif
         end do
         NRigidBodies = Nu
         
