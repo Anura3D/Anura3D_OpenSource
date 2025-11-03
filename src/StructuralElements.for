@@ -570,7 +570,7 @@
             if ((Dot1*Dot2) < 0) then !Perpendicular projection falls inside element
                 !Calculate distance to line (norm of (Xp -X1) . normal)
                 Normal= NormalsRigidBody(J,:)
-                D1= Length(DotProduct(Xp - X1, Normal, 2), 2) !Distance to line
+                D1= abs(DotProduct(Xp - X1, Normal, 2)) !Distance to line
 
                 if (D1 < DistanceField(I)) then !Current minimum distance
                     DistanceField(I) = D1
@@ -635,9 +635,9 @@
             
         end if
 
-        end do
+    end do
 
-        end subroutine DistanceToRigidBody
+    end subroutine DistanceToRigidBody
          
         subroutine InitialiseStructuralElements()
         !**********************************************************************
@@ -665,7 +665,7 @@
 		subroutine RigidBodyLagrangianPhase()
         !**********************************************************************
         !
-        !    Function: Calculate the new traslation and rotation for each rigid body 
+        !    Function: Calculate the new translation and rotation for each rigid body 
         !               
         !    
         !
@@ -673,177 +673,148 @@
         !
         !**********************************************************************
 
-        !   use ModCounters
-
         implicit none 
-       integer(INTEGER_TYPE) :: J, I, K, PrescribedForce(2), FLOOR
-       real(REAL_TYPE) :: GravityAcceleration(2), Weight(2), THETA, Q(2,2), X0, Y0, XC, YC, Thetamax,&
-           TotalTime, StepTime, CycleNumber, P, PARA, THETATOT=0.0, SIGN=-1, PI
+        
+        ! Local variables
+        integer(INTEGER_TYPE) :: J, I, K, NodeID
+        real(REAL_TYPE) :: GravityAcceleration(2), Weight(2), THETA, CosTheta, SinTheta
+        real(REAL_TYPE) :: PrescribedForce(2), Mass, NodePos(2), RotCenter(2)
+        real(REAL_TYPE) :: X1(2), X2(2), DeltaCoord(2)
         logical :: IsProjectErosion
+        real(REAL_TYPE), save :: THETATOT = 0.0, SIGN_VAR = -1.0
+        real(REAL_TYPE) :: ThetaMax, PI, XC, YC
        
-       if (.not. IsThereRigidBody) RETURN
-       if (CalParams%TimeStep == 1 ) RETURN !does not calculate for first time step
-       GravityAcceleration = CalParams%Multipliers%GravityRealised *  CalParams%GravityData%GravityVector * &
-           CalParams%GravityData%GAccel
+        if (.not. IsThereRigidBody) RETURN
+        if (CalParams%TimeStep == 1 ) RETURN !does not calculate for first time step
+        
+        ! Calculate gravity acceleration (vectorial)
+        GravityAcceleration = CalParams%Multipliers%GravityRealised * CalParams%GravityData%GravityVector * &
+                              CalParams%GravityData%GAccel
        
-       if (.not. ISAXISYMMETRIC) then
-           do J = 1, NRigidBodies !loop bodies individually
-           !Translation Update 
-           Weight =  DataStructureRigidBody(J)%Density * DataStructureRigidBody(J)%Area * GravityAcceleration / 1000 !in KN <== problem if generalized for other units
-           if (RigidBodyConditions(J)%IsThereLinearForce) then
-               PrescribedForce =  RigidBodyConditions(J)%PrescribedForce * (CalParams%TimeStep * CalParams%TimeIncrement)/(CalParams%TotalTime*CalParams%NLOADSTEPS)
-           else 
-               PrescribedForce = RigidBodyConditions(J)%PrescribedForce
-           end if
-           
-           
-           DataStructureRigidBody(J)%Acceleration = (DataStructureRigidBody(J)%Fsum +  Weight + &
-               PrescribedForce )/( DataStructureRigidBody(J)%Density *&
-               DataStructureRigidBody(J)%Area)
-         !  DataStructureRigidBody(J)%Acceleration(1)=0.0
-           if (.not. RigidBodyConditions(J)%ApplyPrescribedVelocity) then
-               DataStructureRigidBody(J)%Velocity = DataStructureRigidBody(J)%Velocity + &
-               CalParams%TimeIncrement * DataStructureRigidBody(J)%Acceleration
-           else
-               DataStructureRigidBody(J)%Velocity = RigidBodyConditions(J)%PrescribedVelocity
-			   
-           end if
-          ! DataStructureRigidBody(J)%Velocity(1)=0.0
-           do I = 1, SIZE(DataStructureRigidBody(J)%Nodes,1)
-               do K = 1, 2
-                   ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(I),K) = &
-                       ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(I),K) + &
-                       CalParams%TimeIncrement * DataStructureRigidBody(J)%Velocity(K)
-               end do
-           end do
-           ! Centroid Translation Update
-           DataStructureRigidBody(J)%Centroid = DataStructureRigidBody(J)%Centroid +&
-               CalParams%TimeIncrement * DataStructureRigidBody(J)%Velocity
+        ! Loop over all rigid bodies
+        do J = 1, NRigidBodies
+            
+            ! Calculate body mass and weight (vectorial)
+            Mass = DataStructureRigidBody(J)%Density * DataStructureRigidBody(J)%Area
+            if (.not. ISAXISYMMETRIC) then
+                Weight = Mass * GravityAcceleration / 1000.0 !in KN <== problem if generalized for other units
+            else
+                Weight = Mass * GravityAcceleration !Problem (Needs to consider rotation: FIX)
+            end if
+            
+            ! Apply linear force ramping if specified (vectorial)
+            if (RigidBodyConditions(J)%IsThereLinearForce) then
+                PrescribedForce = RigidBodyConditions(J)%PrescribedForce * &
+                    (CalParams%TimeStep * CalParams%TimeIncrement) / &
+                    (CalParams%TotalTime * CalParams%NLOADSTEPS)
+            else 
+                PrescribedForce = RigidBodyConditions(J)%PrescribedForce
+            end if
+            
+            ! Apply force constraints (decompose prescribed forces)
+            PrescribedForce = PrescribedForce * RigidBodyConditions(J)%ForceConstraints
+            
+            ! Calculate acceleration (vectorial)
+            DataStructureRigidBody(J)%Acceleration = (DataStructureRigidBody(J)%Fsum + Weight + &
+                                                       PrescribedForce) / Mass
+			! Calculate velocity
+			DataStructureRigidBody(J)%Velocity = DataStructureRigidBody(J)%Velocity + &
+                                                 CalParams%TimeIncrement * DataStructureRigidBody(J)%Acceleration
+            
+            ! Update velocity (vectorial with constraints decomposition)
+            if (RigidBodyConditions(J)%ApplyPrescribedVelocity) then
+                ! Apply velocity constraints (decompose prescribed velocities)
+                DataStructureRigidBody(J)%Velocity = RigidBodyConditions(J)%PrescribedVelocity * &
+													 RigidBodyConditions(J)%VelConstraints + &
+													 DataStructureRigidBody(J)%Velocity * &
+													 (1.0 - RigidBodyConditions(J)%VelConstraints)
+            end if
+            
+            ! Update nodal coordinates (vectorial)
+            do I = 1, SIZE(DataStructureRigidBody(J)%Nodes, 1)
+                NodeID = DataStructureRigidBody(J)%Nodes(I)
+                ThinRigidCoordinates(NodeID, :) = ThinRigidCoordinates(NodeID, :) + &
+                                                   CalParams%TimeIncrement * DataStructureRigidBody(J)%Velocity
+            end do
+            
+            ! Update centroid position (vectorial)
+            DataStructureRigidBody(J)%Centroid = DataStructureRigidBody(J)%Centroid + &
+                                                  CalParams%TimeIncrement * DataStructureRigidBody(J)%Velocity
 
-         !Rotation Update
-                DataStructureRigidBody(J)%AngularAcceleration = (DataStructureRigidBody(J)%Tsum +&
-                    RigidBodyConditions(J)%PrescribedTorque)/(DataStructureRigidBody(J)%Inertia+0.1)
-                if (.not. RigidBodyConditions(J)%ApplyPrescribedRotation) then
-					DataStructureRigidBody(J)%AngularVelocity = &
-                    DataStructureRigidBody(J)%AngularVelocity + CalParams%TimeIncrement * &
-                    DataStructureRigidBody(J)%AngularAcceleration   
-                else
-                     DataStructureRigidBody(J)%AngularVelocity = RigidBodyConditions(J)%PrescribedRotation
+            ! Rotation update (only for plane strain)
+            if (.not. ISAXISYMMETRIC) then
+                
+                ! Calculate angular acceleration
+                DataStructureRigidBody(J)%AngularAcceleration = (DataStructureRigidBody(J)%Tsum + &
+                    RigidBodyConditions(J)%PrescribedTorque) / (DataStructureRigidBody(J)%Inertia + 0.1)               
+
+				
+                if (RigidBodyConditions(J)%ApplyPrescribedRotation) then !fixed rotation rate
+                    DataStructureRigidBody(J)%AngularVelocity = RigidBodyConditions(J)%PrescribedRotation
+                else !free
+                    DataStructureRigidBody(J)%AngularVelocity = DataStructureRigidBody(J)%AngularVelocity + &
+                        CalParams%TimeIncrement * DataStructureRigidBody(J)%AngularAcceleration
                 end if
                 
-                !DataStructureRigidBody(J)%AngularVelocity=0.0
+                ! Calculate rotation angle
                 THETA = CalParams%TimeIncrement * DataStructureRigidBody(J)%AngularVelocity
                 
-                ! PROJECT EROSION
-                IsProjectErosion=.false.
+                ! PROJECT EROSION (special case - typically disabled)
+                IsProjectErosion = .false.
                 if (IsProjectErosion) then
-                    DataStructureRigidBody(J)%AngularVelocity=0.05
-                    THETA = SIGN * CalParams%TimeIncrement * DataStructureRigidBody(J)%AngularVelocity
+                    DataStructureRigidBody(J)%AngularVelocity = 0.05
+                    THETA = SIGN_VAR * CalParams%TimeIncrement * DataStructureRigidBody(J)%AngularVelocity
                     THETATOT = THETATOT + THETA
-                    XC=0.0
-                    YC=0.0
-                    PI = 22/7
-                    ThetaMax=20*PI/180
-               !     ThetaMax=SIN(ThetaMax)
-                    if (abs(abs(THETATOT)-ThetaMax)<0.01) then
-                        SIGN = - SIGN
+                    XC = 0.0
+                    YC = 0.0
+                    PI = 22.0 / 7.0
+                    ThetaMax = 20.0 * PI / 180.0
+                    if (abs(abs(THETATOT) - ThetaMax) < 0.01) then
+                        SIGN_VAR = -SIGN_VAR
                         THETATOT = 0.0
                     end if
-                    
-                   
-                    
-                    do K = 1, SIZE(DataStructureRigidBody(J)%Nodes,1)
-                   ! call MatVec(Q, 2, ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),:), &
-                    !    2, ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),:) )
-                        X0 = ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),1)
-                        Y0 = ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),2)
-                        ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),1) = &
-                         XC + ( X0 - XC ) * COS(THETA) -  (Y0 - YC)* SIN(THETA) 
-                     ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),2) = &
-                            YC + ( X0 - XC ) * SIN(THETA) +  (Y0 - YC)* COS(THETA) 
-                    end do
+                    RotCenter = (/XC, YC/)
+                else
+                    RotCenter = DataStructureRigidBody(J)%Centroid
                 end if
                 
-                
-                if (.not. IsProjectErosion) then
-                    do K = 1, SIZE(DataStructureRigidBody(J)%Nodes,1)
-                   ! call MatVec(Q, 2, ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),:), &
-                    !    2, ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),:) )
-                    X0 = ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),1)
-                    Y0 = ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),2)
-                    ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),1) = &
-                        DataStructureRigidBody(J)%Centroid(1) + ( X0 - &
-                        DataStructureRigidBody(J)%Centroid(1) ) * COS(THETA) - &
-                        (Y0 - DataStructureRigidBody(J)%Centroid(2))* SIN(THETA) 
-                    ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(K),2) = &
-                        DataStructureRigidBody(J)%Centroid(2) + ( X0 - &
-                        DataStructureRigidBody(J)%Centroid(1) ) * SIN(THETA) + &
-                        (Y0 - DataStructureRigidBody(J)%Centroid(2))* COS(THETA) 
-                    end do
-                end if
-                
-                
-
-                
-                !update Normals
-                do I =1,  QtyRigidBodies(J)
-                DataStructureRigidBody(J)%Normals(I,1) = DataStructureRigidBody(J)%Thickness * &
-                    (ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),2)-&
-                    ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),2))/ &
-                    DataStructureRigidBody(J)%MechProp(I,1)
-                DataStructureRigidBody(J)%Normals(I,2) = DataStructureRigidBody(J)%Thickness * &
-                    (ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2),1)-&
-                    ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1),1))/ &
-                    DataStructureRigidBody(J)%MechProp(I,1)
+                ! Apply rotation to all nodes (vectorial)
+                CosTheta = COS(THETA)
+                SinTheta = SIN(THETA)
+                do K = 1, SIZE(DataStructureRigidBody(J)%Nodes, 1)
+                    NodeID = DataStructureRigidBody(J)%Nodes(K)
+                    NodePos = ThinRigidCoordinates(NodeID, :)
+                    DeltaCoord = NodePos - RotCenter
+                    ThinRigidCoordinates(NodeID, 1) = RotCenter(1) + DeltaCoord(1) * CosTheta - &
+                                                       DeltaCoord(2) * SinTheta
+                    ThinRigidCoordinates(NodeID, 2) = RotCenter(2) + DeltaCoord(1) * SinTheta + &
+                                                       DeltaCoord(2) * CosTheta
                 end do
+                
+                ! Update normals (vectorial)
+                do I = 1, QtyRigidBodies(J)
+                    X1 = ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I), 1), :)
+                    X2 = ThinRigidCoordinates(ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I), 2), :)
+                    DataStructureRigidBody(J)%Normals(I, 1) = DataStructureRigidBody(J)%Thickness * &
+                        (X1(2) - X2(2)) / DataStructureRigidBody(J)%MechProp(I, 1)
+                    DataStructureRigidBody(J)%Normals(I, 2) = DataStructureRigidBody(J)%Thickness * &
+                        (X2(1) - X1(1)) / DataStructureRigidBody(J)%MechProp(I, 1)
+                end do
+                
+                ! Update global normals array
                 do I = 1, SIZE(DataStructureRigidBody(J)%Ids)
                     ElementsRigidBody(DataStructureRigidBody(J)%Ids(I))%RigidBody = J 
-                    NormalsRigidBody(I,1) = DataStructureRigidBody(J)%Normals(I,1)
-                    NormalsRigidBody(I,2) = DataStructureRigidBody(J)%Normals(I,2)
-				end do
-		  DataStructureRigidBody(J)%Fsum=0.0 !initialize impulse
-		  DataStructureRigidBody(J)%Tsum =0.0
-       end do
-       end if
-       
-       if (ISAXISYMMETRIC) then
-           do J = 1, NRigidBodies !loop bodies individually
-           !Translation Update 
-           Weight =  DataStructureRigidBody(J)%Density * DataStructureRigidBody(J)%Area * GravityAcceleration
-           if (RigidBodyConditions(J)%IsThereLinearForce) then
-               PrescribedForce =  RigidBodyConditions(J)%PrescribedForce * (CalParams%TimeStep * CalParams%TimeIncrement)/(CalParams%TotalTime*CalParams%NLOADSTEPS)
-           else 
-               PrescribedForce = RigidBodyConditions(J)%PrescribedForce
-           end if
-           
-           DataStructureRigidBody(J)%Acceleration = (DataStructureRigidBody(J)%Fsum +  Weight + &
-               PrescribedForce )/( DataStructureRigidBody(J)%Density *&
-               DataStructureRigidBody(J)%Area)
-           DataStructureRigidBody(J)%Acceleration(1)=0.0
-           if (.not. RigidBodyConditions(J)%ApplyPrescribedVelocity) then
-               DataStructureRigidBody(J)%Velocity = DataStructureRigidBody(J)%Velocity + &
-               CalParams%TimeIncrement * DataStructureRigidBody(J)%Acceleration
-           else
-               DataStructureRigidBody(J)%Velocity = RigidBodyConditions(J)%PrescribedVelocity
-           end if
-           do I = 1, SIZE(DataStructureRigidBody(J)%Nodes,1)
-               do K = 1, 2
-                   ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(I),K) = &
-                       ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(I),K) + &
-                       CalParams%TimeIncrement * DataStructureRigidBody(J)%Velocity(K)
-               end do
-           end do
-           ! Centroid Translation Update
-           DataStructureRigidBody(J)%Centroid = DataStructureRigidBody(J)%Centroid +&
-               CalParams%TimeIncrement * DataStructureRigidBody(J)%Velocity
-		  DataStructureRigidBody(J)%Fsum=0.0 !initialize impulse
-		  !DataStructureRigidBody(J)%Tsum =0.0
-       end do
-       end if
-       
-       
+                    NormalsRigidBody(DataStructureRigidBody(J)%Ids(I), :) = DataStructureRigidBody(J)%Normals(I, :)
+                end do
+            end if
+            
+            ! Reset force and torque accumulators (vectorial)
+            DataStructureRigidBody(J)%Fsum = 0.0
+            DataStructureRigidBody(J)%Tsum = 0.0
+            
+        end do
 
-		  end subroutine RigidBodyLagrangianPhase
+	end subroutine RigidBodyLagrangianPhase
 		  
 	subroutine Get_Contact_Stiffness()
 	!**********************************************************************
@@ -871,346 +842,192 @@
 	end subroutine Get_Contact_Stiffness
           
           
-           subroutine LevelSetContact()
-        !**********************************************************************
-        !
-        !    Function: Calculate the new traslation and rotation for each rigid body 
-        !               
-        !    
-        !
-        ! Implemented in the frame of the MPM project.
-        !
-        !**********************************************************************
+    subroutine LevelSetContact()
+    !**********************************************************************
+    !
+    !    Function: Calculate the new traslation and rotation for each rigid body 
+    !               
+    !    
+    !
+    ! Implemented in the frame of the MPM project.
+    !
+    !**********************************************************************
 
-     !   use ModCounters
+    implicit none 
 
-        implicit none 
+    ! Local variables
+    integer(INTEGER_TYPE) :: I, J, MaterialID
+    real(REAL_TYPE) :: Xp(2), X1(2), X2(2), D1, D2, Normal(2), Aling_element(2)
+    real(REAL_TYPE) :: Dot1, Dot2, Sign, normal_diff(2), RadiusVec(2)
+    real(REAL_TYPE) :: RigidBodyVelAtPoint(2), Xcross(2), ProjdX_n(2), Proj1(2)
+    real(REAL_TYPE) :: TimeIncrementNew, RelativeVel(2), Tangent(2), mu_actual
+    real(REAL_TYPE) :: k_of_d, NormalForce(2), TangentForce(2), Force(2)
+    real(REAL_TYPE) :: Arm, Torque, DampingRatio=0.75, X1v(2)
 
-          ! Local variables
-          integer(INTEGER_TYPE) :: I, J, M, NodeID, ElementID, CoUp, CoDown, MaterialID
-          real(REAL_TYPE) :: ProjdX_n(2), Xp, Xpp(2), Xcross(2), X1, Proj1(2), Proj2(2), dot1, dot2, Yp, Y1, X2, d, Y2, D1, D2, D3,D4, K, V, DistanceRatio, Normal(2), &
-              Xn, Yn, X0, Y0, Nx1, Ny1, Nx2, Ny2, NormalUpID(2,2), NormalDownID(2,2), TempCos, &
-              CS, SN, Xf, Yf, Gx, Gy, NormalForce(2), TangentForce(2), Tangent(2), DistanceForce, Force(2),&
-              Xg, Yg, L(2), Lu(2), Arm(2), Sign, Torque, TimeIncrementNew, kappa_crit, k_of_d, r_t_d(2), tangent_stiffness, m_3, k_stiff, &
-          PI = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067, CritTimeSpring = 0.0, DampingRatio = 0.75, &
-              RigidBodyVelAtPoint(2), RelativeVel(2), RadiusVec(2)
-          logical :: IsDistanceToNode, IsElemConnToNode, IsThereUp, IsThereDown
-          
-          if (.not. IsThereRigidBody) RETURN
-		  if (CalParams%TimeStep == 1 ) RETURN !does not calculate for first time step
-          
-          ContactForceArray(:,:)=0.0
-
-          do I = 1, Counters%NParticles ! Loop over particles ThinRigidElmConnectivities
-			  Xp=GlobPosArray(I,1) !particle position
-              Yp=GlobPosArray(I,2)
-			  !Xp=GlobPosArray(I,:)+VelocityArray(I,:)*CalParams%TimeIncrement !anticipated position of MP
-			  X1=ThinRigidCoordinates(1,1) !local node 1 of rigid element
-              Y1=ThinRigidCoordinates(1,2)
-
-              DistanceField(I) = SQRT((Xp-X1)**2+(Yp-Y1)**2) !norm of diff vector
-              IsDistanceToNode = .true.
-			  AffinityArray(I,1) = 1
-              AffinityArray(I,2) = 1
-			  AffinityArray(I,3) = ThinRigidElmConnectivities(1,1)
-
-              do J = 1, SIZE(ThinRigidElmConnectivities,1) !loop over rigid elements
-                  X1 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),1)
-                  Y1 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),2)
-                  X2 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,2),1)
-                  Y2 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,2),2)
-				  
-				  !X1=ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),:) !local node 2 of rigid element
-				  !ProjdX_n=DotProduct(Xp-X1, NormalsRigidBody(J, :), 2)*NormalsRigidBody(J, :)
-				  
-	
-				  
-				  
-				  !X2=ThinRigidCoordinates(ThinRigidElmConnectivities(J,2),:) !local node 2 of rigid element
-				  dot1=(X2-X1)*(Xp-X1)+(Y2-Y1)*(Yp-Y1)
-				  dot2=(X1-X2)*(Xp-X2)+(Y1-Y2)*(Yp-Y2)
-                  if (dot1>0 .and. dot2>0) then !point projects to element
-					  !ProjdX_n=DotProduct(Xp-X1, NormalsRigidBody(J, :), 2)*NormalsRigidBody(J, :) !projection of dx onto n
-					  D3=ABS((-(Xp-X1)*(Y2-Y1)+(Yp-Y1)*(X2-X1))/(SQRT((Y2-Y1)**2+(X2-X1)**2)))!distance to element			
-					  
-                      if (D3 < DistanceField(I)) then !update distance field
-                          DistanceField(I) = D3
-						  AffinityArray(I,1) = 0
-						  AffinityArray(I,2) = J
-						  AffinityArray(I,3) = ThinRigidElmConnectivities(J,1) !for completeness
-                       end if
-                  else !point projects to node
-                      D1 = SQRT((Xp-X1)**2+(Yp-Y1)**2)
-                      D2 = SQRT((Xp-X2)**2+(Yp-Y2)**2)
-                      if (D1 < DistanceField(I)) then !point projects to node 1
-
-                         DistanceField(I) = D1
-						 AffinityArray(I,1) = 1
-						 AffinityArray(I,2) = J
-						 AffinityArray(I,3) = ThinRigidElmConnectivities(J,1)
-
-                      end if
-                      if (D2 < DistanceField(I)) then
-
-                         DistanceField(I) = D2
-
-						AffinityArray(I,1) = 1
-						AffinityArray(I,2) = J
-						 AffinityArray(I,3) = ThinRigidElmConnectivities(J,2)
-
-                      end if   
-                  end if
-              end do
-              DistanceField(I) = DistanceField(I) - Particles(I)%ParticleRadius !account for radius of influence
-			  
-              if (DistanceField(I)<0.0) then !contact exist between particle and rigid body
-				
-			  			  
-				J = ElementsRigidBody(AffinityArray(I,2))%RigidBody !obtain rigid body ID
-				
-				! Calculate rigid body velocity at contact point including rotation
-				! v_point = v_translation + omega x r
-				! In 2D: v_point = v_translation + omega * (-ry, rx)
-				if (.not. ISAXISYMMETRIC) then
-				    RadiusVec(1) = Xp - DataStructureRigidBody(J)%Centroid(1)
-				    RadiusVec(2) = Yp - DataStructureRigidBody(J)%Centroid(2)
-				    RigidBodyVelAtPoint(1) = DataStructureRigidBody(J)%Velocity(1) + &
-				                             DataStructureRigidBody(J)%AngularVelocity * (RadiusVec(2))
-				    RigidBodyVelAtPoint(2) = DataStructureRigidBody(J)%Velocity(2) + &
-				                             DataStructureRigidBody(J)%AngularVelocity * (- RadiusVec(1))
-				else
-				    ! For axisymmetric, only translational velocity (no rotation in this plane)
-				    RigidBodyVelAtPoint = DataStructureRigidBody(J)%Velocity
-				end if
-				
-				!Check future crossing for automatic time-stepping control
-				  Xcross=GlobPosArray(I,:)+(VelocityArray(I,:)-RigidBodyVelAtPoint)*CalParams%TimeIncrement !anticipated position of MP
-                  Xpp(1)=Xp
-                  Xpp(2)=Yp
-				  ProjdX_n=DotProduct(Xpp-ThinRigidCoordinates(AffinityArray(I,3),:), NormalsRigidBody(AffinityArray(I,2), :), 2)&
-					  *NormalsRigidBody(AffinityArray(I,2), :)
-				  Proj1=DotProduct(Xcross-ThinRigidCoordinates(AffinityArray(I,3),:), NormalsRigidBody(AffinityArray(I,2), :), 2)&
-					  *NormalsRigidBody(AffinityArray(I,2), :)
-				  dot1=DotProduct(ProjdX_n, Proj1, 2)
-				  if (dot1<0.0) then !critical time must be reduced
-					  TimeIncrementNew=CalParams%courantNumber*Kfactor * (Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY))**(0.5)/&
-						  Length(VelocityArray(I,:)-RigidBodyVelAtPoint,2)
-					  if (CalParams%TimeIncrement > TimeIncrementNew) CalParams%TimeIncrement = TimeIncrementNew 
-                  endif
-                  
-                  
-				  
-				  
-				  !Normal=AffinityArray(I,1)*(VectorNorm(Xp-ThinRigidCoordinates(AffinityArray(I,3),:), 2))+&
-                 
-                  
-                  if  (AffinityArray(I,1)==0) then 
-                      Normal(1)=NormalsRigidBody(AffinityArray(I,2), 1)
-                      Normal(2)=NormalsRigidBody(AffinityArray(I,2), 2)
-                  end if 
-                  
-                  if  (AffinityArray(I,1)==1) then 
-                       D4 = ((Xp-ThinRigidCoordinates(AffinityArray(I,3),1))**2+(Yp-ThinRigidCoordinates(AffinityArray(I,3),2))**2)**(0.5)
-                       Normal(1) = (Xp-ThinRigidCoordinates(AffinityArray(I,3),1))/D4
-                       Normal(2) = (Yp-ThinRigidCoordinates(AffinityArray(I,3),2))/D4
-                  end if 
-                  
-                     ! Normal=AffinityArray(I,1)*(D4)+&
-					 ! (1-AffinityArray(I,1))*NormalsRigidBody(AffinityArray(I,2), :) !choses correct normal
-
-				Sign=1
-                if  (AffinityArray(I,1)==0) then 
-				
-                  !Update Velocity, position and accumulate displacement on MP
-                  X1 = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),1),1)
-                  Y1 = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),1),2)
-                  !Y1 = ThinRigidCoordinates(ThinRigidElmConnectivities(ElementID,1),2)
-                  X2 = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),2),1)
-                  Y2 = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),2),2)
-                  !Y2 = ThinRigidCoordinates(ThinRigidElmConnectivities(ElementID,2),2)
-				  
-                   if ((((X1-X2)*Normal(2)-(Y1-Y2)*Normal(1)))*&
-					   ((X1-X2)*(Yp-Y1)-(Y1-Y2)*(Xp-X1))<0) then !flip normal
-                       Sign = -1
-                   else
-                       Sign = 1
-				   end if
-                endif
-				   
-				   
-				   !Kinematic correction
-				
-				   !update position
-                   !GlobPosArray(I,:) = GlobPosArray(I,:) + Sign * (abs(DistanceField(I))) * Normal!                   
-				   
-				                     
-				   
-				   !Update commutative displacement array
-                   !UArray(I,:) = UArray(I,:) + Sign * (abs(DistanceField(I))) * Normal!      
-				   
-				   !Update incremental displacement array
-				   !UStepArray(I, :)= UStepArray(I, :)+ Sign * (abs(DistanceField(I))) * Normal!  
-				   
-				   !Kinetic correction
-				   
-				   !Calculate Force
-                   !Force(1) = ((SigmaEffArray(I,1)+Particles(I)%WaterPressure)*Sign*Normal(1)+SigmaEffArray(I,4)*Sign*Normal(2))*2*Kfactor * SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY)) !Important to update for water pressure
-                   !Force(2) = (SigmaEffArray(I,4)*Sign*Normal(1) + (SigmaEffArray(I,2)+Particles(I)%WaterPressure)*Sign*Normal(2))*2*Kfactor * SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY))
-				
-                
-                   if (.not. ISAXISYMMETRIC) then
-				   !calculate tangent vector using relative velocity
-				   RelativeVel = VelocityArray(I,:) - RigidBodyVelAtPoint
-				   ProjdX_n=DotProduct(RelativeVel, Sign*Normal, 2)*Sign*Normal !projection of v_rel onto n
-				   Tangent=RelativeVel-ProjdX_n
-				   Tangent=Sign*VectorNorm(Tangent, 2) !normal tangent vector
-				   
-				   !Calculate normal force
-				   !NormalForce=DotProduct(Force, Sign*Normal, 2)*Sign*Normal !projection of F onto n
-				   !NormalForce=-Length(NormalForce, 2)*Sign*Normal !Ensuring correct direction
-				   !calculate tangential force
-				   
-				   MaterialID = MaterialIDArray(I)
-                   
-                   !DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness = MIN(100000.0, ((PI/16)**2*(Particles(I)%MASSMIXED/(CalParams%TimeIncrement)**2)))
-                   
-                   
-                   !Model 1
-                   
-                   !NormalForce=-(DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)*abs(Distancefield(I))*Sign*Normal 
-                   
-                   !Model 2
-                   
-				   !k_of_d=-(2.0*log((Distancefield(I)+Particles(I)%ParticleRadius)/(Particles(I)%ParticleRadius))- &
-					!   (Particles(I)%ParticleRadius/(Distancefield(I)+Particles(I)%ParticleRadius))+1.0) !stiffness as function of distance field
-				   
-				   !NormalForce=-(DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)*k_of_d*abs(Distancefield(I))*Sign*Normal
-                   
-                   !Model 3
-                   
-                   !NormalForce=-((DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)*abs(Distancefield(I)) - DampingRatio * &
-                   !    2*(Particles(I)%MASSMIXED*DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)**0.5*(VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity))*Sign*Normal 
-                   !Model 4
-                   
-                   k_of_d=-(2.0*log((Distancefield(I)+Particles(I)%ParticleRadius)/(Particles(I)%ParticleRadius))- &
-					   (Particles(I)%ParticleRadius/(Distancefield(I)+Particles(I)%ParticleRadius))+1.0) !stiffness as function of distance field
-                   
-                   NormalForce=-((DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)*k_of_d*(-1 * Distancefield(I)) - DampingRatio * &
-                       2.0*(Particles(I)%MASSMIXED*DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)**0.5*(DotProduct(RelativeVel, Sign*Normal, 2)))*Sign*Normal
-				   
-                   !if (DotProduct(VelocityArray(I,:)-DataStructureRigidBody(J)%Velocity, Sign*Normal, 2) > 0.0) then
-                   !    NormalForce = 0.0
-                   !end if
-                   
-				   
-				   if (AffinityArray(I,1)==0) then !use friction on wall
-                       
-                       !Option 1
-                       
-                       if (DotProduct(RelativeVel, Sign*Normal, 2)<0) then
-						   !Need to check kinematic condition being one of friction (URGENT AND TO BE DONE)
-						   TangentForce=0.0
-                           !TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*Tangent 
-                       else
-                           TangentForce=0.0
-                       end if
-                       
-                       !TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*Tangent 
-                       
-                       !!Option 2
-                        !r_t_d = RelativeVel*CalParams%TimeIncrement - &
-                        !DotProduct(RelativeVel, Sign*Normal, 2)*Sign*normal*CalParams%TimeIncrement
-                        !tangent_stiffness = 50000
-                        !TangentForce=MIN(Length(TangentForceTrack(I,:)+tangent_stiffness*r_t_d,2),Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef)*Tangent
-                        !TangentForceTrack(I,:)=TangentForce
-                      
-                       !Option 3
-           !            TangentDisplacementTrack(I,1)=TangentDisplacementTrack(I,1)+ DotProduct(RelativeVel, Tangent, 2)*CalParams%TimeIncrement
-				       !if (abs(TangentDisplacementTrack(I,1)) < 2* Particles(I)%ParticleRadius) then
-           !                m_3 = -(TangentDisplacementTrack(I,1))**2/(2* Particles(I)%ParticleRadius)**2+(2*abs(TangentDisplacementTrack(I,1)))/(2* Particles(I)%ParticleRadius)
-           !            else
-           !                m_3 = 1
-           !            end if
-           !            TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*m_3*Tangent
-                       
-                  
-                       !TangentForce = 0.0
-                   
-				   Force=NormalForce+TangentForce  
-				   else
-					Force=NormalForce 
-				   
-				   endif
-				   DataStructureRigidBody(J)%Fsum = DataStructureRigidBody(J)%Fsum + Force!update force
-				   DataStructureRigidBody(J)%Fsum(1)=0.0
-				   
-				   !update torque
-				   L=Xpp-DataStructureRigidBody(J)%Centroid
-				   Arm=Length(L, 2)-Particles(I)%ParticleRadius
-				   L=Arm*VectorNorm(L, 2) 
-				   Torque=(L(1)*Force(2))-(Force(1)*L(2))
-				   DataStructureRigidBody(J)%Tsum = DataStructureRigidBody(J)%Tsum+Torque
-				   
-				   
-				   !Add for to material point
-                   
-                   
-				   ContactForceArray(I, :)=-Force!+ContactForceArray(I, :)
-                   end if
-                   
-                   if (ISAXISYMMETRIC) then
-                       !calculate tangent vector using relative velocity
-				   RelativeVel = VelocityArray(I,:) - RigidBodyVelAtPoint
-				   ProjdX_n=DotProduct(RelativeVel, Sign*Normal, 2)*Sign*Normal !projection of v_rel onto n
-				   Tangent=RelativeVel-ProjdX_n
-				   Tangent=VectorNorm(Tangent, 2) !normal tangent vector
-				   
-				   !Calculate normal force
-				   !NormalForce=DotProduct(Force, Sign*Normal, 2)*Sign*Normal !projection of F onto n
-				   !NormalForce=-Length(NormalForce, 2)*Sign*Normal !Ensuring correct direction
-				   !calculate tangential force
-				   
-				   MaterialID = MaterialIDArray(I)
-                   
-                   DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness = MIN(10.0, ((PI/16)**2*(Particles(I)%MASSMIXED/(CalParams%TimeIncrement)**2)))
-                   
-                   k_of_d=-(2.0*log((Distancefield(I)+Particles(I)%ParticleRadius)/(Particles(I)%ParticleRadius))- &
-					   (Particles(I)%ParticleRadius/(Distancefield(I)+Particles(I)%ParticleRadius))+1.0) !stiffness as function of distance field
-                   
-                   NormalForce=-((DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)*k_of_d *abs(Distancefield(I)) - DampingRatio *  &
-                       2.0*(Particles(I)%MASSMIXED*DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)**0.5*(DotProduct(RelativeVel, Sign*Normal, 2)))*Sign*Normal*Xp 
-				   
-				   
-				   
-				   if (AffinityArray(I,1)==0) then !use friction on wall
-				   
-                   
-				   TangentForce=Length(NormalForce, 2)*DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef*Tangent 
-				   Force=NormalForce+TangentForce  
-				   else
-					Force=NormalForce 
-				   
-				   endif
-				   DataStructureRigidBody(J)%Fsum = DataStructureRigidBody(J)%Fsum + Force!update force
-				   
-				   
     
-				   
-				   !Add for to material point
-				   ContactForceArray(I, :)=-Force!+ContactForceArray(I, :)
-                   end if
-				   
-				   !update velocity array
-                   !VelocityArray(I,:) =  VelocityArray(I,:) + Sign * (abs((DistanceField(I)))/(CalParams%TimeIncrement)) * Normal! 
+    if (.not. IsThereRigidBody) RETURN
+    if (CalParams%TimeStep == 1 ) RETURN !do not calculate for first time step
+    
+    ContactForceArray(:,:)=0.0 !initialize contact force array
 
-              else 
-                  TangentForceTrack(I,:)=0.0
-              end if
-              
-          end do
+    do I = 1, Counters%NParticles ! Loop over particles ThinRigidElmConnectivities
+        Xp = GlobPosArray(I,:) !Coordinate of MP
+        X1 = ThinRigidCoordinates(1,:) !Coordinate of node 1 of node 1 (temporary)
 
+        DistanceField(I) = Length(Xp - X1, 2)    !Distance from point to node 1 of element 1 (temporary)
+        AffinityArray(I,1) = 1 !1 means node, 0 means element
+        AffinityArray(I,2) = 1 !Element ID
+        AffinityArray(I,3) = ThinRigidElmConnectivities(1,1) !Node ID
 
-		   end subroutine LevelSetContact
+        do J = 1, NThinELements !loop over rigid elements
+            X1 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,1),:) !Coordinate of node 1 of element J
+            X2 = ThinRigidCoordinates(ThinRigidElmConnectivities(J,2),:) !Coordinate of node 2 of element J
+
+            Aling_element= VectorNorm(X2 - X1, 2) !Vector aligned with the element
+
+            Dot1 = DotProduct(Xp - X1, Aling_element, 2)
+            Dot2 = DotProduct(Xp - X2, Aling_element, 2)
+
+            if ((Dot1*Dot2) < 0) then !Perpendicular projection falls inside element
+                !Calculate distance to line (norm of (Xp -X1) . normal)
+                Normal= NormalsRigidBody(J,:)
+                D1= abs(DotProduct(Xp - X1, Normal, 2)) !Distance to line
+
+                if (D1 < DistanceField(I)) then !Current minimum distance
+                    DistanceField(I) = D1
+                    AffinityArray(I,1) = 0
+                    AffinityArray(I,2) = J
+                    AffinityArray(I,3) = ThinRigidElmConnectivities(J,1) !for completeness
+                end if
+            else !Perpendicular projection falls outside element
+                D1 = Length(Xp - X1, 2) !Distance to node 1
+                D2 = Length(Xp - X2, 2) !Distance to node 2
+                if (D1 < DistanceField(I)) then !Distance to node 1 is minimum
+                    DistanceField(I) = D1
+                    AffinityArray(I,1) = 1
+                    AffinityArray(I,2) = J
+                    AffinityArray(I,3) = ThinRigidElmConnectivities(J,1)
+                end if
+                if (D2 < DistanceField(I)) then !Distance to node 2 is minimum
+                    DistanceField(I) = D2
+                    AffinityArray(I,1) = 1
+                    AffinityArray(I,2) = J
+                    AffinityArray(I,3) = ThinRigidElmConnectivities(J,2)
+                end if   
+            end if
+        end do
+
+    DistanceField(I) = DistanceField(I) - Particles(I)%ParticleRadius !account for radius of influence
+        
+    if (DistanceField(I)<0.0) then !contact exist between particle and rigid body
+        J = ElementsRigidBody(AffinityArray(I,2))%RigidBody !obtain rigid body ID
+
+        Normal=AffinityArray(I,1)*(VectorNorm(Xp-ThinRigidCoordinates(AffinityArray(I,3),:), 2))+&
+               (1-AffinityArray(I,1))*NormalsRigidBody(J, :) !choses correct normal
+
+        Sign=1
+        if  (AffinityArray(I,1)==0) then !distance to element, need to check normal direction
+    
+            !Update Velocity, position and accumulate displacement on MP
+            X1v = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),1),:) !node 1
+
+            !Dot product to check normal direction
+            Dot1= DotProduct(Xp - X1v, Normal, 2)
+
+            if (Dot1 < 0) then !flip normal
+                Sign = -1
+            else
+                Sign = 1
+            end if
+        endif	
+        
+        ! Calculate rigid body velocity at contact point including rotation
+        ! v_point = v_translation + omega x r
+        ! In 2D: v_point = v_translation + omega * (-ry, rx)
+        if (.not. ISAXISYMMETRIC) then
+            normal_diff= (Particles(I)%ParticleRadius + DistanceField(I))  * Sign * Normal !Remainder vector from particle to point of contact
+            RadiusVec = (Xp - DataStructureRigidBody(J)%Centroid) - normal_diff !Vector from centroid to contact point
+            RigidBodyVelAtPoint(1) = DataStructureRigidBody(J)%Velocity(1) + &
+                                        DataStructureRigidBody(J)%AngularVelocity * (RadiusVec(2))
+            RigidBodyVelAtPoint(2) = DataStructureRigidBody(J)%Velocity(2) + &
+                                        DataStructureRigidBody(J)%AngularVelocity * (- RadiusVec(1))
+        else
+            ! For axisymmetric, only translational velocity (no rotation in this plane)
+            RigidBodyVelAtPoint = DataStructureRigidBody(J)%Velocity
+        end if
+        
+        !Check future crossing for automatic time-stepping control
+        Xcross=GlobPosArray(I,:)+(VelocityArray(I,:)-RigidBodyVelAtPoint)*CalParams%TimeIncrement !anticipated position of MP
+
+        ProjdX_n=DotProduct(Xp-ThinRigidCoordinates(AffinityArray(I,3),:), NormalsRigidBody(AffinityArray(I,2), :), 2)&
+            *NormalsRigidBody(AffinityArray(I,2), :) !projection of x_rel onto n
+        Proj1=DotProduct(Xcross-ThinRigidCoordinates(AffinityArray(I,3),:), NormalsRigidBody(AffinityArray(I,2), :), 2)&
+            *NormalsRigidBody(AffinityArray(I,2), :) !projection of x_rel in future onto n
+        Dot2=DotProduct(ProjdX_n, Proj1, 2)
+        if (Dot2<0.0) then !critical time must be reduced (useful in hypervelocity cases NOT TESTED YET)
+            TimeIncrementNew=CalParams%courantNumber* Particles(I)%ParticleRadius/&
+                Length(VelocityArray(I,:)-RigidBodyVelAtPoint,2)
+            if (CalParams%TimeIncrement > TimeIncrementNew) CalParams%TimeIncrement = TimeIncrementNew 
+        endif   
+        
+
+        !calculate tangent vector using relative velocity
+        RelativeVel = VelocityArray(I,:) - RigidBodyVelAtPoint
+        ProjdX_n=DotProduct(RelativeVel, Sign*Normal, 2)*Sign*Normal !projection of v_rel onto n
+        Tangent=RelativeVel-ProjdX_n !Use this to compare with friction angle
+        mu_actual=Length(Tangent, 2)/Length(ProjdX_n, 2)
+        Tangent=Sign*VectorNorm(Tangent, 2) !normal tangent vector
+
+        MaterialID = MaterialIDArray(I)
+                    
+        k_of_d=-(2.0*log((Distancefield(I)+Particles(I)%ParticleRadius)/(Particles(I)%ParticleRadius))- &
+            (Particles(I)%ParticleRadius/(Distancefield(I)+Particles(I)%ParticleRadius))+1.0) !stiffness as function of distance field
+
+        NormalForce=-((DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)*k_of_d*(-1 * Distancefield(I)) - DampingRatio * &
+        2.0*(Particles(I)%MASSMIXED*DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)**0.5*(DotProduct(RelativeVel, Sign*Normal, 2)))*Sign*Normal 
+        
+        if ( ISAXISYMMETRIC) NormalForce= Xp(1) * NormalForce !account for axisymmetric volume             
+        
+        if (AffinityArray(I,1)==0) then !use friction on wall
+            
+            if (DotProduct(RelativeVel, Sign*Normal, 2)<0) then !Approaching contact
+            if (mu_actual > DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef) mu_actual=DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef !If exceeds friction limit otherwise is sticky contact
+
+            TangentForce=Length(NormalForce, 2)*mu_actual*Tangent !Tangenttial force on rigid body
+
+            else !Receding contact
+                TangentForce=0.0
+            end if
+
+            Force=NormalForce+TangentForce  !total force on rigid body
+        else !point in contact with node, no friction
+            
+            Force=NormalForce 
+        
+        endif
+
+        !update force
+        DataStructureRigidBody(J)%Fsum = DataStructureRigidBody(J)%Fsum + Force
+        !DataStructureRigidBody(J)%Fsum(1)=0.0 !(Brute force to avoid X direction movement)
+        
+        !update torque
+        if (.not. ISAXISYMMETRIC) then !only for 2D plain strain rotation
+            Arm=Length(RadiusVec, 2) !lever arm
+            Torque=(RadiusVec(1)*Force(2))-(Force(1)*RadiusVec(2)) !Comes from cross product and follows right hand rule
+            DataStructureRigidBody(J)%Tsum = DataStructureRigidBody(J)%Tsum+Torque
+        else
+            Torque=0.0 
+        end if            
+
+        !Add force to material point
+        ContactForceArray(I, :)=-Force !Action-reaction
+        
+    else 
+        TangentForceTrack(I,:)=0.0
+    end if
+            
+    end do
+    end subroutine LevelSetContact
 		   
 		   
 		   
