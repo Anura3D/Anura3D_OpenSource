@@ -2736,7 +2736,11 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
 
         ! Prepare file name for opening
         FileName = trim(CalParams%FileNames%ProjectName)//MPMAPFROMEXT_FILE_EXTENSION !
-        if (FExist(FileName)) call FileOpen(MAPUnit,trim(FileName))
+        if (.not.FExist(FileName)) then
+            call GiveError('Mapping file not found: ' // trim(FileName) // &
+                '. Stress initialization from external file requires a .MAPF file.')
+        end if
+        call FileOpen(MAPUnit,trim(FileName))
 
         ! Read each line
         NumberOfLines = 0
