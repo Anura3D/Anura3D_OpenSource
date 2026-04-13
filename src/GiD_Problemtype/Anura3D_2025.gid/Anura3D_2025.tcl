@@ -653,9 +653,10 @@ proc Anura3D::anura3D_WriteBatchFile { filebatch icount_stage cps_extension gom_
     GiD_WriteCalculationFile puts "if exist %4\\%1.$cps_extension del %4\\%1.$cps_extension"
     GiD_WriteCalculationFile puts "copy %2\\%1.$cps_extension %4\\%1.$cps_extension"
     GiD_WriteCalculationFile puts "copy %2\\%1-2.dat %2\\%1.$gom_extension"
-    GiD_WriteCalculationFile puts "if exist %4\\%1.$gom_extension del %4\\%1.$gom_extension"    
-    GiD_WriteCalculationFile puts "copy %2\\%1.$gom_extension %4\\%1.$gom_extension"      
-    GiD_WriteCalculationFile end           
+    GiD_WriteCalculationFile puts "if exist %4\\%1.$gom_extension del %4\\%1.$gom_extension"      
+    GiD_WriteCalculationFile puts "copy %2\\%1.$gom_extension %4\\%1.$gom_extension"
+    GiD_WriteCalculationFile puts "if exist %2\\%1.MAPF copy %2\\%1.MAPF %4\\%1.MAPF"
+    GiD_WriteCalculationFile end	
 }
 
 proc Anura3D::LoadScripts { } {
