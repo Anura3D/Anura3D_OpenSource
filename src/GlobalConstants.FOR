@@ -727,7 +727,10 @@
         real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStrainIncrement_VolLockSmooth
         
         real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedStressIncrementTensor_Numerator
+        real(REAL_TYPE), dimension(:, :, :), allocatable :: WeightedPWPViz_Numerator
+        
         real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalStressIncrement_VolLockSmooth
+        real(REAL_TYPE), dimension(:, :, :), allocatable :: NodalPWPViz_VolLockSmooth
         
         real(REAL_TYPE), dimension(:, :), allocatable :: WeightedWP_Numerator
         real(REAL_TYPE), dimension(:, :), allocatable :: NodalWP_VolLockSmooth

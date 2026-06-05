@@ -164,8 +164,8 @@
       call InitialiseAbsorbingBoundaryData() ! allocate and assign arrays for absorbing boundaries
       call InitialiseNodalArrays() ! allocate (zero) nodal arrays (load, displacment, velocity, acceleration, momentum, etc.)
       call ReadNodalDataFromFile() ! assign data from previous load step (only if IsFollowUpPhase)
-      ! I commented below subroutine... this needs to be uncommented if we were to use the moving mesh 
-      !call ReinitialiseUpdatedNodes() ! for updated mesh, only if IsFollowUpPhase
+      ! I commented below subroutine... this needs to be uncommented if we were to use the moving mesh --> including ground motion application 
+      call ReinitialiseUpdatedNodes() ! for updated mesh, only if IsFollowUpPhase
       call DetermineElementLMin() ! calulate minimum element altitude ! --> Abdelrahman Alsardi (8/11/2023): I commented this 
 
       ! ********** 3 - material point data initialisation ******************************

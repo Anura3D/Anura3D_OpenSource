@@ -288,8 +288,102 @@
         !integer(INTEGER_TYPE), allocatable, dimension(:, :) :: KnotBezierMeshConnectivity ! number of elements x number of nodes in element = 4 x 4
 
         
+      
         
+        !______________________ Tied boundary conditions ______________________________________________
 		
+        INTEGER(INTEGER_TYPE) :: NTieNodYUnique
+        INTEGER(INTEGER_TYPE) :: NTieNodZUnique
+        LOGICAL :: TiedNodesSwitch
+        !_______________________________________________________________________________________________
+        
+        
+        !Tied Boundary conditions
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: TieNodYCorrdinate ! Vector of all the y-coordinates of the tied nodes (not necessarily unique and maybe be repeated)
+        !TieNodYCorrdinate is allocated when the number of tied nodes is known 
+        
+        !Tied Boundary conditions
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: TieNodZCorrdinate
+        
+        integer(INTEGER_TYPE), dimension(:,:), & 
+            allocatable :: TiedNodeIDCombo
+              
+        integer(INTEGER_TYPE), dimension(:,:), & 
+            allocatable :: TiedNodeIDComboXYZDOF
+        
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: TieNodYCorrdinateUnique
+        
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: TieNodZCorrdinateUnique
+        
+        integer(INTEGER_TYPE), dimension(:,:),  &
+          allocatable :: TieNodBCForAllTiedNodes! Tied degrees of freedom (X, Y, Z). Turned on (i.e., 1 if DOF is tied) 
+        !TieNodBCForAllTiedNodes is allocated when the number of tied nodes is known
+        
+        real(REAL_TYPE), dimension(:),  &
+          allocatable :: UniqueElementVector
+        !this needs to be allocated in the subroutine called FindUniqueValuesInVector
+        
+        integer(INTEGER_TYPE), dimension(:),  &
+          allocatable :: NumberOfTimesUniqueValueIsRepeated
+        !this needs to be allocated in the subroutine called FindUniqueValuesInVector
+        
+        
+        integer(INTEGER_TYPE), dimension(:), allocatable :: TieNodID
+        
+        
+        ! TDOF --> LumpedMassDry 
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassDryTDOF ! Lumped mass vector of dry soil <-- Tied boundary conditions here
+        ! TDOF --> LumpedMassWater 
+        real(REAL_TYPE), dimension(:, :), allocatable :: LumpedMassWaterTDOF ! Lumped mass vector of dry soil <-- Tied boundary conditions here
+        ! TDOF --> TotalVelocitySoil 
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: TotalVelocitySoilTDOF ! Nodal total velocity <-- Tied boundary conditions here
+        ! TDOF --> TotalVelocityWater 
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: TotalVelocityWaterTDOF ! Nodal total velocity <-- Tied boundary conditions here
+        ! TDOF --> IncrementalDisplacementSoil
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: IncrementalDisplacementSoilTDOF ! Nodal incremental displacement <-- Tied boundary conditions here
+        
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: IncrementalDisplacementWaterTDOF ! Nodal incremental displacement <-- Tied boundary conditions here
+        
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: AccelerationSoilTDOF  ! Nodal acceleration of soil <-- Tied boundary conditions here
+        
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: AccelerationWaterTDOF  ! Nodal acceleration of soil <-- Tied boundary conditions here
+        
+        ! TDOF --> RateofMomentum
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: RateofMomentumTDOF  ! Rate of momentum <-- Tied boundary conditions here
+        
+        ! TDOF --> RateofMomentumW
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: RateofMomentumWTDOF  ! Rate of momentum <-- Tied boundary conditions here
+        
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: MomentumTDOF   ! Rate of momentum <-- Tied boundary conditions here
+        
+        real(REAL_TYPE), dimension(:, :), &
+          allocatable :: MomentumWTDOF   ! Rate of momentum <-- Tied boundary conditions here
+        
+        !______________________ Tied boundary conditions ______________________________________________
+
+        
+        !______________________ Generalized alpha time scheme _________________________________________
+        
+        !real(REAL_TYPE), dimension(:, :), & 
+        !  allocatable :: AccelerationSoilGeneralizedAlpha  ! Nodal acceleration of soil at time step k (i.e., mapped from MP to nodes in the beginning of the LagrangianPhase)
+        !real(REAL_TYPE), dimension(:, :), & 
+        !  allocatable :: TotalVelocitySoilGeneralizedAlpha
+        !______________________ Generalized alpha time scheme _________________________________________
+        
+        
       contains ! Routines of this module
 
         
@@ -360,6 +454,18 @@
           integer(INTEGER_TYPE), dimension(NURBS%Maximum_NLoadSystems_Traction, Counters%NPatches) :: NLoadedElementSidesWaterMatPoints
           
           integer(INTEGER_TYPE) :: IDNControlGrid
+          
+          
+          !___________________Tied Boundary Conditions___________________
+          ! Declare integer variables associated with tied boundary conditions  
+          !integer(INTEGER_TYPE) :: TieNodID
+          INTEGER(INTEGER_TYPE) :: NTieNod ! number of tied boundary nodes read from the GOM file
+          
+          INTEGER(INTEGER_TYPE) :: ITieN ! looping over all the tied boundary nodes 
+          
+          INTEGER(INTEGER_TYPE) :: NumberOfRowsInUniqueElementVector ! number of unique y-coordinates in the tied boundary nodes 
+          INTEGER(INTEGER_TYPE), dimension(NVECTOR) :: NodTieBC ! vector to loop over the dofs of the tied boundary nodes (2 in 2D models and  3 in 3D models)
+          !___________________Tied Boundary Conditions___________________
           
           
           integer(INTEGER_TYPE) :: IError ! used for error control
@@ -902,6 +1008,203 @@
                   end if
                 end do
               end do ! loop over fixed nodes 
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              !----------------------------------------------------------------------------------------------
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              elseif (trim(BName) == '$$START_TIE_DEGREE_OF_FREEDOM_LINE') then ! <-- Tied boundary conditions here: reading node numbers and dofs that need to be tied 
+                  
+                  !CalParams%PrescribedVelo%NodePrescribedVelo(I) = DumI(1)
+                  !CalParams%PrescribedVelo%NodalPrescribedVelocityDirection(I, 1:NVECTOR) = DumI(2:NVECTOR+1)
+                  !CalParams%PrescribedVelo%NodalPrescribedVelocityValue(I, 1:NVECTOR) = DumR(1:NVECTOR)
+                  
+                  read(GOMunit,*) NTieNod !declared as integer at the beginning of subroutine 
+                 
+                 if (NTieNod == 0) cycle
+                
+                !after knowing the number of tied nodes, we need to allocate memory to the following matrices
+                allocate(TieNodBCForAllTiedNodes(NTieNod, NVECTOR), stat = IError) 
+                !declared as allocatable at the beginning of this module. TiedNodBC is logical (1/0) and is turned on if you want to apply BC in X or Y direction 
+                allocate(TieNodYCorrdinate(NTieNod), stat = IError) 
+                !declared as allocatable at the beginning of this module. This is a real variable 
+                !allocate(TieNodZCorrdinate(NTieNod), stat = IError) 
+                !declared as allocatable at the beginning of this module. This is a real variable 
+                allocate(TieNodID(NTieNod), stat = IError)
+                !This is an integer array 
+                TiedNodesSwitch = .TRUE. !turn switch on
+                
+              do ITieN = 1, NTieNod  ! loop over tied nodes (displacement) 
+                    read(GOMunit,*) TieNodID(ITieN),& ! reading and recording node number !declared as integer at the beginning of subroutine 
+                    (TieNodBCForAllTiedNodes(ITieN,J), J = 1, NVECTOR) ! reading x and y degrees of freedom !declared as integer vector at the beginning of subroutine 
+                
+                    
+                    ! Tied boundary conditions here: need to remove the prescribed velocity nodes from the TieNodID
+                    !if any of the TieNodID match the ones in the CalParams%PrescribedVelo%NodePrescribedVelo then you can remove it from TieNodID
+                    
+                    ! Step 1: Obtain the y-coordinate of the all the tied nodes 
+                    ! TieNodYCorrdinate is a NTieNodx1 matrix, that is a collection of all the y-coordinates of the matrix (duplicates included)
+                    
+                    !If 2D then detect the Y-coordinate 
+                    !If 3D then detect the Z-coordinate too    
+                    TieNodYCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 2, IPatch_Temporary) !look into the nodal y-coordinate and choose the all the y-coordinate for the tied coordinate              
+                    !TieNodZCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 3) !look into the nodal y-coordinate and choose the all the z-coordinate for the tied coordinate
+                
+                end do ! loop over tied nodes (displacement)
+                                 
+              ! Step 2: Find the unique nodal coordinates of the nodes to be tied (remove duplicates)
+              call RemoveDuplicates(TieNodYCorrdinate, NTieNod, TieNodYCorrdinateUnique, NTieNodYUnique)
+              !call RemoveDuplicates(TieNodZCorrdinate, NTieNod, TieNodZCorrdinateUnique, NTieNodZUnique)
+                
+              ! Step 3: Go through the tied nodes again and match the ones that have the same y-coordinate
+              !If 2D
+              !call CollectTiedNodesWithSameYCoordinates(NTieNod, NTieNodYUnique, TieNodYCorrdinateUnique, NNodes, TieNodID, NodalCoordinates, TieNodBCForAllTiedNodes, & !INPUTS
+              !      TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS                
+              !If 3D
+              call CollectTiedNodesWithSameYCoordinates(NTieNod, NTieNodYUnique, TieNodYCorrdinateUnique, Counters%NodTot(IPatch_Temporary), TieNodID, NodalCoordinates(:,:,IPatch_Temporary), TieNodBCForAllTiedNodes, & !INPUTS
+                    TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS  
+              !________________________________________________________________________________________________________________________________________________________
+                  
+                  
+                  !NNodes
+                  
+                  
+              !  read(GOMunit,*) NTieNod !declared as integer at the beginning of subroutine 
+              !  
+              !  if (NTieNod == 0) cycle
+              !  
+              !  !after knowing the number of tied nodes, we need to allocate memory to the following matrices
+              !  allocate(TieNodBCForAllTiedNodes(NTieNod, NVECTOR), stat = IError) 
+              !  !declared as allocatable at the beginning of this module. TiedNodBC is logical (1/0) and is turned on if you want to apply BC in X or Y direction 
+              !  allocate(TieNodYCorrdinate(NTieNod), stat = IError) 
+              !  !declared as allocatable at the beginning of this module. This is a real variable 
+              !  allocate(TieNodID(NTieNod), stat = IError)
+              !  !This is an integer array 
+              !  TiedNodesSwitch = .TRUE. !turn switch on
+              !
+              !  do ITieN = 1, NTieNod  ! loop over tied nodes (displacement) 
+              !      read(GOMunit,*) TieNodID(ITieN),& ! reading and recording node number !declared as integer at the beginning of subroutine 
+              !      (TieNodBCForAllTiedNodes(ITieN,J), J = 1, NVECTOR) ! reading x and y degrees of freedom !declared as integer vector at the beginning of subroutine 
+              !  
+              !      ! Step 1: Obtain the y-coordinate of the all the tied nodes 
+              !      ! TieNodYCorrdinate is a NTieNodx1 matrix, that is a collection of all the y-coordinates of the matrix (duplicates included)
+              !      TieNodYCorrdinate(ITieN) = NodalCoordinates(TieNodID(ITieN), 2) !look into the nodal y-coordinate and choose the all the y-coordinate for the tied coordinate              
+              !  end do ! loop over tied nodes (displacement)
+              !                   
+              !! Step 2: Find the unique nodal coordinates of the nodes to be tied (remove duplicates)
+              !call RemoveDuplicates(TieNodYCorrdinate, NTieNod, TieNodYCorrdinateUnique, NTieNodUnique)
+              !  
+              !! Step 3: Go through the tied nodes again and match the ones that have the same y-coordinate
+              !call CollectTiedNodesWithSameYCoordinates(NTieNod, NTieNodUnique, TieNodYCorrdinateUnique, NNodes, TieNodID, NodalCoordinates, TieNodBCForAllTiedNodes, & !INPUTS
+              !      TiedNodeIDCombo, TiedNodeIDComboXYZDOF) !OUTPUTS                
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              !------------------------------------------------------------------------------------------------
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
               
               !----------------------------------------------------------------
               
@@ -1904,6 +2207,65 @@
       
         end subroutine InitialiseMeshData
         
+        !_______________________ Tied Degree of Freedom (TDOF) ______________________________________
+        
+        
+        subroutine RemoveDuplicates(VectorContainingDuplicates, SizeOfVectorContainingDuplicates, VectorUnique2, SizeOfVectorUnique)
+        !NumberOfTimesForUniqueTieNodYCorrdinate, NumberOfEnteriesInUniqueTieNodYCorrdinate)
+        !(TieNodYCorrdinate, NTieNod, UniqueTieNodYCorrdinate, NumberOfTimesForUniqueTieNodYCorrdinate, NumberOfEnteriesInUniqueTieNodYCorrdinate)
+        implicit none 
+        !NOTES:-
+        !   -This function works only for rank 1 arrays (i.e., vectors)
+        !   -This function was designed to work with TiedDegreeOfFreedom boundary condition
+        !   -
+        !   -        
+        !______________________________________________________________________
+
+        !INPUTS:-
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            SizeOfVectorContainingDuplicates
+        REAL(REAL_TYPE), dimension(SizeOfVectorContainingDuplicates), intent(in) :: &
+            VectorContainingDuplicates
+        
+        !OUTPUTS:- 
+        REAL(REAL_TYPE), dimension(:), intent(out), allocatable :: &
+            VectorUnique2 ! --> removing the (0,0) coordinate here
+        REAL(REAL_TYPE), dimension(:), allocatable :: &
+            VectorUnique
+        INTEGER(INTEGER_TYPE), intent(out) :: &
+            SizeOfVectorUnique
+        
+        !LOCAL:-
+        INTEGER(INTEGER_TYPE) :: &
+            ii!put all counters here 
+        REAL(REAL_TYPE), dimension(SizeOfVectorContainingDuplicates) :: &
+            VectorContainingMaskedDuplicates
+        !______________________________________________________________________
+        ! Step 1: initialize
+        VectorContainingMaskedDuplicates = 0
+        SizeOfVectorUnique = 1 !counter
+        !VectorContainingMaskedDuplicates(1) = VectorContainingDuplicates(1) !consider first entry  
+        VectorContainingMaskedDuplicates(1) = 0  !consider first entry  
+        
+        do ii = 1,SizeOfVectorContainingDuplicates !loop across all other entries  
+            ! If the number already exist in VectorContainingMaskedDuplicates check next
+            if (any( VectorContainingMaskedDuplicates ==  VectorContainingDuplicates(ii) )) cycle 
+            ! No match found so add it to the output
+            SizeOfVectorUnique = SizeOfVectorUnique+1
+            VectorContainingMaskedDuplicates(SizeOfVectorUnique) = VectorContainingDuplicates(ii)
+        end do 
+        
+        allocate( VectorUnique(SizeOfVectorUnique) )
+        
+        allocate( VectorUnique2(SizeOfVectorUnique-1) )
+        
+        VectorUnique(1:SizeOfVectorUnique) = VectorContainingMaskedDuplicates(1:SizeOfVectorUnique)
+        
+        VectorUnique2(1:SizeOfVectorUnique-1) = VectorUnique(2:SizeOfVectorUnique)
+        
+        SizeOfVectorUnique=SizeOfVectorUnique-1
+            
+        end subroutine RemoveDuplicates
         
         
         
@@ -1923,8 +2285,95 @@
         
         
         
+        ! _______________________________________________________________________________________________
+        
+              
+        subroutine CollectTiedNodesWithSameYCoordinates( &
+            SizeOfVectorContainingDuplicates, NTieNodUnique, TieNodYCorrdinateUnique, TotalNumberOfNodes, NodalTieNodID, NodalCoordinates, NodTieBC, & !INPUTS
+            TiedNodeIDCombo, TiedNodeIDComboDOF & !OUTPUTS 
+            )
+        implicit none 
+        !NOTES:-
+        !   -This function is to go through the tied nodes again and match the ones that have the same y-coordinate 
+        !   -This function was designed to work with TiedDegreeOfFreedom boundary condition
+        !   -
+        !   -        
+        !______________________________________________________________________
+        !INPUTS:-
+        !______________________________________________________________________
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            SizeOfVectorContainingDuplicates !total number of tied nodes
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            NTieNodUnique !number of unique y-coordinates
+        INTEGER(INTEGER_TYPE), intent(in) :: &
+            TotalNumberOfNodes
+        REAL(REAL_TYPE), dimension(NTieNodUnique), intent(in) :: &
+            TieNodYCorrdinateUnique !
+        INTEGER(INTEGER_TYPE), dimension(SizeOfVectorContainingDuplicates), intent(in) :: &
+            NodalTieNodID
+        REAL(REAL_TYPE), dimension(TotalNumberOfNodes,NVECTOR), intent(in) :: &
+            NodalCoordinates
+        INTEGER(INTEGER_TYPE), dimension(SizeOfVectorContainingDuplicates,NVECTOR), intent(in) :: &
+            NodTieBC
+        
+        !______________________________________________________________________
+        !INOUT:- 
+        !______________________________________________________________________
+        INTEGER, dimension(:, :), intent(inout), allocatable :: &
+            TiedNodeIDCombo !I am hardcoding only 2 tied nodes at once... maybe we need to think more about non-soil dynamics related applications??
+        INTEGER, dimension(:, :), intent(inout),allocatable :: &
+            TiedNodeIDComboDOF !NVECTOR is (2 for 2D) and (3 for 3D)  
+        !______________________________________________________________________
+        !OUTPUTS:- 
+        !______________________________________________________________________
+
+        !______________________________________________________________________
+        !LOCAL:-
+        !______________________________________________________________________
+        INTEGER(INTEGER_TYPE) :: &
+            ii, jj, kk !put all counters here 
+        REAL(REAL_TYPE), dimension(SizeOfVectorContainingDuplicates) :: &
+            VectorContainingMaskedDuplicates
+        REAL(REAL_TYPE) :: &
+            Tolerance = 0.0001
+        INTEGER(INTEGER_TYPE) :: &
+            NumberOfTimesTieNodYCorrdinateUnique
+         
+        allocate(TiedNodeIDCombo(NTieNodUnique, 2))
+        allocate(TiedNodeIDComboXYZDOF(NTieNodUnique, 2))
+        !______________________________________________________________________      
+        ! Step 3: Match the nodes together in a set corresponding to each unique y-coordinate and note which dofs (x or y) are tied      
+        do jj = 1, NTieNodUnique !loop over the unique y-coordinates           
+            kk = 0 ! reset counter 
+            do ii = 1, SizeOfVectorContainingDuplicates !loop over all the tied nodes 
+                !check if the nodal coordinates of the tied nodes match their unique values
+                if ( abs( NodalCoordinates(NodalTieNodID(ii), 2) -  TieNodYCorrdinateUnique(jj) ) < Tolerance ) then ! if less than tolerance then the nodal coordinates are in the same tied set   
+                    kk = kk+1 !increase the counter to record the next node
+                    !NumberOfTimesTieNodYCorrdinateUnique(jj) = NumberOfTimesTieNodYCorrdinateUnique(jj)+1 !increase the counter to record the next node
+                    TiedNodeIDCombo(jj, kk) = NodalTieNodID(ii) !recording the number of tied nodes set 
+                    TiedNodeIDComboDOF(jj,kk) = NodTieBC(ii,kk) !recording which dofs are tied 
+                end if ! if less than tolerance then the nodal coordinates are in the same tied set      
+            end do !loop over all the tied nodes 
+        end do !loop over the unique y-coordinates 
+            
+
+            end subroutine CollectTiedNodesWithSameYCoordinates
+            
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+        
+        
+        !_______________________ Tied Degree of Freedom (TDOF) ______________________________________
         
         
         
@@ -4907,8 +5356,16 @@
           allocate(WeightedStressIncrementTensor_Numerator(NTENSOR, NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
           WeightedStressIncrementTensor_Numerator = 0.0
           
+          
+          allocate(WeightedPWPViz_Numerator(1, NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          WeightedPWPViz_Numerator = 0.0
+          
+          
           allocate(NodalStressIncrement_VolLockSmooth(NTENSOR, NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
           NodalStressIncrement_VolLockSmooth = 0.0
+          
+          allocate(NodalPWPViz_VolLockSmooth(1, NURBS%NControlPoints_VolLockSmooth(1), Counters%NEntity), stat = IError)
+          NodalPWPViz_VolLockSmooth = 0.0
           
           
           ! if 2-phase 
@@ -4956,8 +5413,14 @@
           allocate(WeightedStressIncrementTensor_Numerator(NTENSOR, NumberOfGlobalControlPointsUniqueMultipatch, Counters%NEntity), stat = IError)
           WeightedStressIncrementTensor_Numerator = 0.0
           
+          allocate(WeightedPWPViz_Numerator(1, NumberOfGlobalControlPointsUniqueMultipatch, Counters%NEntity), stat = IError)
+          WeightedPWPViz_Numerator = 0.0
+          
           allocate(NodalStressIncrement_VolLockSmooth(NTENSOR, NumberOfGlobalControlPointsUniqueMultipatch, Counters%NEntity), stat = IError)
           NodalStressIncrement_VolLockSmooth = 0.0   
+          
+          allocate(NodalPWPViz_VolLockSmooth(1, NumberOfGlobalControlPointsUniqueMultipatch, Counters%NEntity), stat = IError)
+          NodalPWPViz_VolLockSmooth = 0.0  
           
           ! if 2-phase 
           allocate(WeightedWP_Numerator(NumberOfGlobalControlPointsUniqueMultipatch, Counters%NEntity), stat = IError) !NTENSOR, 

@@ -316,7 +316,7 @@
                      
                  else
                      
-                     call MoveFixedMesh(DUVector, I, ConsideredDirections(I), IPatch)
+                     call MoveFixedMesh(DUVector, I, 1, IPatch) !ConsideredDirections(I)
                      ! --> this is for the moving mesh adjustment
                      
                  end if
@@ -451,7 +451,7 @@
                  !    
                  !else
                      
-                     call MoveFixedMesh(DUVector, I, ConsideredDirections(I), IPatch_MovingMesh)
+                     call MoveFixedMesh(DUVector, I, 1, IPatch_MovingMesh) !ConsideredDirections(I)
                      ! --> this is for the moving mesh adjustment
                      
                  !end if

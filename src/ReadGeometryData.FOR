@@ -2739,6 +2739,7 @@
           if ( (CalParams%Multipliers%VelocitySolidLoadType == LOAD_TYPE_FILE) .or. (CalParams%PrescribedSeismicAction%ApplyGroundMotionSwitch == .TRUE.) ) then ! .or. ELEMENTTYPE == QUAD4_NURBS  --> I commented this out
               ! no deforming mesh is defined for prescribed velocity from file
               CalParams%MovingMesh%NStorageAreas(:,IPatch) = 0
+              CalParams%ApplyMeshSmoothing = .true. ! --> this is turned on so that we can save nodal coordinates for the moving mesh
           else if ( GeoParams%MovingMeshExtendingCorners(1, IPatch) == -1 .and. GeoParams%MovingMeshCompressingCorners(1, IPatch) == -1 .and. Counters%NPatches==1) then 
             ! error: no deforming mesh is defined  
             call GiveError('Error: Moving Mesh: Unless you are prescribing velocity from file, at least one deforming mesh area has to be specified, i.e. either extending or compressing mesh.')  

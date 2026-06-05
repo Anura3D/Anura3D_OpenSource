@@ -560,8 +560,25 @@
          ! Calculate new nodal velocities from the new momentums
          if (IsMPMComputation()) then !MPM
            call GetNodalVelocityFromNodalMomentumConv(Momentum)!, Momentum_VolLockSmooth) ! In local coordinate system
+           
+           
+           
+           if (TiedNodesSwitch==.TRUE.) then 
+               call GetTotalVelocitySoilTDOF !<- TDOF
+           end if 
+           
+           
+           
+           
+           
+           
+           
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
              call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
+             
+             if (TiedNodesSwitch==.TRUE.) then 
+               call GetTotalVelocityWaterTDOF !<- TDOF
+           end if 
              
              !TotalVelocityWater(40,1) = TotalVelocityWater(2,1)
              !TotalVelocityWater(42,1) = TotalVelocityWater(2,1)
@@ -1267,8 +1284,10 @@
             !end if 
         
         
-        
-        
+        ! Smooth pore water pressure for visualization (viz)
+        call MapPWPViz_VolLockSmooth(WeightedPWPViz_Numerator)
+        call GetNodalPWPViz_VolLockSmooth()
+        call MapNodalPWPVizToMPs_VolLockSmooth(NodalPWPViz_VolLockSmooth)
         
         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1645,12 +1664,139 @@
       
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !______________________ Tied Degrees Of Freedom _______________________________________________________
       
       
       
       
       
       
+      subroutine GetTotalVelocitySoilTDOF()
+           ! Description: obtain total velocity soil TDOF matrix as required by the TDOF boundary condition 
+           
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IDOF, J
+          real(REAL_TYPE), dimension(Counters%N) :: MomentumSystem
+          
+          INTEGER(INTEGER_TYPE) :: &
+            ii, jj !put all counters here 
+          INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+             Nodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE) :: &
+             NumberOfNodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+             Dofs2BeTied
+          
+          NumberOfNodes2BeTied = 2
+          
+           if (TiedNodesSwitch == .TRUE.) then 
+              !Calculate Tied boundary conditions solution here and overwrite AccelerationSoil vector 
+              do IDOF = 1, NTieNodYUnique*NVECTOR ! loop over all degrees of freedom
+                  do J = 1, Counters%nEntity ! loop over all entities
+                      if(LumpedMassDryTDOF(IDOF,J)/=0) then
+                          TotalVelocitySoilTDOF(IDOF,J)= ( MomentumTDOF(IDOF,J)/LumpedMassDryTDOF(IDOF,J) )!* PBoundary(IDOF)
+                          !(TotalVelocitySoilTDOF(IDOF,J) + ( AccelerationSoilTDOF(IDOF,J)*CalParams%TimeIncrement) )* PBoundary(IDOF)
+                      else
+                          TotalVelocitySoilTDOF(IDOF,J) = 0.0
+                      end if
+                  end do 
+              end do
+              
+           do ii = 1, NTieNodYUnique !loop across tied node sets 
+                 Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+                 Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+                 do jj = 1, NumberOfNodes2BeTied !loop over nodes 
+                     if (NVECTOR ==3) then 
+                         !...
+                     elseif (NVECTOR ==2) then 
+                         
+                     ! x-dof 
+                     TotalVelocitySoil( (Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity ) = TotalVelocitySoilTDOF( (NVECTOR*ii)-1, Counters%NEntity )
+                     ! y-dof 
+                     TotalVelocitySoil( (Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity ) = TotalVelocitySoilTDOF( (NVECTOR*ii)-0, Counters%NEntity )
+                     end if 
+                 end do 
+           end do
+          
+           end if 
+           
+           
+           
+           end subroutine GetTotalVelocitySoilTDOF
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      subroutine GetTotalVelocityWaterTDOF()
+           ! Description: obtain total velocity soil TDOF matrix as required by the TDOF boundary condition 
+           
+        implicit none
+        
+          ! Local variables
+          integer(INTEGER_TYPE) :: IDOF, J
+          real(REAL_TYPE), dimension(Counters%N) :: MomentumSystem
+          
+          INTEGER(INTEGER_TYPE) :: &
+            ii, jj !put all counters here 
+          INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+             Nodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE) :: &
+             NumberOfNodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+             Dofs2BeTied
+          
+          NumberOfNodes2BeTied = 2
+          
+           if (TiedNodesSwitch == .TRUE.) then 
+              !Calculate Tied boundary conditions solution here and overwrite AccelerationSoil vector 
+              do IDOF = 1, NTieNodYUnique*NVECTOR ! loop over all degrees of freedom
+                  do J = 1, Counters%nEntity ! loop over all entities
+                      if(LumpedMassWaterTDOF(IDOF,J)/=0) then
+                          TotalVelocityWaterTDOF(IDOF,J)= ( MomentumWTDOF(IDOF,J)/LumpedMassWaterTDOF(IDOF,J) )!* PBoundary(IDOF)
+                          !(TotalVelocitySoilTDOF(IDOF,J) + ( AccelerationSoilTDOF(IDOF,J)*CalParams%TimeIncrement) )* PBoundary(IDOF)
+                      else
+                          TotalVelocityWaterTDOF(IDOF,J) = 0.0
+                      end if
+                  end do 
+              end do
+              
+           do ii = 1, NTieNodYUnique !loop across tied node sets 
+                 Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+                 Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+                 do jj = 1, NumberOfNodes2BeTied !loop over nodes 
+                     if (NVECTOR ==3) then 
+                         !...
+                     elseif (NVECTOR ==2) then 
+                         
+                     ! x-dof 
+                     TotalVelocityWater( (Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity ) = TotalVelocityWaterTDOF( (NVECTOR*ii)-1, Counters%NEntity )
+                     ! y-dof 
+                     TotalVelocityWater( (Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity ) = TotalVelocityWaterTDOF( (NVECTOR*ii)-0, Counters%NEntity )
+                     end if 
+                 end do 
+           end do
+          
+           end if 
+           
+           
+           
+           end subroutine GetTotalVelocityWaterTDOF
+      
+      
+      
+      !______________________ Tied Degrees Of Freedom _______________________________________________________
       
       subroutine CheckMPStressForStressControlledDSS(MPNumberToControlStress, ThresholdStress, StressComponentControlled, &
                     StrainVelocitySign, TargetSign)
@@ -2627,7 +2773,12 @@
             end do !Loop over particles
                 end do !elements    
                 
-                end do ! patches
+              end do ! patches
+              
+              
+              
+              call AllocateAndFormMomentumTDOFMatrices(Momentum)
+              
           
        end subroutine UpdateParticleVelocityAndMapMomentum  
        
@@ -2908,6 +3059,116 @@
           end do ! patches
        
        end subroutine MapStressIncrementTensor_VolLockSmooth  
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       !---------------------------------------------------------------------------
+       subroutine MapPWPViz_VolLockSmooth(WeightedPWPViz_Numerator) !(Momentum)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+       
+        implicit none
+        
+        ! Hardcoded NControlPoints for the higher order mesh of patch 1
+        !real(REAL_TYPE), dimension(NTENSOR, Counters%NodTot(1),Counters%nEntity), intent(out) :: WeightedStressIncrementTensor_Numerator       !CC added nEntity
+        real(REAL_TYPE), dimension(1, NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(out) :: WeightedPWPViz_Numerator
+        
+        !NumberOfGlobalControlPointsUniqueMultipatch
+        ! Local variables
+          integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, iEntity, ParticleIndex, NoEn ! INode,
+          !integer(INTEGER_TYPE), dimension(NVECTOR, ELEMENTNODES_VolLockSmooth) :: IDof
+          integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: INode !NVECTOR, 
+          
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          real(REAL_TYPE) :: ParticleVolStrain
+          real(REAL_TYPE) :: Time, PartilceMass
+          
+          ! Multipatch variables 
+          integer(INTEGER_TYPE) :: IPatch
+          integer(INTEGER_TYPE) :: aa 
+          
+          !!CC - changed to function call - needs to be set to zero here
+          WeightedPWPViz_Numerator = 0.0
+          NoEn = Counters%nEntity
+       
+          do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+              do IAEl = 1, Counters%NAEl(IPatch) ! Loop over all elements 
+                  
+                  ! the background grid should have the same exact active element discretization 
+                  IEl = ActiveElement(IAEl, IPatch)
+            
+                  !do I = 1, NVECTOR
+                    
+                      ! degree of freedom for active element 
+                      !IDof(I, 1:ELEMENTNODES_VolLockSmooth) = &
+                      !    ReducedDof_VolLockSmooth( IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch) ) + I
+              
+                      ! degree of freedom for active element 
+                      INode(1:ELEMENTNODES) = &
+                          Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch ) !ReducedDof_VolLockSmooth( ) + I
+              
+                      
+                      
+                  !end do
+            
+                  do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                      ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                      !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+       
+                          PartilceMass = Particles(ParticleIndex)%IntegrationWeight !MassArray(ParticleIndex) ! particle mass
+                          ParticleShape = ShapeValuesArray(ParticleIndex,:) ! particle shape values array on the lower order grid
+                 
+                          ! reset volumetric strain 
+                          !Particles(ParticleIndex)%VolumetricStrain = 0.0 
+                 
+                          if (CalParams%ApplyContactAlgorithm) then
+                             iEntity = EntityIDArray(ParticleIndex) 
+                          else
+                             iEntity = 1
+                          end if 
+                 
+                          
+                          
+                          do I = 1, 1 ! nodal i-momentum
+                              WeightedPWPViz_Numerator( I, INode(1:ELEMENTNODES), iEntity) = &
+                                  WeightedPWPViz_Numerator( I, INode(1:ELEMENTNODES), iEntity ) &
+                                  + ( PartilceMass * ParticleShape * Particles(ParticleIndex)%WaterPressure )
+                          end do     
+       
+                      !end if ! NumbOfLayers = 1 or SOLID MatPoint
+            
+                  end do !Loop over particles
+              
+              end do !elements    
+          
+          end do ! patches
+       
+       end subroutine MapPWPViz_VolLockSmooth  
+       
+       
+       
+       
+       
+       
+       
+       
        
        !--------------------------------------------------------------------------
        !---------------------------------------------------------------------------
@@ -4186,7 +4447,114 @@
        
        !--------------------------------------------------------------------------------------------------------------------
 
+       !--------------------------------------------------------------------------------------------------------------------
        
+       subroutine MapNodalPWPVizToMPs_VolLockSmooth(NodalPWPViz_VolLockSmooth)
+        !**********************************************************************
+        !
+        !    Function:  To update particles total velocities and Accelerations
+        !
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        ! hardcoded on the first patch
+        !real(REAL_TYPE), dimension(NTENSOR,Counters%NodTot(1),Counters%nEntity), intent(in) :: NodalStressIncrement_VolLockSmooth       !CC added nEntity
+        real(REAL_TYPE), dimension(1,NumberOfGlobalControlPointsUniqueMultipatch,Counters%nEntity), intent(in) :: NodalPWPViz_VolLockSmooth       !CC added nEntity
+  
+          
+        ! Local variables
+        integer(INTEGER_TYPE) :: I, IEl, IAEl, IPart, INode, iEntity, ParticleIndex, NoEn
+        integer(INTEGER_TYPE), dimension(ELEMENTNODES) :: Nodes_Element
+          
+        real(REAL_TYPE), dimension(1, ELEMENTNODES, Counters%nEntity) :: NodWP
+        real(REAL_TYPE), dimension(ELEMENTNODES) :: ParticleShape
+          
+        
+        ! Multipatch variables
+        integer(INTEGER_TYPE) :: IPatch
+       
+        !!CC - changed to function call - needs to be set to zero here
+        NoEn = Counters%nEntity
+        
+        !if (.NOT. allocated(SigmaEffArrayViz) ) then 
+        !
+        !    allocate(SigmaEffArrayViz(Counters%NParticles, NTENSOR) )
+        !    
+        !end if 
+        
+       
+          
+        do IPatch = 1, Counters%NPatches ! Loop over patches
+          
+            do IAEl = 1, Counters%NAEl(IPatch)!Counters%NEl ! Loop over all elements 
+            
+                IEl = ActiveElement(IAEl, IPatch)
+              
+                Nodes_Element(1:ELEMENTNODES) = &
+                        Multipatch_Connecting_Local_To_Global_ControlPoints( ElementConnectivities(1:ELEMENTNODES, IEl, IPatch), IPatch)
+                
+                do I = 1, 1 !NTENSOR
+              
+                    
+                        !ReducedDof_VolLockSmooth(&!Multipatch_Connecting_Local_To_Global_ControlPoints( &
+                        !IEN_VolLockSmooth(1:ELEMENTNODES_VolLockSmooth, IEl, IPatch)) + I !,IPatch) !ElementConnectivities
+       
+                    ! start here 
+                      NodWP(I, 1:ELEMENTNODES, 1:Counters%nEntity) = &
+                          NodalPWPViz_VolLockSmooth(I, Nodes_Element(1:ELEMENTNODES), 1:NoEn) 
+            
+                end do
+           
+                  
+                do IPart = 1, NPartEle(IEl,IPatch)   ! Loop over all particles in element
+              
+                    ParticleIndex = GetParticleIndex(IPart, IEl, IPatch) ! Get the particle ID
+              
+                    !if ( (MaterialPointTypeArray(ParticleIndex)==MaterialPointTypeSolid) .or. (NFORMULATION==1) ) then ! NumbOfLayers = 1 or SOLID MatPoint
+                 
+                        !Particles(ParticleIndex)%BBarVolumetricStrain = 0.0    
+                        !Particles(ParticleIndex)%EpsStep = 0.0
+                        Particles(ParticleIndex)%WaterPressureViz = 0.0
+                        ParticleShape = ShapeValuesArray(ParticleIndex,:)
+                 
+                        if (CalParams%ApplyContactAlgorithm) then
+                            iEntity = EntityIDArray(ParticleIndex)
+                        else
+                            iEntity = 1  
+                        end if 
+                 
+                        do INode = 1, ELEMENTNODES
+       
+                            do I = 1, 1!NTENSOR!NVECTOR  
+       
+                                ! --> scalar that is the same for both dofs in this case. Not intersted in mapping it NVECTOR times
+                                ! Particle strain 
+                                !Particles(ParticleIndex)%EpsStep(I) = Particles(ParticleIndex)%EpsStep(I) + ( ParticleShape(INode) * NodStrain(I, INode, iEntity) )
+                                Particles(ParticleIndex)%WaterPressureViz = Particles(ParticleIndex)%WaterPressureViz + ( ParticleShape(INode) * NodWP(I, INode, iEntity) )
+                            end do    
+                        
+                        end do !Loop over nodes
+                      
+                    !end if ! NumbOfLayers = 1 or SOLID MatPoint
+                  
+                    
+                    !call IncreaseEps(Particles(ParticleIndex), Particles(ParticleIndex)%EpsStep)
+                    
+                end do !Loop over particles
+              
+            end do !elements    
+          
+        end do ! patches
+        
+       
+       end subroutine MapNodalPWPVizToMPs_VolLockSmooth !MapVolumetricStrainToMPs_VolLockSmooth  
+       
+       
+       !--------------------------------------------------------------------------------------------------------------------
        
        subroutine MapNodalStrainIncrementToMPs_VolLockSmooth_LowerOrder(NodalStrainIncrement_VolLockSmooth)
         !**********************************************************************
@@ -4580,7 +4948,7 @@
                       
                     end if ! NumbOfLayers = 1 or SOLID MatPoint
                   
-                    if (MaterialIDArray(ParticleIndex) == 2.0) then
+                    if (MaterialIDArray(ParticleIndex) == 2.0) then !--> this is hardcoded
                     Particles(ParticleIndex)%WaterPressure = Particles(ParticleIndex)%WaterPressureIncrement + & 
                                                                         Particles(ParticleIndex)%WaterPressure0
                     
@@ -8129,6 +8497,72 @@
         
         end subroutine GetNodalStressIncrement_VolLockSmooth
         
+        
+        
+        
+        
+        
+        
+        
+        
+        !----------------------------------------------------------------------------------
+        
+        subroutine GetNodalPWPViz_VolLockSmooth()
+        !**********************************************************************
+        !
+        !    Function:  To calculate the nodal velocities from nodal mass and momentum
+        !
+        !    Momentum : Nodal momentum vector
+        !
+        ! Implemented in the frame of the MPM project.
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+        
+        integer(INTEGER_TYPE) :: IDOF, J, IPatch_Temporary, IPatch
+        integer(INTEGER_TYPE) :: INode, ITens
+        
+        IPatch_Temporary = 1
+        
+        
+        do IPatch = 1, Counters%NPatches
+        
+        do INode = 1, Counters%NodTot(IPatch) !Counters%N_VolLockSmooth                                       !Loop over all degrees of freedom
+        
+            do J = 1, Counters%nEntity !loop through all entities       CC - added dimension nEntity (J)
+            
+                IDOF = ReducedDof( Multipatch_Connecting_Local_To_Global_ControlPoints(INode, IPatch) ) +1 ! obtain the x dof so that we can find the mass. 
+                                           ! It does not matter what dof you choose (here x-direction), 
+                                           ! because mass is scalar. 
+                
+                do ITens = 1, 1
+                
+                    if(LumpedVolume(IDOF,J)/=0) then
+                
+                    NodalPWPViz_VolLockSmooth(ITens,INode,J) = ( WeightedPWPViz_Numerator(ITens,INode,J) &
+                                                                           / LumpedVolume(IDOF,J) ) !  / LumpedMassDry(IDOF,J) ) !*  &
+                                                !PBoundary(IDOF)
+                
+                    else
+                
+                    NodalPWPViz_VolLockSmooth(ITens,INode,J) = 0.0!TotalVelocitySoil(IDOF,J) = 0.0
+                
+                
+                    end if
+                
+                end do 
+            
+            end do
+          
+        end do
+          
+        
+        end do ! loop over patches
+        
+        
+        end subroutine GetNodalPWPViz_VolLockSmooth
         
         
         !----------------------------------------------------------------------------------

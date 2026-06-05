@@ -50,6 +50,28 @@
       use ModTwoLayerFormulation
    
       
+      
+      !use ModCounters
+      !use ModReadCalculationData
+      !use ModElementEvaluation
+      !use ModMPMData
+      !use ModWriteTestData
+      !use ModLagrangianPhase
+      !use ModConvectivePhase
+      !use ModMPMDYNStresses
+      !use ModMeshAdjacencies
+      !use ModMPMMeshAdjustment
+      !use ModMeshInfo
+      !use ModRotBoundCond
+      !use ModEmptyElements
+      !use ModAdjustParticleDiscretisation
+      !use ModGlobalConstants
+      !use ModTwoLayerFormulation
+      !use ModString
+      !use ModRigidBody
+      !use ModLiquid
+      !use ModReadGeometryData
+      
       implicit none
 
         !> Lumped mass vector of water
@@ -654,10 +676,26 @@
 
           real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: RateofMomentum 
           
-          integer(INTEGER_TYPE) :: ii, index
+          integer(INTEGER_TYPE) ::  index !ii,
 
           ! Local variables
           integer(INTEGER_TYPE) :: IDOF, J
+          
+          !----- TDOF Variables --------------------------------------------
+            
+          INTEGER(INTEGER_TYPE) :: &
+              ii, jj !put all counters here 
+  
+          INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+              Nodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE) :: &
+              NumberOfNodes2BeTied !restricted to 2 nodes only 
+          INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+              Dofs2BeTied
+  
+        NumberOfNodes2BeTied = 2
+  
+        !----- TDOF Variables --------------------------------------------
           
            do IDOF = 1, Counters%N ! loop over all degrees of freedom
             do J = 1, Counters%nEntity  ! loop over all entities
@@ -668,6 +706,45 @@
               end if
             end do
            end do
+           
+           
+           
+           
+           
+           !-----------------------------------------------------------------------------------------------------------
+           if (TiedNodesSwitch == .TRUE.) then 
+      !!!!!!!!!!!!!!!!!!!!! TIED BC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !Calculate Tied boundary conditions solution here and overwrite AccelerationSoil vector 
+      do IDOF = 1, NTieNodYUnique*NVECTOR ! loop over all degrees of freedom
+          do J = 1, Counters%nEntity ! loop over all entities
+              if(LumpedMassWaterTDOF(IDOF,J)/=0) then
+                  AccelerationWaterTDOF(IDOF,J)=( RateofMomentumWTDOF(IDOF,J) / LumpedMassWaterTDOF(IDOF,J) ) !* PBoundary(IDOF) 
+              else
+                  AccelerationWaterTDOF(IDOF,J) = 0.0
+              end if
+          end do 
+      end do
+      
+      do ii = 1, NTieNodYUnique !loop across tied node sets 
+         Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+         Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+         do jj = 1, NumberOfNodes2BeTied !loop over nodes 
+             if (NVECTOR ==3) then 
+                 !...
+             elseif (NVECTOR ==2) then 
+                 
+             ! x-dof 
+             AccelerationWater( (Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity ) = AccelerationWaterTDOF( (NVECTOR*ii)-1, Counters%NEntity )
+             ! y-dof 
+             AccelerationWater( (Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity ) = AccelerationWaterTDOF( (NVECTOR*ii)-0, Counters%NEntity )
+             end if 
+         end do 
+      end do
+  end if 
+ !!!!!!!!!!!!!!!!!!!!! TIED BC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !Note that up until here we do not over write the prescribed velocity boundary condition. --> let's double check  
+             !-----------------------------------------------------------------------------------------------------------
+
            
            
            !!!!!!!!!!!!!!!!!!!!! GENERALIZED ALPHA SCHEME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -829,9 +906,84 @@
             end do !Loop over particles
                 end do !elements
                 
-                end do ! patches
+                 end do ! patches
+                 
+                 call AllocateAndFormMomentumWTDOFMatrices(Momentum)
           
         end subroutine UpdateParticleWaterVelocityAndMapMomentumW  
+        
+        
+        
+        
+        subroutine AllocateAndFormMomentumWTDOFMatrices(Momentum)
+        
+        !______________________________________________________________________
+        !LOCAL:-
+        !______________________________________________________________________
+        !Counters%N
+         INTEGER(INTEGER_TYPE), DIMENSION(Counters%N) :: &
+             TiedDofsArranged
+         INTEGER(INTEGER_TYPE) :: &
+            ii, jj !put all counters here 
+         INTEGER(INTEGER_TYPE), DIMENSION(1, 2) :: &
+             Nodes2BeTied !restricted to 2 nodes only 
+         INTEGER(INTEGER_TYPE) :: &
+             NumberOfNodes2BeTied !restricted to 2 nodes only 
+         INTEGER(INTEGER_TYPE), DIMENSION(1, NVECTOR) :: &
+             Dofs2BeTied
+         INTEGER(INTEGER_TYPE) :: stat, IError
+         
+        !______________________________________________________________________
+        !INPUT:-
+        !______________________________________________________________________
+         
+         real(REAL_TYPE), dimension(Counters%N,Counters%nEntity), intent(in) :: Momentum
+         
+        !______________________________________________________________________
+        !ALLOCATE:-
+        !______________________________________________________________________
+          
+          allocate(MomentumWTDOF(NTieNodYUnique*NVECTOR, Counters%NEntity), stat = IError)
+          MomentumWTDOF = 0.0
+
+         
+        !______________________________________________________________________      
+        
+          Counters%NEntity = 1
+          NumberOfNodes2BeTied = 2
+          if (TiedNodesSwitch == .TRUE.) then 
+             TiedDofsArranged = 0
+              !call subroutine to vectorize this
+             do ii = 1, NTieNodYUnique !loop across tied node sets 
+                 Nodes2BeTied(1,:) = TiedNodeIDCombo(ii,:) ! this matrix is a (1x2) eg. [7, 1]
+                 Dofs2BeTied(1,:) = TiedNodeIDComboXYZDOF(ii,:)! this matrix is a (1x3) eg. [1 0 0]
+                 do jj = 1, NumberOfNodes2BeTied !loop over nodes 
+                     !do kk = 1, NVECTOR
+                     !Dof 1 -> x-dof
+                     if (NVECTOR == 3) then 
+                         !... need to extend this here 
+                     elseif (NVECTOR == 2) then 
+                                              
+                           
+                     MomentumWTDOF( (NVECTOR*ii)-1, Counters%NEntity ) = MomentumWTDOF( (NVECTOR*ii)-1, Counters%NEntity ) + &
+                                ( Momentum((Nodes2BeTied(1,jj)*NVECTOR)-1, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) ) 
+                 
+                     !Dof 2 -> y-dof 
+                     
+                     MomentumWTDOF( (NVECTOR*ii)-0, Counters%NEntity ) = MomentumWTDOF( (NVECTOR*ii)-0, Counters%NEntity ) + &
+                                ( Momentum((Nodes2BeTied(1,jj)*NVECTOR)-0, Counters%NEntity) * TiedNodeIDComboXYZDOF(1,jj) ) 
+                     
+                     end if 
+                     
+                 end do 
+             end do 
+             
+          end if
+          
+        end subroutine !AllocateAndFormMomentumWTDOFMatrices
+        
+        
+        
         
         
         subroutine UpdateParticleWaterAcceleration()

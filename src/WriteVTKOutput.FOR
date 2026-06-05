@@ -457,19 +457,19 @@ module ModWriteVTKOutput
     
     
     
+    !Particles(ParticleIndex)%WaterPressureViz 
+    do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
+        if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
+            ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
+        DataSetScalar(MaterialPointID) = (SigmaEffArray(MaterialPointID,1) + & ! assign output data to material points
+            SigmaEffArray(MaterialPointID,2) + &
+            SigmaEffArray(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
+        else
+            DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%WaterPressureViz
+        end if
+    end do
     
-    !do MaterialPointID = 1, NumberMaterialPoints ! loop over material points
-    !    if ((MatParams(MaterialIDArray(MaterialPointID))%MaterialType=='1-phase-liquid').or.MatParams(MaterialIDArray(MaterialPointID))%MaterialPhases=='1-phase-liquid'.or. &
-    !        ((NFORMULATION==2).and.(MaterialPointTypeArray(MaterialPointID)==MaterialPointTypeLiquid))) then
-    !    DataSetScalar(MaterialPointID) = (SigmaEffArray(MaterialPointID,1) + & ! assign output data to material points
-    !        SigmaEffArray(MaterialPointID,2) + &
-    !        SigmaEffArray(MaterialPointID,3) ) / 3.0 ! valid for 2D and 3D
-    !    else
-    !        DataSetScalar(MaterialPointID) = Particles(MaterialPointID)%WaterPressureViz
-    !    end if
-    !end do
-    !
-    !call WriteVTKScalarDataPointer('pressure_liquid_viz',DataSetScalar)
+    call WriteVTKScalarDataPointer('pressure_liquid_viz',DataSetScalar)
     
     
     

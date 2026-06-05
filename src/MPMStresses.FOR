@@ -800,7 +800,7 @@
           
           
           SoilSurfDepth = 0.0
-          PhreaticSurfDepth = 0.0 !6.0 !0.0 !6.0
+          PhreaticSurfDepth = 0.0 !6.0!0.0!6.0!0.0 !6.0 !0.0 !6.0
           SigY = 0.0
           SigWP = 0.0
           
@@ -953,54 +953,54 @@
           
           
           
-          !---------------------------------------------------------------
-          !
-          ! !This is for dry embankment over saturated 
-          !X1 = 15.0
-          !X2 = 19.5
-          !X3 = 25.25
-          !X4 = 29.75
-          !        
-          !Y1 = 6.0
-          !Y2 = 10.5
-          !
-          !
-          !
-          !
-          !if (SoilPoint(1) < X1) then 
-          !
-          !    !CalParams%SoilSurfacePoint(2) = Y1
-          !    WaterCorrection = Y1 - Y1
-          !    
-          !elseif ( (SoilPoint(1) < X2) .and. (SoilPoint(1) > X1) ) then
-          !
-          !    WaterCorrection = Y1 + (((Y2-Y1)/(X2-X1))* (SoilPoint(1)-X1)) - Y1
-          !
-          !
-          !else if ((SoilPoint(1) < X3) .and. (SoilPoint(1) > X2)) then 
-          !
-          !    WaterCorrection = Y2 - Y1
-          !    
-          !elseif ((SoilPoint(1) < X4) .and. (SoilPoint(1) > X3)) then 
-          !
-          !    WaterCorrection = Y2 - (((Y2-Y1)/(X4-X3))* (SoilPoint(1)-X3)) - Y1
-          !    
-          !elseif ( (SoilPoint(1) > X4)) then !(GlobPosArray(ParticleIndex, 1) < X5) .and.
-          !
-          !    WaterCorrection = Y1 - Y1
-          !end if
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          
-          !-----------------------------------------------------------------
+          !!!!!!---------------------------------------------------------------
+          !!!!!!
+          !!!!! !This is for dry embankment over saturated 
+          !!!!!X1 = 15.0
+          !!!!!X2 = 19.5
+          !!!!!X3 = 25.25
+          !!!!!X4 = 29.75
+          !!!!!        
+          !!!!!Y1 = 6.0
+          !!!!!Y2 = 10.5
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!if (SoilPoint(1) < X1) then 
+          !!!!!
+          !!!!!    !CalParams%SoilSurfacePoint(2) = Y1
+          !!!!!    WaterCorrection = Y1 - Y1
+          !!!!!    
+          !!!!!elseif ( (SoilPoint(1) < X2) .and. (SoilPoint(1) > X1) ) then
+          !!!!!
+          !!!!!    WaterCorrection = Y1 + (((Y2-Y1)/(X2-X1))* (SoilPoint(1)-X1)) - Y1
+          !!!!!
+          !!!!!
+          !!!!!else if ((SoilPoint(1) < X3) .and. (SoilPoint(1) > X2)) then 
+          !!!!!
+          !!!!!    WaterCorrection = Y2 - Y1
+          !!!!!    
+          !!!!!elseif ((SoilPoint(1) < X4) .and. (SoilPoint(1) > X3)) then 
+          !!!!!
+          !!!!!    WaterCorrection = Y2 - (((Y2-Y1)/(X4-X3))* (SoilPoint(1)-X3)) - Y1
+          !!!!!    
+          !!!!!elseif ( (SoilPoint(1) > X4)) then !(GlobPosArray(ParticleIndex, 1) < X5) .and.
+          !!!!!
+          !!!!!    WaterCorrection = Y1 - Y1
+          !!!!!end if
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!
+          !!!!!!-----------------------------------------------------------------
           
           
           

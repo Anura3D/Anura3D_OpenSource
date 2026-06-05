@@ -1824,7 +1824,7 @@
           real(REAL_TYPE), dimension(NVECTOR,MAX_LOAD_SYSTEMS) :: FExtWater
           integer(INTEGER_TYPE) :: I, J, NVals, K
 
-          NVals = 10 + ( 4 * NVECTOR ) + NVECTOR*MAX_LOAD_SYSTEMS
+          NVals = 11 + ( 4 * NVECTOR ) + NVECTOR*MAX_LOAD_SYSTEMS
 
           if ( (NBytes / NVals / 8)==Counters%NParticles) then
 
@@ -1841,6 +1841,8 @@
               read(FileUnit) WatPressure
               Particles(I)%WaterPressure = WatPressure
               Particles(I)%WaterPressure0 = WatPressure
+              read(FileUnit) WatPressure
+              Particles(I)%WaterPressureViz = WatPressure
               read(FileUnit) Particles(I)%DegreeSaturation
               read(FileUnit) (Particles(I)%FBodyWater(J), J = 1, NVECTOR)
               read(FileUnit) (Particles(I)%FBodyMixed(J), J = 1, NVECTOR)

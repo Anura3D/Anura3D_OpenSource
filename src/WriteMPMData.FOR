@@ -656,7 +656,7 @@
           integer(INTEGER_TYPE) :: NByts, NVals, I, J, MaterialID,K
           logical :: IsUndrEffectiveStress
           
-          NVals = 10 + ( 4 * NVECTOR )+ MAX_LOAD_SYSTEMS*NVECTOR
+          NVals = 11 + ( 4 * NVECTOR )+ MAX_LOAD_SYSTEMS*NVECTOR
           NByts = Counters%NParticles * NVals * 8
           write(FileUnit) '$$PADWAT_R$$', NByts
 
@@ -679,6 +679,7 @@
             write(FileUnit) Particles(I)%BulkWater
             write(FileUnit) Particles(I)%WaterVolumetricStrain
             write(FileUnit) Particles(I)%WaterPressure
+            write(FileUnit) Particles(I)%WaterPressureViz
             write(FileUnit) Particles(I)%DegreeSaturation
             write(FileUnit) (Particles(I)%FBodyWater(J), J = 1, NVECTOR)
             write(FileUnit) (Particles(I)%FBodyMixed(J), J = 1, NVECTOR)

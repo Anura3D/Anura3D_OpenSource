@@ -1968,14 +1968,14 @@
                 
                 do iDirection = 1, NVECTOR
                     
-                    read(FileUnit, *, iostat=ios) DumI(1), DumS(iDirection, 1:2), DumI(2)
+                    read(FileUnit, *, iostat=ios) DumI(1), DumS(iDirection, 1:2), DumR(2)
                     call Assert( ios == 0, messageIOS//trim(BName) )
                 
                     CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(iDirection) = DumI(1) ! on/off
                     !CalParams%PrescribedSeismicAction%PhysicalKinematicQuantityType(iDirection) = DumS(iDirection, 1) ! Acceleration/Velocity/Displacement
                     CalParams%PrescribedSeismicAction%InputFileFormat(iDirection) = DumS(iDirection, 1) ! PEER/Table
                     CalParams%PrescribedSeismicAction%InputFileName(iDirection) = DumS(iDirection, 2) ! file name 
-                    CalParams%PrescribedSeismicAction%ScalingFactor(iDirection) = DumI(2) ! integer scaling factor
+                    CalParams%PrescribedSeismicAction%ScalingFactor(iDirection) = DumR(2) ! integer scaling factor
                     
                 end do 
                 
@@ -2006,10 +2006,14 @@
                     
         
                 
+
+          else if (trim(BName)=='$$PRESCRIBED_SEISMIC_ACTION_STARTING_TIME') then 
+                read(FileUnit, *, iostat=ios) DumR(1)
                 
                 
+                CalParams%PrescribedSeismicAction%TransientBoundaryConditionStaringTime = DumR(1)
                 
-                  
+                   
                               
             elseif (trim(BName)=='$$PRESCRIBED_VELOCITY') then 
               read(FileUnit, *, iostat=ios) DumS(1,1), DumR(1:2) !, DumFileName ! [ step, linear, file, off ] 
@@ -3967,7 +3971,8 @@
         !real(REAL_TYPE), dimension(2,2) :: CoordinatesForInterpolation
         
         
-        CalParams%PrescribedSeismicAction%TransientBoundaryConditionStaringTime = CalParams%OverallRealTime
+        ! I commented this so that we can update the transient time based on the input file
+        !CalParams%PrescribedSeismicAction%TransientBoundaryConditionStaringTime = CalParams%OverallRealTime
                 
                 do ii=1,NPTS
                     !Correcting the starting time of the data read from file (hardcoded to 1D prescribed boundary condition) 
@@ -5891,9 +5896,16 @@
           call WriteStringReal(FileUnit, '$$SOLID_TRACTION_B', CalParams%Multipliers%SolidALoadType(2), [CalParams%Multipliers%SolidACurrent(2), CalParams%Multipliers%SolidAFinal(2)], .true.)
           call WriteStringReal(FileUnit, '$$LIQUID_PRESSURE', CalParams%Multipliers%WaterALoadType(1), [CalParams%Multipliers%WaterACurrent(1), CalParams%Multipliers%WaterAFinal(1)], .true.)
 		  call WriteStringReal(FileUnit, '$$LIQUID_PRESSURE_B', CalParams%Multipliers%WaterALoadType(2), [CalParams%Multipliers%WaterACurrent(2), CalParams%Multipliers%WaterAFinal(2)], .true.)
+          
+          call WriteIntegerStringStringReal(FileUnit, '$$PRESCRIBED_SEISMIC_ACTION', CalParams%PrescribedSeismicAction%ApplyGroundMotionDirection(1:NDIM), &
+                                                                                     CalParams%PrescribedSeismicAction%InputFileFormat(1:NDIM), &
+                                                                                     CalParams%PrescribedSeismicAction%InputFileName(1:NDIM), &
+                                                                                     CalParams%PrescribedSeismicAction%ScalingFactor(1:NDIM), &
+                                                                                     .true.)
+
           call WriteStringReal(FileUnit, '$$GAS_PRESSURE', CalParams%Multipliers%GasALoadType(1), [CalParams%Multipliers%GasACurrent(1), CalParams%Multipliers%GasAFinal(1)], .false.)
           call WriteStringReal(FileUnit, '$$GAS_PRESSURE_B', CalParams%Multipliers%GasALoadType(2), [CalParams%Multipliers%GasACurrent(2), CalParams%Multipliers%GasAFinal(2)], .false.)
-		   call WriteStringReal(FileUnit, '$$HYDRAULIC_HEAD', CalParams%Multipliers%HydraulicHeadType, [CalParams%Multipliers%HydraulicHeadCurrent], .true.)
+		  call WriteStringReal(FileUnit, '$$HYDRAULIC_HEAD', CalParams%Multipliers%HydraulicHeadType, [CalParams%Multipliers%HydraulicHeadCurrent], .true.)
           call WriteLogic(FileUnit, '$$APPLY_SEEPAGE_FACE', [CalParams%BoundaryConditions%UseSeepageFace], 1, .true.) 
           call WriteLogic(FileUnit, '$$APPLY_INFILTRATION', [CalParams%BoundaryConditions%UseInfiltration], 1, .true.) 
           call WriteStringReal(FileUnit, '$$PRESCRIBED_VELOCITY', CalParams%Multipliers%VelocitySolidLoadType, [CalParams%Multipliers%VelocitySolidCurrent, CalParams%Multipliers%VelocitySolidFinal], .true.)
@@ -6434,6 +6446,86 @@
           call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
 
         end subroutine WriteStringReal        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        subroutine WriteIntegerStringStringReal(unit, name, valueI, valueS_1, valueS_2, valueR, IsWritten)
+        !**********************************************************************
+        !
+        ! Function:  Write a combination of string(scalar) and real(array) value into the CPS file
+        !
+        !**********************************************************************
+        
+        implicit none
+        
+          integer(INTEGER_TYPE), intent(in) :: unit
+          character(*), intent(in) :: name
+          integer(INTEGER_TYPE), dimension(NDIM), intent(in) :: valueI
+          character(*), intent(in), dimension(NDIM) :: valueS_1
+          character(*), intent(in), dimension(NDIM) :: valueS_2
+          real(REAL_TYPE), dimension(NDIM), intent(in) :: valueR
+          logical, intent(in) :: IsWritten
+          
+          ! local variables
+          integer(INTEGER_TYPE) :: ios, ii
+
+          if (.not.IsWritten) RETURN 
+          
+          if ( trim(name) /= '' ) then
+            write(unit, '(A)', iostat=ios) trim(name)
+            call Assert( ios == 0, 'CPS file: Can''t write flag ' // trim(name) // ' into CPS file.')
+          else
+            ! ...do nothing
+          end if    
+
+          !do ii = 1, NDIM
+          !write(unit, *, iostat=ios) valueI(ii), valueS_1(ii), valueS_2(ii), valueR(ii)
+          !end do 
+          
+          do ii = 1, NDIM
+              write(unit, '(I0,1X,A,1X,A,1X,F0.0)', iostat=ios) &
+                  valueI(ii), trim(valueS_1(ii)), trim(valueS_2(ii)), valueR(ii)
+          end do
+          
+          call Assert( ios == 0, 'CPS file: Can''t write value of ' // trim(name) // ' into CPS file.')
+
+        end subroutine WriteIntegerStringStringReal        
+        
+        
+        
+        
+        
         
         
         subroutine WriteLogicReal(unit, name, valueL, valueR, ndim, IsWritten)

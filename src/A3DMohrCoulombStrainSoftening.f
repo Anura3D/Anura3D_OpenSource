@@ -877,7 +877,14 @@
       COH = c !Cohesion
       SPHI = sin(phi) 
       CPHI = cos(phi)
-      COTPHI = CPHI/SPHI
+      
+      !COTPHI = CPHI/SPHI
+      if (abs(SPHI) > 1.0e-10) then
+          COTPHI = CPHI / SPHI
+      else
+          COTPHI = 0.0
+      end if
+      
       aSmooth = C00P50*COH*COTPHI !Smoothing parameter
       ASPHI2 = aSmooth*aSmooth*SPHI*SPHI
       if (abs(phi) == C00000) then
