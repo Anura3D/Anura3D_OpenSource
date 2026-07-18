@@ -8,7 +8,7 @@
     !
     !
 	!	Anura3D - Numerical modelling and simulation of large deformations 
-    !   and soil–water–structure interaction using the material point method (MPM)
+    !   and soilï¿½waterï¿½structure interaction using the material point method (MPM)
     !
     !	Copyright (C) 2025  Members of the Anura3D MPM Research Community 
     !   (See Contributors file "Contributors.txt")
@@ -301,14 +301,8 @@
         !
         !*************************************************************************************
       Character fName*(*)
-      Logical fExist
       Call UniEraseFile ( fName )
       Return
-      If (fExist(fName)) Then
-        Call FindIO(10,io)
-        Open(io,file=fName)
-        Close(io,Status='Delete')
-      End If
       End
  
       

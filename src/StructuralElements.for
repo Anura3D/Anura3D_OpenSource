@@ -947,10 +947,10 @@
         if (.not. ISAXISYMMETRIC) then
             normal_diff= (Particles(I)%ParticleRadius + DistanceField(I))  * Sign * Normal !Remainder vector from particle to point of contact
             RadiusVec = (Xp - DataStructureRigidBody(J)%Centroid) - normal_diff !Vector from centroid to contact point
-            RigidBodyVelAtPoint(1) = DataStructureRigidBody(J)%Velocity(1) + &
+            RigidBodyVelAtPoint(1) = DataStructureRigidBody(J)%Velocity(1) - &
                                         DataStructureRigidBody(J)%AngularVelocity * (RadiusVec(2))
             RigidBodyVelAtPoint(2) = DataStructureRigidBody(J)%Velocity(2) + &
-                                        DataStructureRigidBody(J)%AngularVelocity * (- RadiusVec(1))
+                                        DataStructureRigidBody(J)%AngularVelocity * (RadiusVec(1))
         else
             ! For axisymmetric, only translational velocity (no rotation in this plane)
             RigidBodyVelAtPoint = DataStructureRigidBody(J)%Velocity
