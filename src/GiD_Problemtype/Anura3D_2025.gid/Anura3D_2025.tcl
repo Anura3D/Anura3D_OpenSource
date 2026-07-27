@@ -373,20 +373,11 @@ proc Anura3D::Calculate { args } {
                                         
                     # REMOVE FILES FROM THE CURRENT AND SUBSEQUENT STAGES IF THEY EXIST
                     set first_step_stage [expr {$prev_stage_steps + 1}]
-                    if { $first_step_stage < 10 } {
-                        set file_ext "_00$first_step_stage"
-						set file_ext2 "00$first_step_stage"
-                    } else {
-                        set file_ext "_0$first_step_stage"
-						set file_ext2 "0$first_step_stage"
-                    }                    
+                    set file_ext2 [format %03d $first_step_stage]
+                    set file_ext "_$file_ext2"
 
 					for {set iii $first_step_stage} {$iii <= $tot_num_steps} {incr iii} {
-                        if { $iii < 10 } {
-							set ext "_00$iii"
-                            } else {
-                            set ext "_0$iii"
-						}
+						set ext "_[format %03d $iii]"
 						set BRF_file [file join $A3D_folder $projectName.BRF$ext]
                         if { [file exists $BRF_file] } {
 							file delete $BRF_file
@@ -437,11 +428,7 @@ proc Anura3D::Calculate { args } {
                     set POST_bin_file [file join $A3D_folder $projectName$file_ext2.POST.bin]
                     if { [file exists $POST_bin_file] } {
                         for {set iii $first_step_stage} {$iii <= $tot_num_steps} {incr iii} {
-                            if { $iii < 10 } {
-                                set ext "00$iii"
-                            } else {
-                                set ext "0$iii"
-                            }
+                            set ext [format %03d $iii]
                         set POST_bin_file [file join $A3D_folder $projectName$ext.POST.bin]
                         file delete $POST_bin_file
                         }
@@ -516,11 +503,7 @@ proc Anura3D::Calculate { args } {
                     set num_stepsNode [$stageNode selectNodes $xp_num_steps]                           
                     set num_steps [$num_stepsNode @v]
                     set last_calc_step [expr {$num_steps + 1}]                            
-                    if { $last_calc_step < 10 } {
-                        set cps_extension "CPS_00$last_calc_step"
-                    } else {
-                        set cps_extension "CPS_0$last_calc_step"
-                    }                                        
+                    set cps_extension "CPS_[format %03d $last_calc_step]"
                     
                     # Read TOTAL TIME, NUMBER_OF_ACTIVE_ELEMENTS AND OUTPUT MATERIAL POINTS
                     set CPS_A3D_file [file join $A3D_folder "$projectName.$cps_extension"]
