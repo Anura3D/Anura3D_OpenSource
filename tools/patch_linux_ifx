@@ -1,0 +1,797 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: LGPL-3.0-or-later
+"""Patch Anura3D_OpenSource for a Linux/WSL build with Intel ifx.
+
+The patch is intentionally conservative and transactional:
+
+* every required source layout is checked before any file is written;
+* changed files are backed up under .linux-patch-backup/<timestamp>/;
+* the script is idempotent and may be run again on an already patched tree;
+* a dedicated src/Makefile.linux is generated with debug, ASan, and release modes.
+
+Validated baseline:
+    Anura3D/Anura3D_OpenSource
+    commit 140247b9c7939e8210cc9f4111256ba094accc1f
+    Intel ifx 2026.1.0 on Ubuntu under WSL 2
+
+Linux build limitations:
+
+* Windows DLL-based external soil models are disabled.
+* The built-in constitutive models are linked directly and remain available.
+* GiD-specific output routines are disabled; VTK/ParaView output is retained.
+
+Usage:
+    python3 tools/patch_linux_ifx.py .
+    python3 tools/patch_linux_ifx.py /path/to/Anura3D_OpenSource
+    python3 tools/patch_linux_ifx.py . --dry-run
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import shutil
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+VALIDATED_COMMIT = "140247b9c7939e8210cc9f4111256ba094accc1f"
+
+MAKEFILE_LINUX = r'''.NOTPARALLEL:
+.DELETE_ON_ERROR:
+
+# Do not use GNU Make's implicit rules or built-in variables.
+MAKEFLAGS += --no-builtin-rules --no-builtin-variables
+
+FORTRAN_COMPILER ?= ifx
+BUILD ?= debug
+TARGET := Anura3D.out
+
+# Anura3D's Windows build uses 64-bit default REAL values. The Linux build must
+# use the matching ABI; omitting -real-size 64 can corrupt procedure arguments.
+COMMON_FLAGS := -free -fpp -traceback -heap-arrays -real-size 64 -fpconstant
+LINK_FLAGS :=
+
+ifeq ($(BUILD),debug)
+    PROFILE_FLAGS := -O0 -g -check all,noarg_temp_created -warn all
+else ifeq ($(BUILD),asan)
+    PROFILE_FLAGS := -O0 -g -check all,noarg_temp_created -warn all -fsanitize=address -fno-omit-frame-pointer
+    LINK_FLAGS := -fsanitize=address
+else ifeq ($(BUILD),release)
+    PROFILE_FLAGS := -O2 -warn all
+else
+    $(error Unsupported BUILD='$(BUILD)'. Use debug, asan, or release.)
+endif
+
+source_files := ./GlobalConstants.FOR \
+        ./Soilmodels/A3DLinearElasticity.f \
+        ./Soilmodels/A3DMohrCoulombStandard.f \
+        ./GeoMath.FOR \
+        ./MatrixMath.FOR \
+        ./FileIO.for \
+        ./String.for \
+        ./Counters.FOR \
+        ./Feedback.for \
+        ./ReadCalculationData.FOR \
+        ./ElemCalcTETRA.FOR \
+        ./ElemCalcQUAD.FOR \
+        ./Soilmodels/A3DBingham.f \
+        ./ReadMaterialData.FOR \
+        ./ElemCalcTRI.FOR \
+        ./getversion.for \
+        ./InitialiseKernel.FOR \
+        ./ElemCalc.FOR \
+        ./MeshInfo.FOR \
+        ./ReadGeometryData.FOR \
+        ./ISORT.FOR \
+        ./ElemConnections.FOR \
+        ./Particle.FOR \
+        ./MPMData.FOR \
+        ./RotBoundCond.FOR \
+        ./MPMStresses.FOR \
+        ./MPMDynViscousBoundary.FOR \
+        ./TwoLayerFormulation.FOR \
+        ./MPMDYN2PhaseSP.FOR \
+        ./MPMDYN3PhaseSP.FOR \
+        ./MPMDynContact.FOR \
+        ./ReadMPMData.FOR \
+        ./WriteMPMData.FOR \
+        ./MPMMeshAdjustment.FOR \
+        ./MPMConvPhase.FOR \
+        ./WriteTestData.FOR \
+        ./MPMEmptyElements.FOR \
+        ./InitialiseElementType.for \
+        ./AdjustParticleDiscretisation.FOR \
+        ./MPMInit.FOR \
+        ./MPMDYNBTSig.FOR \
+        ./RigidBody.f \
+        ./LagrangianPhase.FOR \
+        ./Liquid.FOR \
+        ./ExternalSoilModel.for \
+        ./MPMStrainSmoothing.FOR \
+        ./MPMDYNStresses.FOR \
+        ./MPMDYNConvPhase.FOR \
+        ./MPMExcavation.FOR \
+        ./BuildBJacDet.FOR \
+        ./BuildDElastic.FOR \
+        ./BuildLoad.FOR \
+        ./GetPrinStress.FOR \
+        ./GetStrain.FOR \
+        ./timing.for \
+        ./ReadOutputData.FOR \
+        ./WriteVTKASCII.FOR \
+        ./WriteVTKBinary.FOR \
+        ./WriteVTKOutput.FOR \
+        ./WriteVTK2Layer.FOR \
+        ./WriteNodalData.FOR \
+        ./WriteResultData.FOR \
+        ./ErrorHandler.for \
+        ./MPMDynamicExplicit.FOR \
+        ./MPMConstruction.FOR \
+        ./Kernel.for \
+        ./Anura3D.for
+
+.PHONY: all clean print-config
+
+all: $(TARGET)
+
+$(TARGET):
+	@echo "Compiler: $(FORTRAN_COMPILER)"
+	@echo "Build:    $(BUILD)"
+	@echo "Flags:    $(COMMON_FLAGS) $(PROFILE_FLAGS)"
+	@echo "Compiling in dependency order..."
+	@set -e; for file in $(source_files); do \
+		echo "  $$file"; \
+		$(FORTRAN_COMPILER) $(COMMON_FLAGS) $(PROFILE_FLAGS) -c "$$file"; \
+	done
+	@echo "Linking $(TARGET)..."
+	$(FORTRAN_COMPILER) $(COMMON_FLAGS) $(PROFILE_FLAGS) $(LINK_FLAGS) *.o -o $(TARGET)
+
+clean:
+	rm -f *.o *.mod *genmod*.f90 *.pdb *.ilk $(TARGET)
+
+print-config:
+	@echo "FORTRAN_COMPILER=$(FORTRAN_COMPILER)"
+	@echo "BUILD=$(BUILD)"
+	@echo "COMMON_FLAGS=$(COMMON_FLAGS)"
+	@echo "PROFILE_FLAGS=$(PROFILE_FLAGS)"
+	@echo "LINK_FLAGS=$(LINK_FLAGS)"
+'''
+
+
+class PatchError(RuntimeError):
+    """Raised when the source tree does not match a supported layout."""
+
+
+def read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8", errors="surrogateescape")
+
+
+def write_text(path: Path, text: str) -> None:
+    path.write_text(text, encoding="utf-8", errors="surrogateescape", newline="\n")
+
+
+def run_git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", "-C", str(repo), *args],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+
+def git_head(repo: Path) -> str:
+    result = run_git(repo, "rev-parse", "HEAD")
+    return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
+def comment_use(text: str, module_pattern: str) -> tuple[str, int]:
+    pattern = re.compile(
+        rf"(?im)^(?P<indent>[ \t]*)use[ \t]+(?P<module>{module_pattern})\b(?P<tail>[^\n]*)$"
+    )
+
+    def replacement(match: re.Match[str]) -> str:
+        return f"{match.group('indent')}! Linux patch: disabled module: use {match.group('module')}{match.group('tail')}"
+
+    return pattern.subn(replacement, text)
+
+
+def has_active_line(text: str, pattern: str) -> bool:
+    regex = re.compile(pattern, re.I)
+    for line in text.splitlines():
+        if line.lstrip().startswith("!"):
+            continue
+        if regex.search(line):
+            return True
+    return False
+
+
+def patch_dll_loading(text: str) -> str:
+    marker = "External DLL loading is disabled in the Linux build"
+    if marker in text:
+        return text
+
+    lines = text.splitlines()
+    starts = [
+        index
+        for index, line in enumerate(lines)
+        if re.search(
+            r"MatParams\s*\(\s*I\s*\)\s*%\s*SoilModelDLL\s*=\s*DumS",
+            line,
+            re.I,
+        )
+    ]
+
+    for start in starts:
+        end = None
+        for index in range(start, min(start + 24, len(lines))):
+            if re.search(
+                r"MatParams\s*\(\s*I\s*\)\s*%\s*SoilModelDLLHandle\s*=\s*lib_handle",
+                lines[index],
+                re.I,
+            ):
+                end = index
+                break
+
+        if end is None:
+            continue
+
+        block = "\n".join(lines[start : end + 1])
+        if not re.search(r"\bloadlibrary\b", block, re.I):
+            continue
+        if not re.search(r"\bGetProcAddress\b", block, re.I):
+            continue
+
+        indent = re.match(r"[ \t]*", lines[start]).group(0)
+        lines[start : end + 1] = [
+            f"{indent}MatParams(I)%SoilModelDLL = DumS",
+            f"{indent}lib_handle = 0",
+            f"{indent}call GiveWarning('{marker}')",
+            f"{indent}MatParams(I)%SoilModelDLLHandle = lib_handle",
+        ]
+        return "\n".join(lines) + ("\n" if text.endswith("\n") else "")
+
+    if has_active_line(text, r"\b(?:loadlibrary|GetProcAddress)\s*\("):
+        raise PatchError(
+            "The Windows DLL-loading block in ReadMaterialData.FOR was not recognized."
+        )
+    return text
+
+
+def patch_read_material_data(text: str) -> str:
+    text, _ = comment_use(text, r"kernel32")
+    text = re.sub(
+        r"(?im)^([ \t]*)integer\s*\(\s*handle\s*\)\s*::\s*SoilModelDLLHandle\b",
+        r"\1integer :: SoilModelDLLHandle",
+        text,
+    )
+    text = re.sub(
+        r"(?im)^([ \t]*)integer\s*\(\s*handle\s*\)\s*::\s*lib_handle\b",
+        r"\1integer :: lib_handle",
+        text,
+    )
+    return patch_dll_loading(text)
+
+
+def patch_dot_products(text: str) -> str:
+    pattern = re.compile(
+        r"(?P<prefix>DotProduct\s*\(\s*\(/\s*)"
+        r"(?P<a>[01]\.0)(?:_REAL_TYPE)?\s*,\s*"
+        r"(?P<b>[01]\.0)(?:_REAL_TYPE)?\s*,\s*"
+        r"(?P<c>[01]\.0)(?:_REAL_TYPE)?"
+        r"(?P<suffix>\s*/\)\s*,\s*Normal\s*,\s*3\s*\))",
+        re.I,
+    )
+
+    def replacement(match: re.Match[str]) -> str:
+        return (
+            f"{match.group('prefix')}"
+            f"{match.group('a')}_REAL_TYPE,"
+            f"{match.group('b')}_REAL_TYPE,"
+            f"{match.group('c')}_REAL_TYPE"
+            f"{match.group('suffix')}"
+        )
+
+    text, count = pattern.subn(replacement, text)
+
+    # Lines changed by the replacement must not retain old trailing spaces,
+    # otherwise `git diff --check` reports them as newly introduced whitespace.
+    lines = [
+        line.rstrip() if "DotProduct" in line and "_REAL_TYPE" in line else line
+        for line in text.splitlines()
+    ]
+    text = "\n".join(lines) + ("\n" if text.endswith("\n") else "")
+
+    remaining = re.search(
+        r"DotProduct\s*\(\s*\(/\s*[01]\.0(?!_REAL_TYPE).*?Normal\s*,\s*3",
+        text,
+        re.I,
+    )
+    if remaining:
+        raise PatchError(
+            "At least one DotProduct basis vector still uses default REAL constants."
+        )
+    if count == 0 and "DotProduct" not in text:
+        raise PatchError("No DotProduct calls were found in MPMDynViscousBoundary.FOR.")
+    return text
+
+
+def patch_virtual_mass(text: str, filename: str) -> str:
+    if re.search(
+        r"-1\.0_REAL_TYPE\s*,\s*&[^\n]*mass assigned to material point",
+        text,
+        re.I,
+    ):
+        return text
+
+    pattern = re.compile(
+        r"-1\.0\s*,\s*&(?P<tail>[^\n]*mass assigned to material point)",
+        re.I,
+    )
+    text, count = pattern.subn(r"-1.0_REAL_TYPE, &\g<tail>", text, count=1)
+    if count != 1:
+        raise PatchError(f"The virtual-mass constant was not found in {filename}.")
+    return text
+
+
+def find_subroutine_range(text: str, name: str) -> tuple[int, int]:
+    start_match = re.search(
+        rf"(?im)^[ \t]*subroutine[ \t]+{re.escape(name)}\b[^\n]*$",
+        text,
+    )
+    if not start_match:
+        raise PatchError(f"Subroutine {name} was not found.")
+
+    end_match = re.search(
+        rf"(?im)^[ \t]*end[ \t]+subroutine(?:[ \t]+{re.escape(name)})?[ \t]*$",
+        text[start_match.end() :],
+    )
+    if not end_match:
+        # Older source files sometimes use a bare END.
+        end_match = re.search(
+            r"(?im)^[ \t]*end[ \t]*$",
+            text[start_match.end() :],
+        )
+    if not end_match:
+        raise PatchError(f"The end of subroutine {name} was not found.")
+
+    end = start_match.end() + end_match.end()
+    return start_match.start(), end
+
+
+def patch_external_soil_model(text: str) -> str:
+    text, _ = comment_use(text, r"user32")
+    text, _ = comment_use(text, r"kernel32")
+
+    start, end = find_subroutine_range(text, "StressSolid")
+    block = text[start:end]
+    marker = "Linux: bind the built-in constitutive-model procedure pointer"
+
+    if marker not in block:
+        call_matches = list(
+            re.finditer(r"(?im)^(?P<indent>[ \t]*)call[ \t]+ESM\s*\(", block)
+        )
+        if len(call_matches) != 1:
+            raise PatchError(
+                "StressSolid must contain exactly one call ESM(...) statement; "
+                f"found {len(call_matches)}."
+            )
+        match = call_matches[0]
+        indent = match.group("indent")
+        insertion = (
+            f"{indent}! {marker}\n"
+            f"{indent}ESM => MatParams(IDSet)%ESM_POINTER\n"
+        )
+        block = block[: match.start()] + insertion + block[match.start() :]
+        text = text[:start] + block + text[end:]
+
+    return text
+
+
+def replace_gid_output_blocks(text: str) -> tuple[str, int]:
+    """Replace both GiD visualization branches while preserving VTK output."""
+
+    lines = text.splitlines()
+    starts = [
+        index
+        for index, line in enumerate(lines)
+        if re.search(
+            r"^\s*if\s*\(\s*CalParams\s*%\s*Visualization\s*==\s*"
+            r"['\"]GiD-ASCII['\"]\s*\)\s*then\s*(?:!.*)?$",
+            line,
+            re.I,
+        )
+    ]
+
+    if not starts:
+        if has_active_line(
+            text, r"^\s*call\s+WriteGiD(?:MeshASCII|ResultsASCII|ResultsBIN)\b"
+        ):
+            raise PatchError(
+                "Active GiD calls remain, but their visualization blocks were not recognized."
+            )
+        return text, 0
+
+    replacements: list[tuple[int, int, str]] = []
+
+    for block_start in starts:
+        depth = 0
+        block_end = None
+        for index in range(block_start, len(lines)):
+            stripped = lines[index].strip()
+            if re.match(r"(?i)^if\b.*\bthen\b", stripped):
+                depth += 1
+            if re.match(r"(?i)^(?:end\s*if|endif)\b", stripped):
+                depth -= 1
+                if depth == 0:
+                    block_end = index
+                    break
+
+        if block_end is None:
+            raise PatchError(
+                f"The GiD visualization block starting at line {block_start + 1} has no end."
+            )
+
+        subroutine = ""
+        for index in range(block_start, -1, -1):
+            match = re.match(
+                r"(?i)^\s*subroutine\s+([A-Za-z0-9_]+)", lines[index]
+            )
+            if match:
+                subroutine = match.group(1).lower()
+                break
+
+        indent = re.match(r"\s*", lines[block_start]).group(0)
+        if subroutine == "writeloadphaseresults":
+            # WriteResultData(Filename) has already been called in this routine.
+            # The surrounding NFORMULATION branch selects one-layer or two-layer VTK.
+            replacement = f"{indent}call WriteVTKOutput() ! Linux: GiD output disabled"
+        else:
+            replacement = (
+                f"{indent}call WriteResultsOfOneStep(Filename) "
+                "! Linux: GiD output disabled"
+            )
+        replacements.append((block_start, block_end, replacement))
+
+    for block_start, block_end, replacement in reversed(replacements):
+        lines[block_start : block_end + 1] = [replacement]
+
+    return "\n".join(lines) + ("\n" if text.endswith("\n") else ""), len(replacements)
+
+
+def patch_write_result_data(text: str) -> str:
+    text, _ = comment_use(text, r"kernel32")
+    text, _ = comment_use(text, r"(?:Mod)?WriteOutput_GiD")
+    text, count = replace_gid_output_blocks(text)
+    if count not in {0, 2}:
+        raise PatchError(
+            f"Expected two GiD output blocks in WriteResultData.FOR; patched {count}."
+        )
+    return text
+
+
+def patch_erase_file(text: str) -> str:
+    start, end = find_subroutine_range(text, "EraseFile")
+    block = text[start:end]
+
+    if not re.search(r"\bfExist\b", block, re.I):
+        return text
+
+    first_line = block.splitlines()[0]
+    indent = re.match(r"[ \t]*", first_line).group(0)
+    body = indent + "  "
+    replacement = "\n".join(
+        [
+            f"{indent}Subroutine EraseFile(fName)",
+            f"{body}! Linux: use the portable erase implementation only.",
+            f"{body}Character fName*(*)",
+            f"{body}Call UniEraseFile ( fName )",
+            f"{body}Return",
+            f"{indent}End",
+        ]
+    )
+    return text[:start] + replacement + text[end:]
+
+
+def patch_principal_stresses(text: str) -> str:
+    start, end = find_subroutine_range(text, "CalculatePrincipalStresses")
+    block = text[start:end]
+
+    block, sig_count = re.subn(
+        r"(?im)^([ \t]*real\s*\(\s*REAL_TYPE\s*\)\s*,\s*intent\s*\(\s*in\s*\)"
+        r"\s*,\s*dimension\s*\(\s*)6(\s*\)\s*::\s*Sig\s*)$",
+        r"\1NTENSOR\2",
+        block,
+    )
+    block, prin_count = re.subn(
+        r"(?im)^([ \t]*real\s*\(\s*REAL_TYPE\s*\)\s*,\s*intent\s*\(\s*out\s*\)"
+        r"\s*,\s*dimension\s*\(\s*)6(\s*\)\s*::\s*SigPrin\s*)$",
+        r"\1NTENSOR\2",
+        block,
+    )
+
+    if sig_count == 0 and not re.search(
+        r"(?im)dimension\s*\(\s*NTENSOR\s*\)\s*::\s*Sig\b", block
+    ):
+        raise PatchError("The Sig declaration in CalculatePrincipalStresses was not recognized.")
+    if prin_count == 0 and not re.search(
+        r"(?im)dimension\s*\(\s*NTENSOR\s*\)\s*::\s*SigPrin\b", block
+    ):
+        raise PatchError(
+            "The SigPrin declaration in CalculatePrincipalStresses was not recognized."
+        )
+
+    marker = "Linux: initialize the valid NTENSOR-sized output array"
+    if not re.search(r"(?im)^\s*SigPrin\s*=\s*0\.0_REAL_TYPE\s*$", block):
+        call_match = re.search(
+            r"(?im)^(?P<indent>[ \t]*)call[ \t]+PrnSig\s*\(", block
+        )
+        if not call_match:
+            raise PatchError("call PrnSig(...) was not found in CalculatePrincipalStresses.")
+        indent = call_match.group("indent")
+        insertion = (
+            f"{indent}! {marker}\n"
+            f"{indent}SigPrin = 0.0_REAL_TYPE\n\n"
+        )
+        block = block[: call_match.start()] + insertion + block[call_match.start() :]
+
+    # The original code always wrote elements 4, 5 and 6. In 2D the actual
+    # argument has only NTENSOR=4 elements, so writes to 5 and 6 overflow it.
+    block = re.sub(
+        r"(?im)^[ \t]*SigPrin\s*\(\s*[456]\s*\)\s*=\s*"
+        r"0\.0(?:d0|_REAL_TYPE)?[ \t]*\r?\n?",
+        "",
+        block,
+    )
+
+    if re.search(r"(?im)dimension\s*\(\s*6\s*\)\s*::\s*(?:Sig|SigPrin)\b", block):
+        raise PatchError("A hard-coded dimension(6) remains in CalculatePrincipalStresses.")
+    if re.search(r"(?im)^\s*SigPrin\s*\(\s*[56]\s*\)\s*=", block):
+        raise PatchError("An out-of-bounds SigPrin(5/6) write remains.")
+
+    return text[:start] + block + text[end:]
+
+
+def verify_patched(files: dict[Path, str], src: Path) -> list[str]:
+    errors: list[str] = []
+
+    def content(name: str) -> str:
+        return files[src / name]
+
+    # Scan the complete source tree, using planned content for files that will
+    # be modified and on-disk content for all other Fortran files.
+    for path in sorted(src.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in {".f", ".for", ".f90"}:
+            continue
+        text = files.get(path, read_text(path))
+        relative = path.relative_to(src)
+        if has_active_line(text, r"^\s*use\s+(?:kernel32|user32)\b"):
+            errors.append(f"{relative}: active kernel32/user32 import remains")
+        if has_active_line(text, r"\b(?:loadlibrary|GetProcAddress)\s*\("):
+            errors.append(f"{relative}: active Windows DLL call remains")
+        if has_active_line(
+            text,
+            r"^\s*call\s+WriteGiD(?:MeshASCII|ResultsASCII|ResultsBIN)\b",
+        ):
+            errors.append(f"{relative}: active GiD call remains")
+
+    external = content("ExternalSoilModel.for")
+    if "Linux: bind the built-in constitutive-model procedure pointer" not in external:
+        errors.append("ExternalSoilModel.for: built-in ESM pointer binding is missing")
+
+    principal = content("GetPrinStress.FOR")
+    if re.search(
+        r"(?is)subroutine\s+CalculatePrincipalStresses.*?"
+        r"dimension\s*\(\s*6\s*\)\s*::\s*(?:Sig|SigPrin)",
+        principal,
+    ):
+        errors.append("GetPrinStress.FOR: hard-coded dimension(6) remains")
+    if re.search(
+        r"(?is)subroutine\s+CalculatePrincipalStresses.*?"
+        r"SigPrin\s*\(\s*[56]\s*\)\s*=",
+        principal,
+    ):
+        errors.append("GetPrinStress.FOR: out-of-bounds SigPrin(5/6) write remains")
+
+    makefile = files[src / "Makefile.linux"]
+    for required_flag in ("-real-size 64", "-fpconstant", "-fsanitize=address"):
+        if required_flag not in makefile:
+            errors.append(f"Makefile.linux: required flag missing: {required_flag}")
+
+    return errors
+
+
+def build_plan(repo: Path) -> tuple[dict[Path, str], list[Path]]:
+    src = repo / "src"
+    required = [
+        "ReadMaterialData.FOR",
+        "MPMDynViscousBoundary.FOR",
+        "AdjustParticleDiscretisation.FOR",
+        "MPMInit.FOR",
+        "ExternalSoilModel.for",
+        "MPMDYNStresses.FOR",
+        "WriteResultData.FOR",
+        "FileIO.for",
+        "GetPrinStress.FOR",
+    ]
+    missing = [name for name in required if not (src / name).is_file()]
+    if missing:
+        raise PatchError("Missing source files: " + ", ".join(missing))
+
+    files: dict[Path, str] = {src / name: read_text(src / name) for name in required}
+    files[src / "Makefile.linux"] = (
+        read_text(src / "Makefile.linux")
+        if (src / "Makefile.linux").exists()
+        else ""
+    )
+
+    files[src / "ReadMaterialData.FOR"] = patch_read_material_data(
+        files[src / "ReadMaterialData.FOR"]
+    )
+    files[src / "MPMDynViscousBoundary.FOR"] = patch_dot_products(
+        files[src / "MPMDynViscousBoundary.FOR"]
+    )
+    files[src / "AdjustParticleDiscretisation.FOR"] = patch_virtual_mass(
+        files[src / "AdjustParticleDiscretisation.FOR"],
+        "AdjustParticleDiscretisation.FOR",
+    )
+    files[src / "MPMInit.FOR"] = patch_virtual_mass(
+        files[src / "MPMInit.FOR"], "MPMInit.FOR"
+    )
+    files[src / "ExternalSoilModel.for"] = patch_external_soil_model(
+        files[src / "ExternalSoilModel.for"]
+    )
+
+    mpmdyn = files[src / "MPMDYNStresses.FOR"]
+    mpmdyn, _ = comment_use(mpmdyn, r"user32")
+    mpmdyn, _ = comment_use(mpmdyn, r"kernel32")
+    files[src / "MPMDYNStresses.FOR"] = mpmdyn
+
+    files[src / "WriteResultData.FOR"] = patch_write_result_data(
+        files[src / "WriteResultData.FOR"]
+    )
+    files[src / "FileIO.for"] = patch_erase_file(files[src / "FileIO.for"])
+    files[src / "GetPrinStress.FOR"] = patch_principal_stresses(
+        files[src / "GetPrinStress.FOR"]
+    )
+    files[src / "Makefile.linux"] = MAKEFILE_LINUX
+
+    errors = verify_patched(files, src)
+    if errors:
+        raise PatchError("Verification failed:\n  - " + "\n  - ".join(errors))
+
+    changed = [
+        path
+        for path, new_text in files.items()
+        if (read_text(path) if path.exists() else "") != new_text
+    ]
+    return files, changed
+
+
+def apply_plan(
+    repo: Path,
+    files: dict[Path, str],
+    changed: list[Path],
+    *,
+    dry_run: bool,
+    no_backup: bool,
+) -> Path | None:
+    if not changed:
+        return None
+
+    backup_root: Path | None = None
+    if not no_backup:
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        backup_root = repo / ".linux-patch-backup" / stamp
+
+    if dry_run:
+        return backup_root
+
+    if backup_root is not None:
+        for path in changed:
+            if not path.exists():
+                continue
+            target = backup_root / path.relative_to(repo)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+
+    for path in changed:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_text(path, files[path])
+
+    return backup_root
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Patch Anura3D_OpenSource for Linux/WSL with Intel ifx."
+    )
+    parser.add_argument(
+        "repo",
+        nargs="?",
+        default=".",
+        help="Path to the Anura3D_OpenSource repository (default: current directory).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate and show the planned files without writing anything.",
+    )
+    parser.add_argument(
+        "--no-backup",
+        action="store_true",
+        help="Do not create .linux-patch-backup copies of changed files.",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    repo = Path(args.repo).expanduser().resolve()
+    src = repo / "src"
+
+    if not (repo / ".git").is_dir() or not src.is_dir():
+        print(f"ERROR: {repo} is not a cloned Anura3D_OpenSource repository.", file=sys.stderr)
+        return 2
+
+    head = git_head(repo)
+    print(f"Repository:       {repo}")
+    print(f"Git HEAD:         {head}")
+    print(f"Validated commit: {VALIDATED_COMMIT}")
+    if head != VALIDATED_COMMIT:
+        print(
+            "WARNING: This revision differs from the validated baseline. "
+            "The script will continue only if every expected source pattern is recognized."
+        )
+
+    try:
+        files, changed = build_plan(repo)
+    except PatchError as error:
+        print(f"\nPATCH ABORTED: {error}", file=sys.stderr)
+        print("No files were written.", file=sys.stderr)
+        return 3
+
+    print("\nPlanned changes:")
+    if changed:
+        for path in changed:
+            print(f"  {path.relative_to(repo)}")
+    else:
+        print("  none; the tree is already patched")
+
+    backup_root = apply_plan(
+        repo,
+        files,
+        changed,
+        dry_run=args.dry_run,
+        no_backup=args.no_backup,
+    )
+
+    if args.dry_run:
+        print("\nDRY RUN SUCCESSFUL. No files were written.")
+        return 0
+
+    if backup_root is not None and changed:
+        print(f"Backups:          {backup_root}")
+
+    diff_check = run_git(repo, "diff", "--check")
+    if diff_check.returncode != 0:
+        print("\nERROR: git diff --check reported whitespace errors:", file=sys.stderr)
+        print(diff_check.stdout.rstrip(), file=sys.stderr)
+        return 4
+
+    print("\nPATCH SUCCESSFUL.")
+    print("\nNext commands:")
+    print("  source /opt/intel/oneapi/setvars.sh")
+    print(f"  cd {src}")
+    print("  make -f Makefile.linux clean")
+    print("  make -f Makefile.linux BUILD=asan 2>&1 | tee build_asan.log")
+    print("\nAfter an ASan test passes, build the normal executable with:")
+    print("  make -f Makefile.linux clean")
+    print("  make -f Makefile.linux BUILD=release 2>&1 | tee build_release.log")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
