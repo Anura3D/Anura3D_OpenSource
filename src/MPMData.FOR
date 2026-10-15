@@ -102,7 +102,7 @@
         integer(INTEGER_TYPE), allocatable          :: EntityIDArray(:)             !> Unique ID indicating to which entity the particle belongs
         integer(INTEGER_TYPE), allocatable          :: MaterialIDArray(:)           !> Material ID of the particle referring to the material data read from input files
         real(INTEGER_TYPE), allocatable             :: AffinityArray(:, :)             !> Keep track of affinity of MPs with rigid surfaces
-        real(INTEGER_TYPE), allocatable             :: TangentForceTrack(:, :)             !> Keep track of tangent friction force
+        real(REAL_TYPE), allocatable                :: TangentForceTrack(:, :)             !> Keep track of tangent friction force (persistent elastic-plastic tangential force per MP)
         real(INTEGER_TYPE), allocatable             :: TangentDisplacementTrack(:, :)             !> Keep track of tangent displacement
         
         integer(INTEGER_TYPE), allocatable          :: MaterialPointTypeArray(:)    !> Material properties (properties related to the matter represented by particles)

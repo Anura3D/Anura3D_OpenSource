@@ -28,15 +28,19 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
     }
     
     # ELEMENT TYPE
+    # Detect the continuum element type from the model dimension rather than from
+    # element #1: the mesh may be mixed (continuum elements + Line/bar rigid-body
+    # elements), and element #1 is not guaranteed to be a continuum element.
     GiD_WriteCalculationFile puts {$$ELEMENTTYPE}
-    set info_mesh [GiD_Mesh get element 1]
-    set elem_type [lindex $info_mesh  1]
-    set num_nodes [lindex $info_mesh  2]
-    if { ($elem_type == "Triangle") && ($num_nodes == "3") } {
-        GiD_WriteCalculationFile puts "triangular_3-noded"
-    } elseif { ($elem_type == "Tetrahedra") && ($num_nodes == "10") } {
-        GiD_WriteCalculationFile puts "tetrahedral_old"
-    } else {error [= "INPUT ERROR: Element type not properly defined. Only the following element types are supported: triangular 3-noded, tetrahedral 10-noded."]}   
+    if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+        if { [GiD_Info Mesh NumElements Triangle] > 0 } {
+            GiD_WriteCalculationFile puts "triangular_3-noded"
+        } else {error [= "INPUT ERROR: Element type not properly defined. Only the following element types are supported: triangular 3-noded, tetrahedral 10-noded."]}
+    } elseif {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
+        if { [GiD_Info Mesh NumElements Tetrahedra] > 0 } {
+            GiD_WriteCalculationFile puts "tetrahedral_old"
+        } else {error [= "INPUT ERROR: Element type not properly defined. Only the following element types are supported: triangular 3-noded, tetrahedral 10-noded."]}
+    } else {error [= "INPUT ERROR: Element type not properly defined. Only the following element types are supported: triangular 3-noded, tetrahedral 10-noded."]}
     
     # FORMULATION
     GiD_WriteCalculationFile puts {$$FORMULATION}
@@ -49,11 +53,13 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
     }
     
     # COUNTERS
+    # Count only continuum elements (exclude Line/bar rigid-body elements), based
+    # on the model dimension.
     set num_nodes [GiD_Info Mesh NumNodes]
-    if {$elem_type == "Triangle"} {
+    if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
     set num_elements [GiD_Info Mesh NumElements Triangle]
     } else {
-    set num_elements [GiD_Info Mesh NumElements]
+    set num_elements [GiD_Info Mesh NumElements Tetrahedra]
     }
     GiD_WriteCalculationFile puts {$$STARTCOUNTERS}
     GiD_WriteCalculationFile puts [= "%s %s" $num_elements $num_nodes]
@@ -620,8 +626,12 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
         set v9 [$gNode selectNodes {string(value[@n="Friction_angle_4"]/@v)}]
         set v10 [$gNode selectNodes {string(value[@n="Name"]/@v)}]
         set v11 [$gNode selectNodes {string(value[@n="Thickness"]/@v)}]
-        set v12 [$gNode selectNodes {string(value[@n="Rigid_weigth"]/@v)}]
-        dict set formats [$gNode @n] "%d \"$v10\" $v11 $v12 $v1 $v2 $v3 $v4 $v5 $v6 $v7 $v8 $v9\n"
+        set v12 [$gNode selectNodes {string(value[@n="Rigid_density"]/@v)}]
+        set v13 [$gNode selectNodes {string(value[@n="Contact_damping_1"]/@v)}]
+        set v14 [$gNode selectNodes {string(value[@n="Contact_damping_2"]/@v)}]
+        set v15 [$gNode selectNodes {string(value[@n="Contact_damping_3"]/@v)}]
+        set v16 [$gNode selectNodes {string(value[@n="Contact_damping_4"]/@v)}]
+        dict set formats [$gNode @n] "%d \"$v10\" $v11 $v12 $v1 $v2 $v3 $v4 $v5 $v6 $v7 $v8 $v9 $v13 $v14 $v15 $v16\n"
     }
 
         if { [dict size $formats] } {
@@ -2958,12 +2968,16 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
     if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
         set ov_type "surface"
         set ElementList [GiD_Info Mesh Elements Triangle -sublist]
-        set list_len [llength $ElementList]
-        set material_ID_list [lrepeat $list_len 0]
-        set damping_list [lrepeat $list_len 0.0]
-        set material_point_list_s [lrepeat $list_len 0]
+        set num_cont_elem [GiD_Info Mesh NumElements Triangle]
+        set material_ID_list [lrepeat $num_cont_elem 0]
+        set damping_list [lrepeat $num_cont_elem 0.0]
+        set material_point_list_s [lrepeat $num_cont_elem 0]
+        set global_to_local [dict create]
+        for {set gi 0} {$gi < $num_cont_elem} {incr gi} {
+            dict set global_to_local [lindex $ElementList $gi 0] $gi
+        }
         if {$layer_type == "Double_point"} {
-            set material_point_list_l [lrepeat $list_len 0]
+            set material_point_list_l [lrepeat $num_cont_elem 0]
             set xp [format_xpath {container[@n="MPspecification"]/condition[@n="2D_Double-point"]/group} $ov_type]
         } else {
             set xp [format_xpath {container[@n="MPspecification"]/condition[@n="2D_Single-point"]/group} $ov_type]
@@ -2971,12 +2985,16 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
     } elseif {$dim_type == "3D" || $dim_type == "3D:Axissymmetric"} {
         set ov_type "volume"
         set ElementList [GiD_Info Mesh Elements Tetrahedra -sublist]
-        set list_len [llength $ElementList]
-        set material_ID_list [lrepeat $list_len 0]
-        set damping_list [lrepeat $list_len 0.0]
-        set material_point_list_s [lrepeat $list_len 0]
+        set num_cont_elem [GiD_Info Mesh NumElements Tetrahedra]
+        set material_ID_list [lrepeat $num_cont_elem 0]
+        set damping_list [lrepeat $num_cont_elem 0.0]
+        set material_point_list_s [lrepeat $num_cont_elem 0]
+        set global_to_local [dict create]
+        for {set gi 0} {$gi < $num_cont_elem} {incr gi} {
+            dict set global_to_local [lindex $ElementList $gi 0] $gi
+        }
         if {$layer_type == "Double_point"} {
-            set material_point_list_l [lrepeat $list_len 0]
+            set material_point_list_l [lrepeat $num_cont_elem 0]
             set xp [format_xpath {container[@n="MPspecification"]/condition[@n="3D_Double-point"]/group} $ov_type]
         } else {
             set xp [format_xpath {container[@n="MPspecification"]/condition[@n="3D_Single-point"]/group} $ov_type]
@@ -2995,13 +3013,17 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
         set elements_id [GiD_EntitiesGroups get $list_group elements]
         set num_elems [objarray length $elements_id]
         for {set i 0} {$i < $num_elems} {incr i} {
-            set node_id [objarray get $elements_id $i]
-            lset material_ID_list [expr $node_id -1] $MATERIAL_ID
-            lset material_point_list_s [expr $node_id -1] $materialpoints_s
+            set elem_id [objarray get $elements_id $i]
+            # Map the group's global GiD element id to its continuum row; skip
+            # ids that are not continuum elements (e.g. Line rigid-body elements).
+            if {![dict exists $global_to_local $elem_id]} { continue }
+            set local_idx [dict get $global_to_local $elem_id]
+            lset material_ID_list $local_idx $MATERIAL_ID
+            lset material_point_list_s $local_idx $materialpoints_s
             if {$layer_type == "Double_point"} {
-                lset material_point_list_l [expr $node_id -1] $materialpoints_l
+                lset material_point_list_l $local_idx $materialpoints_l
             }
-            lset damping_list [expr $node_id -1] $mat_damp
+            lset damping_list $local_idx $mat_damp
         }
         
     }

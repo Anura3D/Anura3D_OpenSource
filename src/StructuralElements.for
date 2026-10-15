@@ -44,10 +44,12 @@
       use ModGlobalData
       use ModMatrixMath
 	  use ModGeometryMath
+      use ModFeedback
       
       implicit none           
         ! Counters
         integer(INTEGER_TYPE):: NRigidBodies !store how many bodies there are
+        integer(INTEGER_TYPE):: ElemOffset !offset between a thin-rigid (Line) element's global GiD id and its local 1-based index (computed in CreateDataStructureRigidBody, reused by the conditions reader)
         integer(INTEGER_TYPE), dimension(:), allocatable ::  QtyRigidBodies !store how many 1D elements are in each body
         character(len=100), dimension(:), allocatable ::  UniqueBodiesNameF !Store the names of each rigid body
         ! Lists
@@ -55,9 +57,18 @@
         real(REAL_TYPE), dimension(:,:), allocatable :: NormalsRigidBody
 		real(REAL_TYPE):: Kfactor= sqrt(PI*2/9), kappa=0.0
 		logical::Stiffness_assigned=.false.
+
+        ! Anura3D solves in kN / Mg / m / s: forces are kN (Particle.FOR, FBody),
+        ! masses are Mg (DeterminePartMass = MaterialWeight[kN/m3]/g * IntWeight), so
+        ! Acceleration = Force[kN] / Mass[Mg] = m/s2 with no extra factor.
+        ! The rigid-body density is entered by the user in kg/m3, the same convention as
+        ! MatParams%DensitySolid in ReadMaterialData, so EVERY rigid-body mass and inertia
+        ! must scale the raw GOM value by 1/1000 to reach Mg/m3. Applying this factor in
+        ! some expressions and not others is what produced the historical 1000x errors.
+        real(REAL_TYPE), parameter :: RHO_KGM3_TO_MGM3 = 1.0d-3
         
         type Material
-            real(REAL_TYPE):: ContactStiffness, FrictionCoef
+            real(REAL_TYPE):: ContactStiffness, FrictionCoef, ContactDamping
         end type Material
         
         type Elements
@@ -113,10 +124,27 @@
         !Variables
         integer(INTEGER_TYPE) :: C, D, E, J, I, N, K, L
         integer(INTEGER_TYPE) :: ND(SIZE(ThinRigidCoordinates,1))
-        integer(INTEGER_TYPE) :: ElemOffset, PropId, PropIndex, NodeCount
+        integer(INTEGER_TYPE) :: PropId, PropIndex, NodeCount
         logical :: alreadyExists 
+        character(len=255) :: EchoLine
         allocate(DataStructureRigidBody(NRigidBodies))
+        ! Offset between a thin-rigid (Line) element's global GiD id and its local
+        ! 1-based index. GiD numbers the Line elements contiguously, but depending
+        ! on the GiD/mesh version they may be numbered before or after the continuum
+        ! elements. Derive the offset from the smallest thin-rigid id actually present
+        ! (min(id) - 1) instead of assuming the Line elements always follow the
+        ! continuum mesh. This equals SIZE(ElementConnectivities,2) for the legacy
+        ! ordering, and 0 when the Line elements are numbered first.
         ElemOffset = SIZE(ElementConnectivities,2)
+        if (SIZE(ThinRigidElmProp,1) > 0) then
+            read(ThinRigidElmProp(1,1), *) K
+            ElemOffset = K
+            do N = 2, SIZE(ThinRigidElmProp,1)
+                read(ThinRigidElmProp(N,1), *) K
+                if (K < ElemOffset) ElemOffset = K
+            end do
+            ElemOffset = ElemOffset - 1
+        end if
 
         ! Build per-body material, kinematic and geometric data from GiD input
         do J = 1, NRigidBodies
@@ -208,12 +236,13 @@
             
             DataStructureRigidBody(J)%Name = ThinRigidElmProp(PropId,2)                  !Name or identifier of rigid body		
             read(ThinRigidElmProp(PropId,3), *) DataStructureRigidBody(J)%Thickness      !Thickness associated to R.B.
-            read(ThinRigidElmProp(PropId,4), *) DataStructureRigidBody(J)%Density        !RB material density
+            read(ThinRigidElmProp(PropId,4), *) DataStructureRigidBody(J)%Density        !RB material MASS DENSITY in kg/m3 (never scaled here; use RHO_KGM3_TO_MGM3 at every point of use)
             read(ThinRigidElmProp(PropId,5), *) DataStructureRigidBody(J)%NumMaterials   !Number of possible materials in contact (#of soils in contact up to 4 in current version)
             allocate(DataStructureRigidBody(J)%Materials(DataStructureRigidBody(J)%NumMaterials))
             do I = 1, DataStructureRigidBody(J)%NumMaterials !HERE I CAN CALCULATE STIFFNESS DIRECTLY FOR STABILITY
                 read(ThinRigidElmProp(PropId,5 + 2* I -1), *) DataStructureRigidBody(J)%Materials(I)%ContactStiffness !Stiffness with respect to material I
                 read(ThinRigidElmProp(PropId,5 + 2* I), *) DataStructureRigidBody(J)%Materials(I)%FrictionCoef		 !Friction coefficient with respect to mat I
+                read(ThinRigidElmProp(PropId,13 + I), *) DataStructureRigidBody(J)%Materials(I)%ContactDamping       !Contact damping ratio (fraction of critical) w.r.t. mat I
 				!HERE WE COULD ADD ADDITIONAL USER DEFINED PROPERTIES
             end do
             
@@ -294,8 +323,16 @@
              DataStructureRigidBody(J)%Inertia = 0.0
              do I =1,  QtyRigidBodies(J)
 			    if (.not. ISAXISYMMETRIC) then !For axisymmetric calcs. the centroid is not important
+                    ! Self-inertia of the bar element about its own centroid, m*(L^2+t^2)/12
+                    ! with m = rho*L*t (per unit out-of-plane depth) and MechProp(I,1) = L*t.
+                    ! NOTE: the factor was written (1/12), which is INTEGER division and
+                    ! evaluates to 0, so this term was identically zero and only the
+                    ! parallel-axis term below survived. It must be real (1.0/12.0).
+                    ! The density is converted to Mg/m3 so that Inertia [Mg*m2] matches
+                    ! Mass [Mg] and the torque Tsum [kN*m] accumulated in LevelSetContact.
                     DataStructureRigidBody(J)%MechProp(I,4) = & !Inertia of each element
-                        ( (1/12)* DataStructureRigidBody(J)%MechProp(I,1) * DataStructureRigidBody(J)%Density * &
+                        ( (1.0d0/12.0d0)* DataStructureRigidBody(J)%MechProp(I,1) * &
+                        DataStructureRigidBody(J)%Density * RHO_KGM3_TO_MGM3 * &
                         ((DataStructureRigidBody(J)%MechProp(I,1)/DataStructureRigidBody(J)%Thickness)**2 + &
                         (DataStructureRigidBody(J)%Thickness)**2) )
                     DataStructureRigidBody(J)%MechProp(I,5) = &!Square of distance between local centroid and global centroid
@@ -304,7 +341,7 @@
                     DataStructureRigidBody(J)%Inertia = DataStructureRigidBody(J)%Inertia + &
                          DataStructureRigidBody(J)%MechProp(I,4) + &
                              DataStructureRigidBody(J)%MechProp(I,1)*DataStructureRigidBody(J)%MechProp(I,5)* &
-                             DataStructureRigidBody(J)%Density !accumulating and applying arm rule  
+                             DataStructureRigidBody(J)%Density * RHO_KGM3_TO_MGM3 !accumulating and applying arm rule  
 			    end if
 				
                 DataStructureRigidBody(J)%Normals(I,1) = DataStructureRigidBody(J)%Thickness * &
@@ -329,6 +366,28 @@
                 NormalsRigidBody(DataStructureRigidBody(J)%Ids(I),:) = DataStructureRigidBody(J)%Normals(I,:) !duplicated information
             end do
         end do 
+
+        ! Echo the DERIVED mass and weight of every rigid body to the log file. This is
+        ! the cheapest check against a units mistake in the GOM density column: compare
+        ! the printed weight with the weight you expect by hand. Plane-strain values are
+        ! per 1 m of out-of-plane depth; axisymmetric values are PER RADIAN (multiply by
+        ! 2*pi for the full solid of revolution), matching the per-radian convention the
+        ! MPM side uses for particle masses and contact forces.
+        do J = 1, NRigidBodies
+            if (ISAXISYMMETRIC) then
+                write(EchoLine, '(A,I0,3A,G12.5,A,G12.5,A)') 'Rigid body ', J, ' ("', &
+                    trim(DataStructureRigidBody(J)%Name), '") axisymmetric: mass = ', &
+                    RigidBodyMass(J), ' Mg/rad, weight = ', &
+                    RigidBodyMass(J) * CalParams%GravityData%GAccel, ' kN/rad'
+            else
+                write(EchoLine, '(A,I0,3A,G12.5,A,G12.5,A)') 'Rigid body ', J, ' ("', &
+                    trim(DataStructureRigidBody(J)%Name), '") plane strain: mass = ', &
+                    RigidBodyMass(J), ' Mg/m, weight = ', &
+                    RigidBodyMass(J) * CalParams%GravityData%GAccel, ' kN/m'
+            end if
+            call WriteInLogFile(trim(EchoLine))
+        end do
+
         end subroutine  CreateDataStructureRigidBody
 
 
@@ -354,7 +413,7 @@
             !Prescribed Velocities (NEEDS TO DECOMPOSED INDIVIDUAL VEL ASSIGNMENTS)
             do I = 1, NThinElmPresVel !loop prescribed vel elements
                read(ThinRigidElmPresVel(I,1), *) GlobElmID !element ID
-               GlobElmID = GlobElmID - Counters%NEl !offset for FE elements
+               GlobElmID = GlobElmID - ElemOffset !global GiD id -> local thin-rigid index
                if (GlobElmID == DataStructureRigidBody(J)%Ids(1)) then
                    RigidBodyConditions(J)%ApplyPrescribedVelocity = .true.
                    read(ThinRigidElmPresVel(I,2), *) RigidBodyConditions(J)%VelConstraints(1)
@@ -367,7 +426,7 @@
             !Prescribed Forces (NEEDS TO DECOMPOSED INDIVIDUAL FORCE ASSIGNMENTS)
             do I = 1, NThinElmPresFor !loop prescribed force elements
                 read(ThinRigidElmPresFor(I,1), *) GlobElmID !element ID
-                GlobElmID = GlobElmID - Counters%NEl !offset for FE elements
+                GlobElmID = GlobElmID - ElemOffset !global GiD id -> local thin-rigid index
                 read(ThinRigidElmPresFor(I,6), *) L
                 if (GlobElmID == DataStructureRigidBody(J)%Ids(1)) then
                      RigidBodyConditions(J)%ApplyPrescribedForce = .true.
@@ -388,7 +447,7 @@
             !Prescribed Rotations  
             do I = 1, SIZE(ThinRigidElmPresRot, 1)
                read(ThinRigidElmPresRot(I,1), *) GlobElmID !element ID
-               GlobElmID = GlobElmID - SIZE(ElementConnectivities,2)
+               GlobElmID = GlobElmID - ElemOffset !global GiD id -> local thin-rigid index
                if (GlobElmID == DataStructureRigidBody(J)%Ids(1)) then
                    RigidBodyConditions(J)%ApplyPrescribedRotation = .true.
                    read(ThinRigidElmPresRot(I,3), *) RigidBodyConditions(J)%PrescribedRotation
@@ -404,7 +463,7 @@
             !Prescribed Torques
             do I = 1, SIZE(ThinRigidElmPresTor, 1)
                read(ThinRigidElmPresTor(I,1), *) GlobElmID !element ID
-               GlobElmID = GlobElmID - SIZE(ElementConnectivities,2)
+               GlobElmID = GlobElmID - ElemOffset !global GiD id -> local thin-rigid index
                if (GlobElmID == DataStructureRigidBody(J)%Ids(1)) then
                    RigidBodyConditions(J)%ApplyPrescribedTorque = .true.
                    read(ThinRigidElmPresTor(I,2), *) RigidBodyConditions(J)%PrescribedTorque
@@ -595,7 +654,18 @@
                 end if   
             end if
         end do
-        Particles(I)%ParticleRadius= Kfactor *SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY)) !Calculates particle radius
+        ! Particle radius is a GEOMETRIC size and must not depend on where the particle
+        ! sits. In axisymmetric runs MASSMIXED has been scaled by the radius r (per-radian
+        ! convention, see CorrectParticleMassAndBodyForceAxisymmetric), so it must be
+        ! un-weighted here: otherwise ParticleRadius ~ sqrt(r) and the contact-detection
+        ! band collapses to zero at the axis (e.g. a cone tip) and is inflated far from it.
+        ! (A particle exactly at r=0 has zero per-radian mass and stays degenerate.)
+        if (ISAXISYMMETRIC) then
+            Particles(I)%ParticleRadius= Kfactor *SQRT(Particles(I)%MASSMIXED/ &
+                max(abs(GlobPosArray(I,1)), TINY)/(PI * Particles(I)%DENSITY))
+        else
+            Particles(I)%ParticleRadius= Kfactor *SQRT(Particles(I)%MASSMIXED/(PI * Particles(I)%DENSITY)) !Calculates particle radius
+        end if
         DistanceField(I) = DistanceField(I) - Particles(I)%ParticleRadius !Calculate proper distance field
         
         !Now we need to correct particle radius and position in case of undesired initial inter-penetration
@@ -688,19 +758,24 @@
         if (CalParams%TimeStep == 1 ) RETURN !does not calculate for first time step
         
         ! Calculate gravity acceleration (vectorial)
-        GravityAcceleration = CalParams%Multipliers%GravityRealised * CalParams%GravityData%GravityVector * &
+        ! GravityCurrent is the multiplier applied DURING the load step (ramps from the
+        ! realised to the final value), which is what the soil gravity load uses everywhere
+        ! (e.g. MPMDYNBTSig). GravityRealised is frozen at the start-of-step value, so using
+        ! it here left the rigid body weightless/lagging whenever gravity is applied or
+        ! ramped within a load step.
+        GravityAcceleration = CalParams%Multipliers%GravityCurrent * CalParams%GravityData%GravityVector * &
                               CalParams%GravityData%GAccel
        
         ! Loop over all rigid bodies
         do J = 1, NRigidBodies
             
-            ! Calculate body mass and weight (vectorial)
-            Mass = DataStructureRigidBody(J)%Density * DataStructureRigidBody(J)%Area
-            if (.not. ISAXISYMMETRIC) then
-                Weight = Mass * GravityAcceleration / 1000.0 !in KN <== problem if generalized for other units
-            else
-                Weight = Mass * GravityAcceleration !Problem (Needs to consider rotation: FIX)
-            end if
+            ! Body mass [Mg] and weight [kN]. The mass is obtained from the single
+            ! shared routine RigidBodyMass so that the Lagrangian update, the contact
+            ! damping and the output file can never drift apart (each used to carry its
+            ! own copy of the formula, with different unit factors and different
+            ! axisymmetric handling).
+            Mass = RigidBodyMass(J)
+            Weight = Mass * GravityAcceleration !in kN (Mass in Mg, GravityAcceleration in m/s2)
             
             ! Apply linear force ramping if specified (vectorial)
             if (RigidBodyConditions(J)%IsThereLinearForce) then
@@ -721,6 +796,19 @@
 			DataStructureRigidBody(J)%Velocity = DataStructureRigidBody(J)%Velocity + &
                                                  CalParams%TimeIncrement * DataStructureRigidBody(J)%Acceleration
             
+            ! Axisymmetric: the only FREE rigid mode of a solid of revolution is axial
+            ! translation. Radial "translation" of the (r,z) cross-section is a ring
+            ! expansion/contraction resisted by hoop action, which is not modelled, and
+            ! the radial components of the per-radian contact forces do not cancel in the
+            ! half-plane (no mirror-image element balances them), so integrating them
+            ! produces a spurious radial drift. Zero the free radial motion here; a radial
+            ! motion can still be IMPOSED via the prescribed-velocity blend below
+            ! (e.g. cavity-expansion-type problems).
+            if (ISAXISYMMETRIC) then
+                DataStructureRigidBody(J)%Acceleration(1) = 0.0
+                DataStructureRigidBody(J)%Velocity(1) = 0.0
+            end if
+
             ! Update velocity (vectorial with constraints decomposition)
             if (RigidBodyConditions(J)%ApplyPrescribedVelocity) then
                 ! Apply velocity constraints (decompose prescribed velocities)
@@ -745,8 +833,17 @@
             if (.not. ISAXISYMMETRIC) then
                 
                 ! Calculate angular acceleration
-                DataStructureRigidBody(J)%AngularAcceleration = (DataStructureRigidBody(J)%Tsum + &
-                    RigidBodyConditions(J)%PrescribedTorque) / (DataStructureRigidBody(J)%Inertia + 0.1)               
+                ! Inertia is in Mg*m2 and Tsum in kN*m, so this is rad/s2 directly.
+                ! Guard only against a genuinely degenerate body (a single bar whose
+                ! centroid coincides with the body centroid gives Inertia -> 0); the old
+                ! additive "+ 0.1" was a dimensional constant that silently dominated the
+                ! real inertia of any small body and damped out its rotation.
+                if (DataStructureRigidBody(J)%Inertia > TINY) then
+                    DataStructureRigidBody(J)%AngularAcceleration = (DataStructureRigidBody(J)%Tsum + &
+                        RigidBodyConditions(J)%PrescribedTorque) / DataStructureRigidBody(J)%Inertia
+                else
+                    DataStructureRigidBody(J)%AngularAcceleration = 0.0
+                end if
 
 				
                 if (RigidBodyConditions(J)%ApplyPrescribedRotation) then !fixed rotation rate
@@ -860,14 +957,16 @@
     real(REAL_TYPE) :: Xp(2), X1(2), X2(2), D1, D2, Normal(2), Aling_element(2)
     real(REAL_TYPE) :: Dot1, Dot2, Sign, normal_diff(2), RadiusVec(2)
     real(REAL_TYPE) :: RigidBodyVelAtPoint(2), Xcross(2), ProjdX_n(2), Proj1(2)
-    real(REAL_TYPE) :: TimeIncrementNew, RelativeVel(2), Tangent(2), mu_actual
+    real(REAL_TYPE) :: TimeIncrementNew, RelativeVel(2), Tangent(2)
     real(REAL_TYPE) :: k_of_d, NormalForce(2), TangentForce(2), Force(2)
-    real(REAL_TYPE) :: Arm, Torque, DampingRatio=0.75, X1v(2)
+    real(REAL_TYPE) :: Arm, Torque, X1v(2)
+    real(REAL_TYPE) :: K_eff, Pmag, Mrigid, mu_red, DampCoeff, vn
+    real(REAL_TYPE) :: Vt_mag, kt, Tlimit, nhat(2), Tstore(2), Ttrial(2)
 
-    
+
     if (.not. IsThereRigidBody) RETURN
     if (CalParams%TimeStep == 1 ) RETURN !do not calculate for first time step
-    
+
     ContactForceArray(:,:)=0.0 !initialize contact force array
 
     do I = 1, Counters%NParticles ! Loop over particles ThinRigidElmConnectivities
@@ -922,8 +1021,13 @@
     if (DistanceField(I)<0.0) then !contact exist between particle and rigid body
         J = ElementsRigidBody(AffinityArray(I,2))%RigidBody !obtain rigid body ID
 
+        ! Element-contact normal MUST be indexed by the ELEMENT id (AffinityArray(I,2)),
+        ! not by J: J was just overwritten to the rigid-body id on the line above, so
+        ! NormalsRigidBody(J,:) returned element #(body id)'s normal (=element 1's for a
+        ! single body) for EVERY face -> every face except that one got the wrong normal
+        ! direction, destabilising contact on the other faces (e.g. the vertical wall).
         Normal=AffinityArray(I,1)*(VectorNorm(Xp-ThinRigidCoordinates(AffinityArray(I,3),:), 2))+&
-               (1-AffinityArray(I,1))*NormalsRigidBody(J, :) !choses correct normal
+               (1-AffinityArray(I,1))*NormalsRigidBody(AffinityArray(I,2), :) !choses correct normal
 
         Sign=1
         if  (AffinityArray(I,1)==0) then !distance to element, need to check normal direction
@@ -975,36 +1079,106 @@
         RelativeVel = VelocityArray(I,:) - RigidBodyVelAtPoint
         ProjdX_n=DotProduct(RelativeVel, Sign*Normal, 2)*Sign*Normal !projection of v_rel onto n
         Tangent=RelativeVel-ProjdX_n !Use this to compare with friction angle
-        mu_actual=Length(Tangent, 2)/Length(ProjdX_n, 2)
-        Tangent=Sign*VectorNorm(Tangent, 2) !normal tangent vector
+        ! Vt_mag = magnitude of the relative tangential (sliding) velocity. Tangent is made a
+        ! UNIT vector along it, guarded against |v_t|=0 (pure normal motion / rest), which
+        ! would otherwise make the normalisation and the friction force NaN.
+        ! No Sign factor: v_t is independent of the normal's orientation (ProjdX_n is
+        ! quadratic in the normal), so friction on the body acts along +Tangent (reaction)
+        ! and along -Tangent on the particle. Sign is still required for the NORMAL force.
+        Vt_mag = Length(Tangent, 2)
+        if (Vt_mag > TINY) then
+            Tangent = Tangent / Vt_mag
+        else
+            Tangent = 0.0
+        end if
 
         MaterialID = MaterialIDArray(I)
                     
         k_of_d=-(2.0*log((Distancefield(I)+Particles(I)%ParticleRadius)/(Particles(I)%ParticleRadius))- &
             (Particles(I)%ParticleRadius/(Distancefield(I)+Particles(I)%ParticleRadius))+1.0) !stiffness as function of distance field
 
-        NormalForce=-((DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)*k_of_d*(-1 * Distancefield(I)) - DampingRatio * &
-        2.0*(Particles(I)%MASSMIXED*DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness)**0.5*(DotProduct(RelativeVel, Sign*Normal, 2)))*Sign*Normal 
-        
-        if ( ISAXISYMMETRIC) NormalForce= Xp(1) * NormalForce !account for axisymmetric volume             
-        
-        if (AffinityArray(I,1)==0) then !use friction on wall
-            
-            if (DotProduct(RelativeVel, Sign*Normal, 2)<0) then !Approaching contact
-            if (mu_actual > DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef) mu_actual=DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef !If exceeds friction limit otherwise is sticky contact
+        ! Effective penalty stiffness: cap the (numerical) contact stiffness at the
+        ! explicit-stability limit computed in Get_Contact_Stiffness (module var kappa).
+        K_eff = DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness
+        if (kappa > 0.0 .and. kappa < K_eff) K_eff = kappa
 
-            TangentForce=Length(NormalForce, 2)*mu_actual*Tangent !Tangenttial force on rigid body
+        ! Damping uses the REDUCED mass of the particle-rigid-body pair. The original used
+        ! only the particle mass (MASSMIXED); with the rigid body's true (small) inertia
+        ! that makes the explicit dashpot far over-critical for the body, so it diverges
+        ! independently of the stiffness magnitude.
+        Mrigid = RigidBodyMass(J) ! rigid body mass [Mg] (axisymmetric-aware, see RigidBodyMass)
+        mu_red = Particles(I)%MASSMIXED * Mrigid / (Particles(I)%MASSMIXED + Mrigid)         ! reduced mass [Mg]
+        ! Contact damping ratio is a user input (per rigid body, per contacting material),
+        ! read from $$START_THIN_RIGID_ELM_PROPERTIES. Set it to 0 in GiD to disable damping.
+        DampCoeff = DataStructureRigidBody(J)%Materials(MaterialID)%ContactDamping * 2.0 * sqrt(mu_red * K_eff)
 
-            else !Receding contact
-                TangentForce=0.0
-            end if
+        ! Repulsive magnitude along -(Sign*Normal): spring (>=0) minus the dashpot, where
+        ! the dashpot opposes the relative NORMAL velocity vn (vn<0 approaching, vn>0 separating).
+        vn = DotProduct(RelativeVel, Sign*Normal, 2)
+        Pmag = K_eff * k_of_d * (-1.0 * Distancefield(I)) - DampCoeff * vn
 
-            Force=NormalForce+TangentForce  !total force on rigid body
-        else !point in contact with node, no friction
-            
-            Force=NormalForce 
+        ! Non-adhesion (unilateral) clamp: contact may only PUSH, never pull. Without it the
+        ! dashpot produces a net attractive force while separating (vn>0), injecting energy
+        ! every bounce so the free body accelerates and diverges.
+        if (Pmag < 0.0) Pmag = 0.0
+
+        NormalForce = -Pmag * Sign * Normal
         
-        endif
+        ! (Axisymmetric per-radian scaling is applied ONCE to the TOTAL force after the
+        !  friction block below, so the normal force, the friction limit and the stored
+        !  tangential state all stay in the same per-unit system.)
+
+        ! Coulomb friction acts on BOTH face and node (corner) contacts: a node contact is
+        ! just a contact with a radial normal (as in DEM sphere-vertex contacts), and the
+        ! Tangent, Vt_mag and vn computed above are already expressed in terms of that
+        ! normal (Sign=1 for node contacts). Skipping friction on node contacts let soil
+        ! grind friction-free past the bar ends, under-predicting the mobilised mu.
+        !
+        ! Friction is applied whenever the contact is closed and pushing (Pmag > 0),
+        ! independent of whether the gap is momentarily closing or opening. Gating it on
+        ! an approaching contact (vn < 0) switched friction off during every receding
+        ! half-cycle of the penalty-spring chatter, halving the time-averaged friction
+        ! on a sliding contact. The approach/recede distinction belongs to the dashpot
+        ! (already inside Pmag), not to friction.
+        ! Elastic-predictor / plastic-corrector Coulomb friction (return mapping), analogous
+        ! to linear-elastic Mohr-Coulomb. A tangential penalty spring accumulates the friction
+        ! force from the incremental tangential slip; it is capped ("returned") to the Coulomb
+        ! surface mu*|N|. Unlike the viscous form, the held (stick) force does NOT vanish as
+        ! |v_t|->0, so a near-static contact no longer creeps:
+        !     nhat  = Sign*Normal (unit, toward particle)
+        !     Ttrial = project(Tstore onto tangent plane) + kt * (v_t * dt)   [elastic predictor]
+        !     if |Ttrial| > mu*|N| : Ttrial = mu*|N| * Ttrial/|Ttrial|        [plastic corrector / slip]
+        ! TangentForceTrack(I,:) persists Tstore between steps (reset to 0 when contact opens).
+        ! kt uses the (stability-capped) normal stiffness K_eff for parity/stability.
+        if (Pmag > 0.0) then !contact closed and pushing
+            nhat = Sign*Normal
+            ! carry over the stored tangential force, re-projected onto the current tangent
+            ! plane (removes any normal component introduced by body rotation between steps)
+            Tstore = TangentForceTrack(I,:)
+            Tstore = Tstore - DotProduct(Tstore, nhat, 2)*nhat
+            ! elastic trial: add the incremental slip (v_t*dt) times the tangential stiffness.
+            ! Tangent is the unit slip direction (0 if |v_t|<=TINY, so no increment at rest).
+            kt = K_eff
+            Ttrial = Tstore + kt * (Vt_mag * CalParams%TimeIncrement) * Tangent
+            ! Coulomb cap (return to the friction cone)
+            Tlimit = DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef * Length(NormalForce, 2)
+            if (Length(Ttrial, 2) > Tlimit) Ttrial = Tlimit * VectorNorm(Ttrial, 2)
+            TangentForceTrack(I,:) = Ttrial !store the updated (returned) state for next step
+            TangentForce = Ttrial           !on the rigid body; reaction -Ttrial on the particle
+        else !contact open (or fully released by the non-adhesion clamp)
+            TangentForce = 0.0
+            TangentForceTrack(I,:) = 0.0    !contact lost -> reset accumulated friction
+        end if
+
+        Force=NormalForce+TangentForce  !total force on rigid body
+
+        ! Axisymmetric: scale the TOTAL contact force (normal + friction) by the particle
+        ! radius to convert to the per-radian convention used by the MPM side (particle
+        ! mass/weights are r-scaled). Applying it here, after the friction return mapping,
+        ! keeps Tlimit and TangentForceTrack per-unit and mutually consistent; scaling only
+        ! the normal force mid-way put the slip cap and the stick spring in different unit
+        ! systems.
+        if ( ISAXISYMMETRIC) Force = Xp(1) * Force !account for axisymmetric volume
 
         !update force
         DataStructureRigidBody(J)%Fsum = DataStructureRigidBody(J)%Fsum + Force
@@ -1027,6 +1201,7 @@
     end if
             
     end do
+
     end subroutine LevelSetContact
 		   
 		   
@@ -1327,4 +1502,56 @@
         end subroutine WriteRigidBodyData
          
     
+        real(REAL_TYPE) function RigidBodyMass(J)
+        !**********************************************************************
+        !
+        !    Function:  Mass of rigid body J in the solver's mass unit, Mg.
+        !
+        !    %Density is the raw user input from column 4 of
+        !    $$START_THIN_RIGID_ELM_PROPERTIES and is a MASS DENSITY in kg/m3 (the same
+        !    convention as MatParams%DensitySolid in ReadMaterialData). RHO_KGM3_TO_MGM3
+        !    converts it to Mg/m3, so the returned mass is in Mg and
+        !    Acceleration = Force[kN] / Mass[Mg] comes out in m/s2.
+        !
+        !      plane strain  m = rho * sum_i( L_i * t )            per 1 m out-of-plane
+        !      axisymmetric  m = rho * sum_i( |r_i| * L_i * t )    PER RADIAN
+        !
+        !    MechProp(I,1) already holds L_i * t. The axisymmetric form matches the
+        !    per-radian convention used throughout the MPM side (particle masses are
+        !    r-scaled in CorrectParticleMassAndBodyForceAxisymmetric, and the contact
+        !    forces accumulated into Fsum are r-scaled in LevelSetContact), so that
+        !    Acceleration = Fsum/Mass is dimensionally consistent. It is evaluated on the
+        !    CURRENT nodal coordinates so the mass stays right if a prescribed velocity
+        !    moves the body radially.
+        !
+        !    This is the ONLY place the rigid-body mass is formed. Three separate copies
+        !    of this expression previously existed (Lagrangian update, contact damping,
+        !    output file) and disagreed with one another by factors of 1000 and by their
+        !    handling of the axisymmetric radius.
+        !
+        !**********************************************************************
+        implicit none
+        ! Arguments
+        integer(INTEGER_TYPE), intent(in) :: J
+        ! Local variables
+        integer(INTEGER_TYPE) :: I, n1, n2
+        real(REAL_TYPE) :: AreaR, rbar
+
+        if (ISAXISYMMETRIC) then
+            AreaR = 0.0
+            do I = 1, QtyRigidBodies(J)
+                n1 = ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),1)
+                n2 = ThinRigidElmConnectivities(DataStructureRigidBody(J)%Ids(I),2)
+                rbar = 0.5 * (ThinRigidCoordinates(n1,1) + ThinRigidCoordinates(n2,1))
+                AreaR = AreaR + abs(rbar) * DataStructureRigidBody(J)%MechProp(I,1)
+            end do
+            RigidBodyMass = DataStructureRigidBody(J)%Density * RHO_KGM3_TO_MGM3 * AreaR
+        else
+            RigidBodyMass = DataStructureRigidBody(J)%Density * RHO_KGM3_TO_MGM3 * &
+                            DataStructureRigidBody(J)%Area
+        end if
+
+        end function RigidBodyMass
+
+
         end module ModStructuralElements

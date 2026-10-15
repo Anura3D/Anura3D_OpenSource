@@ -250,13 +250,14 @@
                           'SumReactionSolidX ', 'SumReactionSolidY ', 'SumReactionSolidZ '
                           
               elseif (NDIM == 2) then
-              write(THINunit + MaterialIndex, '(13A21)') 'Step ', 'TimeStep ','TotalTime ',  &
+              write(THINunit + MaterialIndex, '(15A21)') 'Step ', 'TimeStep ','TotalTime ',  &
                           'CentroidX', 'CentroidY', &
-                'AccelerationX', 'AccelerationY', &	
-                          'VelocityX', 'VelocityY', &					
+                'AccelerationX', 'AccelerationY', &
+                          'VelocityX', 'VelocityY', &
                   'RotVelZ ', &
                 'TorqueZ ', &
-                          'SumReactionSolidX ', 'SumReactionSolidY '			  
+                          'SumReactionSolidX ', 'SumReactionSolidY ', &
+                          'WeightX ', 'WeightY '
       endif
       endif              
       end do           
@@ -1052,10 +1053,18 @@
           !**********************************************************************	
     implicit none
     integer(INTEGER_TYPE)::MaterialIndex
-    
-    
+    real(REAL_TYPE) :: BodyWeight(2)
+
+
     do MaterialIndex=1, NRigidBodies !loop rigid elements
       if (NDIM == 2) then
+        ! Weight [kN] exactly as RigidBodyLagrangianPhase forms it: the shared
+        ! RigidBodyMass (Mg, axisymmetric-aware) times the gravity acceleration realised
+        ! during the current load step (GravityCurrent, the same multiplier the soil uses).
+        ! In a settled free-body run this column should balance SumReactionSolid.
+        BodyWeight = RigidBodyMass(MaterialIndex) * &
+                     CalParams%Multipliers%GravityCurrent * CalParams%GravityData%GAccel * &
+                     CalParams%GravityData%GravityVector(1:2)
         write(THINunit + MaterialIndex, '(I21, I21, 200G21.4)') CalParams%IStep, CalParams%TimeStep, &
                 CalParams%OverallRealTime,  &
           DataStructureRigidBody(MaterialIndex)%Centroid(1), DataStructureRigidBody(MaterialIndex)%Centroid(2),&
@@ -1063,9 +1072,10 @@
           DataStructureRigidBody(MaterialIndex)%Velocity(1), DataStructureRigidBody(MaterialIndex)%Velocity(2),&
           DataStructureRigidBody(MaterialIndex)%AngularVelocity,&
           DataStructureRigidBody(MaterialIndex)%Tsum,&
-          DataStructureRigidBody(MaterialIndex)%Fsum(1), DataStructureRigidBody(MaterialIndex)%Fsum(2)
-          
-      
+          DataStructureRigidBody(MaterialIndex)%Fsum(1), DataStructureRigidBody(MaterialIndex)%Fsum(2),&
+          BodyWeight(1), BodyWeight(2)
+
+
       endif
     enddo
     

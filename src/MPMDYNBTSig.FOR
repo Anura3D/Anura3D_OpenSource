@@ -232,8 +232,15 @@
                   ! nodal y-load 
                   InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2) 
                   ! nodal r-load (x-load)
-                  if ( ISAXISYMMETRIC ) then
+                  if ( ISAXISYMMETRIC .and. Position > 0.0 ) then
                     ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912 
+                    ! r=0 guard. Analytically the radius cancels here: S(3) already carries WTN,
+                    ! which is proportional to r (the MP weight is scaled by r in
+                    ! CorrectParticleIntegrationWeightAxisymmetric; the GP weight is scaled by
+                    ! Position just above), so S(3)/Position is finite. A material point sitting
+                    ! exactly on the axis makes it 0/0 -> NaN, poisoning the whole internal load
+                    ! vector. Such a point has zero integration weight and contributes nothing to
+                    ! any other term either, so skipping it is the consistent limit.
                     InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + S(3) * ShapeValues(iNode) / Position
                   end if
                 else if ( NVECTOR == 3 ) then ! 3D
@@ -250,7 +257,7 @@
                 if (CalParams%ApplyBulkViscosityDamping) then
                   do I = 1, NVECTOR  
                     BulkViscousLD(IDof+I, IEntityID) = BulkViscousLD(IDof+I, IEntityID) + B(I, INode) * VPressure
-                    if ( ISAXISYMMETRIC ) then
+                    if ( ISAXISYMMETRIC .and. Position > 0.0 ) then ! r=0 guard, see the note on the InternalLD hoop term above
                       ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912
                       BulkViscousLD(IDof+I, IEntityID) = BulkViscousLD(IDof+I, IEntityID) + VPressure * ShapeValues(iNode) / Position
                     end if
@@ -269,7 +276,7 @@
                   else if ( NVECTOR == 2 ) then ! 2D                      ! --> replacing last terms with BTSigma(I) gives error in tests
                     Reactions(IDof+1, IEntityID) = Reactions(IDof+1, IEntityID) + B(1, INode) * S(1) + B(2, INode) * S(4) + B(1, INode) * VPressure
                     Reactions(IDof+2, IEntityID) = Reactions(IDof+2, IEntityID) + B(1, INode) * S(4) + B(2, INode) * S(2) + B(2, INode) * VPressure
-                    if ( ISAXISYMMETRIC ) then
+                    if ( ISAXISYMMETRIC .and. Position > 0.0 ) then ! r=0 guard, see the note on the InternalLD hoop term above
                       ! Equation below is to be double checked
                       Reactions(IDof+1, IEntityID) = Reactions(IDof+1, IEntityID) + S(3) * ShapeValues(iNode) / Position
                     end if
@@ -628,8 +635,15 @@
                 else if ( NVECTOR == 2 ) then ! 2D  
                   InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + B(1,iNode)*S(1) + B(2,iNode)*S(4) 
                   InternalLD(IDof+2, iEntityID) = InternalLD(IDof+2, iEntityID) + B(1,iNode)*S(4) + B(2,iNode)*S(2)
-                  if ( ISAXISYMMETRIC ) then
+                  if ( ISAXISYMMETRIC .and. Position > 0.0 ) then
                     ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912 
+                    ! r=0 guard. Analytically the radius cancels here: S(3) already carries WTN,
+                    ! which is proportional to r (the MP weight is scaled by r in
+                    ! CorrectParticleIntegrationWeightAxisymmetric; the GP weight is scaled by
+                    ! Position just above), so S(3)/Position is finite. A material point sitting
+                    ! exactly on the axis makes it 0/0 -> NaN, poisoning the whole internal load
+                    ! vector. Such a point has zero integration weight and contributes nothing to
+                    ! any other term either, so skipping it is the consistent limit.
                     InternalLD(IDof+1, iEntityID) = InternalLD(IDof+1, iEntityID) + S(3) * ShapeValues(iNode) / Position
                   end if
                 else
@@ -639,7 +653,7 @@
                 if (CalParams%ApplyBulkViscosityDamping) then
                   do I = 1, NVECTOR  
                     BulkViscousLD(IDof+I, IEntityID) = BulkViscousLD(IDof+I, IEntityID) + B(I, INode) * VPressure
-                    if ( ISAXISYMMETRIC ) then
+                    if ( ISAXISYMMETRIC .and. Position > 0.0 ) then ! r=0 guard, see the note on the InternalLD hoop term above
                       ! Eq. 27 from Sulsky & Schreyer (1996) : http://www.sciencedirect.com/science/article/pii/S0045782596010912
                       BulkViscousLD(IDof+I, IEntityID) = BulkViscousLD(IDof+I, IEntityID) + VPressure * ShapeValues(iNode) / Position
                     end if
@@ -660,7 +674,7 @@
                   else if ( NVECTOR == 2 ) then ! 2D  
                     Reactions(IDof+1, IEntityID) = Reactions(IDof+1, IEntityID) + B(1, INode) * S(1) + B(2, INode) * S(4) + B(1, INode) * VPressure
                     Reactions(IDof+2, IEntityID) = Reactions(IDof+2, IEntityID) + B(1, INode) * S(4) + B(2, INode) * S(2) + B(2, INode) * VPressure
-                    if ( ISAXISYMMETRIC ) then
+                    if ( ISAXISYMMETRIC .and. Position > 0.0 ) then ! r=0 guard, see the note on the InternalLD hoop term above
                       ! Equation below is to be double checked
                       Reactions(IDof+1, IEntityID) = Reactions(IDof+1, IEntityID) + S(3) * ShapeValues(iNode) / Position
                     end if

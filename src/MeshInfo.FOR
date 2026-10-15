@@ -690,10 +690,13 @@
              else if (trim(BName) == '$$START_THIN_RIGID_ELM_PROPERTIES') then !related to thin rigid element properties
               read(GOMunit,*) NThinElmProp
               !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
-              allocate(character(len=100) :: ThinRigidElmProp(NThinElmProp, 13), stat = IError)
+              ! Columns 1-13: id, name, thickness, density, n_materials, then the 4
+              ! (contact stiffness, friction) pairs. Columns 14-17: the contact damping
+              ! ratio for each of the 4 materials.
+              allocate(character(len=100) :: ThinRigidElmProp(NThinElmProp, 17), stat = IError)
              do J = 1, NThinElmProp ! loop over thin body elements
-                read (GOMunit,*) (ThinRigidElmProp(J, IDConnectivity), IDConnectivity = 1, 13)
-             end do ! loop over elements 
+                read (GOMunit,*) (ThinRigidElmProp(J, IDConnectivity), IDConnectivity = 1, 17)
+             end do ! loop over elements
              
              else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_PRESCRIBED_VELOCITY') then !related to thin rigid element properties
               read(GOMunit,*) NThinElmPresVel

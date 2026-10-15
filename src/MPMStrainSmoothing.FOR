@@ -617,14 +617,31 @@
           ! determine the location and integration weight of IGaussPoint
           call GaussPointLocalCoordinates(IGaussPoint, WeiGP, PosGP)
           ! Calculate the determinante of the Jacobian matrix
-          call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinates, RJac, RJacInv, DetJac)
+          ! Use the UPDATED nodal coordinates: the caller (GetEnhancedVolumetricStrain)
+          ! builds its B matrix on NodalCoordinatesUpd, so the nodal volumes that weight the
+          ! smoothing must come from the same (deformed) configuration. Using the original
+          ! coordinates made the weights drift from the strains they average as the mesh
+          ! deformed - which in a large-deformation axisymmetric run is exactly when the
+          ! smoothing matters most.
+          call DetJacob(PosGP, Counters%NEl, Counters%NodTot, NVECTOR, IElement, ElementConnectivities, NodalCoordinatesUpd, RJac, RJacInv, DetJac)
           if ( ISAXISYMMETRIC ) then
             weight = WeiGP * GPGlobalPositionElement(1, IGaussPoint, IElement)
           else
             weight = WeiGP
           end if
           do INode = 1, ELEMENTNODES
-            volumeElNodes(INode) = volumeElNodes(INode) + ShapeValuesArray(IGaussPoint, INode) * weight * DetJac
+            ! GPShapeFunction, NOT ShapeValuesArray. This is a GAUSS POINT loop, but
+            ! ShapeValuesArray is dimensioned (Counters%NParticles, ELEMENTNODES) and is
+            ! indexed by GLOBAL MATERIAL POINT id. Indexing it by IGaussPoint read the shape
+            ! values of material point #IGaussPoint - for TRI3, where ELEMENTGAUSSPOINTS = 1,
+            ! that is material point #1's barycentric coordinates, reused as the nodal
+            ! weighting of EVERY element in the mesh instead of the correct (1/3,1/3,1/3).
+            ! Because this weight multiplies both the numerator and the denominator of the
+            ! nodal average in GetEnhancedVolumetricStrain, the net effect was to weight an
+            ! element's contribution to a node by which local connectivity slot that node
+            ! happened to occupy - mesh-numbering noise - and to give near-zero weight to two
+            ! of the three slots whenever material point #1 sat near a vertex.
+            volumeElNodes(INode) = volumeElNodes(INode) + GPShapeFunction(IGaussPoint, INode) * weight * DetJac
           end do
         end do
       
