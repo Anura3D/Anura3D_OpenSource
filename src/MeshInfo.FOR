@@ -332,6 +332,7 @@
           integer(INTEGER_TYPE) :: IError ! used for error control
           integer(INTEGER_TYPE), dimension(NVECTOR) :: NodFixBC, NodRemBC
           real(REAL_TYPE) :: DumR(4)
+          character(len=1024) :: ThinRigidRow
           
           call DestroyMeshData()
           
@@ -692,10 +693,16 @@
               !allocate (ThinRigidElmProp(NThinElmProp), stat = IError)
               ! Columns 1-13: id, name, thickness, density, n_materials, then the 4
               ! (contact stiffness, friction) pairs. Columns 14-17: the contact damping
-              ! ratio for each of the 4 materials.
-              allocate(character(len=100) :: ThinRigidElmProp(NThinElmProp, 17), stat = IError)
+              ! ratio for each of the 4 materials. Column 18: stiffness path (1 user k,
+              ! 2 penetration tolerance). Columns 19-22: rigidity tolerance parameter
+              ! for each of the 4 materials. 17-column rows of older GOM files: path 1.
+              allocate(character(len=100) :: ThinRigidElmProp(NThinElmProp, 22), stat = IError)
+              ThinRigidElmProp(:, 18) = '1'
+              ThinRigidElmProp(:, 19:22) = '0.0'
              do J = 1, NThinElmProp ! loop over thin body elements
-                read (GOMunit,*) (ThinRigidElmProp(J, IDConnectivity), IDConnectivity = 1, 17)
+                read (GOMunit,'(A)') ThinRigidRow
+                read (ThinRigidRow,*,iostat=IError) (ThinRigidElmProp(J, IDConnectivity), IDConnectivity = 1, 22)
+                if (IError /= 0) read (ThinRigidRow,*) (ThinRigidElmProp(J, IDConnectivity), IDConnectivity = 1, 17)
              end do ! loop over elements
              
              else if (trim(BName) == '$$THIN_RIGID_ELEMENTS_PRESCRIBED_VELOCITY') then !related to thin rigid element properties

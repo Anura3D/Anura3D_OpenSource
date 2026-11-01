@@ -5,12 +5,34 @@
        $$START_THIN_RIGID_ELM_PROPERTIES (see scripts/createGOM.tcl). createGOM.tcl reads
        the DEFAULT from the @v attribute, so each one must carry a real v="..."; the old
        att1/v1/value form is <dependencies> syntax and leaves @v undefined, which writes an
-       empty token and shifts every remaining column of the 17-column row that
+       empty token and shifts every remaining column of the 22-column row that
        MeshInfo.FOR reads. -->
   <value n="Name" pn="Name" v="" state="normal" help="Identifier of the rigid body. All line elements sharing this name form one rigid body."/>
   <value n="Thickness" pn="Thickness [m]" v="1.0" state="normal" help="In-plane thickness t of the bar elements. The body area used for its mass and inertia is sum(L_i * t)."/>
   <value n="Rigid_density" pn="Density [kg/m^3]" v="2500.0" state="normal" help="MASS DENSITY of the rigid body in kg/m^3 (e.g. 2500 for concrete) - the same convention as the solid density of a material. This is NOT a unit weight in kN/m^3. The solver forms Mass [Mg] = Density * sum(L_i * t) / 1000, per 1 m out-of-plane in plane strain and per radian in axisymmetry, and echoes the resulting mass and weight of every rigid body in the .LOG file at start-up - check them against your hand calculation."/>
+  <!-- Path 1: the user gives k per material, the rigidity tolerance parameters are ignored.
+       Path 2: the solver computes k from the rigidity tolerance parameter and the height
+       of the mesh bounding box, the Contact stiffness values are ignored. The time step
+       follows from k in both paths. -->
+  <value n="Stiffness_definition" pn="Contact stiffness definition" v="User_stiffness" values="User_stiffness,Penetration_tolerance" help="User_stiffness: the contact stiffness is applied as given, with no automatic assignment. Penetration_tolerance: the solver computes the contact stiffness from the rigidity tolerance parameter and the height of the mesh. The time step is computed from the contact stiffness in both cases."/>
   <value n="Number_of_materials" pn="Number of materials" v="1" values="1,2,3,4" actualize_tree="1">
+    <dependencies node="../value[@n='Rigidity_parameter_1']" att1="state" v1="normal" value="1"/>
+    <dependencies node="../value[@n='Rigidity_parameter_1']" att1="state" v1="normal" value="2"/>
+    <dependencies node="../value[@n='Rigidity_parameter_1']" att1="state" v1="normal" value="3"/>
+    <dependencies node="../value[@n='Rigidity_parameter_1']" att1="state" v1="normal" value="4"/>
+    <dependencies node="../value[@n='Rigidity_parameter_2']" att1="state" v1="hidden" value="1"/>
+    <dependencies node="../value[@n='Rigidity_parameter_2']" att1="state" v1="normal" value="2"/>
+    <dependencies node="../value[@n='Rigidity_parameter_2']" att1="state" v1="normal" value="3"/>
+    <dependencies node="../value[@n='Rigidity_parameter_2']" att1="state" v1="normal" value="4"/>
+    <dependencies node="../value[@n='Rigidity_parameter_3']" att1="state" v1="hidden" value="1"/>
+    <dependencies node="../value[@n='Rigidity_parameter_3']" att1="state" v1="hidden" value="2"/>
+    <dependencies node="../value[@n='Rigidity_parameter_3']" att1="state" v1="normal" value="3"/>
+    <dependencies node="../value[@n='Rigidity_parameter_3']" att1="state" v1="normal" value="4"/>
+    <dependencies node="../value[@n='Rigidity_parameter_4']" att1="state" v1="hidden" value="1"/>
+    <dependencies node="../value[@n='Rigidity_parameter_4']" att1="state" v1="hidden" value="2"/>
+    <dependencies node="../value[@n='Rigidity_parameter_4']" att1="state" v1="hidden" value="3"/>
+    <dependencies node="../value[@n='Rigidity_parameter_4']" att1="state" v1="normal" value="4"/>
+
     <dependencies node="../value[@n='Contact_stiffness_1']" att1="state" v1="normal" value="1"/>
     <dependencies node="../value[@n='Contact_stiffness_1']" att1="state" v1="normal" value="2"/>
     <dependencies node="../value[@n='Contact_stiffness_1']" att1="state" v1="normal" value="3"/>
@@ -86,4 +108,11 @@
   <value n="Contact_damping_2" pn="Contact damping ratio 2 [-]" v="0.75" state="hidden"/>
   <value n="Contact_damping_3" pn="Contact damping ratio 3 [-]" v="0.75" state="hidden"/>
   <value n="Contact_damping_4" pn="Contact damping ratio 4 [-]" v="0.75" state="hidden"/>
+
+  <!-- Single group eta^2*eps_n: k depends on the tolerance eta and the smallest strain of
+       interest eps_n only through this product. eta = 0.05, eps_n = 0.001 gives 2.5e-6. -->
+  <value n="Rigidity_parameter_1" pn="Rigidity tolerance parameter 1 [-]" v="2.5e-6" state="hidden" help="Product of the squared penetration tolerance and the smallest normal strain of interest. Used with Penetration_tolerance only."/>
+  <value n="Rigidity_parameter_2" pn="Rigidity tolerance parameter 2 [-]" v="2.5e-6" state="hidden"/>
+  <value n="Rigidity_parameter_3" pn="Rigidity tolerance parameter 3 [-]" v="2.5e-6" state="hidden"/>
+  <value n="Rigidity_parameter_4" pn="Rigidity tolerance parameter 4 [-]" v="2.5e-6" state="hidden"/>
 </condition>

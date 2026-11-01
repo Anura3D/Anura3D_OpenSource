@@ -42,6 +42,8 @@
       use ModMeshInfo
       Use ModMPMData
       use ModGlobalData
+      use ModReadMaterialData
+      use ModMeshAdjacencies
       use ModMatrixMath
 	  use ModGeometryMath
       use ModFeedback
@@ -55,8 +57,9 @@
         ! Lists
 
         real(REAL_TYPE), dimension(:,:), allocatable :: NormalsRigidBody
-		real(REAL_TYPE):: Kfactor= sqrt(PI*2/9), kappa=0.0
-		logical::Stiffness_assigned=.false.
+		real(REAL_TYPE):: Kfactor= sqrt(PI*2/9)
+		real(REAL_TYPE), dimension(:), allocatable :: ContactNormalVel !normal relative velocity of each contact, for ContactCriticalTimeStep
+		integer(INTEGER_TYPE), parameter :: STIFFNESS_FROM_USER = 1, STIFFNESS_FROM_TOLERANCE = 2
 
         ! Anura3D solves in kN / Mg / m / s: forces are kN (Particle.FOR, FBody),
         ! masses are Mg (DeterminePartMass = MaterialWeight[kN/m3]/g * IntWeight), so
@@ -68,7 +71,7 @@
         real(REAL_TYPE), parameter :: RHO_KGM3_TO_MGM3 = 1.0d-3
         
         type Material
-            real(REAL_TYPE):: ContactStiffness, FrictionCoef, ContactDamping
+            real(REAL_TYPE):: ContactStiffness, FrictionCoef, ContactDamping, RigidityParameter
         end type Material
         
         type Elements
@@ -83,8 +86,9 @@
             real(REAL_TYPE), dimension(:,:), allocatable :: MechProp, Normals
             character(len=100) :: Name
             real(REAL_TYPE) :: Thickness, Density, Centroid(2), Inertia, Area, Velocity(2),&
-                Acceleration(2), AngularVelocity, AngularAcceleration, Fsum(2), Tsum
-            integer :: NumMaterials
+                Acceleration(2), AngularVelocity, AngularAcceleration, Fsum(2), Tsum, &
+                ContactArmSum
+            integer :: NumMaterials, StiffnessPath, NContacts
             type(Material), dimension(:), allocatable :: Materials
         end type Body
         
@@ -171,6 +175,8 @@
             DataStructureRigidBody(J)%Tsum=0.0
             DataStructureRigidBody(J)%AngularVelocity=0.0
             DataStructureRigidBody(J)%AngularAcceleration=0.0
+            DataStructureRigidBody(J)%NContacts=0
+            DataStructureRigidBody(J)%ContactArmSum=0.0
 			
 			
             !This assigns initial imposed velocity
@@ -238,11 +244,13 @@
             read(ThinRigidElmProp(PropId,3), *) DataStructureRigidBody(J)%Thickness      !Thickness associated to R.B.
             read(ThinRigidElmProp(PropId,4), *) DataStructureRigidBody(J)%Density        !RB material MASS DENSITY in kg/m3 (never scaled here; use RHO_KGM3_TO_MGM3 at every point of use)
             read(ThinRigidElmProp(PropId,5), *) DataStructureRigidBody(J)%NumMaterials   !Number of possible materials in contact (#of soils in contact up to 4 in current version)
+            read(ThinRigidElmProp(PropId,18), *) DataStructureRigidBody(J)%StiffnessPath  !1: user stiffness, 2: stiffness from penetration tolerance
             allocate(DataStructureRigidBody(J)%Materials(DataStructureRigidBody(J)%NumMaterials))
             do I = 1, DataStructureRigidBody(J)%NumMaterials !HERE I CAN CALCULATE STIFFNESS DIRECTLY FOR STABILITY
                 read(ThinRigidElmProp(PropId,5 + 2* I -1), *) DataStructureRigidBody(J)%Materials(I)%ContactStiffness !Stiffness with respect to material I
                 read(ThinRigidElmProp(PropId,5 + 2* I), *) DataStructureRigidBody(J)%Materials(I)%FrictionCoef		 !Friction coefficient with respect to mat I
                 read(ThinRigidElmProp(PropId,13 + I), *) DataStructureRigidBody(J)%Materials(I)%ContactDamping       !Contact damping ratio (fraction of critical) w.r.t. mat I
+                read(ThinRigidElmProp(PropId,18 + I), *) DataStructureRigidBody(J)%Materials(I)%RigidityParameter    !eta^2*eps_n w.r.t. mat I, path 2 only
 				!HERE WE COULD ADD ADDITIONAL USER DEFINED PROPERTIES
             end do
             
@@ -728,6 +736,12 @@
         call CreateDataStructureRigidBody() !Creates a structure containing info about the rigid bodies and their properties
         call CreateDataStructureRigidBodyConditions() !Creates a structure containing info about the conditions applied to the rigid bodies
         call DistanceToRigidBody() !Calculates distance to rigid bodies and fixes initial interpenetrations if needed
+        call AssignContactStiffness() !After DistanceToRigidBody: path 2 uses the final radii
+
+        allocate(ContactNormalVel(Counters%NParticles))
+        ContactNormalVel = 0.0
+
+        if (CalParams%CourantNumber > 0.8) call WriteInLogFile('Rigid body contact: a Courant number of about 0.8 is recommended')
 
         end subroutine InitialiseStructuralElements
           
@@ -755,8 +769,10 @@
         real(REAL_TYPE) :: ThetaMax, PI, XC, YC
        
         if (.not. IsThereRigidBody) RETURN
-        if (CalParams%TimeStep == 1 ) RETURN !does not calculate for first time step
-        
+        ! TimeStep restarts at every load step, so it must be paired with IStep: testing it
+        ! alone skipped the first step of EVERY load step (all steps if there is only one per load step)
+        if (CalParams%IStep == 1 .and. CalParams%TimeStep == 1) RETURN !does not calculate for first time step of the calculation
+
         ! Calculate gravity acceleration (vectorial)
         ! GravityCurrent is the multiplier applied DURING the load step (ramps from the
         ! realised to the final value), which is what the soil gravity load uses everywhere
@@ -913,30 +929,203 @@
 
 	end subroutine RigidBodyLagrangianPhase
 		  
-	subroutine Get_Contact_Stiffness()
+	real(REAL_TYPE) function BarrierTangent(Xi)
 	!**********************************************************************
     !
-    !    Function: calculates the maximum contact stiffness for penalty force 
-    !               
-    !    
-    !    Implemented in the frame of the MPM project.
+    !    Function: tangent stiffness ratio k_t/k of the barrier, Eq. g_xi of the paper.
     !
     !**********************************************************************
 	implicit none
-	integer(INTEGER_TYPE) :: Ipart
-	double precision:: kappa_crit
-	
-	if (.not. IsThereRigidBody) RETURN
-	if (Stiffness_assigned) RETURN
-	do Ipart=1, Counters%NParticles !loop particles
-		kappa_crit= 4.0* Particles(Ipart)%MASSMIXED * PI**2.0 /CalParams%TimeIncrement**2.0  !critical stiffness 			  
-		
-		if (kappa<kappa_crit * 0.003) kappa=kappa_crit * 0.003
-		Stiffness_assigned=.true.
+	real(REAL_TYPE), intent(in) :: Xi
+
+	BarrierTangent = 1.0/(1.0 - Xi)**2 + 2.0/(1.0 - Xi) - 3.0 - 2.0*log(1.0 - Xi)
+
+	end function BarrierTangent
+
+
+	logical function IsBodyMotionPrescribed(J)
+	!**********************************************************************
+    !
+    !    Function: true if every rigid degree of freedom of body J is prescribed.
+    !
+    !**********************************************************************
+	implicit none
+	integer(INTEGER_TYPE), intent(in) :: J
+
+	IsBodyMotionPrescribed = IsTranslationPrescribed(J) .and. &
+		(RigidBodyConditions(J)%ApplyPrescribedRotation .or. ISAXISYMMETRIC)
+
+	end function IsBodyMotionPrescribed
+
+
+	logical function IsTranslationPrescribed(J)
+	!**********************************************************************
+    !
+    !    Function: true if both translation components of body J are prescribed.
+    !
+    !**********************************************************************
+	implicit none
+	integer(INTEGER_TYPE), intent(in) :: J
+
+	IsTranslationPrescribed = RigidBodyConditions(J)%ApplyPrescribedVelocity .and. &
+		all(RigidBodyConditions(J)%VelConstraints > 0.5)
+
+	end function IsTranslationPrescribed
+
+
+	real(REAL_TYPE) function ContactPairMass(I, J)
+	!**********************************************************************
+    !
+    !    Function: effective mass m* of the pair formed by material point I and body J.
+    !
+    !**********************************************************************
+	implicit none
+	integer(INTEGER_TYPE), intent(in) :: I, J
+	real(REAL_TYPE) :: Mrigid
+
+	if (IsBodyMotionPrescribed(J)) then
+		ContactPairMass = Particles(I)%MASSMIXED
+	else
+		Mrigid = RigidBodyMass(J)
+		ContactPairMass = Particles(I)%MASSMIXED * Mrigid / (Particles(I)%MASSMIXED + Mrigid)
+	end if
+
+	end function ContactPairMass
+
+
+	subroutine AssignContactStiffness()
+	!**********************************************************************
+    !
+    !    Function: set the contact stiffness of each body-material pair.
+    !              Path 1: user stiffness, no automatic assignment.
+    !              Path 2: k = E*sqrt(pi)*R_max**2 / (3*beta*Q*L_ref**2), with
+    !              Q = eta**2*eps_n and L_ref the height of the mesh bounding box.
+    !              Equals Eq. kappa_rig, since R_p**2 = beta**2*h**2 / (pi*n_pc) and L_z = 1 m.
+    !
+    !**********************************************************************
+	implicit none
+	integer(INTEGER_TYPE) :: J, M, IPart
+	real(REAL_TYPE) :: Young, Rmax, ReferenceLength
+	character(len=255) :: EchoLine
+
+	ReferenceLength = BoundingBoxMax(2) - BoundingBoxMin(2)
+
+	do J = 1, NRigidBodies
+		do M = 1, DataStructureRigidBody(J)%NumMaterials
+			if (DataStructureRigidBody(J)%StiffnessPath == STIFFNESS_FROM_TOLERANCE) then
+				if (DataStructureRigidBody(J)%Materials(M)%RigidityParameter <= 0.0) then
+					call GiveError('Contact stiffness path 2 requires a positive rigidity tolerance parameter, rigid body ' // &
+						trim(DataStructureRigidBody(J)%Name))
+				end if
+
+				Young = MatParams(M)%YoungModulus
+				if (Young <= 0.0) Young = 2.0*MatParams(M)%ShearModulus*(1.0 + MatParams(M)%PoissonRatio)
+				if (Young <= 0.0) then
+					call GiveError('Contact stiffness path 2 requires a positive stiffness of material ' // &
+						trim(MatParams(M)%MaterialName))
+				end if
+
+				! Largest radius: most demanding point of the material
+				Rmax = 0.0
+				do IPart = 1, Counters%NParticles
+					if (MaterialIDArray(IPart) == M) Rmax = max(Rmax, Particles(IPart)%ParticleRadius)
+				end do
+
+				DataStructureRigidBody(J)%Materials(M)%ContactStiffness = Young * sqrt(PI) * Rmax**2 / &
+					(3.0 * Kfactor * DataStructureRigidBody(J)%Materials(M)%RigidityParameter * &
+					ReferenceLength**2)
+			end if
+
+			write(EchoLine, '(A,I0,3A,I0,A,I0,A,G12.5,A)') 'Rigid body ', J, ' ("', &
+				trim(DataStructureRigidBody(J)%Name), '") material ', M, ': path ', &
+				DataStructureRigidBody(J)%StiffnessPath, ', contact stiffness = ', &
+				DataStructureRigidBody(J)%Materials(M)%ContactStiffness, ' kN/m'
+			call WriteInLogFile(trim(EchoLine))
+		end do
 	end do
-	
-	
-	end subroutine Get_Contact_Stiffness
+
+	end subroutine AssignContactStiffness
+
+
+	real(REAL_TYPE) function ContactCriticalTimeStep(SoilTimeStep)
+	!**********************************************************************
+    !
+    !    Function: critical time step of soil and contact, Eq. dt_combined of the paper,
+    !              evaluated with the contact statistics of LevelSetContact.
+    !              Returns SoilTimeStep if no material point can reach a rigid body.
+    !
+    !    Note: DistanceField is one position update old and the force holds over the
+    !          next step, hence the overlap prediction over two increments. Points
+    !          approaching contact enter here to bound the damping term at first contact.
+    !
+    !**********************************************************************
+	implicit none
+	real(REAL_TYPE), intent(in) :: SoilTimeStep
+
+	real(REAL_TYPE), parameter :: XI_LIMIT = 0.95
+	integer(INTEGER_TYPE) :: I, J, MaterialID
+	real(REAL_TYPE) :: OmegaSoil2, Radius, ClosingVel, Overlap, Xi, K, RadialScale
+	real(REAL_TYPE) :: BodyTerm(NRigidBodies), InvMassEff, Gamma, DtNormal
+
+	ContactCriticalTimeStep = SoilTimeStep
+	if (.not. IsThereRigidBody) RETURN
+	if (.not. allocated(ContactNormalVel)) RETURN
+
+	OmegaSoil2 = (2.0/SoilTimeStep)**2
+
+	! Rigid-body block of 1/m_eff, Eq. meff: prescribed degrees of freedom add no compliance
+	do J = 1, NRigidBodies
+		BodyTerm(J) = 0.0
+		if (.not. IsTranslationPrescribed(J)) &
+			BodyTerm(J) = max(DataStructureRigidBody(J)%NContacts, 1) / RigidBodyMass(J)
+		if (.not. (RigidBodyConditions(J)%ApplyPrescribedRotation .or. ISAXISYMMETRIC)) then
+			if (DataStructureRigidBody(J)%Inertia > TINY) BodyTerm(J) = BodyTerm(J) + &
+				DataStructureRigidBody(J)%ContactArmSum / DataStructureRigidBody(J)%Inertia
+		end if
+	end do
+
+	do I = 1, Counters%NParticles
+		if (AffinityArray(I,2) < 1) cycle
+		Radius = Particles(I)%ParticleRadius
+		if (Radius <= TINY) cycle
+
+		J = int(ElementsRigidBody(int(AffinityArray(I,2)))%RigidBody)
+		if (DistanceField(I) < 0.0) then
+			ClosingVel = max(0.0d0, -ContactNormalVel(I))
+		else
+			ClosingVel = Length(VelocityArray(I,:) - DataStructureRigidBody(J)%Velocity, 2) + &
+				abs(DataStructureRigidBody(J)%AngularVelocity) * &
+				Length(GlobPosArray(I,:) - DataStructureRigidBody(J)%Centroid, 2)
+		end if
+
+		Overlap = -DistanceField(I) + 2.0 * CalParams%TimeIncrement * ClosingVel
+		if (Overlap <= 0.0) cycle
+
+		MaterialID = MaterialIDArray(I)
+		if (MaterialID > DataStructureRigidBody(J)%NumMaterials) cycle
+		K = DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness
+		if (K <= 0.0) cycle
+
+		Xi = min(Overlap/Radius, XI_LIMIT)
+		! Axisymmetric force is scaled by r in LevelSetContact, stiffness scales with it
+		RadialScale = 1.0
+		if (ISAXISYMMETRIC) RadialScale = abs(GlobPosArray(I,1))
+
+		InvMassEff = 1.0/(Particles(I)%MASSMIXED * CalParams%ScalingMassFactor) + BodyTerm(J)
+		Gamma = RadialScale * DataStructureRigidBody(J)%Materials(MaterialID)%ContactDamping * 2.0 * &
+			sqrt(ContactPairMass(I, J) * K) * InvMassEff
+
+		DtNormal = 4.0 / (Gamma + sqrt(Gamma**2 + 4.0*(OmegaSoil2 + RadialScale*K*BarrierTangent(Xi)*InvMassEff)))
+		ContactCriticalTimeStep = min(ContactCriticalTimeStep, DtNormal)
+
+		! Stick mode: undamped tangential spring of stiffness k
+		if (DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef > 0.0) &
+			ContactCriticalTimeStep = min(ContactCriticalTimeStep, &
+				2.0 / sqrt(OmegaSoil2 + RadialScale*K*InvMassEff))
+	end do
+
+	end function ContactCriticalTimeStep
+
           
           
     subroutine LevelSetContact()
@@ -960,14 +1149,18 @@
     real(REAL_TYPE) :: TimeIncrementNew, RelativeVel(2), Tangent(2)
     real(REAL_TYPE) :: k_of_d, NormalForce(2), TangentForce(2), Force(2)
     real(REAL_TYPE) :: Arm, Torque, X1v(2)
-    real(REAL_TYPE) :: K_eff, Pmag, Mrigid, mu_red, DampCoeff, vn
+    real(REAL_TYPE) :: K_eff, Pmag, mu_red, DampCoeff, vn
     real(REAL_TYPE) :: Vt_mag, kt, Tlimit, nhat(2), Tstore(2), Ttrial(2)
 
 
     if (.not. IsThereRigidBody) RETURN
-    if (CalParams%TimeStep == 1 ) RETURN !do not calculate for first time step
+    if (CalParams%IStep == 1 .and. CalParams%TimeStep == 1) RETURN !do not calculate for first time step of the calculation (TimeStep restarts at every load step)
 
     ContactForceArray(:,:)=0.0 !initialize contact force array
+    do J = 1, NRigidBodies
+        DataStructureRigidBody(J)%NContacts = 0
+        DataStructureRigidBody(J)%ContactArmSum = 0.0
+    end do
 
     do I = 1, Counters%NParticles ! Loop over particles ThinRigidElmConnectivities
         Xp = GlobPosArray(I,:) !Coordinate of MP
@@ -1097,17 +1290,14 @@
         k_of_d=-(2.0*log((Distancefield(I)+Particles(I)%ParticleRadius)/(Particles(I)%ParticleRadius))- &
             (Particles(I)%ParticleRadius/(Distancefield(I)+Particles(I)%ParticleRadius))+1.0) !stiffness as function of distance field
 
-        ! Effective penalty stiffness: cap the (numerical) contact stiffness at the
-        ! explicit-stability limit computed in Get_Contact_Stiffness (module var kappa).
+        ! Stability is handled by ContactCriticalTimeStep, the stiffness is applied unchanged
         K_eff = DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness
-        if (kappa > 0.0 .and. kappa < K_eff) K_eff = kappa
 
         ! Damping uses the REDUCED mass of the particle-rigid-body pair. The original used
         ! only the particle mass (MASSMIXED); with the rigid body's true (small) inertia
         ! that makes the explicit dashpot far over-critical for the body, so it diverges
         ! independently of the stiffness magnitude.
-        Mrigid = RigidBodyMass(J) ! rigid body mass [Mg] (axisymmetric-aware, see RigidBodyMass)
-        mu_red = Particles(I)%MASSMIXED * Mrigid / (Particles(I)%MASSMIXED + Mrigid)         ! reduced mass [Mg]
+        mu_red = ContactPairMass(I, J) ! m_p for a fully prescribed body
         ! Contact damping ratio is a user input (per rigid body, per contacting material),
         ! read from $$START_THIN_RIGID_ELM_PROPERTIES. Set it to 0 in GiD to disable damping.
         DampCoeff = DataStructureRigidBody(J)%Materials(MaterialID)%ContactDamping * 2.0 * sqrt(mu_red * K_eff)
@@ -1116,6 +1306,12 @@
         ! the dashpot opposes the relative NORMAL velocity vn (vn<0 approaching, vn>0 separating).
         vn = DotProduct(RelativeVel, Sign*Normal, 2)
         Pmag = K_eff * k_of_d * (-1.0 * Distancefield(I)) - DampCoeff * vn
+
+        ! Contact statistics for ContactCriticalTimeStep
+        ContactNormalVel(I) = vn
+        DataStructureRigidBody(J)%NContacts = DataStructureRigidBody(J)%NContacts + 1
+        if (.not. ISAXISYMMETRIC) DataStructureRigidBody(J)%ContactArmSum = DataStructureRigidBody(J)%ContactArmSum + &
+            (RadiusVec(1)*Sign*Normal(2) - RadiusVec(2)*Sign*Normal(1))**2
 
         ! Non-adhesion (unilateral) clamp: contact may only PUSH, never pull. Without it the
         ! dashpot produces a net attractive force while separating (vn>0), injecting energy
@@ -1149,7 +1345,7 @@
         !     Ttrial = project(Tstore onto tangent plane) + kt * (v_t * dt)   [elastic predictor]
         !     if |Ttrial| > mu*|N| : Ttrial = mu*|N| * Ttrial/|Ttrial|        [plastic corrector / slip]
         ! TangentForceTrack(I,:) persists Tstore between steps (reset to 0 when contact opens).
-        ! kt uses the (stability-capped) normal stiffness K_eff for parity/stability.
+        ! kt uses the normal stiffness K_eff for parity with the normal spring.
         if (Pmag > 0.0) then !contact closed and pushing
             nhat = Sign*Normal
             ! carry over the stored tangential force, re-projected onto the current tangent
@@ -1438,7 +1634,7 @@
      !   use ModCounters
 		implicit none
 		
-		real(REAL_TYPE), intent(out):: Fcontact(Counters%N , 2)
+		real(REAL_TYPE), intent(out):: Fcontact(Counters%N , Counters%nEntity)
 		real(REAL_TYPE):: PartShape(ELEMENTNODES)
 		integer(INTEGER_TYPE):: Iel, INode, IPart, ActEl, nn, IDof, NElemPart, IntGlo
 		Fcontact=0.0

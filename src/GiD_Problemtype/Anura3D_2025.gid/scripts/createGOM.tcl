@@ -631,7 +631,13 @@ proc Anura3D::WriteCalculationFile_GOM { filename stageNode project_path model_n
         set v14 [$gNode selectNodes {string(value[@n="Contact_damping_2"]/@v)}]
         set v15 [$gNode selectNodes {string(value[@n="Contact_damping_3"]/@v)}]
         set v16 [$gNode selectNodes {string(value[@n="Contact_damping_4"]/@v)}]
-        dict set formats [$gNode @n] "%d \"$v10\" $v11 $v12 $v1 $v2 $v3 $v4 $v5 $v6 $v7 $v8 $v9 $v13 $v14 $v15 $v16\n"
+        set v17 1
+        if {[$gNode selectNodes {string(value[@n="Stiffness_definition"]/@v)}] == "Penetration_tolerance"} {set v17 2}
+        set v19 [$gNode selectNodes {string(value[@n="Rigidity_parameter_1"]/@v)}]
+        set v20 [$gNode selectNodes {string(value[@n="Rigidity_parameter_2"]/@v)}]
+        set v21 [$gNode selectNodes {string(value[@n="Rigidity_parameter_3"]/@v)}]
+        set v22 [$gNode selectNodes {string(value[@n="Rigidity_parameter_4"]/@v)}]
+        dict set formats [$gNode @n] "%d \"$v10\" $v11 $v12 $v1 $v2 $v3 $v4 $v5 $v6 $v7 $v8 $v9 $v13 $v14 $v15 $v16 $v17 $v19 $v20 $v21 $v22\n"
     }
 
         if { [dict size $formats] } {

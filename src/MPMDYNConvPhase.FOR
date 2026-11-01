@@ -3051,7 +3051,7 @@
 
         end if ! 2 layer formulation and 2 phases
 
-        TimeIncrementNew = MinTimeStep * CourantFactor
+        TimeIncrementNew = ContactCriticalTimeStep(MinTimeStep) * CourantFactor ! equals MinTimeStep without thin rigid contact
 
         if (.not.CalParams%ApplyQuasiStatic) then
           if ((CalParams%TotalRealTime + TimeIncrementNew)>CalParams%TotalTime) then

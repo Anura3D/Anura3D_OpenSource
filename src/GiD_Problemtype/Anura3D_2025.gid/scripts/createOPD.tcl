@@ -248,43 +248,58 @@ proc Anura3D::WriteCalculationFile_OPD { stageNode projectPath projectName icoun
     GiD_WriteCalculationFile puts "$strain"
         
     # Elements for material point output
-    set num_elem 0  
-    set ov_type "element"    
-    set xp_res [format_xpath {container[@n="results"]/container[@n="elements_for_mat_point_output"]/condition[@n="select_elements_for_mat_point_output"]/group[@ov=%s]} $ov_type]    
-    foreach gNode [$stageNode selectNodes $xp_res] {
-            set gName [get_domnode_attribute $gNode n]
-            set gEntities_num [GiD_EntitiesGroups get $gName $ov_type -count]
-            set num_elem [expr $gEntities_num + $num_elem] 
-    }
-		
+    set ov_type "element"
+    set xp_res [format_xpath {container[@n="results"]/container[@n="elements_for_mat_point_output"]/condition[@n="select_elements_for_mat_point_output"]/group[@ov=%s]} $ov_type]
+    set output_groups [$stageNode selectNodes $xp_res]
+
 	set xp_path {container[@n="results"]/container[@n="elements_for_mat_point_output"]}
     set xp [$stageNode selectNodes $xp_path]
 	set num_output_MP [$xp selectNodes {string(value[@n="number_output_mat_point"]/@v)}]
-	
-    set format ""
-    foreach gNode [$stageNode selectNodes $xp_res] {
-            set n [$gNode @n]
-            dict set format $n "%d \n"
-    }
-        
-        if { [dict size $format] } {
-            set err [catch {
-                GiD_WriteCalculationFile elements -return $format} numelems]       
-            if { $err } {          
-                snit_messageBox -parent .gid \
-                    -message [= "Error when writing elements for material point output (%s)" $numelems]             
-                return "isnotok"                        
-            } else {    
-                if { $icount_stage == "0"} {
-				GiD_WriteCalculationFile puts {$$NUMBER_OF_OUTPUT_MP_PER_ELEMENT}
-                GiD_WriteCalculationFile puts $num_output_MP	
-                GiD_WriteCalculationFile puts {$$NUMBER_OF_ELEMENTS_FOR_MP_OUTPUT}
-                GiD_WriteCalculationFile puts $num_elem
-                GiD_WriteCalculationFile puts {$$ELEMENTS_FOR_MP_OUTPUT}        
-                GiD_WriteCalculationFile elements $format
+
+    if { $icount_stage == "0" && [llength $output_groups] } {
+        # The solver numbers continuum elements by their row in the GOM connectivity
+        # list, not by GiD id: the mesh may be mixed (continuum elements + Line/bar
+        # rigid-body elements), which share the GiD numbering.
+        set root [$::gid_groups_conds::doc documentElement]
+        set dim_type [$root selectNodes {string(container[@n="General_data"]/value[@n="NDIM"]/@v)}]
+        if {$dim_type == "2D:plane-strain" || $dim_type == "2D:Axissymmetric"} {
+            set ElementList [GiD_Info Mesh Elements Triangle -sublist]
+        } else {
+            set ElementList [GiD_Info Mesh Elements Tetrahedra -sublist]
+        }
+        set global_to_local [dict create]
+        set num_cont_elem [llength $ElementList]
+        for {set gi 0} {$gi < $num_cont_elem} {incr gi} {
+            dict set global_to_local [lindex $ElementList $gi 0] [expr {$gi + 1}]
+        }
+
+        set output_elements [list]
+        foreach gNode $output_groups {
+            set gName [get_domnode_attribute $gNode n]
+            set elements_id [GiD_EntitiesGroups get $gName elements]
+            set num_elems [objarray length $elements_id]
+            for {set i 0} {$i < $num_elems} {incr i} {
+                set elem_id [objarray get $elements_id $i]
+                # Skip ids that are not continuum elements (e.g. Line rigid-body elements).
+                if {![dict exists $global_to_local $elem_id]} { continue }
+                lappend output_elements [dict get $global_to_local $elem_id]
             }
-        }                				            
-    }        
+        }
+        set output_elements [lsort -integer -unique $output_elements]
+        set num_elem [llength $output_elements]
+
+        # A count of 0 cannot be written: the kernel only reads the element list if it is > 0.
+        if { $num_elem } {
+            GiD_WriteCalculationFile puts {$$NUMBER_OF_OUTPUT_MP_PER_ELEMENT}
+            GiD_WriteCalculationFile puts $num_output_MP
+            GiD_WriteCalculationFile puts {$$NUMBER_OF_ELEMENTS_FOR_MP_OUTPUT}
+            GiD_WriteCalculationFile puts $num_elem
+            GiD_WriteCalculationFile puts {$$ELEMENTS_FOR_MP_OUTPUT}
+            foreach elem_id $output_elements {
+                GiD_WriteCalculationFile puts $elem_id
+            }
+        }
+    }
 
 	set time_between_outputs [$xp selectNodes {string(value[@n="time_between_outputs"]/@v)}]   
     GiD_WriteCalculationFile puts {$$TIME_BETWEEN_MP_OUTPUTS}

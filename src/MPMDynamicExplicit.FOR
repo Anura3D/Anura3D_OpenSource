@@ -152,7 +152,6 @@
             end if
 
             call CalculateCriticalTimeStep()
-			      call Get_Contact_Stiffness() !Calculate max stiffness for penalty force
             call WriteFEMNodeData() ! only if .not.IsMPMComputation
 
           end do ! ----- end TIME STEP LOOP -----
