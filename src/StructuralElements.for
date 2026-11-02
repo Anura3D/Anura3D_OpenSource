@@ -290,7 +290,7 @@
             end do
             allocate(integer(INTEGER_TYPE) :: DataStructureRigidBody(J)%Nodes(NodeCount))
 			!transcribe node IDs to structure
-            DataStructureRigidBody(J)%Nodes = ND           
+            DataStructureRigidBody(J)%Nodes = ND(1:NodeCount) !ND is sized for all thin nodes, the rest of it is 0
             
 				
              DataStructureRigidBody(J)%Area = 0.0
@@ -530,7 +530,10 @@
         do Iel = 1, NThinELements
             do J = 1, 2
                 do I = 1, Ncoord
-                    if (ThinRigidElmConnectivities(Iel, J) == UniqueCoordinates(I) ) ThinRigidElmConnectivities(Iel, J) = I                    
+                    if (ThinRigidElmConnectivities(Iel, J) == UniqueCoordinates(I) ) then
+                        ThinRigidElmConnectivities(Iel, J) = I
+                        exit !the new local id could match a later global id and be renamed again
+                    end if
                 end do
             end do
         end do    
