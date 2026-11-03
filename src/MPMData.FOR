@@ -126,6 +126,8 @@
         
 		!if using thin rigid bodies
         real(REAL_TYPE), allocatable :: ContactForceArray(:,:) 
+        integer(INTEGER_TYPE), allocatable :: ContactElementArray(:) !> Element holding the contact point x_c on the body surface, 0 if none
+        real(REAL_TYPE), allocatable :: ContactShapeArray(:,:) !> Shape function values at x_c in ContactElementArray
 		
         ! Stresses
         real(REAL_TYPE), allocatable :: SigmaEffArray(:,:)           !> Effective stresses (Sxx, Syy, Szz, Sxy, Syz, Sxz) of the particle 
@@ -670,6 +672,8 @@
           allocate(TangentDisplacementTrack(Counters%NParticles,2), stat = IError)
           allocate(VelocityArray(Counters%NParticles,NVECTOR), stat = IError)
 		  allocate(ContactForceArray(Counters%NParticles,NVECTOR), stat = IError)
+		  allocate(ContactElementArray(Counters%NParticles), stat = IError)
+		  allocate(ContactShapeArray(Counters%NParticles,ELEMENTNODES), stat = IError)
           allocate(BpArray(Counters%NParticles,NVECTOR,NVECTOR), stat = IError)  ! APIC affine velocity matrix
           allocate(SigmaEffArray(Counters%NParticles,NTENSOR), stat = IError)
           allocate(SigmaEff0Array(Counters%NParticles,NTENSOR), stat = IError)
@@ -699,6 +703,8 @@
           GlobPosArray =  0.0
           VelocityArray = 0.0
 		  ContactForceArray= 0.0 !Update conditions for thin rigid bodies later
+		  ContactElementArray = 0
+		  ContactShapeArray = 0.0
           BpArray = 0.0  ! Initialize APIC affine velocity matrix to zero
           SigmaEffArray = 0.0
           SigmaEff0Array = 0.0

@@ -1069,6 +1069,8 @@
 	integer(INTEGER_TYPE) :: I, J, MaterialID
 	real(REAL_TYPE) :: OmegaSoil2, Radius, ClosingVel, Overlap, Xi, K, RadialScale
 	real(REAL_TYPE) :: BodyTerm(NRigidBodies), InvMassEff, Gamma, DtNormal
+	real(REAL_TYPE) :: Weights(ELEMENTNODES), NodalMass
+	integer(INTEGER_TYPE) :: IEl, INode
 
 	ContactCriticalTimeStep = SoilTimeStep
 	if (.not. IsThereRigidBody) RETURN
@@ -1114,7 +1116,19 @@
 		RadialScale = 1.0
 		if (ISAXISYMMETRIC) RadialScale = abs(GlobPosArray(I,1))
 
-		InvMassEff = 1.0/(Particles(I)%MASSMIXED * CalParams%ScalingMassFactor) + BodyTerm(J)
+		! Soil side of 1/m_eff, Eq. (11) of Contact_force_transfer.md: grid mass seen at the
+		! contact point through the transfer weights; the point mass if x_c is not located
+		if (ContactElementArray(I) > 0) then
+			call ContactTransferWeights(I, Weights, IEl)
+			InvMassEff = 0.0
+			do INode = 1, ELEMENTNODES
+				NodalMass = LumpedMassDry(ReducedDof(ElementConnectivities(INode, IEl)) + 1, 1)
+				if (NodalMass > 0.0) InvMassEff = InvMassEff + Weights(INode)**2 / (NodalMass * CalParams%ScalingMassFactor)
+			end do
+		else
+			InvMassEff = 1.0/(Particles(I)%MASSMIXED * CalParams%ScalingMassFactor)
+		end if
+		InvMassEff = InvMassEff + BodyTerm(J)
 		! Dashpot of LevelSetContact, c = 2*zeta*sqrt(m*k_t), at the predicted overlap
 		Gamma = RadialScale * DataStructureRigidBody(J)%Materials(MaterialID)%ContactDamping * 2.0 * &
 			sqrt(ContactPairMass(I, J) * K * BarrierTangent(Xi)) * InvMassEff
@@ -1155,12 +1169,14 @@
     real(REAL_TYPE) :: Arm, Torque, X1v(2)
     real(REAL_TYPE) :: K_eff, Pmag, mu_red, DampCoeff, vn, XiContact
     real(REAL_TYPE) :: Vt_mag, kt, Tlimit, nhat(2), Tstore(2), Ttrial(2)
+    real(REAL_TYPE) :: DistP, LambdaN, ToBody(2), EpsP(NTENSOR), Xc(2)
 
 
     if (.not. IsThereRigidBody) RETURN
     if (CalParams%IStep == 1 .and. CalParams%TimeStep == 1) RETURN !do not calculate for first time step of the calculation (TimeStep restarts at every load step)
 
     ContactForceArray(:,:)=0.0 !initialize contact force array
+    ContactElementArray = 0 !no contact point until located below
     do J = 1, NRigidBodies
         DataStructureRigidBody(J)%NContacts = 0
         DataStructureRigidBody(J)%ContactArmSum = 0.0
@@ -1213,40 +1229,51 @@
             end if
         end do
 
-    DistanceField(I) = DistanceField(I) - Particles(I)%ParticleRadius !account for radius of influence
-        
+    DistP = DistanceField(I) !distance d_p from the point to the body surface
+
+    ! Element-contact normal MUST be indexed by the ELEMENT id (AffinityArray(I,2)),
+    ! not by the rigid-body id J, otherwise every face except one gets the wrong normal
+    ! direction, destabilising contact on the other faces (e.g. the vertical wall).
+    Normal=AffinityArray(I,1)*(VectorNorm(Xp-ThinRigidCoordinates(AffinityArray(I,3),:), 2))+&
+           (1-AffinityArray(I,1))*NormalsRigidBody(AffinityArray(I,2), :) !choses correct normal
+
+    Sign=1
+    if  (AffinityArray(I,1)==0) then !distance to element, need to check normal direction
+        X1v = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),1),:) !node 1
+
+        !Dot product to check normal direction
+        Dot1= DotProduct(Xp - X1v, Normal, 2)
+
+        if (Dot1 < 0) then !flip normal
+            Sign = -1
+        else
+            Sign = 1
+        end if
+    endif
+
+    ! Deformed half-width of the point's domain along the contact normal, R_pn = lambda_n*R_p,
+    ! lambda_n = exp(n.eps.n) from the log strain of the point (engineering shear in Eps(4)).
+    ! Contact point x_c = x_p + d_p*n on the body surface, where the reaction enters the grid.
+    ! Points within 2*R_p also get x_c, so that ContactCriticalTimeStep has their weights.
+    LambdaN = 1.0
+    if (DistP < 2.0*Particles(I)%ParticleRadius) then
+        ToBody = -Sign*Normal
+        EpsP = GetEps(Particles(I))
+        LambdaN = exp(ToBody(1)**2*EpsP(1) + ToBody(2)**2*EpsP(2) + ToBody(1)*ToBody(2)*EpsP(4))
+        Xc = Xp + DistP*ToBody
+        call LocateContactPoint(I, Xc)
+    end if
+
+    DistanceField(I) = DistP - LambdaN*Particles(I)%ParticleRadius !account for radius of influence
+
     if (DistanceField(I)<0.0) then !contact exist between particle and rigid body
         J = ElementsRigidBody(AffinityArray(I,2))%RigidBody !obtain rigid body ID
 
-        ! Element-contact normal MUST be indexed by the ELEMENT id (AffinityArray(I,2)),
-        ! not by J: J was just overwritten to the rigid-body id on the line above, so
-        ! NormalsRigidBody(J,:) returned element #(body id)'s normal (=element 1's for a
-        ! single body) for EVERY face -> every face except that one got the wrong normal
-        ! direction, destabilising contact on the other faces (e.g. the vertical wall).
-        Normal=AffinityArray(I,1)*(VectorNorm(Xp-ThinRigidCoordinates(AffinityArray(I,3),:), 2))+&
-               (1-AffinityArray(I,1))*NormalsRigidBody(AffinityArray(I,2), :) !choses correct normal
-
-        Sign=1
-        if  (AffinityArray(I,1)==0) then !distance to element, need to check normal direction
-    
-            !Update Velocity, position and accumulate displacement on MP
-            X1v = ThinRigidCoordinates(ThinRigidElmConnectivities(AffinityArray(I,2),1),:) !node 1
-
-            !Dot product to check normal direction
-            Dot1= DotProduct(Xp - X1v, Normal, 2)
-
-            if (Dot1 < 0) then !flip normal
-                Sign = -1
-            else
-                Sign = 1
-            end if
-        endif	
-        
         ! Calculate rigid body velocity at contact point including rotation
         ! v_point = v_translation + omega x r
         ! In 2D: v_point = v_translation + omega * (-ry, rx)
         if (.not. ISAXISYMMETRIC) then
-            normal_diff= (Particles(I)%ParticleRadius + DistanceField(I))  * Sign * Normal !Remainder vector from particle to point of contact
+            normal_diff= DistP * Sign * Normal !Vector from the contact point on the body surface to the particle
             RadiusVec = (Xp - DataStructureRigidBody(J)%Centroid) - normal_diff !Vector from centroid to contact point
             RigidBodyVelAtPoint(1) = DataStructureRigidBody(J)%Velocity(1) - &
                                         DataStructureRigidBody(J)%AngularVelocity * (RadiusVec(2))
@@ -1291,8 +1318,10 @@
 
         MaterialID = MaterialIDArray(I)
                     
-        k_of_d=-(2.0*log((Distancefield(I)+Particles(I)%ParticleRadius)/(Particles(I)%ParticleRadius))- &
-            (Particles(I)%ParticleRadius/(Distancefield(I)+Particles(I)%ParticleRadius))+1.0) !stiffness as function of distance field
+        ! Secant stiffness f(xi) of the barrier, xi = -phi/R_p: the reference radius stays the length
+        ! scale of the law, the deformed half-width enters only through the overlap -phi
+        XiContact = -Distancefield(I)/Particles(I)%ParticleRadius
+        k_of_d=-(2.0*log(1.0 - XiContact) - 1.0/(1.0 - XiContact) + 1.0) !stiffness as function of distance field
 
         ! Stability is handled by ContactCriticalTimeStep, the stiffness is applied unchanged
         K_eff = DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness
@@ -1409,6 +1438,135 @@
     end do
 
     end subroutine LevelSetContact
+
+
+    subroutine LocateContactPoint(IPart, Xc)
+    !**********************************************************************
+    !
+    !    Function: element and shape values of the contact point x_c of material point IPart
+    !              on the body surface. Walks from the element of the point across the faces
+    !              crossed by the segment [x_p, x_c]. If the segment leaves the mesh, x_c is
+    !              clipped to the boundary face, so that 0 <= N_I <= 1.
+    !              Linear triangles only; other elements keep the shape values of the point.
+    !
+    !**********************************************************************
+    implicit none
+    integer(INTEGER_TYPE), intent(in) :: IPart
+    real(REAL_TYPE), intent(inout) :: Xc(2)
+
+    integer(INTEGER_TYPE), parameter :: MAX_WALK = 5
+    ! Side of the triangle opposite local node K (side 1: nodes 1-2, side 2: 3-1, side 3: 2-3)
+    integer(INTEGER_TYPE), parameter :: SIDE_OPPOSITE(3) = (/ 3, 2, 1 /)
+    integer(INTEGER_TYPE) :: IEl, Adjacent, IWalk, K, KExit
+    real(REAL_TYPE) :: Xa(2), LocPos(NVECTOR), Ha(ELEMENTNODES), Hc(ELEMENTNODES), DHS(ELEMENTNODES, NVECTOR)
+    real(REAL_TYPE) :: S, SExit
+    logical :: Outside, Success, Found
+    logical, save :: IsWarned = .false.
+
+    IEl = ElementIDArray(IPart)
+    if (IEl <= 0) RETURN
+
+    if (ELEMENTTYPE /= TRI3) then
+        if (.not. IsWarned) call WriteInLogFile('Contact point transfer is implemented for TRI3 only, '// &
+            'the contact force enters at the material point')
+        IsWarned = .true.
+        ContactElementArray(IPart) = IEl
+        ContactShapeArray(IPart,:) = ShapeValuesArray(IPart,:)
+        RETURN
+    end if
+
+    Xa = GlobPosArray(IPart,:)
+    Found = .false.
+    do IWalk = 1, MAX_WALK
+        call GetLocalCoordinates(Xc, IEl, ELEMENTNODES, Counters%NEl, Counters%NodTot, NDIM, &
+            NodalCoordinates, ElementConnectivities, LocPos, Outside, Success)
+        call ShapeFunctionData(LocPos, ELEMENTNODES, Hc, DHS)
+        if (minval(Hc) >= -1.0d-10) then !x_c inside IEl
+            Found = .true.
+            EXIT
+        end if
+
+        ! Exit of the segment from IEl: the shape values are linear along the segment
+        call GetLocalCoordinates(Xa, IEl, ELEMENTNODES, Counters%NEl, Counters%NodTot, NDIM, &
+            NodalCoordinates, ElementConnectivities, LocPos, Outside, Success)
+        call ShapeFunctionData(LocPos, ELEMENTNODES, Ha, DHS)
+        SExit = 1.0
+        KExit = 1
+        do K = 1, 3
+            if (Hc(K) < 0.0) then
+                S = max(Ha(K), 0.0d0) / (max(Ha(K), 0.0d0) - Hc(K))
+                if (S < SExit) then
+                    SExit = S
+                    KExit = K
+                end if
+            end if
+        end do
+
+        Adjacent = GetAdjacentElement(IEl, SIDE_OPPOSITE(KExit))
+        if (Adjacent <= 0) then !segment leaves the mesh: clip x_c to the boundary face
+            Hc = max(Ha + SExit*(Hc - Ha), 0.0d0)
+            Hc = Hc / sum(Hc)
+            Xc = Xa + SExit*(Xc - Xa)
+            Found = .true.
+            EXIT
+        end if
+        Xa = Xa + SExit*(Xc - Xa)
+        IEl = Adjacent
+    end do
+
+    if (Found) then
+        ContactElementArray(IPart) = IEl
+        ContactShapeArray(IPart,:) = Hc
+    else !not located within MAX_WALK elements, keep the point
+        ContactElementArray(IPart) = ElementIDArray(IPart)
+        ContactShapeArray(IPart,:) = ShapeValuesArray(IPart,:)
+    end if
+
+    end subroutine LocateContactPoint
+
+
+    subroutine ContactTransferWeights(IPart, Weights, IEl)
+    !**********************************************************************
+    !
+    !    Function: weights of the contact force of material point IPart on the nodes of
+    !              element IEl, Eq. (10) of Contact_force_transfer.md: the shape values at
+    !              x_c restricted to the nodes with mass and renormalised, so that the sum
+    !              is one. Falls back to the shape values of the point if no node of the
+    !              element of x_c carries mass.
+    !
+    !**********************************************************************
+    implicit none
+    integer(INTEGER_TYPE), intent(in) :: IPart
+    real(REAL_TYPE), intent(out) :: Weights(ELEMENTNODES)
+    integer(INTEGER_TYPE), intent(out) :: IEl
+
+    integer(INTEGER_TYPE) :: INode
+    real(REAL_TYPE) :: Total
+    logical, save :: IsWarned = .false.
+
+    IEl = ContactElementArray(IPart)
+    Weights = 0.0
+    if (IEl > 0) then
+        do INode = 1, ELEMENTNODES
+            if (LumpedMassDry(ReducedDof(ElementConnectivities(INode, IEl)) + 1, 1) > 0.0) &
+                Weights(INode) = ContactShapeArray(IPart, INode)
+        end do
+    end if
+
+    Total = sum(Weights)
+    if (Total > TINY) then
+        Weights = Weights / Total
+    else
+        if ((IEl > 0) .and. (.not. IsWarned)) then
+            call WriteInLogFile('Contact point in an element without nodal mass, '// &
+                'the contact force enters at the material point')
+            IsWarned = .true.
+        end if
+        IEl = ElementIDArray(IPart)
+        Weights = ShapeValuesArray(IPart,:)
+    end if
+
+    end subroutine ContactTransferWeights
 		   
 		   
 		   
@@ -1645,28 +1803,22 @@
 		implicit none
 		
 		real(REAL_TYPE), intent(out):: Fcontact(Counters%N , Counters%nEntity)
-		real(REAL_TYPE):: PartShape(ELEMENTNODES)
-		integer(INTEGER_TYPE):: Iel, INode, IPart, ActEl, nn, IDof, NElemPart, IntGlo
+		real(REAL_TYPE):: Weights(ELEMENTNODES)
+		integer(INTEGER_TYPE):: Iel, INode, IPart, nn, IDof
 		Fcontact=0.0
-		!Get number of active elements
-		do Iel=1,Counters%NAEl !loop active element
-			ActEL=ActiveElement(Iel) !Active element
-			NElemPart = NPartEle(ActEL)! number of particles inside element
-			
-			do Ipart=1,NElemPart !loop particles
-			IntGlo = GetParticleIndex(Ipart, ActEL)	!gets global particle index	
-			PartShape = ShapeValuesArray(IntGlo,:) !get particle shape fucntions
-			!loop nodes of element
+		if (.not. IsThereRigidBody) RETURN
+
+		! The reaction enters the grid at the contact point x_c on the body surface,
+		! with the weights of Eq. (10) (nodes with mass only, renormalised)
+		do IPart=1,Counters%NParticles
+			if (ContactForceArray(IPart, 1) == 0.0 .and. ContactForceArray(IPart, 2) == 0.0) cycle
+			call ContactTransferWeights(IPart, Weights, Iel)
 			do INode=1,ELEMENTNODES
-				nn=ElementConnectivities(iNode,ActEL) !local node connectivities
+				nn=ElementConnectivities(iNode,Iel) !local node connectivities
                 IDof = ReducedDof(nn) !global DOF number
-				!loop material points
-				
-				Fcontact(Idof+1, 1)=Fcontact(Idof+1, 1)+ContactForceArray(IntGlo, 1)*PartShape(INode)
-				Fcontact(Idof+2, 1)=Fcontact(Idof+2, 1)+ContactForceArray(IntGlo, 2)*PartShape(INode)
+				Fcontact(Idof+1, 1)=Fcontact(Idof+1, 1)+ContactForceArray(IPart, 1)*Weights(INode)
+				Fcontact(Idof+2, 1)=Fcontact(Idof+2, 1)+ContactForceArray(IPart, 2)*Weights(INode)
 			enddo
-			enddo
-			
 	    enddo
 		
 		end subroutine GetNodalContactForce
