@@ -1115,8 +1115,9 @@
 		if (ISAXISYMMETRIC) RadialScale = abs(GlobPosArray(I,1))
 
 		InvMassEff = 1.0/(Particles(I)%MASSMIXED * CalParams%ScalingMassFactor) + BodyTerm(J)
+		! Dashpot of LevelSetContact, c = 2*zeta*sqrt(m*k_t), at the predicted overlap
 		Gamma = RadialScale * DataStructureRigidBody(J)%Materials(MaterialID)%ContactDamping * 2.0 * &
-			sqrt(ContactPairMass(I, J) * K) * InvMassEff
+			sqrt(ContactPairMass(I, J) * K * BarrierTangent(Xi)) * InvMassEff
 
 		DtNormal = 4.0 / (Gamma + sqrt(Gamma**2 + 4.0*(OmegaSoil2 + RadialScale*K*BarrierTangent(Xi)*InvMassEff)))
 		ContactCriticalTimeStep = min(ContactCriticalTimeStep, DtNormal)
@@ -1152,7 +1153,7 @@
     real(REAL_TYPE) :: TimeIncrementNew, RelativeVel(2), Tangent(2)
     real(REAL_TYPE) :: k_of_d, NormalForce(2), TangentForce(2), Force(2)
     real(REAL_TYPE) :: Arm, Torque, X1v(2)
-    real(REAL_TYPE) :: K_eff, Pmag, mu_red, DampCoeff, vn
+    real(REAL_TYPE) :: K_eff, Pmag, mu_red, DampCoeff, vn, XiContact
     real(REAL_TYPE) :: Vt_mag, kt, Tlimit, nhat(2), Tstore(2), Ttrial(2)
 
 
@@ -1303,7 +1304,13 @@
         mu_red = ContactPairMass(I, J) ! m_p for a fully prescribed body
         ! Contact damping ratio is a user input (per rigid body, per contacting material),
         ! read from $$START_THIN_RIGID_ELM_PROPERTIES. Set it to 0 in GiD to disable damping.
-        DampCoeff = DataStructureRigidBody(J)%Materials(MaterialID)%ContactDamping * 2.0 * sqrt(mu_red * K_eff)
+        ! The dashpot is defined with the TANGENT stiffness k_t = k*g(xi) at the current overlap,
+        ! c = 2*zeta*sqrt(m*k_t), so zeta is the damping ratio of the linearised contact. With the
+        ! nominal k the contact was over-critical by sqrt(k/k_t), a factor of 5 to 20 at small overlaps.
+        ! c -> 0 at first contact because g(0) = 0. Same overlap bound as ContactCriticalTimeStep.
+        XiContact = min(-Distancefield(I)/Particles(I)%ParticleRadius, 0.95d0)
+        DampCoeff = DataStructureRigidBody(J)%Materials(MaterialID)%ContactDamping * 2.0 * &
+            sqrt(mu_red * K_eff * BarrierTangent(XiContact))
 
         ! Repulsive magnitude along -(Sign*Normal): spring (>=0) minus the dashpot, where
         ! the dashpot opposes the relative NORMAL velocity vn (vn<0 approaching, vn>0 separating).

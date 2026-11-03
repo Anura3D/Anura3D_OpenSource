@@ -100,10 +100,11 @@
   <value n="Friction_angle_3" pn="Friction coefficient [-]" v="0.0" state="hidden"/>
   <value n="Friction_angle_4" pn="Friction coefficient [-]" v="0.0" state="hidden"/>
 
-  <!-- Contact damping ratio: fraction of critical damping used for the normal contact
-       dashpot, c = zeta * 2 * sqrt(mu_reduced * k_contact). 0 disables damping.
-       Values well below 1 are recommended: a high ratio sharply reduces the stable
-       explicit time step (dt_crit scales with sqrt(1+z^2)-z). -->
+  <!-- Contact damping ratio: fraction of critical damping of the normal contact,
+       dashpot c = zeta * 2 * sqrt(mu_reduced * k_t), with k_t = k*g(xi) the tangent
+       stiffness at the current overlap. zeta is the damping ratio of the linearised contact,
+       and c vanishes at first contact. 0 disables damping. The stable explicit time step
+       scales with sqrt(1+zeta^2)-zeta. -->
   <value n="Contact_damping_1" pn="Contact damping ratio 1 [-]" v="0.75" state="hidden"/>
   <value n="Contact_damping_2" pn="Contact damping ratio 2 [-]" v="0.75" state="hidden"/>
   <value n="Contact_damping_3" pn="Contact damping ratio 3 [-]" v="0.75" state="hidden"/>
