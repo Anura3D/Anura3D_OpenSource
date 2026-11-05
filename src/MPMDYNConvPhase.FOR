@@ -223,7 +223,9 @@
             end if
 		  end if ! Unsat calculation 
           
-		  call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm 
+		  call ApplyMPMDynamicContact() ! only if ApplyContactAlgorithm
+          ! Re-impose the rigid body velocity on rigid nodes and particles after the contact correction (only if IsRigidBody)
+          call OverWriteParticleAndNodalAccAndVeloRigidBody()
           ! Overwrite nodal velocity and particle velocity if prescribed
            call ApplyMPPrescribedVelocity(TotalVelocitySys)
            call ApplyNodalPrescribedVelocity(DummyRotationVector1)    
