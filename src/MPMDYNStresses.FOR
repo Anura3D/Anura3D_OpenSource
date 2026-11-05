@@ -60,6 +60,7 @@
       use user32
       use kernel32
       use ModMPMDYN2PhaseSP
+      use ModGasification
        
       contains	  
 	  
@@ -99,6 +100,8 @@
                      NumParticles, &      ! ID of Material Set, number of particles (material points) inside the element
                      FirstParticleIndex
           real(REAL_TYPE) :: WTN,  FirstParticleEUnloading
+          real(REAL_TYPE) :: GasRamp ! gasification: strain-increment ramp after reactivation
+          real(REAL_TYPE), dimension(NTENSOR) :: EpsStepSaved
 
           real(REAL_TYPE), dimension(Counters%N) :: DDisp, DDispLiquid, VelLiquid
           real(REAL_TYPE), dimension(NVECTOR, ELEMENTNODES) :: BMatrix
@@ -270,8 +273,22 @@
 					DoSkipStressComputation = .true.
                  end if
                   
-                 if (.not.DoSkipStressComputation) then  
-                   call StressSolid(IntGlo, IEl, BMatrix, IEntity)   ! calculate stresses for mixture or solid material points
+                 if (IsGasParticle(IntGlo)) then
+                   ! gasification: a gas MP carries no stress and the constitutive model is not called
+                   SigmaEffArray(IntGlo,:) = 0.D0
+                   Particles(IntGlo)%WaterPressure = 0.0
+                   Particles(IntGlo)%DBulkViscousPressure = 0.0
+                 else if (.not.DoSkipStressComputation) then  
+                   GasRamp = GasRampFactor(IntGlo)
+                   if ((GasRamp < 1.0) .and. IsParticleIntegration(IEl)) then
+                     ! gasification: reactivated MP, ramp the strain increment seen by the constitutive model
+                     EpsStepSaved = Particles(IntGlo)%EpsStep
+                     Particles(IntGlo)%EpsStep = GasRamp * EpsStepSaved
+                     call StressSolid(IntGlo, IEl, BMatrix, IEntity)
+                     Particles(IntGlo)%EpsStep = EpsStepSaved ! volume and porosity use the full increment
+                   else
+                     call StressSolid(IntGlo, IEl, BMatrix, IEntity)   ! calculate stresses for mixture or solid material points
+                   end if
                  else
                    do I = 1, NVECTOR     ! only first three indices, both for 2D and 3D
                      SigmaEffArray(IntGlo,I) = 0.D0

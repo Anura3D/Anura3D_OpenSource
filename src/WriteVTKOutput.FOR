@@ -52,6 +52,8 @@ module ModWriteVTKOutput
     use ModWriteVTKBinary
     use ModFileIO
     use ModStructuralElements
+    use ModGhostStabilisation
+    use ModGasification
 
     implicit none
 
@@ -493,6 +495,23 @@ module ModWriteVTKOutput
           end if
         end do
         call WriteVTKScalarDataPointer('boundary_material_point',DataSetScalar)
+        
+        if (CalParams%ApplyGhostStabilisation) then ! 1 if the MP lies in an element touching a ghost face
+          do MaterialPointID = 1, NumberMaterialPoints
+            DataSetScalar(MaterialPointID) = 0
+            if (ElementIDArray(MaterialPointID) > 0) then
+              if (IsGhostElementForOutput(ElementIDArray(MaterialPointID))) DataSetScalar(MaterialPointID) = 1
+            end if
+          end do
+          call WriteVTKScalarDataPointer('ghost_element',DataSetScalar)
+        end if
+
+        if (CalParams%ApplyGasification) then ! 0 continuum, 1 gas, 2 continuum in stiffness ramp
+          do MaterialPointID = 1, NumberMaterialPoints
+            DataSetScalar(MaterialPointID) = GasStateForOutput(MaterialPointID)
+          end do
+          call WriteVTKScalarDataPointer('gas_state',DataSetScalar)
+        end if
         
         if (OutParams%Variables%StateVariables == .true.) then
         !Plot the state variables values

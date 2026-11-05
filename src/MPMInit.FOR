@@ -293,6 +293,9 @@
           ! Fill particle list with stress strain parameters from the BRF file of the previous load phase
           call ReadParticleStateParametersFromFile(FileName)
 
+          ! Gasification state of the previous load phase (only if gasification is applied)
+          call ReadGasStateFromFile(FileName)
+
           ! Fill particle list with dynamic related information from the BRF file of the previous load phase
           call ReadParticleDynamicDataFromFile(FileName)
 

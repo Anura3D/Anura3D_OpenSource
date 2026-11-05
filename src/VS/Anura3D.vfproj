@@ -82,6 +82,8 @@
 				<File RelativePath="..\MPMMeshAdjustment.FOR"/>
 				<File RelativePath="..\MPMStrainSmoothing.FOR"/>
 				<File RelativePath="..\MPMStresses.FOR"/>
+				<File RelativePath="..\Gasification.FOR"/>
+				<File RelativePath="..\GhostStabilisation.FOR"/>
 				<File RelativePath="..\Particle.FOR"/>
 				<File RelativePath="..\RigidBody.f"/>
 				<File RelativePath="..\StructuralElements.for"/>

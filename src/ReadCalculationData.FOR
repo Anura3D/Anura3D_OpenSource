@@ -386,10 +386,24 @@
                               GammaWater, &
 							  ContactScalingFactor, &
                               APIFLIPBlendFactor, & ! APIC/FLIP blend factor: 0=pure FLIP, 1=pure APIC, typical 0.95-0.99
+                              GhostGammaK, & ! ghost stabilisation: stiffness (viscosity) penalty parameter
+                              GhostGammaM, & ! ghost stabilisation: mass penalty parameter
+                              GhostFillThreshold, & ! ghost stabilisation: elements filled below this fraction are cut
+                              GasStressTol, & ! gasification: |p|, q below GasStressTol*GasPRef count as stress-free
+                              GasPRef, & ! gasification: reference pressure [kPa]
+                              GasChiOff, & ! gasification: density ratio rho/rho0 at or below which a point gasifies
+                              GasChiOn, & ! gasification: density ratio at or above which a gas point is reactivated
+                              GasFillOff, & ! gasification: element fill at or below which a point gasifies
+                              GasFillOn, & ! gasification: element fill at or above which a gas point is reactivated
+                              GasFLIPFactor, & ! gasification: FLIP fraction of the velocity update of gas points (1 = pure FLIP)
                               ManuallyDefinedVectors(MAXNUMBERSOILLAYERS,1+vsize) !manually modified normal vectors
 
 
           integer(INTEGER_TYPE) :: OutputNumberParticles, & ! number of material points for which output data is exported
+                     GhostMassSolver, & ! ghost stabilisation: 0 = diagonal ghost mass, 1 = Jacobi solve
+                     GhostNJacobi, & ! ghost stabilisation: number of Jacobi sweeps
+                     GasNHold, & ! gasification: consecutive time steps a switching condition must hold
+                     GasNRamp, & ! gasification: number of time steps of the stiffness ramp after reactivation
                      OutputNumberElements, & ! number of elements for which output data is exported
                      OutputParticles(MAXOUTPUTPARTICLES), & ! array of material point IDs for which output data is exported
                      OutputElements(MAX_OUTPUT_ELEMENTS), & ! array of elements IDs for which output data is exported
@@ -475,6 +489,8 @@
                      ApplyWaveLoad, &  ! if ture use inpulseload to generate the wave load
                      ApplyMaterialUpdate, &  ! if ture then read material parameters from GOM
                      ApplyObjectiveStress, & ! if true then objective stresses are included
+                     ApplyGhostStabilisation, & ! if true then ghost stabilisation is applied (explicit dynamic, 2D TRI3)
+                     ApplyGasification, & ! if true then stress-free, loosened material points switch to a gas state
                      ApplyRemoveSolidFixities, & ! id true if some boundary conditions of solid have to be read from GOMfile and removed
                      ApplyRemoveLiquidFixities, & ! id true if some boundary conditions of liquid have to be read from GOMfile and removed
                      ApplyRemoveGasFixities, & ! id true if some boundary conditions of gas have to be read from GOMfile and removed
@@ -784,6 +800,22 @@
         CalParams%ShrinkageMateriaPointPositionFactor = 0.0
         CalParams%GammaWater = 0.0
         CalParams%APIFLIPBlendFactor = 0.99 ! Default: 99% APIC, 1% FLIP (recommended for MPM)
+        CalParams%ApplyGhostStabilisation = .false. ! ghost stabilisation is off unless requested in the CPS file
+        CalParams%GhostGammaK = 0.05
+        CalParams%GhostGammaM = 0.05
+        CalParams%GhostFillThreshold = 0.6
+        CalParams%GhostMassSolver = 1
+        CalParams%GhostNJacobi = 2
+        CalParams%ApplyGasification = .false. ! gasification is off unless requested in the CPS file
+        CalParams%GasStressTol = 0.01
+        CalParams%GasPRef = 1.0
+        CalParams%GasChiOff = 0.6
+        CalParams%GasChiOn = 0.8
+        CalParams%GasFillOff = 0.1
+        CalParams%GasFillOn = 0.4
+        CalParams%GasNHold = 5
+        CalParams%GasNRamp = 50
+        CalParams%GasFLIPFactor = 0.9
         
         ! integers
         CalParams%OutputNumberParticles = -1
@@ -1041,6 +1073,8 @@
           integer(INTEGER_TYPE) :: DumI(3)
           character(len=255) :: DumS
           real(REAL_TYPE) :: DumR(4)
+          integer(INTEGER_TYPE) :: DumIG(3) ! $$GASIFICATION integer entries
+          real(REAL_TYPE) :: DumRG(7) ! $$GASIFICATION real entries
           character(len=255) :: DumFileName
           character(len=21) :: messageIOS = 'CPS file: Can''t read '
           character(len=255) :: TName, BName
@@ -1830,6 +1864,47 @@
               call Assert( DumR(1) <= 1.0, 'CPS file: ' //trim(BName)// ' must be less than or equal to 1.0.')
               CalParams%APIFLIPBlendFactor = DumR(1)
               
+            else if (trim(BName)=='$$GHOST_STABILISATION') then ! I [0,1] // R gammaK >= 0 // R gammaM >= 0 // R 0 < phiG <= 1 // I [0,1] // I >= 1
+              read(FileUnit, *, iostat=ios) DumI(1), DumR(1), DumR(2), DumR(3), DumI(2), DumI(3)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' flag must be 0 or 1.' )
+              call Assert( DumR(1) >= 0.0, 'CPS file: ' //trim(BName)// ' stiffness penalty must be >= 0.0.' )
+              call Assert( DumR(2) >= 0.0, 'CPS file: ' //trim(BName)// ' mass penalty must be >= 0.0.' )
+              call Assert( DumR(3) > 0.0 .and. DumR(3) <= 1.0, 'CPS file: ' //trim(BName)// ' fill threshold must be in (0, 1].' )
+              call Assert( DumI(2) == 0 .or. DumI(2) == 1, 'CPS file: ' //trim(BName)// ' mass solver must be 0 (diagonal) or 1 (Jacobi).' )
+              call Assert( DumI(3) >= 1, 'CPS file: ' //trim(BName)// ' number of Jacobi sweeps must be >= 1.' )
+              CalParams%ApplyGhostStabilisation = (DumI(1) == 1)
+              CalParams%GhostGammaK = DumR(1)
+              CalParams%GhostGammaM = DumR(2)
+              CalParams%GhostFillThreshold = DumR(3)
+              CalParams%GhostMassSolver = DumI(2)
+              CalParams%GhostNJacobi = DumI(3)
+
+            else if (trim(BName)=='$$GASIFICATION') then ! I [0,1] // R tol > 0 // R pRef > 0 // R 0 < chiOff < chiOn // R 0 <= fillOff < fillOn <= 1 // I nHold >= 1 // I nRamp >= 1 // R 0 <= alpha <= 1
+              read(FileUnit, *, iostat=ios) DumIG(1), DumRG(1), DumRG(2), DumRG(3), DumRG(4), DumRG(5), DumRG(6), &
+                                            DumIG(2), DumIG(3), DumRG(7)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              call Assert( DumIG(1) == 0 .or. DumIG(1) == 1, 'CPS file: ' //trim(BName)// ' flag must be 0 or 1.' )
+              call Assert( DumRG(1) > 0.0, 'CPS file: ' //trim(BName)// ' stress tolerance must be > 0.0.' )
+              call Assert( DumRG(2) > 0.0, 'CPS file: ' //trim(BName)// ' reference pressure must be > 0.0.' )
+              call Assert( DumRG(3) > 0.0 .and. DumRG(3) < DumRG(4), 'CPS file: ' //trim(BName)// &
+                           ' density ratios must satisfy 0 < gasify ratio < reactivation ratio.' )
+              call Assert( DumRG(5) >= 0.0 .and. DumRG(5) < DumRG(6) .and. DumRG(6) <= 1.0, 'CPS file: ' //trim(BName)// &
+                           ' element fills must satisfy 0 <= gasify fill < reactivation fill <= 1.' )
+              call Assert( DumIG(2) >= 1, 'CPS file: ' //trim(BName)// ' hold steps must be >= 1.' )
+              call Assert( DumIG(3) >= 1, 'CPS file: ' //trim(BName)// ' ramp steps must be >= 1.' )
+              call Assert( DumRG(7) >= 0.0 .and. DumRG(7) <= 1.0, 'CPS file: ' //trim(BName)// ' gas FLIP factor must be in [0, 1].' )
+              CalParams%ApplyGasification = (DumIG(1) == 1)
+              CalParams%GasStressTol = DumRG(1)
+              CalParams%GasPRef = DumRG(2)
+              CalParams%GasChiOff = DumRG(3)
+              CalParams%GasChiOn = DumRG(4)
+              CalParams%GasFillOff = DumRG(5)
+              CalParams%GasFillOn = DumRG(6)
+              CalParams%GasNHold = DumIG(2)
+              CalParams%GasNRamp = DumIG(3)
+              CalParams%GasFLIPFactor = DumRG(7)
+
             else if (trim(BName)=='$$NUMBER_OF_ACTIVE_ELEMENTS') then ! I [ 0 <= I ] ! ---RELEASE-----> this should be stored elsewhere
               read(FileUnit, *, iostat=ios) DumI(1)
               call Assert( ios == 0, messageIOS//trim(BName) )
@@ -3138,7 +3213,28 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
 		  call WriteLogic(FileUnit, '$$APPLY_OBJECTIVE_STRESS', [CalParams%ApplyObjectiveStress], 1, .true.)
           
           call WriteReal(FileUnit, '$$DEGREE_OF_FILLING', [CalParams%RequiredDegreeOfFilling], 1, .true.)
-            
+          call WriteReal(FileUnit, '$$APIC_FLIP_BLEND_FACTOR', [CalParams%APIFLIPBlendFactor], 1, .true.)
+          ! GHOST STABILISATION: flag gammaK gammaM phiG massSolver nJacobi
+          write(FileUnit, '(A)') '$$GHOST_STABILISATION'
+          if (CalParams%ApplyGhostStabilisation) then
+            write(FileUnit, '(A2, 3G18.8, 2I6)') ' 1', CalParams%GhostGammaK, CalParams%GhostGammaM, CalParams%GhostFillThreshold, &
+                                               CalParams%GhostMassSolver, CalParams%GhostNJacobi
+          else
+            write(FileUnit, '(A2, 3G18.8, 2I6)') ' 0', CalParams%GhostGammaK, CalParams%GhostGammaM, CalParams%GhostFillThreshold, &
+                                               CalParams%GhostMassSolver, CalParams%GhostNJacobi
+          end if
+          ! GASIFICATION: flag tol pRef chiOff chiOn fillOff fillOn nHold nRamp alphaFLIP
+          write(FileUnit, '(A)') '$$GASIFICATION'
+          if (CalParams%ApplyGasification) then
+            write(FileUnit, '(A2, 6G14.6, 2I7, G14.6)') ' 1', CalParams%GasStressTol, CalParams%GasPRef, &
+              CalParams%GasChiOff, CalParams%GasChiOn, CalParams%GasFillOff, CalParams%GasFillOn, &
+              CalParams%GasNHold, CalParams%GasNRamp, CalParams%GasFLIPFactor
+          else
+            write(FileUnit, '(A2, 6G14.6, 2I7, G14.6)') ' 0', CalParams%GasStressTol, CalParams%GasPRef, &
+              CalParams%GasChiOff, CalParams%GasChiOn, CalParams%GasFillOff, CalParams%GasFillOn, &
+              CalParams%GasNHold, CalParams%GasNRamp, CalParams%GasFLIPFactor
+          end if
+
           call WriteInteger(FileUnit, '$$NUMBER_OF_ACTIVE_ELEMENTS', [Counters%NAEl], 1, .true.)
           
           ! EMPTY ELEMENTS

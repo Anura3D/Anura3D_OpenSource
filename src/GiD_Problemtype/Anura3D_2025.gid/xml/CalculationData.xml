@@ -154,4 +154,81 @@
   <value n="strain_smoothing_liquid" pn="strain smoothing liquid" v="0" state="hidden"></value>
   <value n="no_tensile_stress_liquid" pn="no tensile stress liquid" v="0" state="hidden"></value>
   <value n="detect_free_surface" pn="detect free surface" v="1  0.8" state="hidden"></value>
+  <container n="STABILISATION" pn="STABILISATION AND GASIFICATION" icon="calculate.png">
+    <value n="GHOST_STABILISATION" pn="GHOST STABILISATION" icon="calculate.png" values="do not apply ghost stabilisation,apply ghost stabilisation" v="do not apply ghost stabilisation" actualize_tree="1" help="Ghost stabilisation (Coombs 2023) of partially filled elements at the edges of the material body. Explicit dynamic, 2D triangular meshes, dry single-phase material. Not applied to the rigid body or across the contact interface.">
+      <dependencies node="../value[@n='ghost_preset']" att1="state" v1="normal" value="apply ghost stabilisation"></dependencies>
+      <dependencies node="../value[@n='ghost_preset']" att1="state" v1="hidden" value="do not apply ghost stabilisation"></dependencies>
+      <dependencies node="../value[@n='ghost_fill_threshold']" att1="state" v1="normal" value="apply ghost stabilisation"></dependencies>
+      <dependencies node="../value[@n='ghost_fill_threshold']" att1="state" v1="hidden" value="do not apply ghost stabilisation"></dependencies>
+      <dependencies node="../value[@n='ghost_mass_solver']" att1="state" v1="normal" value="apply ghost stabilisation"></dependencies>
+      <dependencies node="../value[@n='ghost_mass_solver']" att1="state" v1="hidden" value="do not apply ghost stabilisation"></dependencies>
+      <dependencies node="../value[@n='ghost_jacobi_iterations']" att1="state" v1="normal" value="apply ghost stabilisation"></dependencies>
+      <dependencies node="../value[@n='ghost_jacobi_iterations']" att1="state" v1="hidden" value="do not apply ghost stabilisation"></dependencies>
+      <dependencies node="../value[@n='ghost_gamma_K']" att1="state" v1="hidden" value="do not apply ghost stabilisation"></dependencies>
+      <dependencies node="../value[@n='ghost_gamma_M']" att1="state" v1="hidden" value="do not apply ghost stabilisation"></dependencies>
+    </value>
+    <value n="ghost_preset" pn="ghost preset" values="conservative,default,aggressive,user" v="default" state="hidden" actualize_tree="1" help="conservative: penalties 0.01; default: 0.05; aggressive: 0.2; user: enter the stiffness and mass penalties below.">
+      <dependencies node="../value[@n='ghost_gamma_K']" att1="state" v1="hidden" value="conservative"></dependencies>
+      <dependencies node="../value[@n='ghost_gamma_K']" att1="state" v1="hidden" value="default"></dependencies>
+      <dependencies node="../value[@n='ghost_gamma_K']" att1="state" v1="hidden" value="aggressive"></dependencies>
+      <dependencies node="../value[@n='ghost_gamma_K']" att1="state" v1="normal" value="user"></dependencies>
+      <dependencies node="../value[@n='ghost_gamma_M']" att1="state" v1="hidden" value="conservative"></dependencies>
+      <dependencies node="../value[@n='ghost_gamma_M']" att1="state" v1="hidden" value="default"></dependencies>
+      <dependencies node="../value[@n='ghost_gamma_M']" att1="state" v1="hidden" value="aggressive"></dependencies>
+      <dependencies node="../value[@n='ghost_gamma_M']" att1="state" v1="normal" value="user"></dependencies>
+    </value>
+    <value n="ghost_gamma_K" pn="ghost stiffness penalty [-]" v="0.05" state="hidden" help="Penalty on the jump of the velocity gradient across faces of partially filled elements (acts as a ghost viscosity). Range 1e-3 to 1. Larger values reduce the time step."></value>
+    <value n="ghost_gamma_M" pn="ghost mass penalty [-]" v="0.05" state="hidden" help="Ghost mass added to small-mass nodes of partially filled elements. Range 1e-3 to 1. Keep it at least equal to the stiffness penalty so the time step is not reduced."></value>
+    <value n="ghost_fill_threshold" pn="ghost-face fill threshold [-]" v="0.6" state="hidden" help="Elements filled below this fraction (or integrated at material points) are treated as cut. Between 0 and 1; default 0.6. Values near the degree of filling (0.9) also flag interior elements whose fill fluctuates."></value>
+    <value n="ghost_mass_solver" pn="ghost mass solver" values="diagonal,Jacobi" v="Jacobi" state="hidden" help="Jacobi: consistent ghost mass, conserves momentum. Diagonal: cheaper mass scaling of small nodes, not exactly momentum conserving."></value>
+    <value n="ghost_jacobi_iterations" pn="Jacobi iterations [-]" v="2" state="hidden" help="Number of Jacobi sweeps for the ghost mass (1 to 5)."></value>
+    <value n="GASIFICATION" pn="GASIFICATION" icon="calculate.png" values="do not apply gasification,apply gasification" v="do not apply gasification" actualize_tree="1" help="Stress-free, loosened or isolated soil material points (ejecta) switch to a gas state: they keep mass and momentum on the grid but carry no stress. They are reactivated as stress-free soil when they recompact or land in filled elements. Explicit dynamic, dry single-phase material. Never applied to the rigid body or next to the contact interface.">
+      <dependencies node="../value[@n='gas_preset']" att1="state" v1="normal" value="apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_preset']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_p_ref']" att1="state" v1="normal" value="apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_p_ref']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_hold_steps']" att1="state" v1="normal" value="apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_hold_steps']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_ramp_steps']" att1="state" v1="normal" value="apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_ramp_steps']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_flip_factor']" att1="state" v1="normal" value="apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_flip_factor']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_stress_tol']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_chi_off']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_chi_on']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_fill_off']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+      <dependencies node="../value[@n='gas_fill_on']" att1="state" v1="hidden" value="do not apply gasification"></dependencies>
+    </value>
+    <value n="gas_preset" pn="gasification preset" values="conservative,default,aggressive,user" v="default" state="hidden" actualize_tree="1" help="conservative: gasify late, reactivate early (tol 0.005, density ratios 0.50/0.85, fills 0.05/0.50); default: tol 0.01, density ratios 0.60/0.80, fills 0.10/0.40; aggressive: gasify early (tol 0.05, density ratios 0.75/0.85, fills 0.20/0.40); user: enter the five values below.">
+      <dependencies node="../value[@n='gas_stress_tol']" att1="state" v1="hidden" value="conservative"></dependencies>
+      <dependencies node="../value[@n='gas_stress_tol']" att1="state" v1="hidden" value="default"></dependencies>
+      <dependencies node="../value[@n='gas_stress_tol']" att1="state" v1="hidden" value="aggressive"></dependencies>
+      <dependencies node="../value[@n='gas_stress_tol']" att1="state" v1="normal" value="user"></dependencies>
+      <dependencies node="../value[@n='gas_chi_off']" att1="state" v1="hidden" value="conservative"></dependencies>
+      <dependencies node="../value[@n='gas_chi_off']" att1="state" v1="hidden" value="default"></dependencies>
+      <dependencies node="../value[@n='gas_chi_off']" att1="state" v1="hidden" value="aggressive"></dependencies>
+      <dependencies node="../value[@n='gas_chi_off']" att1="state" v1="normal" value="user"></dependencies>
+      <dependencies node="../value[@n='gas_chi_on']" att1="state" v1="hidden" value="conservative"></dependencies>
+      <dependencies node="../value[@n='gas_chi_on']" att1="state" v1="hidden" value="default"></dependencies>
+      <dependencies node="../value[@n='gas_chi_on']" att1="state" v1="hidden" value="aggressive"></dependencies>
+      <dependencies node="../value[@n='gas_chi_on']" att1="state" v1="normal" value="user"></dependencies>
+      <dependencies node="../value[@n='gas_fill_off']" att1="state" v1="hidden" value="conservative"></dependencies>
+      <dependencies node="../value[@n='gas_fill_off']" att1="state" v1="hidden" value="default"></dependencies>
+      <dependencies node="../value[@n='gas_fill_off']" att1="state" v1="hidden" value="aggressive"></dependencies>
+      <dependencies node="../value[@n='gas_fill_off']" att1="state" v1="normal" value="user"></dependencies>
+      <dependencies node="../value[@n='gas_fill_on']" att1="state" v1="hidden" value="conservative"></dependencies>
+      <dependencies node="../value[@n='gas_fill_on']" att1="state" v1="hidden" value="default"></dependencies>
+      <dependencies node="../value[@n='gas_fill_on']" att1="state" v1="hidden" value="aggressive"></dependencies>
+      <dependencies node="../value[@n='gas_fill_on']" att1="state" v1="normal" value="user"></dependencies>
+    </value>
+    <value n="gas_stress_tol" pn="stress tolerance [-]" v="0.01" state="hidden" help="Mean and deviatoric stress below tolerance x reference pressure count as stress-free. Range 1e-3 to 0.1."></value>
+    <value n="gas_p_ref" pn="reference pressure [kPa]" v="1.0" state="hidden" help="Reference pressure for the stress tolerance, of the order of the self-weight stress at one material-point depth."></value>
+    <value n="gas_chi_off" pn="density ratio to gasify [-]" v="0.6" state="hidden" help="A stress-free point gasifies when its density ratio rho/rho0 drops to this value. Must be below the reactivation ratio."></value>
+    <value n="gas_chi_on" pn="density ratio to reactivate [-]" v="0.8" state="hidden" help="A gas point is reactivated when its density ratio rho/rho0 rises to this value."></value>
+    <value n="gas_fill_off" pn="element fill to gasify [-]" v="0.1" state="hidden" help="A stress-free point gasifies when its element is filled at most this fraction. Isolated points (element and all edge neighbours at most this fill) gasify whatever their stress. With n material points per element, a single point fills about 1/n."></value>
+    <value n="gas_fill_on" pn="element fill to reactivate [-]" v="0.4" state="hidden" help="A gas point is reactivated when its element is filled at least this fraction, holds continuum points and is being compressed. Must be above the gasify fill."></value>
+    <value n="gas_hold_steps" pn="hold steps [-]" v="5" state="hidden" help="Number of consecutive time steps a switching condition must hold before a point switches state (prevents chattering)."></value>
+    <value n="gas_ramp_steps" pn="stiffness ramp steps [-]" v="50" state="hidden" help="After reactivation the strain increment passed to the constitutive model is ramped from 0 to 1 over this number of time steps."></value>
+    <value n="gas_flip_factor" pn="gas FLIP factor [-]" v="0.9" state="hidden" help="FLIP fraction of the velocity update of gas points. 1 = pure FLIP, lower values blend in the grid (PIC) velocity and damp gas-particle noise."></value>
+  </container>
 </container>

@@ -62,6 +62,8 @@
       use ModTwoLayerFormulation
       use ModString
       use ModRigidBody
+      use ModGhostStabilisation
+      use ModGasification
       use ModLiquid
       use ModReadGeometryData
 	  use ModStructuralElements
@@ -392,6 +394,9 @@
         call DynUpdateParticlePorosity( )
       end if
 
+      ! gasification: switch MPs between continuum and gas state (only if active)
+      call UpdateGasState()
+
 !\\\\\\\ END UPDATE PARTICLE PROPERTIES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
 
        ! VAHID: This does not seem to be true! isMPMSkip..() must be swaped with %SkipConvection
@@ -491,6 +496,7 @@
          call SetParticleIndex()
 
          call CheckFillingOfElements()
+         call ForceParticleIntegrationGasElements() ! gasification: elements holding gas MPs use MP integration
 
          call SetUpEntityElements ()
          call SetUpMaterialElements ()
@@ -1073,6 +1079,10 @@
                 
                 ! Blend APIC and FLIP: v_new = alpha * v_APIC + (1-alpha) * v_FLIP
                 ParticleVelocity = (1.0 - alpha) * ParticleVelocityAPIC + alpha * ParticleVelocityFLIP
+                if (IsGasParticle(ParticleIndex)) then ! gasification: own FLIP fraction for gas MPs
+                  ParticleVelocity = (1.0 - CalParams%GasFLIPFactor) * ParticleVelocityAPIC + &
+                                     CalParams%GasFLIPFactor * ParticleVelocityFLIP
+                end if
 				
 				! Corrects unrealistic velocities of MPs if they are exploding
 				if ((IsInContactBoundary).and.(iEntity==1)) then
@@ -2921,7 +2931,8 @@
             do IParticle = 1, NParticles ! loop over all particles in element
               ParticleIndex = GetParticleIndex(IParticle, IEl)
 			  MaterialIndex = MaterialIDArray(ParticleIndex)
-			  if (.not.MatParams(MaterialIndex)%MaterialModel==ESM_RIGID_BODY) then ! do not compute wavespeed for a rigid body
+			  if ((.not.MatParams(MaterialIndex)%MaterialModel==ESM_RIGID_BODY) .and. & ! do not compute wavespeed for a rigid body
+                  (.not.IsGasParticle(ParticleIndex))) then                      ! nor for a gas MP (no stiffness)
               call GetWaveSpeedForTimeStepSize(ParticleIndex, IEl, WaveSpeed)
               
               if (IsNan(WaveSpeed).or.(abs(WaveSpeed) > huge(WaveSpeed))) then
@@ -3052,6 +3063,14 @@
          end do ! end loop over all active elements
 
         end if ! 2 layer formulation and 2 phases
+
+        ! ghost stabilisation: stability bound of the explicit ghost viscosity (huge() if not active)
+        MinTimeStep = min(MinTimeStep, GhostCriticalTimeStep())
+        if (CalParams%TimeStep == 1) call WriteGhostDiagnostics() ! once per load step, only if active
+
+        ! gasification: kinematic bound of gas MPs, dt <= h/|v| (huge() if not active)
+        MinTimeStep = min(MinTimeStep, GasCriticalTimeStep())
+        if (CalParams%TimeStep == 1) call WriteGasDiagnostics() ! once per load step, only if active
 
         TimeIncrementNew = ContactCriticalTimeStep(MinTimeStep) * CourantFactor ! equals MinTimeStep without thin rigid contact
 

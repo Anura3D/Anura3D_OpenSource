@@ -48,6 +48,7 @@
       use ModReadCalculationData
       use ModMPMData
       use ModGlobalConstants
+      use ModGasification
 
       implicit none
 
@@ -134,6 +135,7 @@
           call WriteBlockESMstatev(FileUnit)  ! Write user defined material model state variables
           !call WriteBlockESMprops(FileUnit)  ! Write user defined material model properties
           call WriteBlockESM_UnloadingStiffness(FileUnit)  ! Write user defined material model unloading stiffness
+          call WriteBlockGASSTATE(FileUnit) ! Write gasification state (only if gasification is applied)
 
         end subroutine AppendMPMData
 

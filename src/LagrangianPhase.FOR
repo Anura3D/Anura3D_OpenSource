@@ -56,6 +56,8 @@
       use ModRigidBody
       use ModMPMInit
       use ModMPMDynContact
+      use ModGhostStabilisation
+      use ModGasification
 	  use ModStructuralElements
       
       
@@ -501,6 +503,9 @@
            if ( CalParams%ApplyAbsorbingBoundary) then
              RateofMomentum = RateofMomentum - VisDampForceSld
            end if ! only for AbsorbingBoundary
+
+           ! ghost stabilisation: ghost (viscous) force on the soil entity, only if requested
+           call ApplyGhostForce(RateofMomentum(:, SOFT_ENTITY))
       end if !free/fixed solid skeleton                  
          end if ! difference between number of phases
        call GetInternalLoadRigidBody()
@@ -509,6 +514,7 @@
 
           !!!!!!!!!!!!!! START : Calculate nodal acceleration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
          call CalculateIncrementalNodalAcceleration() ! local coordinate system      
+         call ApplyGhostMass() ! ghost stabilisation: ghost mass on ghost-patch DOFs, only if requested
            
          if (IS3DCYLINDRIC) then ! 3D function
                ! Rotate acceleration and velocity of soil from local to global coordinate system
@@ -2114,6 +2120,7 @@
               
               do IPart = 1, NElemPart ! loop over material points
                 ParticleIndex = GetParticleIndex(IPart, IEl)
+                if (IsGasParticle(ParticleIndex)) CYCLE ! gasification: no local damping of free flight
 
                 if (.not.CalParams%ApplyContactAlgorithm) then ! NO CONTACT
                   EntityID = 1

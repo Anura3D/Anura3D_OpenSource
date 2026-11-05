@@ -636,6 +636,82 @@ proc Anura3D::WriteCalculationFile_CPS { filename stageNode icount_stage total_t
     set APIFLIPBlend [$stageNode selectNodes $APIFLIPBlend_path]
     GiD_WriteCalculationFile puts $APIFLIPBlend
     
+    # GHOST STABILISATION: flag gammaK gammaM phiG massSolver(0=diagonal,1=Jacobi) nJacobi
+    # Models created before this option existed have no STABILISATION container: written as off.
+    set ghost_xp {string(container[@n="Calculation_Data"]/container[@n="STABILISATION"]/value[@n="%s"]/@v)}
+    set Ghost_on     [$stageNode selectNodes [format $ghost_xp GHOST_STABILISATION]]
+    set Ghost_preset [$stageNode selectNodes [format $ghost_xp ghost_preset]]
+    set Ghost_gK 0.05
+    set Ghost_gM 0.05
+    if {$Ghost_preset == "conservative"} {
+      set Ghost_gK 0.01
+      set Ghost_gM 0.01
+    } elseif {$Ghost_preset == "aggressive"} {
+      set Ghost_gK 0.2
+      set Ghost_gM 0.2
+    } elseif {$Ghost_preset == "user"} {
+      set Ghost_gK [$stageNode selectNodes [format $ghost_xp ghost_gamma_K]]
+      set Ghost_gM [$stageNode selectNodes [format $ghost_xp ghost_gamma_M]]
+      if {$Ghost_gK == ""} {set Ghost_gK 0.05}
+      if {$Ghost_gM == ""} {set Ghost_gM 0.05}
+    }
+    set Ghost_phi [$stageNode selectNodes [format $ghost_xp ghost_fill_threshold]]
+    if {$Ghost_phi == ""} {set Ghost_phi 0.6}
+    set Ghost_solver 1
+    if {[$stageNode selectNodes [format $ghost_xp ghost_mass_solver]] == "diagonal"} {set Ghost_solver 0}
+    set Ghost_nJ [$stageNode selectNodes [format $ghost_xp ghost_jacobi_iterations]]
+    if {$Ghost_nJ == ""} {set Ghost_nJ 2}
+    set Ghost_flag 0
+    if {$Ghost_on == "apply ghost stabilisation"} {set Ghost_flag 1}
+    GiD_WriteCalculationFile puts {$$GHOST_STABILISATION}
+    GiD_WriteCalculationFile puts [= "%s %s %s %s %s %s" $Ghost_flag $Ghost_gK $Ghost_gM $Ghost_phi $Ghost_solver $Ghost_nJ]
+    
+    # GASIFICATION: flag tol pRef chiOff chiOn fillOff fillOn nHold nRamp gasFLIP
+    # Models created before this option existed have no GASIFICATION entry: written as off.
+    set Gas_on     [$stageNode selectNodes [format $ghost_xp GASIFICATION]]
+    set Gas_preset [$stageNode selectNodes [format $ghost_xp gas_preset]]
+    set Gas_tol 0.01
+    set Gas_cOff 0.6
+    set Gas_cOn 0.8
+    set Gas_fOff 0.1
+    set Gas_fOn 0.4
+    if {$Gas_preset == "conservative"} {
+      set Gas_tol 0.005
+      set Gas_cOff 0.5
+      set Gas_cOn 0.85
+      set Gas_fOff 0.05
+      set Gas_fOn 0.5
+    } elseif {$Gas_preset == "aggressive"} {
+      set Gas_tol 0.05
+      set Gas_cOff 0.75
+      set Gas_cOn 0.85
+      set Gas_fOff 0.2
+      set Gas_fOn 0.4
+    } elseif {$Gas_preset == "user"} {
+      set Gas_tol  [$stageNode selectNodes [format $ghost_xp gas_stress_tol]]
+      set Gas_cOff [$stageNode selectNodes [format $ghost_xp gas_chi_off]]
+      set Gas_cOn  [$stageNode selectNodes [format $ghost_xp gas_chi_on]]
+      set Gas_fOff [$stageNode selectNodes [format $ghost_xp gas_fill_off]]
+      set Gas_fOn  [$stageNode selectNodes [format $ghost_xp gas_fill_on]]
+      if {$Gas_tol == ""}  {set Gas_tol 0.01}
+      if {$Gas_cOff == ""} {set Gas_cOff 0.6}
+      if {$Gas_cOn == ""}  {set Gas_cOn 0.8}
+      if {$Gas_fOff == ""} {set Gas_fOff 0.1}
+      if {$Gas_fOn == ""}  {set Gas_fOn 0.4}
+    }
+    set Gas_pRef [$stageNode selectNodes [format $ghost_xp gas_p_ref]]
+    if {$Gas_pRef == ""} {set Gas_pRef 1.0}
+    set Gas_nHold [$stageNode selectNodes [format $ghost_xp gas_hold_steps]]
+    if {$Gas_nHold == ""} {set Gas_nHold 5}
+    set Gas_nRamp [$stageNode selectNodes [format $ghost_xp gas_ramp_steps]]
+    if {$Gas_nRamp == ""} {set Gas_nRamp 50}
+    set Gas_flip [$stageNode selectNodes [format $ghost_xp gas_flip_factor]]
+    if {$Gas_flip == ""} {set Gas_flip 0.9}
+    set Gas_flag 0
+    if {$Gas_on == "apply gasification"} {set Gas_flag 1}
+    GiD_WriteCalculationFile puts {$$GASIFICATION}
+    GiD_WriteCalculationFile puts [= "%s %s %s %s %s %s %s %s %s %s" $Gas_flag $Gas_tol $Gas_pRef $Gas_cOff $Gas_cOn $Gas_fOff $Gas_fOn $Gas_nHold $Gas_nRamp $Gas_flip]
+    
     # NUMBER OF ACTIVE ELEMENTS           
     GiD_WriteCalculationFile puts {$$NUMBER_OF_ACTIVE_ELEMENTS}
     GiD_WriteCalculationFile puts $number_of_active_elements

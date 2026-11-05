@@ -54,6 +54,7 @@
       use ModMPMDYN3PhaseSP
       use ModGlobalConstants, only: INTEGER_TYPE, REAL_TYPE
       use ModFileIO
+      use ModGasification
       
       implicit none
 
@@ -564,6 +565,51 @@
           end if
 
         end subroutine ReadParticleStateParametersFromFile
+
+
+        subroutine ReadGasStateFromFile(BRFfilename)
+        !**********************************************************************
+        !
+        !  Function : Reads the gasification state ($$GASSTATE$$ block, written
+        !             only when gasification is applied) from the BRF file of
+        !             the previous phase. The whole file is scanned because the
+        !             block is the last one written.
+        !
+        !  BRFfilename : Name of the BRF file of the previous load phase
+        !
+        !**********************************************************************
+
+        implicit none
+
+          character(len = *), intent(in) :: BRFfilename
+          ! Local variables
+          integer(INTEGER_TYPE) :: NBytes, ios
+          character(len = 80) :: Header
+          character(len = 12) :: BlockName
+
+          if (.not.CalParams%ApplyGasification) RETURN
+          if (.not.FExist(BRFfilename)) RETURN
+
+          call FileOpenAction(BRFunit, BRFfilename, 'R')
+          read(BRFunit) Header
+
+          do
+            read(BRFunit, iostat = ios) BlockName, NBytes
+            if (ios /= 0) EXIT
+            if (BlockName=='$$ENDOFFII$$') EXIT
+            if (NBytes>0) then
+              if (BlockName=='$$GASSTATE$$') then
+                call ReadBlockGASSTATE(BRFunit, NBytes)
+                EXIT
+              else
+                call Skip(BRFunit, NBytes)
+              end if
+            end if
+          end do
+
+          close(BRFunit)
+
+        end subroutine ReadGasStateFromFile
 
 
         subroutine ReadParticleDynamicDataFromFile(BRFfilename)
