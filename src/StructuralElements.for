@@ -1257,8 +1257,8 @@
 
 	! Contact statistics: the two limits behind the next time step (before the Courant number)
 	StatDtCritical = ContactCriticalTimeStep
-	StatDtBarrier = -1.0
-	if (DtBarrier < huge(DtBarrier)) StatDtBarrier = DtBarrier
+	StatDtBarrier = -1.0 ! -1 when the barrier step limit does not govern
+	if (DtBarrier < ContactCriticalTimeStep) StatDtBarrier = DtBarrier
 
 	if (DtBarrier < ContactCriticalTimeStep) then
 		ContactCriticalTimeStep = DtBarrier

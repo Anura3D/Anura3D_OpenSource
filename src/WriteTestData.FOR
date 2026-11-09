@@ -1101,7 +1101,7 @@
           !  Function : contact statistics of each thin rigid body for the current time step, written with
           !             the TREL file to project.TCON_XXX. Forces in kN, lengths in m, stiffness in kN/m.
           !             dtCritical and dtBarrier are the limits that set this step (before the Courant
-          !             number), dtBarrier = -1 if no point approaches the barrier.
+          !             number), dtBarrier = -1 when the barrier step limit does not govern.
           !
           !**********************************************************************
     implicit none
