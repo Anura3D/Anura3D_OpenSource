@@ -140,6 +140,7 @@
 		end if
 			
 			      call WriteThinRigidElementData() !For thin rigid elements
+			      call WriteContactStatistics() !contact statistics of thin rigid bodies, project.TCON_XXX
             
             !compute and write on file the sum of nodal reactions on selected surfaces
             call SurfaceReactionOutput() 

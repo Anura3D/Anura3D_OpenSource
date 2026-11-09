@@ -59,6 +59,19 @@
         real(REAL_TYPE), dimension(:,:), allocatable :: NormalsRigidBody
 		real(REAL_TYPE):: Kfactor= sqrt(PI*2/9)
 		real(REAL_TYPE), dimension(:), allocatable :: ContactNormalVel !normal relative velocity of each contact, for ContactCriticalTimeStep
+		! Barrier overlap xi = -phi/R_p: the log of the barrier is singular at xi = 1. The time step and the damping
+		! use the barrier up to XI_LIMIT; beyond it the spring force is continued linearly (BarrierSpringForce).
+		real(REAL_TYPE), parameter :: XI_LIMIT = 0.95
+		! Barrier step limit: one step may use at most BARRIER_STEP_FRACTION of the distance left to XI_LIMIT,
+		! and never less than BARRIER_STEP_FLOOR times the soil time step, so a point held at the barrier cannot stall the run
+		real(REAL_TYPE), parameter :: BARRIER_STEP_FRACTION = 0.5, BARRIER_STEP_FLOOR = 1.0d-3
+		integer(INTEGER_TYPE) :: NBarrierLimitedSteps = 0, NBarrierExtensions = 0 !events reported in the MLG file
+		! Contact statistics of the current time step, per rigid body, written to project.TCON_XXX with the TREL file.
+		! Filled in LevelSetContact (reset at its start) and ContactCriticalTimeStep; they do not affect the forces.
+		integer(INTEGER_TYPE), dimension(:), allocatable :: StatNStick, StatNSlip, StatNResets, StatNBeyond
+		real(REAL_TYPE), dimension(:), allocatable :: StatSumXi, StatMaxXi, StatMaxDelta, StatSumFn, StatMaxFn, &
+			StatMaxKt, StatMaxUtil
+		real(REAL_TYPE) :: StatDtCritical = -1.0, StatDtBarrier = -1.0 !raw limits (before the Courant number), -1 if none
 		integer(INTEGER_TYPE), parameter :: STIFFNESS_FROM_USER = 1, STIFFNESS_FROM_TOLERANCE = 2
 
         ! Anura3D solves in kN / Mg / m / s: forces are kN (Particle.FOR, FBody),
@@ -744,6 +757,11 @@
         allocate(ContactNormalVel(Counters%NParticles))
         ContactNormalVel = 0.0
 
+        allocate(StatNStick(NRigidBodies), StatNSlip(NRigidBodies), StatNResets(NRigidBodies), &
+            StatNBeyond(NRigidBodies), StatSumXi(NRigidBodies), StatMaxXi(NRigidBodies), StatMaxDelta(NRigidBodies), &
+            StatSumFn(NRigidBodies), StatMaxFn(NRigidBodies), StatMaxKt(NRigidBodies), StatMaxUtil(NRigidBodies))
+        call ResetContactStatistics()
+
         if (CalParams%CourantNumber > 0.8) call WriteInLogFile('Rigid body contact: a Courant number of about 0.8 is recommended')
 
         end subroutine InitialiseStructuralElements
@@ -946,6 +964,72 @@
 	end function BarrierTangent
 
 
+	real(REAL_TYPE) function BarrierSpringForce(Xi, K, Radius)
+	!**********************************************************************
+    !
+    !    Function: spring force of the barrier, k R_p xi f(xi), Eqs. contactforce and f_of_phi of the paper,
+    !              with f(xi) = 1/(1-xi) - 1 - 2 ln(1-xi). For xi > XI_LIMIT the force is continued linearly
+    !              with the tangent at XI_LIMIT, so it stays finite, continuous and increasing where the
+    !              log would be singular (xi -> 1) or undefined (xi > 1, possible for a stretched domain,
+    !              lambda_n > 1, or after an explicit step past the barrier).
+    !
+    !**********************************************************************
+	implicit none
+	real(REAL_TYPE), intent(in) :: Xi, K, Radius
+	real(REAL_TYPE) :: XiS
+
+	XiS = min(Xi, XI_LIMIT)
+	BarrierSpringForce = K * Radius * XiS * (1.0/(1.0 - XiS) - 1.0 - 2.0*log(1.0 - XiS))
+	if (Xi > XI_LIMIT) BarrierSpringForce = BarrierSpringForce + K * Radius * BarrierTangent(XI_LIMIT) * (Xi - XI_LIMIT)
+
+	end function BarrierSpringForce
+
+
+	subroutine ResetContactStatistics()
+	!**********************************************************************
+    !
+    !    Function: zero the per-body contact statistics of the time step
+    !
+    !**********************************************************************
+	implicit none
+
+	if (.not. allocated(StatNStick)) RETURN
+	StatNStick = 0
+	StatNSlip = 0
+	StatNResets = 0
+	StatNBeyond = 0
+	StatSumXi = 0.0
+	StatMaxXi = 0.0
+	StatMaxDelta = 0.0
+	StatSumFn = 0.0
+	StatMaxFn = 0.0
+	StatMaxKt = 0.0
+	StatMaxUtil = 0.0
+
+	end subroutine ResetContactStatistics
+
+
+	subroutine ReportBarrierEvent(Count, Text)
+	!**********************************************************************
+    !
+    !    Function: increments Count and writes Text to the MLG file at the 1st, 10th, 100th, ... event
+    !
+    !**********************************************************************
+	implicit none
+	integer(INTEGER_TYPE), intent(inout) :: Count
+	character(len=*), intent(in) :: Text
+	character(len=255) :: Line
+
+	Count = Count + 1
+	if (Count == 10**int(log10(real(Count)) + 1.0d-9)) then
+		write(Line, '(A, A, I10, A, I6, A, I8, A)') trim(Text), ': ', Count, ' times so far (load step ', &
+			CalParams%IStep, ', time step ', CalParams%TimeStep, ')'
+		call WriteInLogFile(trim(Line))
+	end if
+
+	end subroutine ReportBarrierEvent
+
+
 	logical function IsBodyMotionPrescribed(J)
 	!**********************************************************************
     !
@@ -1002,20 +1086,34 @@
     !    Function: set the contact stiffness of each body-material pair.
     !              Path 1: user stiffness, no automatic assignment.
     !              Path 2: k = E*sqrt(pi)*R_max**2 / (3*beta*Q*L_ref**2), with
-    !              Q = eta**2*eps_n and L_ref the height of the mesh bounding box.
+    !              Q = eta**2*eps_n and L_ref the largest side of the bounding box of the rigid
+    !              body at the start of the analysis (a dimension of the body, not of the mesh).
     !              Equals Eq. kappa_rig, since R_p**2 = beta**2*h**2 / (pi*n_pc) and L_z = 1 m.
     !
     !**********************************************************************
 	implicit none
-	integer(INTEGER_TYPE) :: J, M, IPart
-	real(REAL_TYPE) :: Young, Rmax, ReferenceLength
+	integer(INTEGER_TYPE) :: J, M, IPart, INode
+	real(REAL_TYPE) :: Young, Rmax, ReferenceLength, XMin(2), XMax(2)
 	character(len=255) :: EchoLine
 
-	ReferenceLength = BoundingBoxMax(2) - BoundingBoxMin(2)
-
 	do J = 1, NRigidBodies
+		! Reference length of Path 2: largest side of the bounding box of the body's nodes
+		XMin = huge(XMin)
+		XMax = -huge(XMax)
+		do INode = 1, size(DataStructureRigidBody(J)%Nodes)
+			XMin = min(XMin, ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(INode), :))
+			XMax = max(XMax, ThinRigidCoordinates(DataStructureRigidBody(J)%Nodes(INode), :))
+		end do
+		ReferenceLength = maxval(XMax - XMin)
+		Young = 0.0
+		Rmax = 0.0
+
 		do M = 1, DataStructureRigidBody(J)%NumMaterials
 			if (DataStructureRigidBody(J)%StiffnessPath == STIFFNESS_FROM_TOLERANCE) then
+				if (ReferenceLength <= TINY) then
+					call GiveError('Contact stiffness path 2 requires a rigid body of non-zero size, rigid body ' // &
+						trim(DataStructureRigidBody(J)%Name))
+				end if
 				if (DataStructureRigidBody(J)%Materials(M)%RigidityParameter <= 0.0) then
 					call GiveError('Contact stiffness path 2 requires a positive rigidity tolerance parameter, rigid body ' // &
 						trim(DataStructureRigidBody(J)%Name))
@@ -1044,6 +1142,12 @@
 				DataStructureRigidBody(J)%StiffnessPath, ', contact stiffness = ', &
 				DataStructureRigidBody(J)%Materials(M)%ContactStiffness, ' kN/m'
 			call WriteInLogFile(trim(EchoLine))
+			if (DataStructureRigidBody(J)%StiffnessPath == STIFFNESS_FROM_TOLERANCE) then
+				write(EchoLine, '(A,G12.5,A,G12.5,A,G12.5,A,G12.5)') '    path 2 inputs: E [kPa] ', Young, &
+					', R_max [m] ', Rmax, ', L_ref (largest side of the body) [m] ', ReferenceLength, &
+					', I_r ', DataStructureRigidBody(J)%Materials(M)%RigidityParameter
+				call WriteInLogFile(trim(EchoLine))
+			end if
 		end do
 	end do
 
@@ -1065,9 +1169,8 @@
 	implicit none
 	real(REAL_TYPE), intent(in) :: SoilTimeStep
 
-	real(REAL_TYPE), parameter :: XI_LIMIT = 0.95
 	integer(INTEGER_TYPE) :: I, J, MaterialID
-	real(REAL_TYPE) :: OmegaSoil2, Radius, ClosingVel, Overlap, Xi, K, RadialScale
+	real(REAL_TYPE) :: OmegaSoil2, Radius, ClosingVel, Overlap, Xi, K, RadialScale, Gap, DtBarrier
 	real(REAL_TYPE) :: BodyTerm(NRigidBodies), InvMassEff, Gamma, DtNormal
 	real(REAL_TYPE) :: Weights(ELEMENTNODES), NodalMass
 	integer(INTEGER_TYPE) :: IEl, INode
@@ -1077,6 +1180,7 @@
 	if (.not. allocated(ContactNormalVel)) RETURN
 
 	OmegaSoil2 = (2.0/SoilTimeStep)**2
+	DtBarrier = huge(DtBarrier)
 
 	! Rigid-body block of 1/m_eff, Eq. meff: prescribed degrees of freedom add no compliance
 	do J = 1, NRigidBodies
@@ -1102,6 +1206,15 @@
 				abs(DataStructureRigidBody(J)%AngularVelocity) * &
 				Length(GlobPosArray(I,:) - DataStructureRigidBody(J)%Centroid, 2)
 		end if
+
+		! Barrier step limit (kinematic, not a stability bound): the stability step below does not stop an
+		! explicit step from carrying the overlap past the singularity of the barrier at xi = 1, where the point
+		! either evaluates the log out of its domain or crosses the thin body. Allow at most a fraction of the
+		! distance left to XI_LIMIT, (XI_LIMIT*R_p + phi), at the closing velocity. Points already beyond
+		! XI_LIMIT are left to the linear continuation of BarrierSpringForce.
+		Gap = DistanceField(I) + XI_LIMIT * Radius
+		if (ClosingVel > TINY .and. Gap > 0.0) &
+			DtBarrier = min(DtBarrier, max(BARRIER_STEP_FRACTION * Gap / ClosingVel, BARRIER_STEP_FLOOR * SoilTimeStep))
 
 		Overlap = -DistanceField(I) + 2.0 * CalParams%TimeIncrement * ClosingVel
 		if (Overlap <= 0.0) cycle
@@ -1142,6 +1255,16 @@
 				2.0 / sqrt(OmegaSoil2 + RadialScale*K*InvMassEff))
 	end do
 
+	! Contact statistics: the two limits behind the next time step (before the Courant number)
+	StatDtCritical = ContactCriticalTimeStep
+	StatDtBarrier = -1.0
+	if (DtBarrier < huge(DtBarrier)) StatDtBarrier = DtBarrier
+
+	if (DtBarrier < ContactCriticalTimeStep) then
+		ContactCriticalTimeStep = DtBarrier
+		call ReportBarrierEvent(NBarrierLimitedSteps, 'Rigid body contact: time step limited by the barrier step limit')
+	end if
+
 	end function ContactCriticalTimeStep
 
           
@@ -1165,7 +1288,7 @@
     real(REAL_TYPE) :: Dot1, Dot2, Sign, normal_diff(2), RadiusVec(2)
     real(REAL_TYPE) :: RigidBodyVelAtPoint(2), Xcross(2), ProjdX_n(2), Proj1(2)
     real(REAL_TYPE) :: TimeIncrementNew, RelativeVel(2), Tangent(2)
-    real(REAL_TYPE) :: k_of_d, NormalForce(2), TangentForce(2), Force(2)
+    real(REAL_TYPE) :: SpringForce, NormalForce(2), TangentForce(2), Force(2)
     real(REAL_TYPE) :: Arm, Torque, X1v(2)
     real(REAL_TYPE) :: K_eff, Pmag, mu_red, DampCoeff, vn, XiContact
     real(REAL_TYPE) :: Vt_mag, kt, Tlimit, nhat(2), Tstore(2), Ttrial(2)
@@ -1181,6 +1304,7 @@
         DataStructureRigidBody(J)%NContacts = 0
         DataStructureRigidBody(J)%ContactArmSum = 0.0
     end do
+    call ResetContactStatistics()
 
     do I = 1, Counters%NParticles ! Loop over particles ThinRigidElmConnectivities
         Xp = GlobPosArray(I,:) !Coordinate of MP
@@ -1318,13 +1442,22 @@
 
         MaterialID = MaterialIDArray(I)
                     
-        ! Secant stiffness f(xi) of the barrier, xi = -phi/R_p: the reference radius stays the length
-        ! scale of the law, the deformed half-width enters only through the overlap -phi
+        ! Overlap xi = -phi/R_p: the reference radius stays the length scale of the law, the deformed
+        ! half-width enters only through the overlap -phi. xi = lambda_n - d_p/R_p can reach or pass 1
+        ! (lambda_n > 1, or an explicit step past the barrier), where the log of f(xi) is singular or
+        ! undefined; BarrierSpringForce continues the force linearly beyond XI_LIMIT.
         XiContact = -Distancefield(I)/Particles(I)%ParticleRadius
-        k_of_d=-(2.0*log(1.0 - XiContact) - 1.0/(1.0 - XiContact) + 1.0) !stiffness as function of distance field
 
         ! Stability is handled by ContactCriticalTimeStep, the stiffness is applied unchanged
         K_eff = DataStructureRigidBody(J)%Materials(MaterialID)%ContactStiffness
+        SpringForce = BarrierSpringForce(XiContact, K_eff, Particles(I)%ParticleRadius)
+        if (XiContact > XI_LIMIT) call ReportBarrierEvent(NBarrierExtensions, &
+            'Rigid body contact: overlap beyond XI_LIMIT, barrier force continued linearly')
+        ! Contact statistics: overlap and penetration (before the overlap is clamped for the dashpot)
+        StatSumXi(J) = StatSumXi(J) + XiContact
+        StatMaxXi(J) = max(StatMaxXi(J), XiContact)
+        StatMaxDelta(J) = max(StatMaxDelta(J), -DistanceField(I))
+        if (XiContact > XI_LIMIT) StatNBeyond(J) = StatNBeyond(J) + 1
 
         ! Damping uses the REDUCED mass of the particle-rigid-body pair. The original used
         ! only the particle mass (MASSMIXED); with the rigid body's true (small) inertia
@@ -1337,14 +1470,15 @@
         ! c = 2*zeta*sqrt(m*k_t), so zeta is the damping ratio of the linearised contact. With the
         ! nominal k the contact was over-critical by sqrt(k/k_t), a factor of 5 to 20 at small overlaps.
         ! c -> 0 at first contact because g(0) = 0. Same overlap bound as ContactCriticalTimeStep.
-        XiContact = min(-Distancefield(I)/Particles(I)%ParticleRadius, 0.95d0)
+        XiContact = min(XiContact, XI_LIMIT)
         DampCoeff = DataStructureRigidBody(J)%Materials(MaterialID)%ContactDamping * 2.0 * &
             sqrt(mu_red * K_eff * BarrierTangent(XiContact))
+        StatMaxKt(J) = max(StatMaxKt(J), K_eff * BarrierTangent(XiContact)) !tangent stiffness k*g(min(xi, XI_LIMIT))
 
         ! Repulsive magnitude along -(Sign*Normal): spring (>=0) minus the dashpot, where
         ! the dashpot opposes the relative NORMAL velocity vn (vn<0 approaching, vn>0 separating).
         vn = DotProduct(RelativeVel, Sign*Normal, 2)
-        Pmag = K_eff * k_of_d * (-1.0 * Distancefield(I)) - DampCoeff * vn
+        Pmag = SpringForce - DampCoeff * vn
 
         ! Contact statistics for ContactCriticalTimeStep
         ContactNormalVel(I) = vn
@@ -1356,6 +1490,8 @@
         ! dashpot produces a net attractive force while separating (vn>0), injecting energy
         ! every bounce so the free body accelerates and diverges.
         if (Pmag < 0.0) Pmag = 0.0
+        StatSumFn(J) = StatSumFn(J) + Pmag
+        StatMaxFn(J) = max(StatMaxFn(J), Pmag)
 
         NormalForce = -Pmag * Sign * Normal
         
@@ -1397,11 +1533,21 @@
             Ttrial = Tstore + kt * (Vt_mag * CalParams%TimeIncrement) * Tangent
             ! Coulomb cap (return to the friction cone)
             Tlimit = DataStructureRigidBody(J)%Materials(MaterialID)%FrictionCoef * Length(NormalForce, 2)
+            if (Tlimit > 0.0) then ! contact statistics: stick inside the Coulomb surface, slip on it
+                if (Length(Ttrial, 2) > Tlimit) then
+                    StatNSlip(J) = StatNSlip(J) + 1
+                    StatMaxUtil(J) = 1.0
+                else
+                    StatNStick(J) = StatNStick(J) + 1
+                    StatMaxUtil(J) = max(StatMaxUtil(J), Length(Ttrial, 2) / Tlimit)
+                end if
+            end if
             if (Length(Ttrial, 2) > Tlimit) Ttrial = Tlimit * VectorNorm(Ttrial, 2)
             TangentForceTrack(I,:) = Ttrial !store the updated (returned) state for next step
             TangentForce = Ttrial           !on the rigid body; reaction -Ttrial on the particle
         else !contact open (or fully released by the non-adhesion clamp)
             TangentForce = 0.0
+            if (any(TangentForceTrack(I,:) /= 0.0)) StatNResets(J) = StatNResets(J) + 1
             TangentForceTrack(I,:) = 0.0    !contact lost -> reset accumulated friction
         end if
 
@@ -1431,7 +1577,11 @@
         !Add force to material point
         ContactForceArray(I, :)=-Force !Action-reaction
         
-    else 
+    else
+        if (any(TangentForceTrack(I,:) /= 0.0)) then ! contact statistics: stored friction lost on separation
+            J = int(ElementsRigidBody(int(AffinityArray(I,2)))%RigidBody)
+            StatNResets(J) = StatNResets(J) + 1
+        end if
         TangentForceTrack(I,:)=0.0
     end if
             

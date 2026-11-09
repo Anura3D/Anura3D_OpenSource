@@ -294,6 +294,7 @@
         integer(INTEGER_TYPE), parameter :: PARUnit = 900 ! first unit for particle output (max until 999)
         integer(INTEGER_TYPE), parameter :: SURFReacUnit = 1000
 		integer(INTEGER_TYPE), parameter :: THINunit=1100
+		integer(INTEGER_TYPE), parameter :: TCONunit=1600 ! contact statistics of thin rigid bodies, project.TCON_XXX
         
         ! Prescribed velocity from file 
         integer(INTEGER_TYPE), parameter :: PVFunit = 70

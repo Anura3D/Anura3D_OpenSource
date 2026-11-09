@@ -102,6 +102,7 @@
           IsLoadOnMP =(Counters%NLoadedElementSidesSolidMatPoints+Counters%NLoadedElementSidesSolidMatPointsB)>0
 
           
+          Position = 0.0 ! set per point only if axisymmetric; initialised so that the r=0 guard never reads garbage
           do IAEl = 1, Counters%NAEl ! loop over all active elements
            IEl = ActiveElement(IAEl)
            !========================================================================
@@ -560,6 +561,7 @@
           Reactions = 0.0
           BulkViscousLD = 0.0
 
+          Position = 0.0 ! set per point only if axisymmetric; initialised so that the r=0 guard never reads garbage
           do IAEl = 1, Counters%NAEl
            IEl = ActiveElement(IAEl)
 

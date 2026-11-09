@@ -232,10 +232,23 @@
         
           do MaterialIndex=1, NRigidBodies
 
-
-          
+              ! Contact statistics of the body, project.TCON_XXX, written with the TREL file
               call GetStepExt(MaterialIndex, XXX)
-              CompleteFileName = trim(CalParams%FileNames%ProjectName)// '.TREL_' // XXX 
+              CompleteFileName = trim(CalParams%FileNames%ProjectName)// '.TCON_' // XXX
+              if ( (FExist(trim(CompleteFileName))).and.(CalParams%IStep>1) ) then
+                call FileOpenAppend(TCONunit + MaterialIndex, CompleteFileName)
+              else
+                call FileOpen(TCONunit + MaterialIndex, CompleteFileName)
+                write(TCONunit + MaterialIndex, '(2A)') 'Surface name:', DataStructureRigidBody(MaterialIndex)%Name
+                write(TCONunit + MaterialIndex, '(21A21)') 'Step ', 'TimeStep ', 'TotalTime ', 'dt ', &
+                  'dtCritical ', 'dtBarrier ', 'NContacts ', 'MeanXi ', 'MaxXi ', 'MaxDelta ', &
+                  'SumNormalForce ', 'MaxNormalForce ', 'MaxTangentStiff ', 'ContactStiffness ', &
+                  'NStick ', 'NSlip ', 'MaxFrictionUtil ', 'NTangentResets ', 'NBeyondXiLimit ', &
+                  'BarrierLimitSteps ', 'BarrierExtensions '
+              end if
+
+              call GetStepExt(MaterialIndex, XXX)
+              CompleteFileName = trim(CalParams%FileNames%ProjectName)// '.TREL_' // XXX
               if ( (FExist(trim(CompleteFileName))).and.(CalParams%IStep>1) ) then
                 call FileOpenAppend(THINunit + MaterialIndex, CompleteFileName) ! adapt existing file
               else
@@ -1080,6 +1093,41 @@
     enddo
     
     end subroutine WriteThinRigidElementData
+
+
+    subroutine WriteContactStatistics()
+          !**********************************************************************
+          !
+          !  Function : contact statistics of each thin rigid body for the current time step, written with
+          !             the TREL file to project.TCON_XXX. Forces in kN, lengths in m, stiffness in kN/m.
+          !             dtCritical and dtBarrier are the limits that set this step (before the Courant
+          !             number), dtBarrier = -1 if no point approaches the barrier.
+          !
+          !**********************************************************************
+    implicit none
+    integer(INTEGER_TYPE) :: J, M, NContacts
+    real(REAL_TYPE) :: MeanXi, Stiffness
+
+    if (.not. IsThereRigidBody) RETURN
+    if (.not. allocated(StatNStick)) RETURN
+    if (NDIM /= 2) RETURN
+
+    do J = 1, NRigidBodies
+      NContacts = DataStructureRigidBody(J)%NContacts
+      MeanXi = 0.0
+      if (NContacts > 0) MeanXi = StatSumXi(J) / NContacts
+      Stiffness = 0.0
+      do M = 1, DataStructureRigidBody(J)%NumMaterials
+        Stiffness = max(Stiffness, DataStructureRigidBody(J)%Materials(M)%ContactStiffness)
+      end do
+      write(TCONunit + J, '(I21, I21, 4G21.6, I21, 7G21.6, 2I21, G21.6, 4I21)') CalParams%IStep, CalParams%TimeStep, &
+        CalParams%OverallRealTime, CalParams%TimeIncrement, StatDtCritical, StatDtBarrier, &
+        NContacts, MeanXi, StatMaxXi(J), StatMaxDelta(J), StatSumFn(J), StatMaxFn(J), StatMaxKt(J), Stiffness, &
+        StatNStick(J), StatNSlip(J), StatMaxUtil(J), StatNResets(J), StatNBeyond(J), &
+        NBarrierLimitedSteps, NBarrierExtensions
+    end do
+
+    end subroutine WriteContactStatistics
     
 
 
