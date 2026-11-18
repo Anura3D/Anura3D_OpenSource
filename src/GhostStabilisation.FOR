@@ -75,6 +75,9 @@
       use ModString
       use ModFeedback
       use ModGasification
+      use ModGhostBorder
+      use ModFileIO
+      use ModStructuralElements, only: ContactTransferWeights
 
       implicit none
 
@@ -95,6 +98,28 @@
         logical, private :: GhostIsAvailable = .false.  ! element type / formulation supported
         logical, private :: GhostChecked = .false.      ! support check done
         real(REAL_TYPE), private :: GhostLastMomentumError = 0.0
+        ! border detection (FN-T-002) and its diagnostics
+        logical, dimension(:), allocatable, private :: TouchesNonCandidate              ! (Counters%NodTot) pass-1 marks of P0
+        real(REAL_TYPE), dimension(:), allocatable, private :: GhostMassRef             ! (Counters%NodTot) S4a reference mass mhat_a
+        integer(INTEGER_TYPE), dimension(:,:), allocatable, private :: GhostFaceElements ! (2, MaxFaces) IEl, JEl of each face
+        integer(INTEGER_TYPE), dimension(:), allocatable, private :: GhostElementFlag   ! (Counters%NEl) 0 not candidate, 1 candidate,
+                                                                                        ! 2 cut by the detection, 3 cut by S4a only
+        integer(INTEGER_TYPE), private :: GhostNCut = 0           ! cut elements (detection + S4a)
+        integer(INTEGER_TYPE), private :: GhostNS4a = 0           ! elements added by S4a
+        integer(INTEGER_TYPE), private :: GhostNCutNoFace = 0     ! cut elements without ghost face (A6, isolated ejecta)
+        integer(INTEGER_TYPE), private :: GhostNLoadedNodes = 0   ! nodes receiving the thin-rigid-body contact force
+        integer(INTEGER_TYPE), private :: GhostNLoadedInPatch = 0 ! of these, nodes in a ghost patch (S2a)
+        real(REAL_TYPE), private :: GhostMaxRatioLoaded = 0.0     ! max M^g_aa / m_a over loaded ghost DOFs
+        real(REAL_TYPE), private :: GhostMinMu = 0.0              ! min mu_a of S4a (0 if S4a off)
+        real(REAL_TYPE), private :: GhostBuildMaxX = 0.0          ! max MP x at the last face build (file output only)
+        integer(INTEGER_TYPE), private :: GhostBuildStep = 0      ! time step of the last face build
+        logical, private :: GhostFreeBoundaryWarned = .false.     ! S6 warning written
+        ! F1 (FN-T-014 D7): free ghost DOFs F (IsGhostDof, PBoundary /= 0, m_a > 0); D = ghost DOFs not in F
+        logical, dimension(:), allocatable, private :: GhostFreeDof              ! (Counters%N)
+        logical, private :: GhostBuiltForStep = .false.  ! faces built at LP:125 for the current step (F1)
+        integer(INTEGER_TYPE), private :: GhostBuildLoadStep = -1                ! IStep of the last face build
+        real(REAL_TYPE), private :: GhostMinDampingFactor = 1.0  ! min m*/m_true over contact points on ghost DOFs (F1)
+        integer(INTEGER_TYPE), private :: GhostNDampingPoints = 0               ! contact points entering that min
 
       contains
 
@@ -121,6 +146,13 @@
                                   ', fill threshold = ' // trim(String(CalParams%GhostFillThreshold)) // &
                                   ', mass solver = ' // trim(String(CalParams%GhostMassSolver)) // &
                                   ', Jacobi sweeps = ' // trim(String(CalParams%GhostNJacobi)))
+              call WriteInLogFile('Ghost border detection = ' // trim(String(CalParams%GhostCutCriterion)) // &
+                                  ' (0 fill, 1 node-based), nodal-mass net (S4a) = ' // &
+                                  trim(String(merge(1, 0, CalParams%GhostApplyS4a))) // &
+                                  ', S4a threshold = ' // trim(String(CalParams%GhostS4aAlpha)) // &
+                                  ', ghost-mass scheme = ' // trim(String(CalParams%GhostMassScheme)) // &
+                                  ', diagnostics = ' // trim(String(CalParams%GhostDiagnostics)) // &
+                                  ', F1 time-step bound (A9) = ' // trim(String(merge(1, 0, CalParams%GhostF1TimeStep))))
             end if
           end if
 
@@ -141,7 +173,7 @@
 
           if (allocated(GhostFaceNodes)) then
             if (size(GhostFaceNodes, 2) >= MaxFaces .and. size(IsGhostDof) == Counters%N &
-                .and. size(GhostNodeParent) == Counters%NodTot) RETURN
+                .and. size(GhostNodeParent) == Counters%NodTot .and. size(GhostElementFlag) == Counters%NEl) RETURN
             call DestroyGhostArrays()
           end if
 
@@ -155,7 +187,17 @@
           allocate(IsGhostDof(Counters%N), stat = IError)
           allocate(GhostNodeParent(Counters%NodTot), stat = IError)
           allocate(GhostNodeCluster(Counters%NodTot), stat = IError)
+          allocate(TouchesNonCandidate(Counters%NodTot), stat = IError)
+          allocate(GhostMassRef(Counters%NodTot), stat = IError)
+          allocate(GhostFaceElements(2, MaxFaces), stat = IError)
+          allocate(GhostElementFlag(Counters%NEl), stat = IError)
+          allocate(GhostFreeDof(Counters%N), stat = IError)
+          GhostFreeDof = .false.
 
+          TouchesNonCandidate = .false.
+          GhostMassRef = 0.0
+          GhostFaceElements = 0
+          GhostElementFlag = 0
           GhostNodeParent = 0
           GhostNodeCluster = 0
           NGhostClusters = 0
@@ -190,6 +232,11 @@
           if (allocated(IsGhostDof)) deallocate(IsGhostDof, stat = IError)
           if (allocated(GhostNodeParent)) deallocate(GhostNodeParent, stat = IError)
           if (allocated(GhostNodeCluster)) deallocate(GhostNodeCluster, stat = IError)
+          if (allocated(TouchesNonCandidate)) deallocate(TouchesNonCandidate, stat = IError)
+          if (allocated(GhostMassRef)) deallocate(GhostMassRef, stat = IError)
+          if (allocated(GhostFaceElements)) deallocate(GhostFaceElements, stat = IError)
+          if (allocated(GhostElementFlag)) deallocate(GhostElementFlag, stat = IError)
+          if (allocated(GhostFreeDof)) deallocate(GhostFreeDof, stat = IError)
           NGhostFaces = 0
           NGhostClusters = 0
 
@@ -264,7 +311,7 @@
         !    Function:  Classify an element for ghost stabilisation
         !
         !    IsCandidate  : active, holds MPs, and all MPs are soil entity
-        !    IsCut        : partially filled (particle integration, or fill below threshold)
+        !    IsCut        : fill criterion, sum w_p / ElementSpace < phi_G
         !    Density      : mean MP density in the element (mass / weight)
         !**********************************************************************
         implicit none
@@ -274,7 +321,7 @@
           real(REAL_TYPE), intent(out) :: Density
 
           integer(INTEGER_TYPE) :: IPart, ParticleIndex, MaterialIndex
-          real(REAL_TYPE) :: SumMass, SumWeight, SumVolume, Weight, Radius
+          real(REAL_TYPE) :: SumMass, SumWeight, Weight
 
           IsCandidate = .false.
           IsCut = .false.
@@ -285,7 +332,6 @@
 
           SumMass = 0.0
           SumWeight = 0.0
-          SumVolume = 0.0
 
           do IPart = 1, NPartEle(IEl)
             ParticleIndex = GetParticleIndex(IPart, IEl)
@@ -303,16 +349,6 @@
 
             SumMass = SumMass + MassArray(ParticleIndex)
             SumWeight = SumWeight + Weight
-
-            ! geometric volume of the MP (the axisymmetric weight carries the radius)
-            if (ISAXISYMMETRIC) then
-              Radius = GlobPosArray(ParticleIndex, 1)
-              if (Radius > 0.0) then
-                SumVolume = SumVolume + Weight / Radius
-              end if
-            else
-              SumVolume = SumVolume + Weight
-            end if
           end do
 
           if (SumWeight <= 0.0) RETURN
@@ -323,9 +359,9 @@
           ! Cut = partially filled. Only the MP fill is used: IsParticleIntegration follows the
           ! degree of filling (0.9 by default), and the fill of interior elements fluctuates
           ! around that value as MPs migrate, which would put ghost faces everywhere.
-          if (ElementSpace(IEl) > 0.0) then
-            IsCut = (SumVolume / ElementSpace(IEl)) < CalParams%GhostFillThreshold
-          end if
+          ! Axisymmetric: w_p and ElementSpace both carry the radius (EC:1968-1973), so their
+          ! ratio is the plane fill; the former sum of w_p/r_p was an area over a volume (Q-010).
+          IsCut = GhostFillIsCut(SumWeight, ElementSpace(IEl), CalParams%GhostFillThreshold)
 
         end subroutine GetElementGhostData
 
@@ -407,8 +443,12 @@
         !
         !    A face is a ghost face if:
         !     - it is shared by two candidate elements (active, soil only)
-        !     - at least one of the two elements is cut (partially filled)
+        !     - at least one of the two elements is cut: fill below threshold
+        !       (GhostCutCriterion = 0) or node-based border element of
+        !       FN-T-002 P0 with S1 (GhostCutCriterion = 1), optionally plus
+        !       the S4a nodal-mass flag (GhostApplyS4a)
         !     - none of its patch nodes is a contact / other-entity node
+        !    Thin-rigid-body contact nodes are not excluded (D-002, S2a).
         !**********************************************************************
         implicit none
 
@@ -417,14 +457,17 @@
           integer(INTEGER_TYPE), dimension(2, 3) :: SideVertices
           integer(INTEGER_TYPE), dimension(GHOST_PATCH_NODES) :: PatchNodes
           integer(INTEGER_TYPE) :: NPatch
-          logical, dimension(:), allocatable :: Candidate, Cut
+          logical, dimension(:), allocatable :: Candidate, Cut, CutDetected
           real(REAL_TYPE), dimension(:), allocatable :: ElModulus, ElDensity
           real(REAL_TYPE), dimension(2, 3) :: GradI, GradJ
           real(REAL_TYPE), dimension(2) :: Normal, GradJumpI, GradJumpJ
           real(REAL_TYPE), dimension(GHOST_PATCH_NODES) :: Jump
           real(REAL_TYPE) :: AreaI, AreaJ, FaceLength, H, Weight, Modulus, Rho, dx, dy
           logical :: IsValid
-          integer(INTEGER_TYPE) :: IError
+          integer(INTEGER_TYPE) :: IError, NBorder, NS4a
+          integer(INTEGER_TYPE), dimension(:), allocatable :: ElFaceCount
+          real(REAL_TYPE), dimension(:), allocatable :: NodalMass
+          real(REAL_TYPE) :: MinMu
 
           NGhostFaces = 0
           if (.not.IsGhostActive()) RETURN
@@ -450,18 +493,44 @@
 
           do IEl = 1, Counters%NEl
             if (.not.IsActiveElement(IEl)) CYCLE
-            call GetElementGhostData(IEl, Candidate(IEl), Cut(IEl), ElDensity(IEl))
+            call GetElementGhostData(IEl, Candidate(IEl), Cut(IEl), ElDensity(IEl)) ! Cut = fill criterion
           end do
+
+          if (CalParams%GhostCutCriterion == GHOST_CUT_NODE_BASED) then
+            ! fill flags overwritten by the topological border of FN-T-002 D3 (P0, S1)
+            call GhostNodeBasedBorder(Counters%NEl, Counters%NodTot, ElementConnectivities, Candidate, &
+                                      TouchesNonCandidate, Cut, NBorder)
+            if (.not.GhostFreeBoundaryWarned) call WarnFreeMeshBoundary(Candidate)
+          end if
+
+          NS4a = 0
+          MinMu = 0.0
+          if (CalParams%GhostDiagnostics >= GHOST_DIAG_EXTENDED) then
+            allocate(CutDetected(Counters%NEl), stat = IError)
+            CutDetected = Cut
+          end if
+          if (CalParams%GhostApplyS4a) then
+            allocate(NodalMass(Counters%NodTot), stat = IError)
+            do NodeID = 1, Counters%NodTot
+              NodalMass(NodeID) = LumpedMassDry(ReducedDof(NodeID) + 1, SOFT_ENTITY)
+            end do
+            call GhostNodalMassFlag(Counters%NEl, Counters%NodTot, ElementConnectivities, Candidate, ElDensity, &
+                                    ElementSpace, NodalMass, CalParams%GhostS4aAlpha, GhostMassRef, Cut, NS4a, MinMu)
+            deallocate(NodalMass, stat = IError)
+            if (MinMu > 1.0e30) MinMu = 0.0
+          end if
+
+          if (CalParams%GhostDiagnostics >= GHOST_DIAG_EXTENDED) then
+            allocate(ElFaceCount(Counters%NEl), stat = IError)
+            ElFaceCount = 0
+          end if
 
           do IEl = 1, Counters%NEl
             if (.not.Candidate(IEl)) CYCLE
 
             do ISide = 1, ELEMENTSIDES
               JEl = ElementAdjacencies(IEl, ISide)
-              if (JEl <= 0) CYCLE              ! mesh boundary
-              if (JEl <= IEl) CYCLE            ! each face once
-              if (.not.Candidate(JEl)) CYCLE
-              if (.not.(Cut(IEl).or.Cut(JEl))) CYCLE
+              if (.not.IsGhostFacePair(IEl, JEl, Candidate, Cut)) CYCLE ! mesh boundary, once per face, candidates, cut
 
               ! patch nodes: nodes of IEl followed by the vertex of JEl not shared with IEl
               PatchNodes = 0
@@ -531,6 +600,12 @@
 
               NGhostFaces = NGhostFaces + 1
               GhostFaceNodes(:, NGhostFaces) = PatchNodes
+              GhostFaceElements(1, NGhostFaces) = IEl
+              GhostFaceElements(2, NGhostFaces) = JEl
+              if (allocated(ElFaceCount)) then
+                ElFaceCount(IEl) = ElFaceCount(IEl) + 1
+                ElFaceCount(JEl) = ElFaceCount(JEl) + 1
+              end if
               GhostFaceJump(:, NGhostFaces) = Jump
               GhostFaceCoefK(NGhostFaces) = CalParams%GhostGammaK * Modulus * H * Weight * FaceLength
               GhostFaceCoefM(NGhostFaces) = CalParams%GhostGammaM * Rho * H**3 * Weight * FaceLength
@@ -556,6 +631,32 @@
             end do ! sides
           end do ! elements
 
+          ! diagnostics of D-002 (2)-(3) and FN-T-002 implementation note 5
+          GhostNS4a = NS4a
+          GhostMinMu = MinMu
+          GhostBuildStep = CalParams%TimeStep
+          if (CalParams%GhostDiagnostics >= GHOST_DIAG_EXTENDED) then
+            GhostNCut = count(Cut)
+            GhostNCutNoFace = 0
+            do IEl = 1, Counters%NEl
+              GhostElementFlag(IEl) = 0
+              if (.not.Candidate(IEl)) CYCLE
+              GhostElementFlag(IEl) = 1
+              if (Cut(IEl)) then
+                if (ElFaceCount(IEl) == 0) GhostNCutNoFace = GhostNCutNoFace + 1
+                GhostElementFlag(IEl) = merge(2, 3, CutDetected(IEl))
+              end if
+            end do
+            deallocate(ElFaceCount, CutDetected, stat = IError)
+            call CountContactLoadedGhostNodes()
+            if (CalParams%GhostDiagnostics >= GHOST_DIAG_FILE) then
+              GhostBuildMaxX = -huge(GhostBuildMaxX)
+              do I = 1, Counters%NParticles
+                GhostBuildMaxX = max(GhostBuildMaxX, GlobPosArray(I, 1))
+              end do
+            end if
+          end if
+
           deallocate(Candidate, Cut, ElModulus, ElDensity, stat = IError)
 
           ! number the clusters 1..NGhostClusters (roots first, then all members)
@@ -571,7 +672,111 @@
             GhostNodeCluster(NodeID) = GhostNodeCluster(GhostFindRoot(NodeID))
           end do
 
+          ! F1 rule A10 (FN-T-014 Eq. (20)): G_s acts on the free ghost DOFs only
+          do IDof = 1, Counters%N
+            GhostFreeDof(IDof) = IsGhostDof(IDof) .and. (PBoundary(IDof) /= 0.0) .and. &
+                                 (LumpedMassDry(IDof, SOFT_ENTITY) > 0.0)
+          end do
+          GhostBuildLoadStep = CalParams%IStep
+
         end subroutine BuildGhostFaces
+
+
+        subroutine WarnFreeMeshBoundary(Candidate)
+        !**********************************************************************
+        !    WarnFreeMeshBoundary(Candidate)
+        !
+        !    Write one log warning when a candidate element has a mesh-boundary
+        !    side whose two nodes are free in every direction (FN-T-002 A4, S6):
+        !    the node-based detection treats mesh-boundary sides as interior, so
+        !    a free surface on the mesh edge is not stabilised. Sets
+        !    GhostFreeBoundaryWarned once a warning is written.
+        !
+        !    Candidate : candidate flag per element
+        !**********************************************************************
+        implicit none
+
+          logical, dimension(:), intent(in) :: Candidate
+
+          integer(INTEGER_TYPE) :: IEl, ISide, K, Node1, Node2
+          integer(INTEGER_TYPE), dimension(2, 3) :: SideVertices
+          logical :: IsFree
+
+          SideVertices = reshape((/ 1, 2, 3, 1, 2, 3 /), (/ 2, 3 /)) ! as BuildGhostFaces
+          do IEl = 1, Counters%NEl
+            if (.not.Candidate(IEl)) CYCLE
+            do ISide = 1, ELEMENTSIDES
+              if (ElementAdjacencies(IEl, ISide) /= 0) CYCLE
+              Node1 = ElementConnectivities(SideVertices(1, ISide), IEl)
+              Node2 = ElementConnectivities(SideVertices(2, ISide), IEl)
+              IsFree = .true.
+              do K = 1, NVECTOR
+                if (PBoundary(ReducedDof(Node1) + K) == 0.0) IsFree = .false.
+                if (PBoundary(ReducedDof(Node2) + K) == 0.0) IsFree = .false.
+              end do
+              if (IsFree) then
+                call WriteInLogFile('Ghost warning: element ' // trim(String(IEl)) // ' holds material on a free ' // &
+                                    'side of the outer mesh boundary (nodes ' // trim(String(Node1)) // ', ' // &
+                                    trim(String(Node2)) // '); the node-based border detection does not see ' // &
+                                    'this free surface. Extend the mesh. (written once)')
+                GhostFreeBoundaryWarned = .true.
+                RETURN
+              end if
+            end do
+          end do
+
+        end subroutine WarnFreeMeshBoundary
+
+
+        subroutine CountContactLoadedGhostNodes()
+        !**********************************************************************
+        !    CountContactLoadedGhostNodes()
+        !
+        !    Count the nodes that receive the thin-rigid-body contact force
+        !    (non-zero weight of ContactTransferWeights, main and fallback
+        !    branches) and how many of them are ghost-patch nodes (D-002 (3),
+        !    S2a); also max M^g_aa / m_a over their ghost DOFs. Mutates the
+        !    module diagnostics GhostNLoadedNodes, GhostNLoadedInPatch and
+        !    GhostMaxRatioLoaded.
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE) :: IPart, IEl, INode, NodeID, K, IDof, IError
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: Weights
+          logical, dimension(:), allocatable :: IsLoaded
+
+          GhostNLoadedNodes = 0
+          GhostNLoadedInPatch = 0
+          GhostMaxRatioLoaded = 0.0
+          if (.not.allocated(ContactForceArray)) RETURN
+          if (.not.allocated(ContactElementArray)) RETURN
+          if (size(ContactForceArray, 1) < Counters%NParticles) RETURN
+
+          allocate(IsLoaded(Counters%NodTot), stat = IError)
+          IsLoaded = .false.
+          do IPart = 1, Counters%NParticles
+            if (all(ContactForceArray(IPart, :) == 0.0)) CYCLE ! same test as GetNodalContactForce (SE:1964)
+            call ContactTransferWeights(IPart, Weights, IEl)
+            if (IEl <= 0) CYCLE
+            do INode = 1, ELEMENTNODES
+              if (Weights(INode) /= 0.0) IsLoaded(ElementConnectivities(INode, IEl)) = .true.
+            end do
+          end do
+
+          do NodeID = 1, Counters%NodTot
+            if (.not.IsLoaded(NodeID)) CYCLE
+            GhostNLoadedNodes = GhostNLoadedNodes + 1
+            if (GhostNodeParent(NodeID) == 0) CYCLE ! clusters are numbered later; parent /= 0 marks patch nodes
+            GhostNLoadedInPatch = GhostNLoadedInPatch + 1
+            do K = 1, NVECTOR
+              IDof = ReducedDof(NodeID) + K
+              if (LumpedMassDry(IDof, SOFT_ENTITY) > 0.0) &
+                GhostMaxRatioLoaded = max(GhostMaxRatioLoaded, GhostMassDiagonal(IDof) / LumpedMassDry(IDof, SOFT_ENTITY))
+            end do
+          end do
+          deallocate(IsLoaded, stat = IError)
+
+        end subroutine CountContactLoadedGhostNodes
 
 
         subroutine ApplyGhostForce(RateOfMomentumSoil)
@@ -591,7 +796,9 @@
 
           if (.not.IsGhostActive()) RETURN
 
-          call BuildGhostFaces()
+          ! F1: one face list per step, built before the velocity at LP:125 (FN-T-014 D7.2 row 2)
+          if (.not.(CalParams%GhostMassScheme == GHOST_MASS_F1 .and. GhostBuiltForStep)) call BuildGhostFaces()
+          GhostBuiltForStep = .false.
           if (NGhostFaces == 0) RETURN
 
           do IFace = 1, NGhostFaces
@@ -670,6 +877,11 @@
           if (.not.IsGhostActive()) RETURN
           if (NGhostFaces == 0) RETURN
           if (CalParams%GhostGammaM <= 0.0) RETURN
+
+          if (CalParams%GhostMassScheme == GHOST_MASS_F1) then
+            call ApplyGhostMassF1()
+            RETURN
+          end if
 
           allocate(Acc(Counters%N), OffDiag(Counters%N), stat = IError)
           Acc = AccelerationSoil(:, SOFT_ENTITY)
@@ -764,6 +976,434 @@
         end subroutine ApplyGhostMass
 
 
+        integer(INTEGER_TYPE) function GhostF1Sweeps()
+        !**********************************************************************
+        !    GhostF1Sweeps()
+        !
+        !    Return N_J of FN-T-014 Eq. (16): 0 for GhostMassSolver = 0 (start
+        !    M_P^{-1}, no sweep, D7.1 solver mapping), GhostNJacobi otherwise.
+        !**********************************************************************
+        implicit none
+
+          GhostF1Sweeps = 0
+          if (CalParams%GhostMassSolver == 1) GhostF1Sweeps = CalParams%GhostNJacobi
+
+        end function GhostF1Sweeps
+
+
+        subroutine ApplySymmetricGhostOperator(Y, Z, NJ)
+        !**********************************************************************
+        !    ApplySymmetricGhostOperator(Y, Z, NJ)
+        !
+        !    Apply the symmetric ghost-mass operator of FN-T-014 Eq. (20) to a
+        !    soil nodal vector, separately per direction, on the ghost DOFs:
+        !    Z = (P^T G_J^s P + Q) Y on the free ghost DOFs F, Z = 0 on the other
+        !    ghost DOFs D, with G_J^s = sum_{k=0}^{NJ} J^k M_P^{-1},
+        !    J = I - M_P^{-1} (M_L + M^g)_FF, M_P = diag(m + M^g_aa + O_a),
+        !    O_a = GhostMassOffDiagAbs (face sum), P = I - M_L Q, Q the cluster
+        !    projection over the free DOFs of each cluster and direction.
+        !    D is excluded at every stage (D7.4): input, start, sweeps, output.
+        !
+        !    Y  : momentum (t m/s per m) or rate of momentum (kN per m), Counters%N
+        !    Z  : mutated on the ghost DOFs only (velocity or acceleration); other
+        !         entries are left unchanged (lumped result of the caller)
+        !    NJ : number of Jacobi sweeps after the start
+        !
+        !    Example: with gammaM = 0 the result on F is Y / m (Eq. (17) limit).
+        !**********************************************************************
+        implicit none
+
+          real(REAL_TYPE), dimension(:), intent(in) :: Y
+          real(REAL_TYPE), dimension(:), intent(inout) :: Z
+          integer(INTEGER_TYPE), intent(in) :: NJ
+
+          integer(INTEGER_TYPE) :: IDof, NodeID, K, IC, ISweep, IError
+          real(REAL_TYPE), dimension(:), allocatable :: Yp, W, Off, P
+          real(REAL_TYPE), dimension(:,:), allocatable :: YBar, SumM, SumMW
+          real(REAL_TYPE) :: Mass
+
+          if (NGhostFaces == 0) RETURN
+          allocate(Yp(Counters%N), W(Counters%N), Off(Counters%N), P(Counters%N), stat = IError)
+          allocate(YBar(NGhostClusters, NVECTOR), SumM(NGhostClusters, NVECTOR), SumMW(NGhostClusters, NVECTOR), &
+                   stat = IError)
+
+          ! (i)-(ii) masked input and cluster means ybar = sum_F y / sum_F m
+          YBar = 0.0
+          SumM = 0.0
+          do NodeID = 1, Counters%NodTot
+            IC = GhostNodeCluster(NodeID)
+            if (IC <= 0) CYCLE
+            do K = 1, NVECTOR
+              IDof = ReducedDof(NodeID) + K
+              if (.not.GhostFreeDof(IDof)) CYCLE
+              YBar(IC, K) = YBar(IC, K) + Y(IDof)
+              SumM(IC, K) = SumM(IC, K) + LumpedMassDry(IDof, SOFT_ENTITY)
+            end do
+          end do
+          where (SumM > 0.0)
+            YBar = YBar / SumM
+          elsewhere
+            YBar = 0.0
+          end where
+
+          ! (ii) pre-projection y' = (I - M_L Q) y and (iii) masked start z = y' / P
+          Yp = 0.0
+          W = 0.0
+          P = 1.0
+          do NodeID = 1, Counters%NodTot
+            IC = GhostNodeCluster(NodeID)
+            if (IC <= 0) CYCLE
+            do K = 1, NVECTOR
+              IDof = ReducedDof(NodeID) + K
+              if (.not.GhostFreeDof(IDof)) CYCLE
+              Mass = LumpedMassDry(IDof, SOFT_ENTITY)
+              Yp(IDof) = Y(IDof) - Mass * YBar(IC, K)
+              P(IDof) = Mass + GhostMassDiagonal(IDof) + GhostMassOffDiagAbs(IDof)
+              W(IDof) = Yp(IDof) / P(IDof)
+            end do
+          end do
+
+          ! (iv) simultaneous (Jacobi) sweeps masked on D; W = 0 on D, so Off reads F only.
+          ! Off is formed from the previous iterate for all DOFs before any update (symmetry of G_J^s).
+          do ISweep = 1, NJ
+            call GhostMassTimesVector(W, Off)
+            do IDof = 1, Counters%N
+              if (.not.GhostFreeDof(IDof)) CYCLE
+              W(IDof) = W(IDof) + (Yp(IDof) - (LumpedMassDry(IDof, SOFT_ENTITY) + GhostMassDiagonal(IDof)) * W(IDof) &
+                                   - Off(IDof)) / P(IDof)
+            end do
+          end do
+
+          ! (v) two-sided correction z <- (I - Q M_L) z + Q y
+          SumMW = 0.0
+          do NodeID = 1, Counters%NodTot
+            IC = GhostNodeCluster(NodeID)
+            if (IC <= 0) CYCLE
+            do K = 1, NVECTOR
+              IDof = ReducedDof(NodeID) + K
+              if (.not.GhostFreeDof(IDof)) CYCLE
+              SumMW(IC, K) = SumMW(IC, K) + LumpedMassDry(IDof, SOFT_ENTITY) * W(IDof)
+            end do
+          end do
+          do NodeID = 1, Counters%NodTot
+            IC = GhostNodeCluster(NodeID)
+            if (IC <= 0) CYCLE
+            do K = 1, NVECTOR
+              IDof = ReducedDof(NodeID) + K
+              if (.not.GhostFreeDof(IDof)) CYCLE
+              if (SumM(IC, K) > 0.0) W(IDof) = W(IDof) - SumMW(IC, K) / SumM(IC, K) + YBar(IC, K)
+            end do
+          end do
+
+          ! (vi) output on the ghost DOFs, zero on D
+          do IDof = 1, Counters%N
+            if (.not.IsGhostDof(IDof)) CYCLE
+            if (GhostFreeDof(IDof)) then
+              Z(IDof) = W(IDof)
+            else
+              Z(IDof) = 0.0
+            end if
+          end do
+
+          deallocate(Yp, W, Off, P, YBar, SumM, SumMW, stat = IError)
+
+        end subroutine ApplySymmetricGhostOperator
+
+
+        subroutine ApplyGhostVelocityF1(MomentumSoil, IsRemap)
+        !**********************************************************************
+        !    ApplyGhostVelocityF1(MomentumSoil, IsRemap)
+        !
+        !    Overwrite the soil velocity on the ghost DOFs with G_s p (F1,
+        !    FN-T-014 D7.2 rows 2, 3 and 9). Called after the lumped division
+        !    at LP:125 (IsRemap = .false.: the face list of the step is built
+        !    first) and at DCP:189 (IsRemap = .true.: remapped momentum, same
+        !    faces and masses). No action unless ghost-mass scheme 1 is active.
+        !    Mutates TotalVelocitySoil(:, SOFT_ENTITY) on the ghost DOFs and,
+        !    at LP:125 with the Bardenhagen contact, TotalVelocitySys there.
+        !
+        !    MomentumSoil : nodal soil momentum (t m/s per m), Counters%N
+        !    IsRemap      : .true. for the momentum remapped after the MP update
+        !**********************************************************************
+        implicit none
+
+          real(REAL_TYPE), dimension(:), intent(in) :: MomentumSoil
+          logical, intent(in) :: IsRemap
+
+          integer(INTEGER_TYPE) :: IDof, IError
+          real(REAL_TYPE), dimension(:), allocatable :: Vel
+
+          if (.not.IsGhostActive()) RETURN
+          if (CalParams%GhostMassScheme /= GHOST_MASS_F1) RETURN
+
+          if (.not.IsRemap) then
+            call BuildGhostFaces()
+            GhostBuiltForStep = .true.
+            if (CalParams%GhostDiagnostics >= GHOST_DIAG_OPERATOR .and. CalParams%TimeStep == 1) &
+              call WriteGhostOperatorDump()
+          end if
+          if (NGhostFaces == 0) RETURN
+          if (CalParams%GhostGammaM <= 0.0) RETURN ! M^g = 0: G_s = M_L^{-1}, keep the lumped result (D7.1)
+
+          allocate(Vel(Counters%N), stat = IError)
+          Vel = TotalVelocitySoil(:, SOFT_ENTITY)
+          call ApplySymmetricGhostOperator(MomentumSoil, Vel, GhostF1Sweeps())
+          do IDof = 1, Counters%N
+            if (.not.IsGhostDof(IDof)) CYCLE
+            TotalVelocitySoil(IDof, SOFT_ENTITY) = Vel(IDof)
+            if (.not.IsRemap .and. CalParams%ApplyContactAlgorithm) then
+              if (allocated(TotalVelocitySys)) TotalVelocitySys(IDof) = Vel(IDof) ! ghost patches hold soil-only nodes
+            end if
+          end do
+          deallocate(Vel, stat = IError)
+
+        end subroutine ApplyGhostVelocityF1
+
+
+        subroutine ApplyGhostMassF1()
+        !**********************************************************************
+        !    ApplyGhostMassF1()
+        !
+        !    Set the soil acceleration on the ghost DOFs to G_s R (F1, FN-T-014
+        !    D7.2 row 6) and the momentum error |sum_F m a - sum_F R| / sum_F |R|.
+        !    Mutates AccelerationSoil(:, SOFT_ENTITY), AccelerationSys (with the
+        !    Bardenhagen contact) and GhostLastMomentumError.
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE) :: IDof, IError
+          real(REAL_TYPE), dimension(:), allocatable :: Acc
+          real(REAL_TYPE) :: SumF, SumMA, SumAbs
+
+          allocate(Acc(Counters%N), stat = IError)
+          Acc = AccelerationSoil(:, SOFT_ENTITY)
+          call ApplySymmetricGhostOperator(RateofMomentum(:, SOFT_ENTITY), Acc, GhostF1Sweeps())
+
+          SumF = 0.0
+          SumMA = 0.0
+          SumAbs = 0.0
+          do IDof = 1, Counters%N
+            if (.not.GhostFreeDof(IDof)) CYCLE
+            SumF = SumF + RateofMomentum(IDof, SOFT_ENTITY)
+            SumMA = SumMA + LumpedMassDry(IDof, SOFT_ENTITY) * Acc(IDof)
+            SumAbs = SumAbs + abs(RateofMomentum(IDof, SOFT_ENTITY))
+          end do
+          GhostLastMomentumError = 0.0
+          if (SumAbs > 0.0) GhostLastMomentumError = abs(SumMA - SumF) / SumAbs
+
+          do IDof = 1, Counters%N
+            if (.not.IsGhostDof(IDof)) CYCLE
+            AccelerationSoil(IDof, SOFT_ENTITY) = Acc(IDof)
+            if (CalParams%ApplyContactAlgorithm) then
+              if (allocated(AccelerationSys)) AccelerationSys(IDof) = Acc(IDof)
+            end if
+          end do
+          deallocate(Acc, stat = IError)
+
+        end subroutine ApplyGhostMassF1
+
+
+        subroutine GhostF1DampingDiagnostic()
+        !**********************************************************************
+        !    GhostF1DampingDiagnostic()
+        !
+        !    Compute min m*/m_true over the thin-rigid-body contact points whose
+        !    transfer nodes include a free ghost DOF (FN-T-014 D7.5, Eq. (23)):
+        !    1/m* = sum_j w_j^2 / m_j (lumped), 1/m_true = w^T G_s w, per
+        !    direction; the square root is the factor by which F1 lowers the
+        !    realised contact damping ratio there. Diagnostic only; mutates
+        !    GhostMinDampingFactor and GhostNDampingPoints.
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE) :: IPart, IEl, INode, K, IDof, IError
+          real(REAL_TYPE), dimension(ELEMENTNODES) :: Weights
+          real(REAL_TYPE), dimension(:), allocatable :: Y, Z
+          real(REAL_TYPE) :: InvStar, InvTrue
+          logical :: OnGhost
+
+          GhostMinDampingFactor = 1.0
+          GhostNDampingPoints = 0
+          if (NGhostFaces == 0 .or. CalParams%GhostGammaM <= 0.0) RETURN
+          if (.not.allocated(ContactForceArray) .or. .not.allocated(ContactElementArray)) RETURN
+          if (size(ContactForceArray, 1) < Counters%NParticles) RETURN
+
+          allocate(Y(Counters%N), Z(Counters%N), stat = IError)
+          Y = 0.0
+          do IPart = 1, Counters%NParticles
+            if (all(ContactForceArray(IPart, :) == 0.0)) CYCLE
+            call ContactTransferWeights(IPart, Weights, IEl)
+            if (IEl <= 0) CYCLE
+            OnGhost = .false.
+            do INode = 1, ELEMENTNODES
+              if (Weights(INode) /= 0.0 .and. GhostFreeDof(ReducedDof(ElementConnectivities(INode, IEl)) + 1)) &
+                OnGhost = .true.
+            end do
+            if (.not.OnGhost) CYCLE
+            GhostNDampingPoints = GhostNDampingPoints + 1
+            do K = 1, NVECTOR
+              InvStar = 0.0
+              Z = 0.0
+              do INode = 1, ELEMENTNODES
+                IDof = ReducedDof(ElementConnectivities(INode, IEl)) + K
+                if (Weights(INode) == 0.0 .or. LumpedMassDry(IDof, SOFT_ENTITY) <= 0.0) CYCLE
+                Y(IDof) = Y(IDof) + Weights(INode)
+                InvStar = InvStar + Weights(INode)**2 / LumpedMassDry(IDof, SOFT_ENTITY)
+              end do
+              do INode = 1, ELEMENTNODES
+                IDof = ReducedDof(ElementConnectivities(INode, IEl)) + K
+                if (LumpedMassDry(IDof, SOFT_ENTITY) > 0.0) Z(IDof) = Y(IDof) / LumpedMassDry(IDof, SOFT_ENTITY)
+              end do
+              call ApplySymmetricGhostOperator(Y, Z, GhostF1Sweeps())
+              InvTrue = 0.0
+              do INode = 1, ELEMENTNODES
+                IDof = ReducedDof(ElementConnectivities(INode, IEl)) + K
+                InvTrue = InvTrue + Y(IDof) * Z(IDof)
+              end do
+              if (InvStar > 0.0) GhostMinDampingFactor = min(GhostMinDampingFactor, InvTrue / InvStar)
+              do INode = 1, ELEMENTNODES
+                Y(ReducedDof(ElementConnectivities(INode, IEl)) + K) = 0.0
+              end do
+            end do
+          end do
+          deallocate(Y, Z, stat = IError)
+
+        end subroutine GhostF1DampingDiagnostic
+
+
+        subroutine WriteGhostOperatorDump()
+        !**********************************************************************
+        !    WriteGhostOperatorDump()
+        !
+        !    Write the data of FN-T-014 D7.7 for the unit checks U1-U7 to
+        !    <project>_GHOSTOP_<load step>.txt (diagnostics level 3): the ghost
+        !    DOFs (DOF, node, direction, free flag, m, M^g_aa, O_a, PBoundary,
+        !    cluster), the faces (4 nodes, 4 jumps, C^K, C^M) and the columns
+        !    G_s e_j on the ghost DOFs for N_J = 0, 2, 10, 200, obtained with
+        !    ApplySymmetricGhostOperator. Kernel units (t per m, kN, s).
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE), dimension(4), parameter :: SweepList = (/ 0, 2, 10, 200 /)
+          integer(INTEGER_TYPE) :: IDof, JDof, NodeID, K, IFace, NG, IS, I, IError
+          integer(INTEGER_TYPE), dimension(:), allocatable :: GDofs, DofNode, DofDir
+          real(REAL_TYPE), dimension(:), allocatable :: Y, Z
+          character(len=MAX_FILENAME_LENGTH) :: FileName
+          character(len=8) :: StepText
+
+          if (NGhostFaces == 0) RETURN
+          NG = count(IsGhostDof)
+          allocate(GDofs(NG), DofNode(Counters%N), DofDir(Counters%N), Y(Counters%N), Z(Counters%N), stat = IError)
+          DofNode = 0
+          DofDir = 0
+          do NodeID = 1, Counters%NodTot
+            do K = 1, NVECTOR
+              DofNode(ReducedDof(NodeID) + K) = NodeID
+              DofDir(ReducedDof(NodeID) + K) = K
+            end do
+          end do
+          I = 0
+          do IDof = 1, Counters%N
+            if (IsGhostDof(IDof)) then
+              I = I + 1
+              GDofs(I) = IDof
+            end if
+          end do
+
+          write(StepText, '(I3.3)') CalParams%IStep
+          FileName = trim(CalParams%FileNames%ProjectName) // '_GHOSTOP_' // trim(StepText) // '.txt'
+          call FileOpen(TMP_UNIT, FileName)
+          write(TMP_UNIT, '(A)') '# Anura3D F1 ghost operator dump (GhostStabilisation.FOR, WriteGhostOperatorDump)'
+          write(TMP_UNIT, '(A, I8, A, I10, A, ES24.16, A, I4, A, I4)') 'load_step ', CalParams%IStep, &
+                ' time_step ', CalParams%TimeStep, ' scaling ', CalParams%ScalingMassFactor, &
+                ' mass_solver ', CalParams%GhostMassSolver, ' n_jacobi ', CalParams%GhostNJacobi
+          write(TMP_UNIT, '(A, ES24.16)') 'build_max_mp_x ', maxval(GlobPosArray(1:Counters%NParticles, 1))
+          write(TMP_UNIT, '(A, I10)') 'DOFS ', NG
+          do I = 1, NG
+            IDof = GDofs(I)
+            write(TMP_UNIT, '(3I10, I3, 4ES24.16, I10)') IDof, DofNode(IDof), DofDir(IDof), &
+                  merge(1, 0, GhostFreeDof(IDof)), LumpedMassDry(IDof, SOFT_ENTITY), GhostMassDiagonal(IDof), &
+                  GhostMassOffDiagAbs(IDof), PBoundary(IDof), GhostNodeCluster(DofNode(IDof))
+          end do
+          write(TMP_UNIT, '(A, I10)') 'FACES ', NGhostFaces
+          do IFace = 1, NGhostFaces
+            write(TMP_UNIT, '(4I10, 6ES24.16)') GhostFaceNodes(:, IFace), GhostFaceJump(:, IFace), &
+                  GhostFaceCoefK(IFace), GhostFaceCoefM(IFace)
+          end do
+          Y = 0.0
+          do IS = 1, size(SweepList)
+            write(TMP_UNIT, '(A, I6, I10)') 'MATRIX ', SweepList(IS), NG
+            do I = 1, NG ! one line per column G_s e_j
+              JDof = GDofs(I)
+              Y(JDof) = 1.0
+              Z = 0.0
+              call ApplySymmetricGhostOperator(Y, Z, SweepList(IS))
+              Y(JDof) = 0.0
+              write(TMP_UNIT, '(*(ES24.16))') (Z(GDofs(K)), K = 1, NG)
+            end do
+          end do
+          close(TMP_UNIT)
+          deallocate(GDofs, DofNode, DofDir, Y, Z, stat = IError)
+
+        end subroutine WriteGhostOperatorDump
+
+
+        real(REAL_TYPE) function GhostF1TimeStepBound()
+        !**********************************************************************
+        !    GhostF1TimeStepBound()
+        !
+        !    Return the ghost time-step bound of option A9 (D-006): the
+        !    mass-independent bound of FN-T-014 Eq. (24),
+        !    sqrt(2 f_s C^M_F / C^K_F) = h_F sqrt(2 f_s gammaM rho_F / (gammaK M*_F)),
+        !    over the faces of floating clusters (no ghost DOF in D), and the
+        !    coded bound of FN-T-010 Eq. (18) over the DOFs of attached clusters,
+        !    where Eq. (24) is not proven (D7.6). Units: s.
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE) :: IDof, NodeID, K, IC, IFace, IError
+          logical, dimension(:), allocatable :: Attached
+          real(REAL_TYPE) :: MassTilde
+
+          GhostF1TimeStepBound = huge(GhostF1TimeStepBound)
+          allocate(Attached(max(1, NGhostClusters)), stat = IError)
+          Attached = .false.
+          do NodeID = 1, Counters%NodTot
+            IC = GhostNodeCluster(NodeID)
+            if (IC <= 0) CYCLE
+            do K = 1, NVECTOR
+              IDof = ReducedDof(NodeID) + K
+              if (IsGhostDof(IDof) .and. .not.GhostFreeDof(IDof)) Attached(IC) = .true.
+            end do
+          end do
+
+          do IFace = 1, NGhostFaces
+            IC = GhostNodeCluster(GhostFaceNodes(1, IFace))
+            if (IC <= 0) CYCLE
+            if (Attached(IC)) CYCLE
+            if (GhostFaceCoefK(IFace) <= 0.0 .or. GhostFaceCoefM(IFace) <= 0.0) CYCLE
+            GhostF1TimeStepBound = min(GhostF1TimeStepBound, &
+                                       sqrt(2.0 * CalParams%ScalingMassFactor * GhostFaceCoefM(IFace) / GhostFaceCoefK(IFace)))
+          end do
+
+          do NodeID = 1, Counters%NodTot
+            IC = GhostNodeCluster(NodeID)
+            if (IC <= 0) CYCLE
+            if (.not.Attached(IC)) CYCLE
+            do K = 1, NVECTOR
+              IDof = ReducedDof(NodeID) + K
+              if (.not.IsGhostDof(IDof)) CYCLE
+              if (GhostStiffRowSum(IDof) <= 0.0) CYCLE
+              MassTilde = (LumpedMassDry(IDof, SOFT_ENTITY) + GhostMassDiagonal(IDof)) * CalParams%ScalingMassFactor
+              if (MassTilde <= 0.0) CYCLE
+              GhostF1TimeStepBound = min(GhostF1TimeStepBound, sqrt(2.0 * MassTilde / GhostStiffRowSum(IDof)))
+            end do
+          end do
+          deallocate(Attached, stat = IError)
+
+        end function GhostF1TimeStepBound
+
+
         real(REAL_TYPE) function GhostCriticalTimeStep()
         !**********************************************************************
         !    Function:  Time step bound of the explicit ghost viscosity
@@ -778,6 +1418,11 @@
           GhostCriticalTimeStep = huge(GhostCriticalTimeStep)
           if (.not.IsGhostActive()) RETURN
           if (NGhostFaces == 0) RETURN
+
+          if (CalParams%GhostMassScheme == GHOST_MASS_F1 .and. CalParams%GhostF1TimeStep) then
+            GhostCriticalTimeStep = GhostF1TimeStepBound() ! option A9, FN-T-014 Eq. (24)
+            RETURN
+          end if
 
           do IDof = 1, Counters%N
             if (.not.IsGhostDof(IDof)) CYCLE
@@ -830,7 +1475,70 @@
                               ', ghost dt = ' // trim(String(GhostCriticalTimeStep())) // &
                               ', momentum error = ' // trim(String(GhostLastMomentumError)))
 
+          if (CalParams%GhostDiagnostics >= GHOST_DIAG_EXTENDED) then
+            call WriteInLogFile('Ghost border: cut elements = ' // trim(String(GhostNCut)) // &
+                                ' (S4a added ' // trim(String(GhostNS4a)) // ', min mu = ' // trim(String(GhostMinMu)) // &
+                                '), cut without ghost face = ' // trim(String(GhostNCutNoFace)) // &
+                                ', contact-loaded nodes = ' // trim(String(GhostNLoadedNodes)) // &
+                                ', of which in ghost patches = ' // trim(String(GhostNLoadedInPatch)) // &
+                                ', max Mg/m there = ' // trim(String(GhostMaxRatioLoaded)))
+          end if
+          if (CalParams%GhostDiagnostics >= GHOST_DIAG_EXTENDED .and. CalParams%GhostMassScheme == GHOST_MASS_F1) then
+            call GhostF1DampingDiagnostic()
+            call WriteInLogFile('Ghost F1: free ghost DOFs = ' // trim(String(count(GhostFreeDof))) // &
+                                ', masked ghost DOFs = ' // trim(String(count(IsGhostDof .and. .not.GhostFreeDof))) // &
+                                ', contact points on ghost DOFs = ' // trim(String(GhostNDampingPoints)) // &
+                                ', min m*/m_true = ' // trim(String(GhostMinDampingFactor)))
+          end if
+          if (CalParams%GhostDiagnostics >= GHOST_DIAG_FILE) call WriteGhostBorderFile()
+
         end subroutine WriteGhostDiagnostics
+
+
+        subroutine WriteGhostBorderFile()
+        !**********************************************************************
+        !    WriteGhostBorderFile()
+        !
+        !    Write the element flags and the ghost faces of the last face build
+        !    to <project>_GHOST_<load step>.txt (diagnostics level 2): one line
+        !    per candidate element (ID, flag 1 candidate, 2 cut by the
+        !    detection, 3 cut by S4a only) and one line per face (IEl, JEl, the
+        !    4 patch nodes, coefficients C^K and C^M). IDs are the kernel's
+        !    1-based element and node numbers. GhostBuildMaxX is the largest MP
+        !    x coordinate (m) at that build, to locate a moving block.
+        !**********************************************************************
+        implicit none
+
+          integer(INTEGER_TYPE) :: IEl, IFace, NListed
+          character(len=MAX_FILENAME_LENGTH) :: FileName
+          character(len=8) :: StepText
+
+          write(StepText, '(I3.3)') CalParams%IStep
+          FileName = trim(CalParams%FileNames%ProjectName) // '_GHOST_' // trim(StepText) // '.txt'
+          call FileOpen(TMP_UNIT, FileName)
+
+          NListed = count(GhostElementFlag > 0)
+          write(TMP_UNIT, '(A)') '# Anura3D ghost border dump (GhostStabilisation.FOR, WriteGhostBorderFile)'
+          write(TMP_UNIT, '(A, I8, A, I10, A, I10)') 'load_step ', CalParams%IStep, ' time_step ', CalParams%TimeStep, &
+                                                     ' build_time_step ', GhostBuildStep
+          write(TMP_UNIT, '(A, I3, A, I3, A, ES24.16, A, ES24.16)') 'detection ', CalParams%GhostCutCriterion, &
+                ' s4a ', merge(1, 0, CalParams%GhostApplyS4a), ' alpha ', CalParams%GhostS4aAlpha, &
+                ' fill_threshold ', CalParams%GhostFillThreshold
+          write(TMP_UNIT, '(A, ES24.16)') 'build_max_mp_x ', GhostBuildMaxX
+          write(TMP_UNIT, '(A, I10, A, I10, A, I10)') 'n_elements ', Counters%NEl, ' n_cut ', GhostNCut, &
+                                                     ' n_s4a_added ', GhostNS4a
+          write(TMP_UNIT, '(A, I10)') 'ELEMENTS ', NListed
+          do IEl = 1, Counters%NEl
+            if (GhostElementFlag(IEl) > 0) write(TMP_UNIT, '(I10, I3)') IEl, GhostElementFlag(IEl)
+          end do
+          write(TMP_UNIT, '(A, I10)') 'FACES ', NGhostFaces
+          do IFace = 1, NGhostFaces
+            write(TMP_UNIT, '(6I10, 2ES24.16)') GhostFaceElements(:, IFace), GhostFaceNodes(:, IFace), &
+                                                GhostFaceCoefK(IFace), GhostFaceCoefM(IFace)
+          end do
+          close(TMP_UNIT)
+
+        end subroutine WriteGhostBorderFile
 
 
         logical function IsGhostElementForOutput(IEl)

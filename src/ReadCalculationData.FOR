@@ -389,6 +389,7 @@
                               GhostGammaK, & ! ghost stabilisation: stiffness (viscosity) penalty parameter
                               GhostGammaM, & ! ghost stabilisation: mass penalty parameter
                               GhostFillThreshold, & ! ghost stabilisation: elements filled below this fraction are cut
+                              GhostS4aAlpha, & ! ghost stabilisation: S4a nodal-mass ratio threshold (FN-T-002)
                               GasStressTol, & ! gasification: |p|, q below GasStressTol*GasPRef count as stress-free
                               GasPRef, & ! gasification: reference pressure [kPa]
                               GasChiOff, & ! gasification: density ratio rho/rho0 at or below which a point gasifies
@@ -402,6 +403,9 @@
           integer(INTEGER_TYPE) :: OutputNumberParticles, & ! number of material points for which output data is exported
                      GhostMassSolver, & ! ghost stabilisation: 0 = diagonal ghost mass, 1 = Jacobi solve
                      GhostNJacobi, & ! ghost stabilisation: number of Jacobi sweeps
+                     GhostCutCriterion, & ! ghost stabilisation: border detection, 0 = fill, 1 = node-based P0 with S1 (FN-T-002)
+                     GhostMassScheme, & ! ghost stabilisation: 0 = coded ghost mass, 1 = symmetric operator G_s (F1, FN-T-014 D7)
+                     GhostDiagnostics, & ! ghost stabilisation: 0 basic log, 1 extended log, 2 + border file, 3 + F1 operator dump
                      GasNHold, & ! gasification: consecutive time steps a switching condition must hold
                      GasNRamp, & ! gasification: number of time steps of the stiffness ramp after reactivation
                      OutputNumberElements, & ! number of elements for which output data is exported
@@ -490,6 +494,8 @@
                      ApplyMaterialUpdate, &  ! if ture then read material parameters from GOM
                      ApplyObjectiveStress, & ! if true then objective stresses are included
                      ApplyGhostStabilisation, & ! if true then ghost stabilisation is applied (explicit dynamic, 2D TRI3)
+                     GhostApplyS4a, & ! ghost stabilisation: if true then elements with a node of small mass ratio are cut (S4a)
+                     GhostF1TimeStep, & ! ghost stabilisation: if true then F1 uses the mass-independent bound of FN-T-014 Eq. (24) (A9)
                      ApplyGasification, & ! if true then stress-free, loosened material points switch to a gas state
                      ApplyRemoveSolidFixities, & ! id true if some boundary conditions of solid have to be read from GOMfile and removed
                      ApplyRemoveLiquidFixities, & ! id true if some boundary conditions of liquid have to be read from GOMfile and removed
@@ -806,6 +812,13 @@
         CalParams%GhostFillThreshold = 0.6
         CalParams%GhostMassSolver = 1
         CalParams%GhostNJacobi = 2
+        ! trailing fields of $$GHOST_STABILISATION; defaults reproduce CPS files with six fields
+        CalParams%GhostCutCriterion = 0
+        CalParams%GhostApplyS4a = .false.
+        CalParams%GhostS4aAlpha = 0.25
+        CalParams%GhostMassScheme = 0
+        CalParams%GhostDiagnostics = 0
+        CalParams%GhostF1TimeStep = .false.
         CalParams%ApplyGasification = .false. ! gasification is off unless requested in the CPS file
         CalParams%GasStressTol = 0.01
         CalParams%GasPRef = 1.0
@@ -1078,6 +1091,10 @@
           character(len=255) :: DumFileName
           character(len=21) :: messageIOS = 'CPS file: Can''t read '
           character(len=255) :: TName, BName
+          character(len=1024) :: GhostLine ! $$GHOST_STABILISATION value line
+          integer(INTEGER_TYPE) :: DumIX(5) ! $$GHOST_STABILISATION trailing integer entries
+          real(REAL_TYPE) :: DumRX ! $$GHOST_STABILISATION S4a threshold
+          integer(INTEGER_TYPE) :: NTokens
 
           ! set CPS version number
             select case (FileVersion)
@@ -1865,8 +1882,37 @@
               CalParams%APIFLIPBlendFactor = DumR(1)
               
             else if (trim(BName)=='$$GHOST_STABILISATION') then ! I [0,1] // R gammaK >= 0 // R gammaM >= 0 // R 0 < phiG <= 1 // I [0,1] // I >= 1
-              read(FileUnit, *, iostat=ios) DumI(1), DumR(1), DumR(2), DumR(3), DumI(2), DumI(3)
+              !  optional trailing fields: I detection [0,1] // I S4a [0,1] // R 0 < alpha <= 1 // I mass scheme [0,1] // I diagnostics [0,3]
+              !  (11 values), then optionally I F1 time-step bound A9 [0,1] (12 values)
+              read(FileUnit, '(A)', iostat=ios) GhostLine
               call Assert( ios == 0, messageIOS//trim(BName) )
+              NTokens = CountListTokens(GhostLine)
+              call Assert( NTokens == 6 .or. NTokens == 11 .or. NTokens == 12, 'CPS file: ' //trim(BName)// &
+                           ' needs 6 values (old format), 11 values (with detection, S4a, threshold, mass scheme, diagnostics)' // &
+                           ' or 12 values (and the F1 time-step bound).' )
+              read(GhostLine, *, iostat=ios) DumI(1), DumR(1), DumR(2), DumR(3), DumI(2), DumI(3)
+              call Assert( ios == 0, messageIOS//trim(BName) )
+              DumIX = (/ 0, 0, 0, 0, 0 /)
+              DumRX = 0.25
+              if (NTokens == 11) then
+                read(GhostLine, *, iostat=ios) DumI(1), DumR(1), DumR(2), DumR(3), DumI(2), DumI(3), &
+                                               DumIX(1), DumIX(2), DumRX, DumIX(3), DumIX(4)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+              else if (NTokens == 12) then
+                read(GhostLine, *, iostat=ios) DumI(1), DumR(1), DumR(2), DumR(3), DumI(2), DumI(3), &
+                                               DumIX(1), DumIX(2), DumRX, DumIX(3), DumIX(4), DumIX(5)
+                call Assert( ios == 0, messageIOS//trim(BName) )
+              end if
+              call Assert( DumIX(1) == 0 .or. DumIX(1) == 1, 'CPS file: ' //trim(BName)// &
+                           ' border detection must be 0 (fill) or 1 (node-based).' )
+              call Assert( DumIX(2) == 0 .or. DumIX(2) == 1, 'CPS file: ' //trim(BName)// ' S4a switch must be 0 or 1.' )
+              call Assert( DumRX > 0.0 .and. DumRX <= 1.0, 'CPS file: ' //trim(BName)// ' S4a threshold must be in (0, 1].' )
+              call Assert( DumIX(3) == 0 .or. DumIX(3) == 1, 'CPS file: ' //trim(BName)// &
+                           ' ghost-mass scheme must be 0 (coded) or 1 (symmetric F1).' )
+              call Assert( DumIX(4) >= 0 .and. DumIX(4) <= 3, 'CPS file: ' //trim(BName)// ' diagnostics level must be 0 to 3.' )
+              call Assert( DumIX(5) == 0 .or. DumIX(5) == 1, 'CPS file: ' //trim(BName)// ' F1 time-step bound must be 0 or 1.' )
+              call Assert( DumIX(5) == 0 .or. DumIX(3) == 1, 'CPS file: ' //trim(BName)// &
+                           ' the F1 time-step bound (A9) needs ghost-mass scheme 1 (symmetric F1).' )
               call Assert( DumI(1) == 0 .or. DumI(1) == 1, 'CPS file: ' //trim(BName)// ' flag must be 0 or 1.' )
               call Assert( DumR(1) >= 0.0, 'CPS file: ' //trim(BName)// ' stiffness penalty must be >= 0.0.' )
               call Assert( DumR(2) >= 0.0, 'CPS file: ' //trim(BName)// ' mass penalty must be >= 0.0.' )
@@ -1879,6 +1925,12 @@
               CalParams%GhostFillThreshold = DumR(3)
               CalParams%GhostMassSolver = DumI(2)
               CalParams%GhostNJacobi = DumI(3)
+              CalParams%GhostCutCriterion = DumIX(1)
+              CalParams%GhostApplyS4a = (DumIX(2) == 1)
+              CalParams%GhostS4aAlpha = DumRX
+              CalParams%GhostMassScheme = DumIX(3)
+              CalParams%GhostDiagnostics = DumIX(4)
+              CalParams%GhostF1TimeStep = (DumIX(5) == 1)
 
             else if (trim(BName)=='$$GASIFICATION') then ! I [0,1] // R tol > 0 // R pRef > 0 // R 0 < chiOff < chiOn // R 0 <= fillOff < fillOn <= 1 // I nHold >= 1 // I nRamp >= 1 // R 0 <= alpha <= 1
               read(FileUnit, *, iostat=ios) DumIG(1), DumRG(1), DumRG(2), DumRG(3), DumRG(4), DumRG(5), DumRG(6), &
@@ -3214,15 +3266,13 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
           
           call WriteReal(FileUnit, '$$DEGREE_OF_FILLING', [CalParams%RequiredDegreeOfFilling], 1, .true.)
           call WriteReal(FileUnit, '$$APIC_FLIP_BLEND_FACTOR', [CalParams%APIFLIPBlendFactor], 1, .true.)
-          ! GHOST STABILISATION: flag gammaK gammaM phiG massSolver nJacobi
+          ! GHOST STABILISATION: flag gammaK gammaM phiG massSolver nJacobi detection S4a alpha massScheme diagnostics A9
           write(FileUnit, '(A)') '$$GHOST_STABILISATION'
-          if (CalParams%ApplyGhostStabilisation) then
-            write(FileUnit, '(A2, 3G18.8, 2I6)') ' 1', CalParams%GhostGammaK, CalParams%GhostGammaM, CalParams%GhostFillThreshold, &
-                                               CalParams%GhostMassSolver, CalParams%GhostNJacobi
-          else
-            write(FileUnit, '(A2, 3G18.8, 2I6)') ' 0', CalParams%GhostGammaK, CalParams%GhostGammaM, CalParams%GhostFillThreshold, &
-                                               CalParams%GhostMassSolver, CalParams%GhostNJacobi
-          end if
+          write(FileUnit, '(I2, 3G18.8, 4I6, G18.8, 3I6)') merge(1, 0, CalParams%ApplyGhostStabilisation), &
+                CalParams%GhostGammaK, CalParams%GhostGammaM, CalParams%GhostFillThreshold, &
+                CalParams%GhostMassSolver, CalParams%GhostNJacobi, CalParams%GhostCutCriterion, &
+                merge(1, 0, CalParams%GhostApplyS4a), CalParams%GhostS4aAlpha, CalParams%GhostMassScheme, &
+                CalParams%GhostDiagnostics, merge(1, 0, CalParams%GhostF1TimeStep)
           ! GASIFICATION: flag tol pRef chiOff chiOn fillOff fillOn nHold nRamp alphaFLIP
           write(FileUnit, '(A)') '$$GASIFICATION'
           if (CalParams%ApplyGasification) then
@@ -3713,6 +3763,34 @@ subroutine ReadPrescribedAccelerationOrVelocityFromFile()
         end subroutine WriteLogicInteger                
 
               
+        integer(INTEGER_TYPE) function CountListTokens(Line)
+        !**********************************************************************
+        !    CountListTokens(Line)
+        !
+        !    Return the number of list-directed values on a CPS value line:
+        !    groups of characters separated by blanks, tabs or commas, up to
+        !    an optional '!' comment.
+        !
+        !    Example: CountListTokens('1 0.05 0.05 0.6 1 2') is 6.
+        !**********************************************************************
+        implicit none
+
+          character(len=*), intent(in) :: Line
+
+          integer(INTEGER_TYPE) :: I
+          logical :: InToken, IsSeparator
+
+          CountListTokens = 0
+          InToken = .false.
+          do I = 1, len_trim(Line)
+            if (Line(I:I) == '!') EXIT
+            IsSeparator = (Line(I:I) == ' ') .or. (Line(I:I) == ',') .or. (Line(I:I) == char(9))
+            if (.not.IsSeparator .and. .not.InToken) CountListTokens = CountListTokens + 1
+            InToken = .not.IsSeparator
+          end do
+
+        end function CountListTokens
+
       end module ModReadCalculationData
 
         

@@ -187,6 +187,7 @@
          ! Calculate new nodal velocities from the new momentums
          if (IsMPMComputation()) then !MPM
            call GetNodalVelocityFromNodalMomentumConv(Momentum) ! In local coordinate system
+           call ApplyGhostVelocityF1(Momentum(:, SOFT_ENTITY), .true.) ! ghost F1: v = G_s p' on the ghost DOFs (D7.2 row 9)
            if ((CalParams%NumberOfPhases==2).or.(CalParams%NumberOfPhases==3).or.(.not.(NFORMULATION==1))) then
              call GetNodalWaterVelocityFromNodalWaterMomentum(MomentumW) ! In local coordinate system
              if (CalParams%NumberOfPhases==3) then

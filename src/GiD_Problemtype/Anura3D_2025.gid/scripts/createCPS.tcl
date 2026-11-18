@@ -637,6 +637,7 @@ proc Anura3D::WriteCalculationFile_CPS { filename stageNode icount_stage total_t
     GiD_WriteCalculationFile puts $APIFLIPBlend
     
     # GHOST STABILISATION: flag gammaK gammaM phiG massSolver(0=diagonal,1=Jacobi) nJacobi
+    #   detection(0=fill,1=node-based) S4a(0,1) S4aThreshold massScheme(0=coded,1=F1) diagnostics(0,1,2) F1bound(0,1)
     # Models created before this option existed have no STABILISATION container: written as off.
     set ghost_xp {string(container[@n="Calculation_Data"]/container[@n="STABILISATION"]/value[@n="%s"]/@v)}
     set Ghost_on     [$stageNode selectNodes [format $ghost_xp GHOST_STABILISATION]]
@@ -661,10 +662,25 @@ proc Anura3D::WriteCalculationFile_CPS { filename stageNode icount_stage total_t
     if {[$stageNode selectNodes [format $ghost_xp ghost_mass_solver]] == "diagonal"} {set Ghost_solver 0}
     set Ghost_nJ [$stageNode selectNodes [format $ghost_xp ghost_jacobi_iterations]]
     if {$Ghost_nJ == ""} {set Ghost_nJ 2}
+    # Models created before these options existed have no such entries: written with the previous behaviour.
+    set Ghost_detect 0
+    if {[$stageNode selectNodes [format $ghost_xp ghost_border_detection]] == "node-based topological"} {set Ghost_detect 1}
+    set Ghost_s4a 0
+    if {[$stageNode selectNodes [format $ghost_xp ghost_nodal_mass_net]] == "on"} {set Ghost_s4a 1}
+    set Ghost_alpha [$stageNode selectNodes [format $ghost_xp ghost_nodal_mass_threshold]]
+    if {$Ghost_alpha == ""} {set Ghost_alpha 0.25}
+    set Ghost_scheme 0
+    if {[$stageNode selectNodes [format $ghost_xp ghost_mass_scheme]] == "symmetric (F1)"} {set Ghost_scheme 1}
+    set Ghost_a9 0
+    if {[$stageNode selectNodes [format $ghost_xp ghost_time_step_bound]] == "mass-independent (F1 only)"} {set Ghost_a9 1}
+    set Ghost_diag 0
+    set Ghost_diag_v [$stageNode selectNodes [format $ghost_xp ghost_diagnostics]]
+    if {$Ghost_diag_v == "extended"} {set Ghost_diag 1}
+    if {$Ghost_diag_v == "extended with border file"} {set Ghost_diag 2}
     set Ghost_flag 0
     if {$Ghost_on == "apply ghost stabilisation"} {set Ghost_flag 1}
     GiD_WriteCalculationFile puts {$$GHOST_STABILISATION}
-    GiD_WriteCalculationFile puts [= "%s %s %s %s %s %s" $Ghost_flag $Ghost_gK $Ghost_gM $Ghost_phi $Ghost_solver $Ghost_nJ]
+    GiD_WriteCalculationFile puts [= "%s %s %s %s %s %s %s %s %s %s %s %s" $Ghost_flag $Ghost_gK $Ghost_gM $Ghost_phi $Ghost_solver $Ghost_nJ $Ghost_detect $Ghost_s4a $Ghost_alpha $Ghost_scheme $Ghost_diag $Ghost_a9]
     
     # GASIFICATION: flag tol pRef chiOff chiOn fillOff fillOn nHold nRamp gasFLIP
     # Models created before this option existed have no GASIFICATION entry: written as off.

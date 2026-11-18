@@ -123,6 +123,8 @@
             if (.not.IsMPMSkipConvection()) then
               DoSystem = .true.     !if contact model is used, get TotalVelocitySys too
               call GetNodalVelocityFromNodalMomentum(Momentum, DoSystem) ! Local coordinate system
+              ! ghost F1: face list of the step, then v = G_s p on the ghost DOFs (FN-T-014 D7.2 rows 2-3)
+              call ApplyGhostVelocityF1(Momentum(:, SOFT_ENTITY), .false.)
             endif
           endif
 
